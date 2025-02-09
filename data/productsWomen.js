@@ -3639,7 +3639,7 @@ export const products44 = [
     oldPrice: 88.0,
   },
 ];
-export const productMain = [...products, ...products7, ...products42];
+export const productWomen = [...products, ...products7, ...products42];
 export const allProducts = [
   ...products,
   ...products2,
