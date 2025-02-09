@@ -1,0 +1,32 @@
+export const categories = [
+    {
+      id: 1,
+      imgSrc: "/images/collections/banner-collection/banner-cls6.jpg",
+      alt: "banner-cls",
+      delay: "0s",
+      title: "Women’s",
+      itemsCount: "12 items",
+      imgWidth: 625,
+      imgHeight: 833,
+    },
+    {
+      id: 2,
+      imgSrc: "/images/collections/banner-collection/banner-cls7.jpg",
+      alt: "banner-cls",
+      delay: "0.1s",
+      title: "Men’s",
+      itemsCount: "12 items",
+      imgWidth: 626,
+      imgHeight: 833,
+    },
+    {
+      id: 3,
+      imgSrc: "/images/collections/banner-collection/banner-cls8.jpg",
+      alt: "banner-cls",
+      delay: "0.2s",
+      title: "Kids",
+      itemsCount: "12 items",
+      imgWidth: 626,
+      imgHeight: 833,
+    },
+  ];

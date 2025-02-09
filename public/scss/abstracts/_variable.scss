@@ -1,0 +1,39 @@
+//settings
+$font-main: "Kumbh Sans", sans-serif;
+$font-2: "Instrument Sans", sans-serif;
+$font-3: "Plus Jakarta Sans", sans-serif;
+$fontIcon: "icomoon";
+
+:root{
+    
+    // color
+    --primary: #E43131;
+    --main: #181818;
+    --secondary: #4D4E4F;
+    --secondary-2:#A0A0A0;
+    --white: #FFFFFF;
+    --surface: #F7F7F7;
+    --critical: #F03E3E;
+    --warning: #9391E1;
+    --success:#3DAB25;
+    --yellow: #F0A750;
+    --line: #E9E9E9;
+    --pink: #EC749D;
+    --blue: #0C74D6;
+
+    // rgba color
+    --main-rgba-1: rgba(0, 0, 0, 0.16);
+    --main-rgba-2: rgba(0, 0, 0, 0.15);
+    --gradient:linear-gradient(87deg, #FBF1F1 3.59%, #F4F1FA 95.02%);
+
+    --rgba-primary: rgba(228, 49, 49, 0.1);
+
+    --bg-scrollbar-track: #f1f1f1;
+    --bg-scrollbar-thumb: #c1c1c1;
+
+    --shadow1: 0px 10px 25px 0px #2B344A1F;
+    --shadow2: 0px 5px 18px 5px #40485726;
+    --backdrop: rgba(24, 24, 24, 0.2);
+    
+}
+
