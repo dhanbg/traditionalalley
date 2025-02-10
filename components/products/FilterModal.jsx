@@ -7,9 +7,12 @@ import {
   colors,
   sizes,
 } from "@/data/productFilterOptions";
-import { productMain } from "@/data/productsWomen";
+import { productWomen } from "@/data/productsWomen";
+import { productMen } from "@/data/productsMen"; // Add this import
+import { productKids } from "@/data/productsKids"; // Add this import
 
 import RangeSlider from "react-range-slider-input";
+
 export default function FilterModal({ allProps }) {
   return (
     <div className="offcanvas offcanvas-start canvas-filter" id="filterShop">
@@ -130,8 +133,9 @@ export default function FilterModal({ allProps }) {
                     <span className="count-stock">
                       (
                       {
-                        productMain.filter((el) => el.inStock == option.value)
-                          .length
+                        [...productWomen, ...productMen, ...productKids].filter(
+                          (el) => el.inStock == option.value
+                        ).length
                       }
                       )
                     </span>
@@ -161,8 +165,8 @@ export default function FilterModal({ allProps }) {
                     <span className="count-brand">
                       (
                       {
-                        productMain.filter((el) =>
-                          el.filterBrands.includes(brand.label)
+                        [...productWomen, ...productMen, ...productKids].filter(
+                          (el) => el.filterBrands.includes(brand.label)
                         ).length
                       }
                       )

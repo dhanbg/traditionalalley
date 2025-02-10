@@ -1,22 +1,40 @@
 "use client";
 import React, { useState } from "react";
-
-import { productMain } from "@/data/productsWomen";
+import { productWomen } from "@/data/productsWomen";
+import { productMen } from "@/data/productsMen";
+import { productKids } from "@/data/productsKids";
 import ProductCard1 from "../productCards/ProductCard1";
+
 export default function SearchModal() {
   const [loading, setLoading] = useState(false);
+  const [category, setCategory] = useState("women");
 
-  const [loadedItems, setLoadedItems] = useState(productMain.slice(0, 8));
+  const products = {
+    women: productWomen,
+    men: productMen,
+    kids: productKids,
+  };
+
+  const [loadedItems, setLoadedItems] = useState(
+    products[category].slice(0, 8)
+  );
+
   const handleLoad = () => {
     setLoading(true);
     setTimeout(() => {
-      setLoadedItems((pre) => [
-        ...pre,
-        ...productMain.slice(pre.length, pre.length + 4),
+      setLoadedItems((prev) => [
+        ...prev,
+        ...products[category].slice(prev.length, prev.length + 4),
       ]);
       setLoading(false);
     }, 1000);
   };
+
+  const handleCategoryChange = (newCategory) => {
+    setCategory(newCategory);
+    setLoadedItems(products[newCategory].slice(0, 8));
+  };
+
   return (
     <div className="modal fade modal-search" id="search">
       <div className="modal-dialog modal-dialog-centered">
@@ -28,6 +46,7 @@ export default function SearchModal() {
               data-bs-dismiss="modal"
             />
           </div>
+
           <form className="form-search" onSubmit={(e) => e.preventDefault()}>
             <fieldset className="text">
               <input
@@ -67,31 +86,28 @@ export default function SearchModal() {
               </svg>
             </button>
           </form>
-          <div>
-            <h5 className="mb_16">Feature keywords Today</h5>
-            <ul className="list-tags">
-              <li>
-                <a href="#" className="radius-60 link">
-                  Dresses
-                </a>
-              </li>
-              <li>
-                <a href="#" className="radius-60 link">
-                  Dresses women
-                </a>
-              </li>
-              <li>
-                <a href="#" className="radius-60 link">
-                  Dresses midi
-                </a>
-              </li>
-              <li>
-                <a href="#" className="radius-60 link">
-                  Dress summer
-                </a>
-              </li>
-            </ul>
+
+          <div className="category-buttons d-flex gap-2 my-3">
+            <button
+              onClick={() => handleCategoryChange("women")}
+              className={category === "women" ? "active" : ""}
+            >
+              Women
+            </button>
+            <button
+              onClick={() => handleCategoryChange("men")}
+              className={category === "men" ? "active" : ""}
+            >
+              Men
+            </button>
+            <button
+              onClick={() => handleCategoryChange("kids")}
+              className={category === "kids" ? "active" : ""}
+            >
+              Kids
+            </button>
           </div>
+
           <div>
             <h6 className="mb_16">Recently viewed products</h6>
             <div className="tf-grid-layout tf-col-2 lg-col-3 xl-col-4">
@@ -100,19 +116,18 @@ export default function SearchModal() {
               ))}
             </div>
           </div>
-          {/* Load Item */}
 
-          {productMain.length == loadedItems.length ? (
+          {products[category].length === loadedItems.length ? (
             ""
           ) : (
             <div
               className="wd-load view-more-button text-center"
-              onClick={() => handleLoad()}
+              onClick={handleLoad}
             >
               <button
                 className={`tf-loading btn-loadmore tf-btn btn-reset ${
                   loading ? "loading" : ""
-                } `}
+                }`}
               >
                 <span className="text text-btn text-btn-uppercase">
                   Load more
