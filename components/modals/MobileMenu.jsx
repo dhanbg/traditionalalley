@@ -532,7 +532,7 @@ export default function MobileMenu() {
             </div>
             <div className="mb-contact">
               <p className="text-caption-1">
-                549 Oak St.Crystal Lake, IL 60014
+                44700 Hattiban, Lalitpur, Bagmati, Nepal
               </p>
               <Link
                 href={`/contact`}

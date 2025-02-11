@@ -115,7 +115,7 @@ export default function Contact2() {
             <h4>Information</h4>
             <div className="mb_20">
               <div className="text-title mb_8">Phone:</div>
-              <p className="text-secondary">+1 666 234 8888</p>
+              <p className="text-secondary">9810333750</p>
             </div>
             <div className="mb_20">
               <div className="text-title mb_8">Email:</div>
@@ -124,19 +124,14 @@ export default function Contact2() {
             <div className="mb_20">
               <div className="text-title mb_8">Address:</div>
               <p className="text-secondary">
-                2163 Phillips Gap Rd, West Jefferson, North Carolina, United
-                States
+                44700 Hattiban, Lalitpur, Bagmati, Nepal
               </p>
             </div>
             <div>
               <div className="text-title mb_8">Open Time:</div>
               <p className="mb_4 open-time">
-                <span className="text-secondary">Mon - Sat:</span> 7:30am -
-                8:00pm PST
-              </p>
-              <p className="open-time">
-                <span className="text-secondary">Sunday:</span> 9:00am - 5:00pm
-                PST
+                <span className="text-secondary">Sun - Fri:</span> 11:00am -
+                6:00pm PST
               </p>
             </div>
           </div>

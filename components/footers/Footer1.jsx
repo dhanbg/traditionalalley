@@ -101,7 +101,7 @@ export default function Footer1({
                       </Link>
                     </div>
                     <div className="footer-address">
-                      <p>549 Oak St.Crystal Lake, IL 60014</p>
+                      <p>44700 Hattiban, Lalitpur, Bagmati, Nepal</p>
                       <Link
                         href={`/contact`}
                         className={`tf-btn-default fw-6 ${

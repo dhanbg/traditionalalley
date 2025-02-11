@@ -159,14 +159,12 @@
 
 .tf-list-categories{
     position: relative;
-    .categories-title{            
-        padding: 14px 16px;
-        background-color: var(--main);
-        color: var(--white);
+    .categories-title{         
+        // background-color: var(--main);
+        // color: var(--white);
         border-radius: 5px;
         display: inline-flex;
         align-items: center;
-        gap: 12px;
         .text{
             font-size: 12px;
             line-height: 20px;

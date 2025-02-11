@@ -94,12 +94,13 @@ export default function StoreLocations1() {
                 data-map-scroll="true"
               >
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3023.712380803123!2d-74.00594108459235!3d40.712775279328264!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25a3168ef8b1f%3A0xe28a875ee38c8ed1!2sNew+York%2C+NY%2C+USA!5e0!3m2!1sen!2s!4v1617203294845!5m2!1sen!2s"
-                  width={600}
-                  height={450}
-                  style={{ border: 0, width: "100%", height: "100%" }}
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d220.89288716385607!2d85.33165326745913!3d27.646615799999992!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39eb17687d3c1077%3A0x2a49d4958a1213b2!2sJ8WJ%2BMPH%2C%20Lalitpur%2044700!5e0!3m2!1sen!2snp!4v1739266687689!5m2!1sen!2snp"
+                  width={800}
+                  height={600}
+                  style={{ border: 0 }}
                   allowFullScreen=""
                   loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
                 />
               </div>
             </div>

@@ -16,7 +16,7 @@ export default function StoreLocations2() {
                   >
                     <h6 className="tf-store-title">New York Office</h6>
                     <div className="tf-store-info">
-                      <p>Phone: +1 666 234 8888</p>
+                      <p>Phone: +1 666 234 888</p>
                       <p>Email: traditionalalley.com.np</p>
                       <p>Address: 432 Park Avenue, New York, New York</p>
                     </div>
