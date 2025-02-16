@@ -7,12 +7,14 @@ import GridView from "./GridView";
 import { useEffect, useReducer, useState } from "react";
 import FilterModal from "./FilterModal";
 import { initialState, reducer } from "@/reducer/filterReducer";
-import { productWomen } from "@/data/productsWomen";
-import { productMen } from "@/data/productsMen"; // Import productMen
-import { productKids } from "@/data/productsKids"; // Import productKids
+import { bossLady } from "@/data/productsWomen";
+import { juvenile } from "@/data/productsWomen";
+import { events } from "@/data/productsWomen";
+import { gown } from "@/data/productsWomen";
+import { kurtha } from "@/data/productsWomen";
 import FilterMeta from "./FilterMeta";
 
-export default function Products14({ parentClass = "flat-spacing", category = 'women' }) {
+export default function Products14({ parentClass = "flat-spacing", collection = 'bossLady' }) {
   const [activeLayout, setActiveLayout] = useState(4);
   const [state, dispatch] = useReducer(reducer, initialState);
   const [loading, setLoading] = useState(false);
@@ -82,12 +84,16 @@ export default function Products14({ parentClass = "flat-spacing", category = 'w
 
   useEffect(() => {
     let products;
-    if (category === 'women') {
-      products = productWomen;
-    } else if (category === 'men') {
-      products = productMen;
-    } else if (category === 'kids') {
-      products = productKids;
+    if (collection === 'bossLady') {
+      products = bossLady;
+    } else if (collection === 'juvenile') {
+      products = juvenile;
+    } else if (collection === 'events') {
+      products = events;
+    } else if (collection === 'gown') {
+      products = gown;
+    } else if (collection === 'kurtha') {
+      products = kurtha;
     }
 
     let filteredArrays = [];
@@ -130,7 +136,7 @@ export default function Products14({ parentClass = "flat-spacing", category = 'w
       filteredArrays.every((array) => array.includes(item))
     );
     dispatch({ type: "SET_FILTERED", payload: commonItems });
-  }, [price, availability, color, size, brands, activeFilterOnSale, category]);
+  }, [price, availability, color, size, brands, activeFilterOnSale, collection]);
 
   useEffect(() => {
     if (sortingOption === "Price Ascending") {

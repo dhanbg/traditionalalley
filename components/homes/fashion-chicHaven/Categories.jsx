@@ -5,6 +5,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
 import Link from "next/link";
 import { Pagination } from "swiper/modules";
+
 export default function Collections() {
   return (
     <section className="flat-spacing">
@@ -33,6 +34,7 @@ export default function Collections() {
           {categories.map((category) => (
             <SwiperSlide key={category.id}>
               <div
+                style={{ width: "80%", height: "100%" }}
                 className="collection-position-2 style-2 hover-img wow fadeInUp"
                 data-wow-delay={category.delay}
               >
@@ -47,11 +49,11 @@ export default function Collections() {
                   />
                 </a>
                 <div className="content">
-                  <Link href={`/shop-default-grid`} className="cls-btn">
+                  <Link
+                    href={`/${category.title.toLowerCase()}`}
+                    className="cls-btn"
+                  >
                     <h6 className="text">{category.title}</h6>
-                    <span className="count-item text-secondary">
-                      {category.itemsCount}
-                    </span>
                     <i className="icon icon-arrowUpRight" />
                   </Link>
                 </div>

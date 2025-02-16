@@ -4,6 +4,8 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade, Pagination } from "swiper/modules";
 import Image from "next/image";
 import Link from "next/link";
+import { fetchDataFromApi } from "@/utils/api";
+import { API_URL } from "@/utils/urls"; 
 
 export default function Hero() {
   const [slides, setSlides] = useState([]);
@@ -11,13 +13,10 @@ export default function Hero() {
   useEffect(() => {
     const fetchSlides = async () => {
       try {
-        const response = await fetch(
-          "http://localhost:1337/api/hero-slides?populate=*"
-        );
-        const data = await response.json();
+        const data = await fetchDataFromApi("/api/hero-slides?populate=*"); // Directly use the data returned by the function
         console.log(data); // Debugging API response
         const transformedSlides = data.data.map((item) => ({
-          imgSrc: `http://localhost:1337${item.imgSrc?.url || item.imgSrc?.formats?.large?.url || ""}`,
+          imgSrc: `${API_URL}${item.imgSrc?.url || item.imgSrc?.formats?.large?.url || ""}`,
           alt: item.alt || "fashion-slideshow",
           subheading: item.subheading || "",
           heading: item.heading?.replace("<br/>", "\n") || "",

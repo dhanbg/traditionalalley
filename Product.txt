@@ -1,0 +1,77 @@
+Title
+Picture
+Price
+Oldprice
+sale
+stock
+filtercategories
+filtercolor
+filtersizes
+
+
+Schema:
+{
+  "id": 0,
+  "title": "",
+  "price": 0.0,
+  "oldPrice": 0.0,
+  "hotSale": false,
+  "isOnSale": false,
+  "isOnisOnSale": false,
+  "salePercentage": "",
+  "imgSrc": "",
+  "imgHover": "",
+  "addToCart": "",
+  "sizes": [],
+  "countdown": 0,
+  "colors": [
+    {
+      "name": "",
+      "bgColor": "",
+      "imgSrc": ""
+    }
+  ],
+  "filterBrands": [],
+  "inStock": false,
+  "filterColor": [],
+  "filterSizes": [],
+  "tabFilterOptions2": [],
+  "tabFilterOptions": []
+}
+
+
+One Example:
+{
+  "id": 1,
+  "title": "V-neck cotton T-shirt",
+  "price": 59.99,
+  "oldPrice": 79.99,
+  "hotSale": false,
+  "isOnSale": false,
+  "isOnisOnSale": false,
+  "salePercentage": "25%",
+  "imgSrc": "/images/products/womens/women-19.jpg",
+  "imgHover": "/images/products/womens/women-20.jpg",
+  "addToCart": "Quick Add",
+  "sizes": ["S", "M", "L", "XL"],
+  "countdown": 1007500,
+  "colors": [
+    {
+      "name": "Beige",
+      "bgColor": "bg-light-blue",
+      "imgSrc": "/images/products/womens/women-19.jpg"
+    },
+    {
+      "name": "Black",
+      "bgColor": "bg-dark-blue",
+      "imgSrc": "/images/products/womens/women-20.jpg"
+    }
+  ],
+  "filterBrands": ["Nike", "Louis Vuitton", "Zalando", "Adidas"],
+  "inStock": true,
+  "filterColor": ["Beige", "Orange", "Green", "Black", "Purple", "Dark Blue"],
+  "filterSizes": ["XS", "S", "M", "L", "XL", "2XL", "3XL"],
+  "tabFilterOptions2": ["New Arrivals", "On Sale"],
+  "tabFilterOptions": ["Bottoms", "Skirts", "Dresses", "Sale"]
+}
+

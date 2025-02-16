@@ -112,7 +112,7 @@ export default function RootLayout({ children }) {
     }
   }, [scrollDirection]);
   useEffect(() => {
-    const WOW = require("@/utlis/wow");
+    const WOW = require("@/utils/wow");
     const wow = new WOW.default({
       mobile: false,
       live: false,

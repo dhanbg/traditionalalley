@@ -3,7 +3,7 @@ import ProductCard1 from "@/components/productCards/ProductCard1";
 import { products } from "@/data/productsWomen";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-const tabItems = ["Bottoms", "On pieces", "Tops", "Skirts", "Dresses", "Sale"];
+const tabItems = ["Boss Lady", "Juvenile", "Events", "Gown", "Kurtha"];
 export default function Products({ parentClass = "flat-spacing-3 pt-0" }) {
   const [activeItem, setActiveItem] = useState(tabItems[0]); // Default the first item as active
 

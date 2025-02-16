@@ -1,7 +1,7 @@
 "use client";
 import { allProducts } from "@/data/productsWomen";
-import { openCartModal } from "@/utlis/openCartModal";
-import { openWistlistModal } from "@/utlis/openWishlist";
+import { openCartModal } from "@/utils/openCartModal";
+import { openWistlistModal } from "@/utils/openWishlist";
 
 import React, { useEffect } from "react";
 import { useContext, useState } from "react";

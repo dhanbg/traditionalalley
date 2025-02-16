@@ -11,7 +11,7 @@ export const products = [
     filterColor: ["Beige", "Orange", "Green", "Black", "Purple", "Dark Blue"],
     filterSizes: ["XS", "L", "XL", "2XL", "3XL"],
     tabFilterOptions2: ["New Arrivals", "On Sale"],
-    tabFilterOptions: ["Bottoms", "Skirts", "Dresses", "Sale"],
+    tabFilterOptions: ["Boss Lady", "Gown", "Kurtha", "Sale"],
   },
   {
     id: 2,
@@ -38,7 +38,7 @@ export const products = [
     filterColor: ["Pink", "Green", "Grey", "Light Blue", "Dark Blue"],
     filterSizes: ["XS", "L", "XL", "2XL", "3XL"],
     tabFilterOptions2: ["New Arrivals", "Best Seller"],
-    tabFilterOptions: ["Bottoms", "On pieces", "Tops", "Sale"],
+    tabFilterOptions: ["Boss Lady", "Juvenile", "Events", "Sale"],
   },
   {
     id: 3,
@@ -74,7 +74,7 @@ export const products = [
     ],
     filterSizes: ["XS", "S", "M", "L", "3XL"],
     tabFilterOptions2: ["New Arrivals", "On Sale"],
-    tabFilterOptions: ["Bottoms", "On pieces", "Tops", "Skirts", "Dresses"],
+    tabFilterOptions: ["Boss Lady", "Juvenile", "Events", "Gown", "Kurtha"],
   },
   {
     id: 4,
@@ -112,7 +112,7 @@ export const products = [
     ],
     filterSizes: ["XS", "S", "M", "2XL", "3XL"],
     tabFilterOptions2: ["New Arrivals", "Best Seller"],
-    tabFilterOptions: ["Bottoms", "On pieces", "Skirts", "Dresses", "Sale"],
+    tabFilterOptions: ["Boss Lady", "Juvenile", "Gown", "Kurtha", "Sale"],
   },
   {
     id: 5,
@@ -127,7 +127,7 @@ export const products = [
     filterColor: ["Pink", "Red", "Beige", "Orange", "Green", "Black", "White"],
     filterSizes: ["XS", "L", "XL", "2XL", "3XL"],
     tabFilterOptions2: ["New Arrivals", "On Sale"],
-    tabFilterOptions: ["Bottoms", "On pieces", "Tops", "Skirts", "Sale"],
+    tabFilterOptions: ["Boss Lady", "Juvenile", "Events", "Gown", "Sale"],
   },
   {
     id: 6,
@@ -164,7 +164,7 @@ export const products = [
     ],
     filterSizes: ["S", "M", "L", "XL", "2XL", "3XL"],
     tabFilterOptions2: ["New Arrivals", "Best Seller"],
-    tabFilterOptions: ["Bottoms", "Tops", "Skirts", "Dresses", "Sale"],
+    tabFilterOptions: ["Boss Lady", "Events", "Gown", "Kurtha", "Sale"],
   },
   {
     id: 7,
@@ -204,11 +204,11 @@ export const products = [
     filterSizes: ["XS", "S", "M", "L", "3XL"],
     tabFilterOptions2: ["New Arrivals", "Best Seller", "On Sale"],
     tabFilterOptions: [
-      "Bottoms",
-      "On pieces",
-      "Tops",
-      "Skirts",
-      "Dresses",
+      "Boss Lady",
+      "Juvenile",
+      "Events",
+      "Gown",
+      "Kurtha",
       "Sale",
     ],
   },
@@ -252,11 +252,11 @@ export const products = [
     filterSizes: ["XS", "L", "XL", "2XL", "3XL"],
     tabFilterOptions2: ["New Arrivals", "Best Seller", "On Sale"],
     tabFilterOptions: [
-      "Bottoms",
-      "On pieces",
-      "Tops",
-      "Skirts",
-      "Dresses",
+      "Boss Lady",
+      "Juvenile",
+      "Events",
+      "Gown",
+      "Kurtha",
       "Sale",
     ],
   },
@@ -970,6 +970,501 @@ export const products42 = [
     filterSizes: ["S", "M", "L"],
   },
 ];
+
+export const bossLady = [
+  {
+    "id": 101,
+    "title": "Classic Black Waistcoat & Pant Set",
+    "price": 159.99,
+    "oldPrice": 199.99,
+    "hotSale": true,
+    "isOnSale": true,
+    "isOnisOnSale": true,
+    "salePercentage": "20%",
+    "imgSrc": "/images/products/boss-lady/waistcoat-1.jpg",
+    "imgHover": "/images/products/boss-lady/waistcoat-2.jpg",
+    "addToCart": "Quick Add",
+    "sizes": ["S", "M", "L", "XL", "2XL"],
+    "countdown": 750000,
+    "colors": [
+      {
+        "name": "Black",
+        "bgColor": "bg-black",
+        "imgSrc": "/images/products/boss-lady/waistcoat-1.jpg"
+      },
+      {
+        "name": "Navy Blue",
+        "bgColor": "bg-dark-blue",
+        "imgSrc": "/images/products/boss-lady/waistcoat-2.jpg"
+      }
+    ],
+    "filterBrands": ["Gucci", "Zara", "Louis Vuitton"],
+    "inStock": true,
+    "filterColor": ["Black", "Navy Blue", "Grey", "Beige"],
+    "filterSizes": ["XS", "S", "M", "L", "XL", "2XL", "3XL"],
+    "tabFilterOptions2": ["New Arrivals", "Best Seller"],
+    "tabFilterOptions": ["Waist Coat & Pant", "Coat", "Pants", "Sale"]
+  },
+  {
+    "id": 102,
+    "title": "Elegant Beige Blazer Coat",
+    "price": 179.99,
+    "oldPrice": 219.99,
+    "hotSale": false,
+    "isOnSale": true,
+    "isOnisOnSale": true,
+    "salePercentage": "18%",
+    "imgSrc": "/images/products/boss-lady/coat-1.jpg",
+    "imgHover": "/images/products/boss-lady/coat-2.jpg",
+    "addToCart": "Quick Add",
+    "sizes": ["S", "M", "L", "XL"],
+    "countdown": 600000,
+    "colors": [
+      {
+        "name": "Beige",
+        "bgColor": "bg-beige",
+        "imgSrc": "/images/products/boss-lady/coat-1.jpg"
+      },
+      {
+        "name": "Grey",
+        "bgColor": "bg-grey",
+        "imgSrc": "/images/products/boss-lady/coat-2.jpg"
+      }
+    ],
+    "filterBrands": ["Prada", "Armani", "Zara"],
+    "inStock": true,
+    "filterColor": ["Beige", "Grey", "White", "Black"],
+    "filterSizes": ["XS", "S", "M", "L", "XL"],
+    "tabFilterOptions2": ["New Arrivals"],
+    "tabFilterOptions": ["Coat", "Pants", "Sale"]
+  },
+  {
+    "id": 103,
+    "title": "High-Waist Formal Pants",
+    "price": 99.99,
+    "oldPrice": 129.99,
+    "hotSale": false,
+    "isOnSale": true,
+    "isOnisOnSale": true,
+    "salePercentage": "23%",
+    "imgSrc": "/images/products/boss-lady/pants-1.jpg",
+    "imgHover": "/images/products/boss-lady/pants-2.jpg",
+    "addToCart": "Quick Add",
+    "sizes": ["S", "M", "L", "XL", "2XL"],
+    "countdown": 500000,
+    "colors": [
+      {
+        "name": "Grey",
+        "bgColor": "bg-grey",
+        "imgSrc": "/images/products/boss-lady/pants-1.jpg"
+      },
+      {
+        "name": "Black",
+        "bgColor": "bg-black",
+        "imgSrc": "/images/products/boss-lady/pants-2.jpg"
+      }
+    ],
+    "filterBrands": ["Dolce & Gabbana", "Armani", "Gucci"],
+    "inStock": true,
+    "filterColor": ["Grey", "Black", "White"],
+    "filterSizes": ["XS", "S", "M", "L", "XL", "2XL"],
+    "tabFilterOptions2": ["Best Seller"],
+    "tabFilterOptions": ["Pants", "Sale"]
+  }
+];
+
+export const juvenile = [
+  {
+    "id": 201,
+    "title": "Pink Floral Printed Dress",
+    "price": 89.99,
+    "oldPrice": 109.99,
+    "hotSale": false,
+    "isOnSale": true,
+    "isOnisOnSale": true,
+    "salePercentage": "18%",
+    "imgSrc": "/images/products/juvenile/pink-printed-1.jpg",
+    "imgHover": "/images/products/juvenile/pink-printed-2.jpg",
+    "addToCart": "Quick Add",
+    "sizes": ["S", "M", "L", "XL"],
+    "colors": [
+      {
+        "name": "Pink",
+        "bgColor": "bg-pink",
+        "imgSrc": "/images/products/juvenile/pink-printed-1.jpg"
+      }
+    ],
+    "filterBrands": ["Zara", "Gucci", "H&M"],
+    "inStock": true,
+    "filterColor": ["Pink", "White"],
+    "filterSizes": ["XS", "S", "M", "L", "XL"],
+    "tabFilterOptions2": ["New Arrivals"],
+    "tabFilterOptions": ["Pink Printed"]
+  },
+  {
+    "id": 202,
+    "title": "Black Printed Set",
+    "price": 99.99,
+    "oldPrice": 129.99,
+    "hotSale": true,
+    "isOnSale": true,
+    "isOnisOnSale": true,
+    "salePercentage": "23%",
+    "imgSrc": "/images/products/juvenile/black-printed-1.jpg",
+    "imgHover": "/images/products/juvenile/black-printed-2.jpg",
+    "addToCart": "Quick Add",
+    "sizes": ["S", "M", "L", "XL", "2XL"],
+    "colors": [
+      {
+        "name": "Black",
+        "bgColor": "bg-black",
+        "imgSrc": "/images/products/juvenile/black-printed-1.jpg"
+      }
+    ],
+    "filterBrands": ["Nike", "Zalando", "Adidas"],
+    "inStock": true,
+    "filterColor": ["Black", "Grey"],
+    "filterSizes": ["XS", "S", "M", "L", "XL", "2XL"],
+    "tabFilterOptions2": ["Best Seller"],
+    "tabFilterOptions": ["Black Printed Set"]
+  },
+  {
+    "id": 201,
+    "title": "Pink Floral Printed Dress",
+    "price": 89.99,
+    "oldPrice": 109.99,
+    "hotSale": false,
+    "isOnSale": true,
+    "salePercentage": "18%",
+    "imgSrc": "/images/products/juvenile/pink-printed-1.jpg",
+    "imgHover": "/images/products/juvenile/pink-printed-2.jpg",
+    "sizes": ["S", "M", "L", "XL"],
+    "colors": [{ "name": "Pink", "bgColor": "bg-pink", "imgSrc": "/images/products/juvenile/pink-printed-1.jpg" }],
+    "filterBrands": ["Zara", "Gucci", "H&M"],
+    "inStock": true,
+    "filterColor": ["Pink", "White"],
+    "filterSizes": ["XS", "S", "M", "L", "XL"],
+    "tabFilterOptions": ["Pink Printed"]
+  },
+  {
+    "id": 202,
+    "title": "Black Printed Set",
+    "price": 99.99,
+    "oldPrice": 129.99,
+    "hotSale": true,
+    "isOnSale": true,
+    "salePercentage": "23%",
+    "imgSrc": "/images/products/juvenile/black-printed-1.jpg",
+    "imgHover": "/images/products/juvenile/black-printed-2.jpg",
+    "sizes": ["S", "M", "L", "XL", "2XL"],
+    "colors": [{ "name": "Black", "bgColor": "bg-black", "imgSrc": "/images/products/juvenile/black-printed-1.jpg" }],
+    "filterBrands": ["Nike", "Zalando", "Adidas"],
+    "inStock": true,
+    "filterColor": ["Black", "Grey"],
+    "filterSizes": ["XS", "S", "M", "L", "XL", "2XL"],
+    "tabFilterOptions": ["Black Printed Set"]
+  },
+  {
+    "id": 203,
+    "title": "Red Floral Skater Dress",
+    "price": 79.99,
+    "oldPrice": 99.99,
+    "hotSale": false,
+    "isOnSale": true,
+    "salePercentage": "20%",
+    "imgSrc": "/images/products/juvenile/red-floral-1.jpg",
+    "imgHover": "/images/products/juvenile/red-floral-2.jpg",
+    "sizes": ["S", "M", "L"],
+    "colors": [{ "name": "Red", "bgColor": "bg-red", "imgSrc": "/images/products/juvenile/red-floral-1.jpg" }],
+    "filterBrands": ["Forever 21", "Zara"],
+    "inStock": true,
+    "filterColor": ["Red", "White"],
+    "filterSizes": ["XS", "S", "M", "L"],
+    "tabFilterOptions": ["Pink Printed"]
+  }
+];
+
+export const events = [
+  {
+    "id": 301,
+    "title": "Elegant Silk Saree",
+    "price": 199.99,
+    "oldPrice": 249.99,
+    "hotSale": false,
+    "isOnSale": true,
+    "isOnisOnSale": true,
+    "salePercentage": "20%",
+    "imgSrc": "/images/products/events/saree-1.jpg",
+    "imgHover": "/images/products/events/saree-2.jpg",
+    "addToCart": "Quick Add",
+    "sizes": ["S", "M", "L", "XL"],
+    "colors": [
+      {
+        "name": "Red",
+        "bgColor": "bg-red",
+        "imgSrc": "/images/products/events/saree-1.jpg"
+      }
+    ],
+    "filterBrands": ["Sabyasachi", "Manish Malhotra"],
+    "inStock": true,
+    "filterColor": ["Red", "Gold"],
+    "filterSizes": ["XS", "S", "M", "L", "XL"],
+    "tabFilterOptions2": ["New Arrivals"],
+    "tabFilterOptions": ["Sarees"]
+  },
+  {
+    "id": 301,
+    "title": "Elegant Silk Saree",
+    "price": 199.99,
+    "oldPrice": 249.99,
+    "hotSale": false,
+    "isOnSale": true,
+    "salePercentage": "20%",
+    "imgSrc": "/images/products/events/saree-1.jpg",
+    "imgHover": "/images/products/events/saree-2.jpg",
+    "sizes": ["S", "M", "L", "XL"],
+    "colors": [{ "name": "Red", "bgColor": "bg-red", "imgSrc": "/images/products/events/saree-1.jpg" }],
+    "filterBrands": ["Sabyasachi", "Manish Malhotra"],
+    "inStock": true,
+    "filterColor": ["Red", "Gold"],
+    "filterSizes": ["XS", "S", "M", "L", "XL"],
+    "tabFilterOptions": ["Sarees"]
+  },
+  {
+    "id": 302,
+    "title": "Golden Zari Embroidered Saree",
+    "price": 229.99,
+    "oldPrice": 279.99,
+    "hotSale": true,
+    "isOnSale": true,
+    "salePercentage": "18%",
+    "imgSrc": "/images/products/events/golden-saree-1.jpg",
+    "imgHover": "/images/products/events/golden-saree-2.jpg",
+    "sizes": ["M", "L", "XL"],
+    "colors": [{ "name": "Gold", "bgColor": "bg-gold", "imgSrc": "/images/products/events/golden-saree-1.jpg" }],
+    "filterBrands": ["Ritu Kumar", "Tarun Tahiliani"],
+    "inStock": true,
+    "filterColor": ["Gold", "Red"],
+    "filterSizes": ["S", "M", "L", "XL"],
+    "tabFilterOptions": ["Sarees"]
+  }
+];
+
+export const gown = [
+  {
+    "id": 401,
+    "title": "Princess Ball Gown",
+    "price": 299.99,
+    "oldPrice": 349.99,
+    "hotSale": true,
+    "isOnSale": true,
+    "isOnisOnSale": true,
+    "salePercentage": "15%",
+    "imgSrc": "/images/products/gown/princess-1.jpg",
+    "imgHover": "/images/products/gown/princess-2.jpg",
+    "addToCart": "Quick Add",
+    "sizes": ["S", "M", "L", "XL", "2XL"],
+    "colors": [
+      {
+        "name": "White",
+        "bgColor": "bg-white",
+        "imgSrc": "/images/products/gown/princess-1.jpg"
+      }
+    ],
+    "filterBrands": ["Vera Wang", "Dior"],
+    "inStock": true,
+    "filterColor": ["White", "Gold"],
+    "filterSizes": ["XS", "S", "M", "L", "XL", "2XL"],
+    "tabFilterOptions2": ["Luxury"],
+    "tabFilterOptions": ["Princess"]
+  },
+  {
+    "id": 402,
+    "title": "Belk Style Gown",
+    "price": 279.99,
+    "oldPrice": 329.99,
+    "hotSale": false,
+    "isOnSale": true,
+    "isOnisOnSale": true,
+    "salePercentage": "18%",
+    "imgSrc": "/images/products/gown/belk-1.jpg",
+    "imgHover": "/images/products/gown/belk-2.jpg",
+    "addToCart": "Quick Add",
+    "sizes": ["S", "M", "L", "XL"],
+    "colors": [
+      {
+        "name": "Beige",
+        "bgColor": "bg-beige",
+        "imgSrc": "/images/products/gown/belk-1.jpg"
+      }
+    ],
+    "filterBrands": ["Zuhair Murad", "Elie Saab"],
+    "inStock": true,
+    "filterColor": ["Beige", "Champagne"],
+    "filterSizes": ["XS", "S", "M", "L", "XL"],
+    "tabFilterOptions2": ["Designer Picks"],
+    "tabFilterOptions": ["Belk"]
+  },
+  {
+    "id": 403,
+    "title": "Royal Sapphire Gown",
+    "price": 349.99,
+    "oldPrice": 399.99,
+    "hotSale": true,
+    "isOnSale": true,
+    "isOnisOnSale": true,
+    "salePercentage": "13% ",
+    "imgSrc": "/images/products/gown/sapphire-1.jpg",
+    "imgHover": "/images/products/gown/sapphire-2.jpg",
+    "addToCart": "Quick Add",
+    "sizes": ["S", "M", "L", "XL", "2XL"],
+    "colors": [
+      {
+        "name": "Sapphire Blue",
+        "bgColor": "bg-blue-600",
+        "imgSrc": "/images/products/gown/sapphire-1.jpg"
+      }
+    ],
+    "filterBrands": ["Oscar de la Renta", "Chanel"],
+    "inStock": true,
+    "filterColor": ["Sapphire Blue", "Silver"],
+    "filterSizes": ["S", "M", "L", "XL", "2XL"],
+    "tabFilterOptions2": ["Luxury"],
+    "tabFilterOptions": ["Sapphire"]
+  },
+  {
+    "id": 404,
+    "title": "Midnight Glam Gown",
+    "price": 319.99,
+    "oldPrice": 359.99,
+    "hotSale": false,
+    "isOnSale": true,
+    "isOnisOnSale": true,
+    "salePercentage": "11% ",
+    "imgSrc": "/images/products/gown/midnight-glam-1.jpg",
+    "imgHover": "/images/products/gown/midnight-glam-2.jpg",
+    "addToCart": "Quick Add",
+    "sizes": ["S", "M", "L", "XL"],
+    "colors": [
+      {
+        "name": "Midnight Black",
+        "bgColor": "bg-black",
+        "imgSrc": "/images/products/gown/midnight-glam-1.jpg"
+      }
+    ],
+    "filterBrands": ["Zuhair Murad", "Vera Wang"],
+    "inStock": true,
+    "filterColor": ["Black", "Gold"],
+    "filterSizes": ["S", "M", "L", "XL"],
+    "tabFilterOptions2": ["Designer Picks"],
+    "tabFilterOptions": ["Glamorous"]
+  }
+];
+
+export const kurtha = [
+  {
+    "id": 501,
+    "title": "Rose Velvet Kurtha",
+    "price": 129.99,
+    "oldPrice": 149.99,
+    "hotSale": true,
+    "isOnSale": true,
+    "isOnisOnSale": true,
+    "salePercentage": "15%",
+    "imgSrc": "/images/products/kurtha/rose-velvet-1.jpg",
+    "imgHover": "/images/products/kurtha/rose-velvet-2.jpg",
+    "addToCart": "Quick Add",
+    "sizes": ["S", "M", "L", "XL"],
+    "colors": [
+      {
+        "name": "Rose",
+        "bgColor": "bg-rose",
+        "imgSrc": "/images/products/kurtha/rose-velvet-1.jpg"
+      }
+    ],
+    "filterBrands": ["FabIndia", "Manyavar"],
+    "inStock": true,
+    "filterColor": ["Rose", "Gold"],
+    "filterSizes": ["XS", "S", "M", "L", "XL"],
+    "tabFilterOptions2": ["New Arrivals"],
+    "tabFilterOptions": ["Rose Velvet Kurtha"]
+  },
+  {
+    "id": 502,
+    "title": "Gleamy Pastels Kurtha",
+    "price": 139.99,
+    "oldPrice": 159.99,
+    "hotSale": false,
+    "isOnSale": true,
+    "isOnisOnSale": true,
+    "salePercentage": "12%",
+    "imgSrc": "/images/products/kurtha/gleamy-pastels-1.jpg",
+    "imgHover": "/images/products/kurtha/gleamy-pastels-2.jpg",
+    "addToCart": "Quick Add",
+    "sizes": ["S", "M", "L", "XL"],
+    "filterBrands": ["Biba", "Ritu Kumar"],
+    "inStock": true,
+    "filterColor": ["Pastel Blue", "Pink"],
+    "filterSizes": ["XS", "S", "M", "L", "XL"],
+    "tabFilterOptions2": ["Best Seller"],
+    "tabFilterOptions": ["Gleamy Pastels"]
+  },
+  {
+    "id": 503,
+    "title": "Indigo Embroidered Kurtha",
+    "price": 149.99,
+    "oldPrice": 179.99,
+    "hotSale": true,
+    "isOnSale": true,
+    "isOnisOnSale": true,
+    "salePercentage": "17%",
+    "imgSrc": "/images/products/kurtha/indigo-1.jpg",
+    "imgHover": "/images/products/kurtha/indigo-2.jpg",
+    "addToCart": "Quick Add",
+    "sizes": ["S", "M", "L", "XL"],
+    "colors": [
+      {
+        "name": "Indigo Blue",
+        "bgColor": "bg-indigo-700",
+        "imgSrc": "/images/products/kurtha/indigo-1.jpg"
+      }
+    ],
+    "filterBrands": ["FabIndia", "Manyavar"],
+    "inStock": true,
+    "filterColor": ["Indigo", "White"],
+    "filterSizes": ["S", "M", "L", "XL"],
+    "tabFilterOptions2": ["Traditional"],
+    "tabFilterOptions": ["Indigo Embroidered"]
+  },
+  {
+    "id": 504,
+    "title": "Golden Tassel Kurtha",
+    "price": 159.99,
+    "oldPrice": 179.99,
+    "hotSale": false,
+    "isOnSale": true,
+    "isOnisOnSale": true,
+    "salePercentage": "11%",
+    "imgSrc": "/images/products/kurtha/golden-tassel-1.jpg",
+    "imgHover": "/images/products/kurtha/golden-tassel-2.jpg",
+    "addToCart": "Quick Add",
+    "sizes": ["S", "M", "L", "XL"],
+    "colors": [
+      {
+        "name": "Gold",
+        "bgColor": "bg-yellow-500",
+        "imgSrc": "/images/products/kurtha/golden-tassel-1.jpg"
+      }
+    ],
+    "filterBrands": ["Biba", "Ritu Kumar"],
+    "inStock": true,
+    "filterColor": ["Gold", "Beige"],
+    "filterSizes": ["S", "M", "L", "XL"],
+    "tabFilterOptions2": ["New Arrivals"],
+    "tabFilterOptions": ["Golden Tassel"]
+  }
+];
+
 
 export const products2 = [
   {
@@ -3640,6 +4135,7 @@ export const products44 = [
   },
 ];
 export const productWomen = [...products, ...products7, ...products42];
+export const productsWomen = [...bossLady, ...juvenile, ...events, ...gown, ...kurtha];
 export const allProducts = [
   ...products,
   ...products2,
