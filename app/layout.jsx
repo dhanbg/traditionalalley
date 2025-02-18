@@ -18,6 +18,7 @@ import SizeGuide from "@/components/modals/SizeGuide";
 import Wishlist from "@/components/modals/Wishlist";
 import DemoModal from "@/components/modals/DemoModal";
 import Categories from "@/components/modals/Categories";
+import { ClerkProvider } from "@clerk/nextjs";
 
 export default function RootLayout({ children }) {
   const pathname = usePathname();
@@ -120,6 +121,7 @@ export default function RootLayout({ children }) {
     wow.init();
   }, [pathname]);
   return (
+    <ClerkProvider>
     <html lang="en">
       <body className="preload-wrapper popup-loader">
         <Context>
@@ -139,5 +141,6 @@ export default function RootLayout({ children }) {
         </Context>
       </body>
     </html>
+    </ClerkProvider>
   );
 }

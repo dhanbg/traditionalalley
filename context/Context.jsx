@@ -2,15 +2,16 @@
 import { allProducts } from "@/data/productsWomen";
 import { openCartModal } from "@/utils/openCartModal";
 import { openWistlistModal } from "@/utils/openWishlist";
+import { useUser } from "@clerk/nextjs";
 
-import React, { useEffect } from "react";
-import { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 const dataContext = React.createContext();
 export const useContextElement = () => {
   return useContext(dataContext);
 };
 
 export default function Context({ children }) {
+  const { user } = useUser();
   const [cartProducts, setCartProducts] = useState([]);
   const [wishList, setWishList] = useState([1, 2, 3]);
   const [compareItem, setCompareItem] = useState([1, 2, 3]);
@@ -111,6 +112,7 @@ export default function Context({ children }) {
   }, [wishList]);
 
   const contextElement = {
+    user,
     cartProducts,
     setCartProducts,
     totalPrice,
