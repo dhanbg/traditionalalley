@@ -12,7 +12,7 @@ import QuickView from "@/components/modals/QuickView";
 import QuickAdd from "@/components/modals/QuickAdd";
 import Compare from "@/components/modals/Compare";
 import MobileMenu from "@/components/modals/MobileMenu";
-import NewsLetterModal from "@/components/modals/NewsLetterModal";
+// import NewsLetterModal from "@/components/modals/NewsLetterModal";
 import SearchModal from "@/components/modals/SearchModal";
 import SizeGuide from "@/components/modals/SizeGuide";
 import Wishlist from "@/components/modals/Wishlist";
@@ -130,7 +130,7 @@ export default function RootLayout({ children }) {
           <Compare />
           <MobileMenu />
 
-          <NewsLetterModal />
+          {/* <NewsLetterModal /> */}
           <SearchModal />
           <SizeGuide />
           <Wishlist />
