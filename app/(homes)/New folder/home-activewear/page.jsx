@@ -3,7 +3,7 @@ import MarqueeSection2 from "@/components/common/MarqueeSection2";
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import Topbar3 from "@/components/headers/Topbar3";
-import BannerTab from "@/components/homes/activewear/BannerTab";
+import BannerTab from "@/components/homes/New folder/activewear/BannerTab";
 import Collections from "@/components/homes/activewear/Collections";
 import Hero from "@/components/homes/activewear/Hero";
 import Lookbook from "@/components/homes/activewear/Lookbook";
