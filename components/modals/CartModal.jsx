@@ -23,7 +23,7 @@ export default function CartModal() {
     <div className="modal fullRight fade modal-shopping-cart" id="shoppingCart">
       <div className="modal-dialog">
         <div className="modal-content">
-          <div className="tf-minicart-recommendations">
+          {/* <div className="tf-minicart-recommendations">
             <h6 className="title">You May Also Like</h6>
             <div className="wrap-recommendations">
               <div className="list-cart">
@@ -66,7 +66,7 @@ export default function CartModal() {
                 ))}
               </div>
             </div>
-          </div>
+          </div> */}
           <div className="d-flex flex-column flex-grow-1 h-100">
             <div className="header">
               <h5 className="title">Shopping Cart</h5>

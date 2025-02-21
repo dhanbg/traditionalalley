@@ -22,19 +22,19 @@ const discounts = [
   },
 ];
 const shippingOptions = [
-  {
-    id: "free",
-    label: "Free Shipping",
-    price: 0.0,
-  },
+  // {
+  //   id: "free",
+  //   label: "Free Shipping",
+  //   price: 0.0,
+  // },
   {
     id: "local",
     label: "Local:",
-    price: 35.0,
+    price: 15.0,
   },
   {
     id: "rate",
-    label: "Flat Rate:",
+    label: "International:",
     price: 35.0,
   },
 ];
@@ -60,9 +60,9 @@ export default function ShopCart() {
     setSelectedOption(elm);
   };
 
-  useEffect(() => {
-    document.querySelector(".progress-cart .value").style.width = "70%";
-  }, []);
+  // useEffect(() => {
+  //   document.querySelector(".progress-cart .value").style.width = "70%";
+  // }, []);
 
   return (
     <>
@@ -70,7 +70,7 @@ export default function ShopCart() {
         <div className="container">
           <div className="row">
             <div className="col-xl-8">
-              <div className="tf-cart-sold">
+              {/* <div className="tf-cart-sold">
                 <div className="notification-sold bg-surface">
                   <Image
                     className="icon"
@@ -112,7 +112,7 @@ export default function ShopCart() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </div> */}
               {cartProducts.length ? (
                 <form onSubmit={(e) => e.preventDefault()}>
                   <table className="tf-table-page-cart">
