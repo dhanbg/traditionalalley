@@ -4,13 +4,13 @@ import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import Topbar3 from "@/components/headers/Topbar3";
 import BannerTab from "@/components/homes/New folder/activewear/BannerTab";
-import Collections from "@/components/homes/activewear/Collections";
-import Hero from "@/components/homes/activewear/Hero";
-import Lookbook from "@/components/homes/activewear/Lookbook";
-import Products from "@/components/homes/activewear/Products";
-import Products2 from "@/components/homes/activewear/Products2";
-import ShopGram from "@/components/homes/activewear/ShopGram";
-import Testimonials from "@/components/homes/activewear/Testimonials";
+import Collections from "@/components/homes/New folder/activewear/Collections";
+import Hero from "@/components/homes/New folder/activewear/Hero";
+import Lookbook from "@/components/homes/New folder/activewear/Lookbook";
+import Products from "@/components/homes/New folder/activewear/Products";
+import Products2 from "@/components/homes/New folder/activewear/Products2";
+import ShopGram from "@/components/homes/New folder/activewear/ShopGram";
+import Testimonials from "@/components/homes/New folder/activewear/Testimonials";
 import React from "react";
 
 export const metadata = {

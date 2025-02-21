@@ -1,7 +1,7 @@
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import Topbar6 from "@/components/headers/Topbar6";
-import Products14 from "@/components/products/Products14";
+import Products14 from "@/components/products/Productskids";
 import Link from "next/link";
 import React from "react";
 
