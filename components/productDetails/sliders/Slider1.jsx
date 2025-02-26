@@ -1,11 +1,11 @@
 "use client";
 import { slides } from "@/data/singleProductSliders";
-import Drift from "drift-zoom";
 import PhotoSwipeLightbox from "photoswipe/lightbox";
 import { useEffect, useRef, useState } from "react";
 import { Navigation, Thumbs } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
+
 export default function Slider1({
   activeColor = "gray",
   setActiveColor = () => {},
@@ -16,54 +16,6 @@ export default function Slider1({
 }) {
   const items = [...slideItems];
   items[0].src = firstItem ?? items[0].src;
-
-  useEffect(() => {
-    // Function to initialize Drift
-    const imageZoom = () => {
-      const driftAll = document.querySelectorAll(".tf-image-zoom");
-      const pane = document.querySelector(".tf-zoom-main");
-
-      driftAll.forEach((el) => {
-        new Drift(el, {
-          zoomFactor: 2,
-          paneContainer: pane,
-          inlinePane: false,
-          handleTouch: false,
-          hoverBoundingBox: true,
-          containInline: true,
-        });
-      });
-    };
-    imageZoom();
-    const zoomElements = document.querySelectorAll(".tf-image-zoom");
-
-    const handleMouseOver = (event) => {
-      const parent = event.target.closest(".section-image-zoom");
-      if (parent) {
-        parent.classList.add("zoom-active");
-      }
-    };
-
-    const handleMouseLeave = (event) => {
-      const parent = event.target.closest(".section-image-zoom");
-      if (parent) {
-        parent.classList.remove("zoom-active");
-      }
-    };
-
-    zoomElements.forEach((element) => {
-      element.addEventListener("mouseover", handleMouseOver);
-      element.addEventListener("mouseleave", handleMouseLeave);
-    });
-
-    // Cleanup event listeners on component unmount
-    return () => {
-      zoomElements.forEach((element) => {
-        element.removeEventListener("mouseover", handleMouseOver);
-        element.removeEventListener("mouseleave", handleMouseLeave);
-      });
-    };
-  }, []); // Empty dependency array to run only once on mount
 
   const lightboxRef = useRef(null);
   useEffect(() => {
@@ -103,7 +55,7 @@ export default function Slider1({
           items.filter((elm) => elm.color == activeColor)[0]?.id - 1
         );
       }
-    });
+    }, []);
   }, []);
 
   return (
@@ -192,16 +144,15 @@ export default function Slider1({
               className="item"
               data-pswp-width={slide.width}
               data-pswp-height={slide.height}
-              //   onClick={() => openLightbox(index)}
             >
               <Image
-                className="tf-image-zoom lazyload"
-                data-zoom={slide.src}
+                className="lazyload"
                 data-src={slide.src}
                 alt=""
                 src={slide.src}
                 width={slide.width}
                 height={slide.height}
+                style={{ height: "200px", width: "100px" }}
               />
             </a>
           </SwiperSlide>

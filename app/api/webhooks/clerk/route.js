@@ -2,7 +2,7 @@ import { Webhook } from 'svix'
 import { headers } from 'next/headers'
 
 export async function POST(req) {
-  const WEBHOOK_SECRET = process.env.CLERK_SECRET_KEY
+  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
   const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN
   const STRAPI_URL = process.env.STRAPI_URL
 
