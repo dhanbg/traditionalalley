@@ -7,17 +7,14 @@ const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) await auth.protect();
 
-  // Protect `/admin` routes for admin users only
-  // if (isAdminRoute(req)) {
-  //   const session = await auth(); // Get the session
-  //   const role = (session?.sessionClaims?.metadata as { role: string })?.role; // Type assertion
-
-  //   // Check if the user has the 'admin' role
-  //   if (role !== "admin") {
-  //     const url = new URL("/", req.url);
-  //     return NextResponse.redirect(url); // Redirect if the user is not an admin
-  //   }
-  // }
+  // Protect all routes starting with `/admin`
+  if (
+    isAdminRoute(req) &&
+    (await auth()).sessionClaims?.metadata?.role !== "admin"
+  ) {
+    const url = new URL("/", req.url);
+    return NextResponse.redirect(url);
+  }
 });
 
 export const config = {
