@@ -55,13 +55,13 @@ export default function Slider1({
           items.filter((elm) => elm.color == activeColor)[0]?.id - 1
         );
       }
-    }, []);
+    });
   }, []);
 
   return (
     <div className="thumbs-slider">
       <Swiper
-        className="swiper tf-product-media-thumbs other-image-zoom"
+        className="swiper tf-product-media-thumbs"
         dir="ltr"
         direction="vertical"
         spaceBetween={10}
@@ -107,14 +107,20 @@ export default function Slider1({
             data-color={slide.color}
             key={index}
           >
-            <div className="item">
+            <div className="item" style={{ aspectRatio: '3/4' }}>
               <Image
                 className="lazyload"
                 data-src={slide.src}
                 alt={slide.alt}
                 src={slide.src}
-                width={slide.width}
-                height={slide.height}
+                width={slide.width * 0.6}
+                height={slide.height * 0.6}
+                style={{ 
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  borderRadius: '8px'
+                }}
               />
             </div>
           </SwiperSlide>
@@ -144,15 +150,22 @@ export default function Slider1({
               className="item"
               data-pswp-width={slide.width}
               data-pswp-height={slide.height}
+              //   onClick={() => openLightbox(index)}
             >
               <Image
                 className="lazyload"
                 data-src={slide.src}
                 alt=""
                 src={slide.src}
-                width={slide.width}
-                height={slide.height}
-                style={{ height: "200px", width: "100px" }}
+                width={slide.width * 0.6}
+                height={slide.height * 0.6}
+                style={{
+                  height: '100%',
+                  width: '80%',
+                  objectFit: 'cover',
+                  borderRadius: '12px',
+                  margin: '0 auto'
+                }}
               />
             </a>
           </SwiperSlide>

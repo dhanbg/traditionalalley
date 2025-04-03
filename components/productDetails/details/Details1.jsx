@@ -27,7 +27,7 @@ export default function Details1({ product }) {
         <div className="container">
           <div className="row">
             {/* Product default */}
-            <div className="col-md-6">
+            <div className="col-md-66">
               <div className="tf-product-media-wrap sticky-top">
                 <Slider1
                   setActiveColor={setActiveColor}
@@ -38,7 +38,7 @@ export default function Details1({ product }) {
             </div>
             {/* /Product default */}
             {/* tf-product-info-list */}
-            <div className="col-md-6">
+            <div className="col-md-7">
               <div className="tf-product-info-wrap position-relative mw-100p-hidden ">
                 <div className="tf-zoom-main" />
                 <div className="tf-product-info-list other-image-zoom">
@@ -126,7 +126,7 @@ export default function Details1({ product }) {
                         }}
                       />
                     </div>
-                    <div>
+                    <div style={{ display: "flex", gap: "10px" }}>
                       <div className="tf-product-info-by-btn mb_10">
                         <a
                           onClick={() => addProductToCart(product.id, quantity)}
@@ -253,7 +253,7 @@ export default function Details1({ product }) {
                             </div>
                             <div className="line-bt" />
                             <div>
-                              <h6>Traditional alley</h6>
+                              <h6>Fashion Modave</h6>
                               <p>Pickup available. Usually ready in 24 hours</p>
                             </div>
                             <div>
@@ -271,7 +271,7 @@ export default function Details1({ product }) {
                       </li>
                       <li>
                         <p className="text-caption-1">Vendor:</p>
-                        <p className="text-caption-1 text-1">Traditional alley</p>
+                        <p className="text-caption-1 text-1">Modave</p>
                       </li>
                       <li>
                         <p className="text-caption-1">Available:</p>

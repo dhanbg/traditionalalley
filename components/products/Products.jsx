@@ -7,19 +7,16 @@ import GridView from "./GridView";
 import { useEffect, useReducer, useState } from "react";
 import FilterModal from "./FilterModal";
 import { initialState, reducer } from "@/reducer/filterReducer";
-import { bossLady } from "@/data/productsWomen";
-import { juvenile } from "@/data/productsWomen";
-import { events } from "@/data/productsWomen";
-import { gown } from "@/data/productsWomen";
-import { kurtha } from "@/data/productsWomen";
 import FilterMeta from "./FilterMeta";
+import { fetchDataFromApi } from "@/utils/api";
+import { PRODUCTS_API, PRODUCTS_BY_CATEGORY_API } from "@/utils/urls";
 
 export default function Products14({ parentClass = "flat-spacing", collection = 'bossLady' }) {
   const [activeLayout, setActiveLayout] = useState(4);
   const [state, dispatch] = useReducer(reducer, initialState);
   const [loading, setLoading] = useState(false);
-
   const [loadedItems, setLoadedItems] = useState([]);
+  const [products, setProducts] = useState([]);
 
   const {
     price,
@@ -82,20 +79,65 @@ export default function Products14({ parentClass = "flat-spacing", collection = 
     },
   };
 
+  // Fetch products from API
   useEffect(() => {
-    let products;
-    if (collection === 'bossLady') {
-      products = bossLady;
-    } else if (collection === 'juvenile') {
-      products = juvenile;
-    } else if (collection === 'events') {
-      products = events;
-    } else if (collection === 'gown') {
-      products = gown;
-    } else if (collection === 'kurtha') {
-      products = kurtha;
-    }
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        let endpoint = PRODUCTS_API;
+        
+        // If collection is specified, fetch products by category
+        if (collection && collection !== 'all') {
+          endpoint = PRODUCTS_BY_CATEGORY_API(collection);
+        }
+        
+        const data = await fetchDataFromApi(endpoint);
+        if (data && data.data) {
+          // Transform Strapi data to match the expected format
+          const transformedProducts = data.data.map(item => ({
+            id: item.id,
+            title: item.attributes.title,
+            price: item.attributes.price,
+            oldPrice: item.attributes.oldPrice || null,
+            imgSrc: item.attributes.imgSrc?.data?.attributes?.url 
+              ? `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:1337'}${item.attributes.imgSrc.data.attributes.url}`
+              : '/images/placeholder.jpg',
+            imgHover: item.attributes.imgHover?.data?.attributes?.url 
+              ? `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:1337'}${item.attributes.imgHover.data.attributes.url}`
+              : '/images/placeholder.jpg',
+            isOnSale: item.attributes.isOnSale || false,
+            salePercentage: item.attributes.salePercentage || null,
+            hotSale: item.attributes.hotSale || false,
+            inStock: item.attributes.inStock || false,
+            countdown: item.attributes.countdown || null,
+            filterBrands: item.attributes.filterBrands || [],
+            filterColor: item.attributes.filterColor || [],
+            filterSizes: item.attributes.filterSizes || [],
+            tabFilterOptions: item.attributes.tabFilterOptions || [],
+            tabFilterOptions2: item.attributes.tabFilterOptions2 || [],
+            colors: item.attributes.colors || [],
+            sizes: item.attributes.sizes || [],
+            addToCart: item.attributes.addToCart || {},
+            slug: item.attributes.slug || '',
+          }));
+          
+          setProducts(transformedProducts);
+          dispatch({ type: "SET_FILTERED", payload: transformedProducts });
+          dispatch({ type: "SET_SORTED", payload: transformedProducts });
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchProducts();
+  }, [collection]);
+
+  useEffect(() => {
+    if (!products.length) return;
+    
     let filteredArrays = [];
 
     if (brands.length) {
@@ -136,7 +178,7 @@ export default function Products14({ parentClass = "flat-spacing", collection = 
       filteredArrays.every((array) => array.includes(item))
     );
     dispatch({ type: "SET_FILTERED", payload: commonItems });
-  }, [price, availability, color, size, brands, activeFilterOnSale, collection]);
+  }, [price, availability, color, size, brands, activeFilterOnSale, products]);
 
   useEffect(() => {
     if (sortingOption === "Price Ascending") {
@@ -219,7 +261,14 @@ export default function Products14({ parentClass = "flat-spacing", collection = 
           <div className="wrapper-control-shop">
             <FilterMeta productLength={sorted.length} allProps={allProps} />
 
-            {activeLayout == 1 ? (
+            {loading && products.length === 0 ? (
+              <div className="text-center py-5">
+                <div className="spinner-border" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+                <p className="mt-2">Loading products...</p>
+              </div>
+            ) : activeLayout == 1 ? (
               <div className="tf-list-layout wrapper-shop" id="listLayout">
                 <Listview pagination={false} products={loadedItems} />
                 {sorted.length == loadedItems.length ? (
@@ -229,6 +278,7 @@ export default function Products14({ parentClass = "flat-spacing", collection = 
                     className={`load-more-btn btn-out-line tf-loading ${
                       loading ? "loading" : ""
                     } `}
+                    onClick={() => handleLoad()}
                   >
                     <span className="text-btn">Load more</span>
                   </button>
@@ -262,7 +312,7 @@ export default function Products14({ parentClass = "flat-spacing", collection = 
         </div>
       </section>
 
-      <FilterModal allProps={allProps} />
+      <FilterModal allProps={allProps} products={products} />
     </>
   );
 }

@@ -1,19 +1,13 @@
-import { productWomen } from "@/data/productsWomen";
-import { productMen } from "@/data/productsMen"; // Add this import
-import { productKids } from "@/data/productsKids"; // Add this import
-
 export const initialState = {
   price: [20, 300],
-
   availability: "All",
-
   color: "All",
   size: "All",
   activeFilterOnSale: false,
   brands: [],
-  filtered: [...productWomen, ...productMen, ...productKids], // Combine all product data
+  filtered: [], // Will be populated from API
   sortingOption: "Sort by (Default)",
-  sorted: [...productWomen, ...productMen, ...productKids], // Combine all product data
+  sorted: [], // Will be populated from API
   currentPage: 1,
   itemPerPage: 6,
 };

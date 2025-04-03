@@ -7,13 +7,18 @@ import {
   colors,
   sizes,
 } from "@/data/productFilterOptions";
-import { productWomen } from "@/data/productsWomen";
-import { productMen } from "@/data/productsMen"; // Add this import
-import { productKids } from "@/data/productsKids"; // Add this import
-
 import RangeSlider from "react-range-slider-input";
 
-export default function FilterModal({ allProps }) {
+export default function FilterModal({ allProps, products = [] }) {
+  // Calculate product counts based on the actual products from the API
+  const getAvailabilityCount = (option) => {
+    return products.filter(el => el.inStock === option.value).length;
+  };
+
+  const getBrandCount = (brand) => {
+    return products.filter(el => el.filterBrands && el.filterBrands.includes(brand.label)).length;
+  };
+
   return (
     <div className="offcanvas offcanvas-start canvas-filter" id="filterShop">
       <div className="canvas-wrapper">
@@ -131,13 +136,7 @@ export default function FilterModal({ allProps }) {
                   <label>
                     {option.label}{" "}
                     <span className="count-stock">
-                      (
-                      {
-                        [...productWomen, ...productMen, ...productKids].filter(
-                          (el) => el.inStock == option.value
-                        ).length
-                      }
-                      )
+                      ({getAvailabilityCount(option)})
                     </span>
                   </label>
                 </fieldset>
@@ -163,13 +162,7 @@ export default function FilterModal({ allProps }) {
                   <label>
                     {brand.label}{" "}
                     <span className="count-brand">
-                      (
-                      {
-                        [...productWomen, ...productMen, ...productKids].filter(
-                          (el) => el.filterBrands.includes(brand.label)
-                        ).length
-                      }
-                      )
+                      ({getBrandCount(brand)})
                     </span>
                   </label>
                 </fieldset>

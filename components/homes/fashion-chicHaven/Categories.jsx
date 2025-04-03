@@ -36,7 +36,7 @@ export default function Collections() {
     <section className="flat-spacing">
       <div className="container">
         <div className="heading-section-2 wow fadeInUp">
-          <h3 className="heading">Explore Categories</h3>
+          <h3 className="heading">Explore</h3>
         </div>
         <Swiper
           spaceBetween={10}
