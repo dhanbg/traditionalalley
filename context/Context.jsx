@@ -90,26 +90,80 @@ export default function Context({ children }) {
     }
     return false;
   };
+  
+  // Load cart data based on user login status
   useEffect(() => {
-    const items = JSON.parse(localStorage.getItem("cartList"));
-    if (items?.length) {
-      setCartProducts(items);
+    if (user) {
+      // User is logged in - load cart from user-specific localStorage
+      const userSpecificKey = `cartList_${user.id}`;
+      const items = JSON.parse(localStorage.getItem(userSpecificKey));
+      if (items?.length) {
+        setCartProducts(items);
+      } else {
+        // If user has no cart yet, but there are items in the anonymous cart,
+        // migrate those items to the user's cart
+        const anonymousItems = JSON.parse(localStorage.getItem("cartList"));
+        if (anonymousItems?.length) {
+          setCartProducts(anonymousItems);
+          localStorage.setItem(userSpecificKey, JSON.stringify(anonymousItems));
+          // Optionally clear the anonymous cart
+          localStorage.removeItem("cartList");
+        }
+      }
+    } else {
+      // No user logged in - load from anonymous localStorage
+      const items = JSON.parse(localStorage.getItem("cartList"));
+      if (items?.length) {
+        setCartProducts(items);
+      }
     }
-  }, []);
+  }, [user]); // Re-run when user changes (login/logout)
 
+  // Save cart data based on user login status
   useEffect(() => {
-    localStorage.setItem("cartList", JSON.stringify(cartProducts));
-  }, [cartProducts]);
-  useEffect(() => {
-    const items = JSON.parse(localStorage.getItem("wishlist"));
-    if (items?.length) {
-      setWishList(items);
+    if (user) {
+      // User is logged in - save to user-specific localStorage
+      localStorage.setItem(`cartList_${user.id}`, JSON.stringify(cartProducts));
+    } else {
+      // No user logged in - save to anonymous localStorage
+      localStorage.setItem("cartList", JSON.stringify(cartProducts));
     }
-  }, []);
-
+  }, [cartProducts, user]);
+  
+  // Load wishlist based on user login status
   useEffect(() => {
-    localStorage.setItem("wishlist", JSON.stringify(wishList));
-  }, [wishList]);
+    if (user) {
+      const userSpecificKey = `wishlist_${user.id}`;
+      const items = JSON.parse(localStorage.getItem(userSpecificKey));
+      if (items?.length) {
+        setWishList(items);
+      } else {
+        // If user has no wishlist yet, but there are items in the anonymous wishlist,
+        // migrate those items to the user's wishlist
+        const anonymousItems = JSON.parse(localStorage.getItem("wishlist"));
+        if (anonymousItems?.length) {
+          setWishList(anonymousItems);
+          localStorage.setItem(userSpecificKey, JSON.stringify(anonymousItems));
+          // Optionally clear the anonymous wishlist
+          localStorage.removeItem("wishlist");
+        }
+      }
+    } else {
+      const items = JSON.parse(localStorage.getItem("wishlist"));
+      if (items?.length) {
+        setWishList(items);
+      }
+    }
+  }, [user]);
+
+  // Save wishlist based on user login status
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(`wishlist_${user.id}`, JSON.stringify(wishList));
+    } else {
+      localStorage.setItem("wishlist", JSON.stringify(wishList));
+    }
+  }, [wishList, user]);
 
   const contextElement = {
     user,
