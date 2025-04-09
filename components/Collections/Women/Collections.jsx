@@ -1,17 +1,55 @@
 "use client";
 import Link from "next/link";
-import { categoriesData } from "@/data/catnames";
+import { useState, useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
 import { Navigation, Pagination } from "swiper/modules";
+import { fetchDataFromApi } from "@/utils/api";
+import { API_URL } from "@/utils/urls";
 export default function Collections() {
+  const [collections, setCollections] = useState([]);
+  useEffect(() => {
+    const fetchCollections = async () => {
+      const response = await fetchDataFromApi("/api/collections?populate=*");
+      console.log(response);
+      const transformedCollections = response.data.map((item) => ({
+        id: item.id,
+        name: item.attributes?.name || item.name || "Unnamed Collection",
+        slug: item.attributes?.slug || item.slug || `collection-${item.id}`,
+        image: getImageUrl(item),
+      }));
+      setCollections(transformedCollections);
+    };
+
+    // Helper function to extract the correct image URL
+    const getImageUrl = (item) => {
+      // For attributes-based structure (Strapi v4)
+      if (item.attributes?.image?.data?.attributes) {
+        const imageData = item.attributes.image.data.attributes;
+        // Use medium format if available, otherwise use the main URL
+        const imageUrl = imageData.formats?.medium?.url || imageData.url;
+        return imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`;
+      }
+      
+      // For direct structure (your example)
+      if (item.image) {
+        // Use medium format if available, otherwise use the main URL
+        const imageUrl = item.image.formats?.medium?.url || item.image.url;
+        return imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`;
+      }
+      
+      return "/placeholder.jpg";
+    };
+
+    fetchCollections();
+  }, []);
   return (
     <section className="flat-spacing-2">
       <div className="container">
         <div className="heading-section text-center wow fadeInUp">
           <h3 className="heading">Explore Collections</h3>
           <p className="subheading">
-            Browse our Top Trending: the hottest picks loved by all.
+            Browse our Top Trending: the hottest picks loved by al
           </p>
         </div>
         <div
@@ -50,7 +88,7 @@ export default function Collections() {
                 nextEl: ".snbn3",
               }}
             >
-              {categoriesData.women.map((collection, index) => (
+              {collections.map((collection, index) => (
                 <SwiperSlide key={index}>
                   <div className="collection-circle hover-img">
                     <Link
