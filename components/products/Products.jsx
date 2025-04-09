@@ -100,23 +100,39 @@ export default function Products14({ parentClass = "flat-spacing", collection = 
         let imgSrcUrl = '/images/placeholder.jpg';
         let imgHoverUrl = '/images/placeholder.jpg';
         
+        // Function to construct a valid image URL
+        const getFullImageUrl = (imagePath) => {
+          // If path is already an absolute URL, return it
+          if (imagePath.startsWith('http')) {
+            return imagePath;
+          }
+          
+          // If path already starts with a slash, join with domain
+          if (imagePath.startsWith('/')) {
+            return `https://admin.traditionalalley.com.np${imagePath}`;
+          }
+          
+          // Otherwise, add slash and join
+          return `https://admin.traditionalalley.com.np/${imagePath}`;
+        };
+        
         // Get main image (imgSrc)
         if (response.data.imgSrc) {
           if (response.data.imgSrc.formats && response.data.imgSrc.formats.large) {
-            imgSrcUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:1337'}${response.data.imgSrc.formats.large.url}`;
+            imgSrcUrl = getFullImageUrl(response.data.imgSrc.formats.large.url);
           } else if (response.data.imgSrc.url) {
-            imgSrcUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:1337'}${response.data.imgSrc.url}`;
+            imgSrcUrl = getFullImageUrl(response.data.imgSrc.url);
           }
         }
         
         // Get hover image (imgHover)
         if (response.data.imgHover) {
           if (response.data.imgHover.formats && response.data.imgHover.formats.large) {
-            imgHoverUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:1337'}${response.data.imgHover.formats.large.url}`;
+            imgHoverUrl = getFullImageUrl(response.data.imgHover.formats.large.url);
           } else if (response.data.imgHover.formats && response.data.imgHover.formats.small) {
-            imgHoverUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:1337'}${response.data.imgHover.formats.small.url}`;
+            imgHoverUrl = getFullImageUrl(response.data.imgHover.formats.small.url);
           } else if (response.data.imgHover.url) {
-            imgHoverUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:1337'}${response.data.imgHover.url}`;
+            imgHoverUrl = getFullImageUrl(response.data.imgHover.url);
           }
         }
         
