@@ -9,7 +9,13 @@ import FilterModal from "./FilterModal";
 import { initialState, reducer } from "@/reducer/filterReducer";
 import FilterMeta from "./FilterMeta";
 import { fetchDataFromApi } from "@/utils/api";
-import { PRODUCTS_API, PRODUCTS_BY_CATEGORY_API } from "@/utils/urls";
+import { 
+  PRODUCTS_API, 
+  PRODUCTS_BY_CATEGORY_API, 
+  COLLECTION_BY_SLUG_API,
+  COLLECTION_BY_DOCUMENT_ID_API,
+  PRODUCT_BY_DOCUMENT_ID_API
+} from "@/utils/urls";
 
 export default function Products14({ parentClass = "flat-spacing", collection = 'bossLady' }) {
   const [activeLayout, setActiveLayout] = useState(4);
@@ -17,6 +23,7 @@ export default function Products14({ parentClass = "flat-spacing", collection = 
   const [loading, setLoading] = useState(false);
   const [loadedItems, setLoadedItems] = useState([]);
   const [products, setProducts] = useState([]);
+  const [collectionData, setCollectionData] = useState(null);
 
   const {
     price,
@@ -79,60 +86,214 @@ export default function Products14({ parentClass = "flat-spacing", collection = 
     },
   };
 
-  // Fetch products from API
+  // Fetch product details including image URLs
+  const fetchProductDetails = async (product) => {
+    try {
+      if (!product.documentId) {
+        return product;
+      }
+      
+      const response = await fetchDataFromApi(PRODUCT_BY_DOCUMENT_ID_API(product.documentId));
+      
+      if (response && response.data) {
+        // Extract image URLs from the response, preferring large format
+        let imgSrcUrl = '/images/placeholder.jpg';
+        let imgHoverUrl = '/images/placeholder.jpg';
+        
+        // Get main image (imgSrc)
+        if (response.data.imgSrc) {
+          if (response.data.imgSrc.formats && response.data.imgSrc.formats.large) {
+            imgSrcUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:1337'}${response.data.imgSrc.formats.large.url}`;
+          } else if (response.data.imgSrc.url) {
+            imgSrcUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:1337'}${response.data.imgSrc.url}`;
+          }
+        }
+        
+        // Get hover image (imgHover)
+        if (response.data.imgHover) {
+          if (response.data.imgHover.formats && response.data.imgHover.formats.large) {
+            imgHoverUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:1337'}${response.data.imgHover.formats.large.url}`;
+          } else if (response.data.imgHover.formats && response.data.imgHover.formats.small) {
+            imgHoverUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:1337'}${response.data.imgHover.formats.small.url}`;
+          } else if (response.data.imgHover.url) {
+            imgHoverUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:1337'}${response.data.imgHover.url}`;
+          }
+        }
+        
+        return {
+          ...product,
+          imgSrc: imgSrcUrl,
+          imgHover: imgHoverUrl,
+          // Update any other fields from the detailed response if needed
+          inStock: response.data.inStock !== undefined ? response.data.inStock : product.inStock,
+          isOnSale: response.data.isOnSale !== undefined ? response.data.isOnSale : product.isOnSale,
+          oldPrice: response.data.oldPrice || product.oldPrice,
+          filterBrands: response.data.filterBrands || product.filterBrands,
+          filterColor: response.data.filterColor || product.filterColor,
+          filterSizes: response.data.filterSizes || product.filterSizes
+        };
+      }
+      
+      return product;
+    } catch (error) {
+      return product;
+    }
+  };
+
+  // Transform products and fetch detailed info including images
+  const transformAndFetchProductDetails = async (productsData) => {
+    if (!Array.isArray(productsData)) {
+      return [];
+    }
+
+    // First transform the basic product data
+    const basicTransformedProducts = productsData.map(item => {
+      try {
+        if (!item) return null;
+        
+        return {
+          id: item.id || 0,
+          documentId: item.documentId || "",
+          title: item.title || "Unknown Product",
+          price: typeof item.price === 'number' ? item.price : 0,
+          oldPrice: item.oldPrice || null,
+          imgSrc: '/images/placeholder.jpg', // Placeholder until we fetch detailed info
+          imgHover: '/images/placeholder.jpg', // Placeholder until we fetch detailed info
+          isOnSale: Boolean(item.isOnSale),
+          salePercentage: item.salePercentage || null,
+          hotSale: Boolean(item.hotSale),
+          inStock: Boolean(item.inStock),
+          countdown: item.countdown || null,
+          filterBrands: Array.isArray(item.filterBrands) ? item.filterBrands : [],
+          filterColor: Array.isArray(item.filterColor) ? item.filterColor : [],
+          filterSizes: Array.isArray(item.filterSizes) ? item.filterSizes : [],
+          tabFilterOptions: Array.isArray(item.tabFilterOptions) ? item.tabFilterOptions : [],
+          tabFilterOptions2: Array.isArray(item.tabFilterOptions2) ? item.tabFilterOptions2 : [],
+          colors: Array.isArray(item.colors) ? item.colors : [],
+          sizes: Array.isArray(item.sizes) ? item.sizes : [],
+          addToCart: item.addToCart || {},
+          slug: item.slug || '',
+        };
+      } catch (err) {
+        return null;
+      }
+    }).filter(Boolean); // Remove any null items
+    
+    // Fetch detailed product info for each product
+    const detailedProducts = await Promise.all(
+      basicTransformedProducts.map(product => fetchProductDetails(product))
+    );
+    
+    return detailedProducts;
+  };
+
+  // Fetch collection by slug, then fetch products by collection ID
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchCollectionAndProducts = async () => {
       try {
         setLoading(true);
-        let endpoint = PRODUCTS_API;
+        let productsData = [];
         
-        // If collection is specified, fetch products by category
         if (collection && collection !== 'all') {
-          endpoint = PRODUCTS_BY_CATEGORY_API(collection);
+          const collectionResponse = await fetchDataFromApi(COLLECTION_BY_SLUG_API(collection));
+          
+          if (collectionResponse && collectionResponse.data && Array.isArray(collectionResponse.data) && collectionResponse.data.length > 0) {
+            const collectionData = collectionResponse.data[0];
+            
+            if (collectionData && typeof collectionData === 'object') {
+              if (collectionData.attributes) {
+                // Get documentId from attributes or directly from the object
+                let documentId = null;
+                if (collectionData.attributes.documentId) {
+                  documentId = collectionData.attributes.documentId;
+                } else if (collectionData.documentId) {
+                  documentId = collectionData.documentId;
+                } else {
+                  // If no documentId, try to use the id
+                  documentId = collectionData.id;
+                }
+                
+                if (documentId) {
+                  setCollectionData(collectionData);
+                  
+                  // Then fetch products using the collection documentId
+                  const productsResponse = await fetchDataFromApi(COLLECTION_BY_DOCUMENT_ID_API(documentId));
+                  
+                  // Check if we have products in the response, looking at different possible locations
+                  if (productsResponse && productsResponse.data) {
+                    if (productsResponse.data.attributes && productsResponse.data.attributes.products) {
+                      productsData = productsResponse.data.attributes.products;
+                    } else if (Array.isArray(productsResponse.data)) {
+                      productsData = productsResponse.data;
+                    } else if (productsResponse.data.products) {
+                      productsData = productsResponse.data.products;
+                    }
+                  }
+                } else {
+                  // Fallback to category-based product fetching
+                  const categoryResponse = await fetchDataFromApi(PRODUCTS_BY_CATEGORY_API(collection));
+                  if (categoryResponse && categoryResponse.data) {
+                    productsData = categoryResponse.data;
+                  }
+                }
+              } else if (collectionData.documentId) {
+                const productsResponse = await fetchDataFromApi(COLLECTION_BY_DOCUMENT_ID_API(collectionData.documentId));
+                
+                // Similar product extraction logic...
+                if (productsResponse && productsResponse.data) {
+                  if (productsResponse.data.attributes && productsResponse.data.attributes.products) {
+                    productsData = productsResponse.data.attributes.products;
+                  } else if (Array.isArray(productsResponse.data)) {
+                    productsData = productsResponse.data;
+                  } else if (productsResponse.data.products) {
+                    productsData = productsResponse.data.products;
+                  }
+                }
+              } else {
+                // Fallback to category-based approach
+                const categoryResponse = await fetchDataFromApi(PRODUCTS_BY_CATEGORY_API(collection));
+                if (categoryResponse && categoryResponse.data) {
+                  productsData = categoryResponse.data;
+                }
+              }
+            } else {
+              // Fallback to category-based approach
+              const categoryResponse = await fetchDataFromApi(PRODUCTS_BY_CATEGORY_API(collection));
+              if (categoryResponse && categoryResponse.data) {
+                productsData = categoryResponse.data;
+              }
+            }
+          } else {
+            // Fallback to category-based product fetching
+            const categoryResponse = await fetchDataFromApi(PRODUCTS_BY_CATEGORY_API(collection));
+            if (categoryResponse && categoryResponse.data) {
+              productsData = categoryResponse.data;
+            }
+          }
+        } else {
+          // If no collection specified, fetch all products
+          const allProductsResponse = await fetchDataFromApi(PRODUCTS_API);
+          if (allProductsResponse && allProductsResponse.data) {
+            productsData = allProductsResponse.data;
+          }
         }
         
-        const data = await fetchDataFromApi(endpoint);
-        if (data && data.data) {
-          // Transform Strapi data to match the expected format
-          const transformedProducts = data.data.map(item => ({
-            id: item.id,
-            title: item.attributes.title,
-            price: item.attributes.price,
-            oldPrice: item.attributes.oldPrice || null,
-            imgSrc: item.attributes.imgSrc?.data?.attributes?.url 
-              ? `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:1337'}${item.attributes.imgSrc.data.attributes.url}`
-              : '/images/placeholder.jpg',
-            imgHover: item.attributes.imgHover?.data?.attributes?.url 
-              ? `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:1337'}${item.attributes.imgHover.data.attributes.url}`
-              : '/images/placeholder.jpg',
-            isOnSale: item.attributes.isOnSale || false,
-            salePercentage: item.attributes.salePercentage || null,
-            hotSale: item.attributes.hotSale || false,
-            inStock: item.attributes.inStock || false,
-            countdown: item.attributes.countdown || null,
-            filterBrands: item.attributes.filterBrands || [],
-            filterColor: item.attributes.filterColor || [],
-            filterSizes: item.attributes.filterSizes || [],
-            tabFilterOptions: item.attributes.tabFilterOptions || [],
-            tabFilterOptions2: item.attributes.tabFilterOptions2 || [],
-            colors: item.attributes.colors || [],
-            sizes: item.attributes.sizes || [],
-            addToCart: item.attributes.addToCart || {},
-            slug: item.attributes.slug || '',
-          }));
-          
-          setProducts(transformedProducts);
-          dispatch({ type: "SET_FILTERED", payload: transformedProducts });
-          dispatch({ type: "SET_SORTED", payload: transformedProducts });
-        }
+        // Use the transform and fetch function
+        const transformedProducts = await transformAndFetchProductDetails(productsData);
+        
+        setProducts(transformedProducts);
+        dispatch({ type: "SET_FILTERED", payload: transformedProducts });
+        dispatch({ type: "SET_SORTED", payload: transformedProducts });
       } catch (error) {
-        console.error("Error fetching products:", error);
+        setProducts([]);
+        dispatch({ type: "SET_FILTERED", payload: [] });
+        dispatch({ type: "SET_SORTED", payload: [] });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchCollectionAndProducts();
   }, [collection]);
 
   useEffect(() => {

@@ -5,10 +5,8 @@ import Products from "@/components/products/Products";
 import Link from "next/link";
 import React from "react";
 
-export default function page() {
-  // You would typically get the slug from the URL in a Next.js page
-  // For this example, we're hardcoding "women" as the collection slug
-  const collectionSlug = "women";
+export default function CollectionPage({ params }) {
+  const { slug } = params;
 
   return (
     <>
@@ -21,7 +19,7 @@ export default function page() {
         <div className="container-full">
           <div className="row">
             <div className="col-12">
-              <h3 className="heading text-center">Women</h3>
+              <h3 className="heading text-center">{slug.charAt(0).toUpperCase() + slug.slice(1)}</h3>
               <ul className="breadcrumbs d-flex align-items-center justify-content-center">
                 <li>
                   <Link className="link" href={`/`}>
@@ -31,14 +29,22 @@ export default function page() {
                 <li>
                   <i className="icon-arrRight" />
                 </li>
-                <li>Women</li>
+                <li>
+                  <Link className="link" href={`/collections`}>
+                    Collections
+                  </Link>
+                </li>
+                <li>
+                  <i className="icon-arrRight" />
+                </li>
+                <li>{slug.charAt(0).toUpperCase() + slug.slice(1)}</li>
               </ul>
             </div>
           </div>
         </div>
       </div>
-      <Products collection={collectionSlug} />
+      <Products collection={slug} />
       <Footer1 />
     </>
   );
-}
+} 
