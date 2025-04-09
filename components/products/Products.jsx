@@ -89,68 +89,49 @@ export default function Products14({ parentClass = "flat-spacing", collection = 
   // Fetch product details including image URLs
   const fetchProductDetails = async (product) => {
     try {
-      if (!product.documentId) {
-        return product;
-      }
+      if (!product.documentId) return product;
       
       const response = await fetchDataFromApi(PRODUCT_BY_DOCUMENT_ID_API(product.documentId));
       
-      if (response && response.data) {
-        // Extract image URLs from the response, preferring large format
-        let imgSrcUrl = '/images/placeholder.jpg';
-        let imgHoverUrl = '/images/placeholder.jpg';
-        
-        // Function to construct a valid image URL
-        const getFullImageUrl = (imagePath) => {
-          // If path is already an absolute URL, return it
-          if (imagePath.startsWith('http')) {
-            return imagePath;
-          }
-          
-          // If path already starts with a slash, join with domain
-          if (imagePath.startsWith('/')) {
-            return `https://admin.traditionalalley.com.np${imagePath}`;
-          }
-          
-          // Otherwise, add slash and join
-          return `https://admin.traditionalalley.com.np/${imagePath}`;
-        };
-        
-        // Get main image (imgSrc)
-        if (response.data.imgSrc) {
-          if (response.data.imgSrc.formats && response.data.imgSrc.formats.large) {
-            imgSrcUrl = getFullImageUrl(response.data.imgSrc.formats.large.url);
-          } else if (response.data.imgSrc.url) {
-            imgSrcUrl = getFullImageUrl(response.data.imgSrc.url);
-          }
-        }
-        
-        // Get hover image (imgHover)
-        if (response.data.imgHover) {
-          if (response.data.imgHover.formats && response.data.imgHover.formats.large) {
-            imgHoverUrl = getFullImageUrl(response.data.imgHover.formats.large.url);
-          } else if (response.data.imgHover.formats && response.data.imgHover.formats.small) {
-            imgHoverUrl = getFullImageUrl(response.data.imgHover.formats.small.url);
-          } else if (response.data.imgHover.url) {
-            imgHoverUrl = getFullImageUrl(response.data.imgHover.url);
-          }
-        }
-        
-        return {
-          ...product,
-          imgSrc: imgSrcUrl,
-          imgHover: imgHoverUrl,
-          // Update any other fields from the detailed response if needed
-          inStock: response.data.inStock !== undefined ? response.data.inStock : product.inStock,
-          isOnSale: response.data.isOnSale !== undefined ? response.data.isOnSale : product.isOnSale,
-          oldPrice: response.data.oldPrice || product.oldPrice,
-          filterBrands: response.data.filterBrands || product.filterBrands,
-          filterColor: response.data.filterColor || product.filterColor,
-          filterSizes: response.data.filterSizes || product.filterSizes
-        };
-      }
+      if (!response?.data) return product;
       
-      return product;
+      // Function to get image URL with the right format
+      const getImageUrl = (imageObj, preferLarge = true) => {
+        if (!imageObj) return '/images/placeholder.jpg';
+        
+        let imageUrl = '';
+        
+        // Get URL from formats or fallback to original
+        if (imageObj.formats) {
+          if (preferLarge && imageObj.formats.large) {
+            imageUrl = imageObj.formats.large.url;
+          } else if (imageObj.formats.small) {
+            imageUrl = imageObj.formats.small.url;
+          }
+        }
+        
+        // Fallback to original URL if formats not available
+        if (!imageUrl && imageObj.url) {
+          imageUrl = imageObj.url;
+        }
+        
+        // Ensure URL is absolute
+        if (!imageUrl) return '/images/placeholder.jpg';
+        if (imageUrl.startsWith('http')) return imageUrl;
+        return `https://admin.traditionalalley.com.np${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+      };
+      
+      return {
+        ...product,
+        imgSrc: getImageUrl(response.data.imgSrc, true),
+        imgHover: getImageUrl(response.data.imgHover, true),
+        inStock: response.data.inStock ?? product.inStock,
+        isOnSale: response.data.isOnSale ?? product.isOnSale,
+        oldPrice: response.data.oldPrice || product.oldPrice,
+        filterBrands: response.data.filterBrands || product.filterBrands,
+        filterColor: response.data.filterColor || product.filterColor,
+        filterSizes: response.data.filterSizes || product.filterSizes
+      };
     } catch (error) {
       return product;
     }
