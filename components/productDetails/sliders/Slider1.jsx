@@ -10,12 +10,56 @@ export default function Slider1({
   activeColor = "gray",
   setActiveColor = () => {},
   firstItem,
+  imgHover,
+  gallery = [],
   slideItems = slides,
   thumbSlidePerView = 6,
   thumbSlidePerViewOnMobile = 6,
 }) {
-  const items = [...slideItems];
-  items[0].src = firstItem ?? items[0].src;
+  // Use gallery if provided, or fallback to slideItems
+  const useGallery = gallery && gallery.length > 0;
+  
+  let items = [...slideItems];
+  
+  // If we have a gallery from API, use that instead
+  if (useGallery) {
+    items = gallery.map((item, idx) => ({
+      id: idx + 2, // Start from 2 to leave room for main image and hover image
+      src: item.url,
+      alt: `Gallery image ${idx + 1}`,
+      color: activeColor,
+      width: 600,
+      height: 800
+    }));
+    
+    // Add the main product image and hover image at the beginning
+    // If we have a firstItem (main product image), add it at the beginning
+    if (firstItem) {
+      items.unshift({
+        id: 0,
+        src: firstItem,
+        alt: "Main product image",
+        color: activeColor,
+        width: 600,
+        height: 800
+      });
+    }
+    
+    // If we have an imgHover, add it as second item
+    if (imgHover && imgHover !== firstItem) {
+      items.splice(1, 0, {
+        id: 1,
+        src: imgHover,
+        alt: "Product hover image",
+        color: activeColor,
+        width: 600,
+        height: 800
+      });
+    }
+  } else {
+    // Using default slide items
+    items[0].src = firstItem ?? items[0].src;
+  }
 
   const lightboxRef = useRef(null);
   useEffect(() => {
@@ -40,20 +84,52 @@ export default function Slider1({
   const [thumbsSwiper, setThumbsSwiper] = useState(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const swiperRef = useRef(null);
+  
+  // Function to get the image URL for the selected color
+  const getColorImageUrl = (colorName) => {
+    // Check if we have color objects with imgSrc property in the slideItems
+    const colorObj = slideItems.find(item => 
+      item.color && item.color.toLowerCase() === colorName.toLowerCase() && item.imgSrc
+    );
+    
+    // Return the color's image URL if found, otherwise use the first item
+    return colorObj?.imgSrc || firstItem;
+  };
+  
   useEffect(() => {
-    if (!(items[activeIndex].color == activeColor)) {
+    if (!useGallery && !(items[activeIndex].color == activeColor)) {
       const slideIndex =
         items.filter((elm) => elm.color == activeColor)[0]?.id - 1;
-      swiperRef.current.slideTo(slideIndex);
+      if (swiperRef.current && slideIndex !== undefined) {
+        swiperRef.current.slideTo(slideIndex);
+      }
     }
-  }, [activeColor]);
+    
+    // If the activeColor changes, update the main image with the image for that color
+    if (useGallery) {
+      // Find image URL for the selected color
+      const colorImageUrl = getColorImageUrl(activeColor);
+      
+      // If we have a color-specific image, update the first item
+      if (colorImageUrl && items.length > 0) {
+        items[0].src = colorImageUrl;
+        
+        // If the swiper is initialized, slide to the first image
+        if (swiperRef.current) {
+          swiperRef.current.slideTo(0);
+        }
+      }
+    }
+  }, [activeColor, useGallery, items, activeIndex, firstItem]);
+  
   useEffect(() => {
     setTimeout(() => {
-      if (swiperRef.current) {
+      if (swiperRef.current && !useGallery) {
         swiperRef.current.slideTo(1);
-        swiperRef.current.slideTo(
-          items.filter((elm) => elm.color == activeColor)[0]?.id - 1
-        );
+        const slideIndex = items.filter((elm) => elm.color == activeColor)[0]?.id - 1;
+        if (slideIndex !== undefined) {
+          swiperRef.current.slideTo(slideIndex);
+        }
       }
     });
   }, []);

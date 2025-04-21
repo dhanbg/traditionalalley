@@ -4,6 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import CountdownTimer from "../common/Countdown";
 import { useContextElement } from "@/context/Context";
+import { fetchDataFromApi } from "@/utils/api";
+import { PRODUCT_BY_DOCUMENT_ID_API } from "@/utils/urls";
+
 const discounts = [
   {
     discount: "10% OFF",
@@ -42,20 +45,68 @@ const shippingOptions = [
 export default function ShopCart() {
   const [activeDiscountIndex, setActiveDiscountIndex] = useState(1);
   const [selectedOption, setSelectedOption] = useState(shippingOptions[0]);
-  const { cartProducts, setCartProducts, totalPrice } = useContextElement();
+  const {
+    cartProducts,
+    setCartProducts,
+    updateQuantity,
+    removeFromCart,
+    totalPrice
+  } = useContextElement();
+  const [selectedColors, setSelectedColors] = useState({});
+  const [selectedSizes, setSelectedSizes] = useState({});
+  
+  useEffect(() => {
+    const initialColors = {};
+    const initialSizes = {};
+    
+    cartProducts.forEach(product => {
+      if (product.colors && product.colors.length > 0) {
+        const colorName = typeof product.colors[0] === 'string' 
+          ? product.colors[0] 
+          : (product.colors[0].name || '');
+        initialColors[product.id] = colorName;
+      }
+      
+      if (product.sizes && product.sizes.length > 0) {
+        initialSizes[product.id] = product.sizes[0];
+      }
+    });
+    
+    setSelectedColors(initialColors);
+    setSelectedSizes(initialSizes);
+  }, [cartProducts]);
+  
+  const handleColorChange = (productId, color) => {
+    setSelectedColors(prev => ({
+      ...prev,
+      [productId]: color
+    }));
+  };
+  
+  const handleSizeChange = (productId, size) => {
+    setSelectedSizes(prev => ({
+      ...prev,
+      [productId]: size
+    }));
+  };
+
   const setQuantity = (id, quantity) => {
-    if (quantity >= 1) {
-      const item = cartProducts.filter((elm) => elm.id == id)[0];
-      const items = [...cartProducts];
-      const itemIndex = items.indexOf(item);
-      item.quantity = quantity;
-      items[itemIndex] = item;
-      setCartProducts(items);
-    }
+    // Don't allow quantities less than 1
+    if (quantity < 1) return;
+    
+    // Use the updateQuantity function from Context
+    // This will update both frontend state and backend
+    updateQuantity(id, quantity);
   };
-  const removeItem = (id) => {
-    setCartProducts((pre) => [...pre.filter((elm) => elm.id != id)]);
+  
+  const removeItem = (id, cartDocumentId) => {
+    console.log(`ShopCart: Removing item with ID: ${id}, cartDocumentId: ${cartDocumentId}`);
+    
+    // Instead of just updating the state, use the removeFromCart function
+    // which handles both frontend state and backend deletion
+    removeFromCart(id, cartDocumentId);
   };
+  
   const handleOptionChange = (elm) => {
     setSelectedOption(elm);
   };
@@ -130,7 +181,7 @@ export default function ShopCart() {
                         <tr key={i} className="tf-cart-item file-delete">
                           <td className="tf-cart-item_product">
                             <Link
-                              href={`/product-detail/${elm.id}`}
+                              href={`/product-detail/${elm.documentId}`}
                               className="img-box"
                             >
                               <Image
@@ -142,33 +193,46 @@ export default function ShopCart() {
                             </Link>
                             <div className="cart-info">
                               <Link
-                                href={`/product-detail/${elm.id}`}
+                                href={`/product-detail/${elm.documentId}`}
                                 className="cart-title link"
                               >
                                 {elm.title}
                               </Link>
                               <div className="variant-box">
-                                <div className="tf-select">
-                                  <select>
-                                    <option>Blue</option>
-                                    <option>Black</option>
-                                    <option>White</option>
-                                    <option>Red</option>
-                                    <option>Beige</option>
-                                    <option>Pink</option>
-                                  </select>
-                                </div>
-                                <div className="tf-select">
-                                  <select>
-                                    <option>XL</option>
-                                    <option>XS</option>
-                                    <option>S</option>
-                                    <option>M</option>
-                                    <option>L</option>
-                                    <option>XL</option>
-                                    <option>2XL</option>
-                                  </select>
-                                </div>
+                                {elm.colors && elm.colors.length > 0 && (
+                                  <div className="tf-select">
+                                    <select
+                                      value={selectedColors[elm.id] || ''}
+                                      onChange={(e) => handleColorChange(elm.id, e.target.value)}
+                                    >
+                                      {elm.colors.map((color, index) => {
+                                        const colorName = typeof color === 'string' 
+                                          ? color 
+                                          : (color.name || '');
+                                        return (
+                                          <option key={index} value={colorName}>
+                                            {colorName}
+                                          </option>
+                                        );
+                                      })}
+                                    </select>
+                                  </div>
+                                )}
+                                
+                                {elm.sizes && elm.sizes.length > 0 && (
+                                  <div className="tf-select">
+                                    <select
+                                      value={selectedSizes[elm.id] || ''}
+                                      onChange={(e) => handleSizeChange(elm.id, e.target.value)}
+                                    >
+                                      {elm.sizes.map((size, index) => (
+                                        <option key={index} value={size}>
+                                          {size}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </td>
@@ -221,7 +285,7 @@ export default function ShopCart() {
                           <td
                             data-cart-title="Remove"
                             className="remove-cart"
-                            onClick={() => removeItem(elm.id)}
+                            onClick={() => removeItem(elm.id, elm.cartDocumentId)}
                           >
                             <span className="remove icon icon-close" />
                           </td>

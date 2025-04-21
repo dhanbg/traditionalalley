@@ -7,23 +7,190 @@ import GridView from "./GridView";
 import { useEffect, useReducer, useState } from "react";
 import FilterModal from "./FilterModal";
 import { initialState, reducer } from "@/reducer/filterReducer";
+import { productWomen } from "@/data/productsWomen";
 import FilterMeta from "./FilterMeta";
 import { fetchDataFromApi } from "@/utils/api";
-import { 
-  PRODUCTS_API, 
-  PRODUCTS_BY_CATEGORY_API, 
-  COLLECTION_BY_SLUG_API,
-  COLLECTION_BY_DOCUMENT_ID_API,
-  PRODUCT_BY_DOCUMENT_ID_API
-} from "@/utils/urls";
+import { COLLECTIONS_API, COLLECTION_BY_SLUG_API, PRODUCTS_API, PRODUCT_BY_DOCUMENT_ID_API, API_URL } from "@/utils/urls";
 
-export default function Products14({ parentClass = "flat-spacing", collection = 'bossLady' }) {
+// Default placeholder image
+const DEFAULT_IMAGE = '/images/placeholder.jpg';
+
+export default function Products({ parentClass = "flat-spacing", collection }) {
   const [activeLayout, setActiveLayout] = useState(4);
   const [state, dispatch] = useReducer(reducer, initialState);
   const [loading, setLoading] = useState(false);
+  const [collections, setCollections] = useState([]);
+  const [collectionProducts, setCollectionProducts] = useState([]);
+  const [productDetails, setProductDetails] = useState([]);
+
   const [loadedItems, setLoadedItems] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [collectionData, setCollectionData] = useState(null);
+
+  // Fetch collection by slug and get its products
+  useEffect(() => {
+    const fetchCollectionProducts = async () => {
+      try {
+        // Use the collection slug to fetch the specific collection
+        const response = await fetchDataFromApi(COLLECTION_BY_SLUG_API(collection));
+        
+        if (response.data && response.data.length > 0) {
+          // Get the first matching collection
+          const collectionData = response.data[0];
+          setCollections([collectionData]);
+          
+          // Products are directly in the collection.products array
+          const products = collectionData.products || [];
+          
+          // Extract document IDs from products
+          const productDocumentIds = products.map(product => product.documentId);
+          
+          setCollectionProducts(products);
+          
+          // Fetch product details for each document ID
+          await fetchProductsByDocumentIds(productDocumentIds);
+        }
+      } catch (error) {
+        console.error("Error fetching collection products:", error);
+      }
+    };
+
+    if (collection) {
+      fetchCollectionProducts();
+    }
+  }, [collection]);
+  
+  // Function to fetch product details by document IDs
+  const fetchProductsByDocumentIds = async (documentIds) => {
+    try {
+      setLoading(true);
+      
+      // Create an array of promises for each product fetch
+      const productPromises = documentIds.map(documentId => 
+        fetchDataFromApi(`/api/products?filters[documentId][$eq]=${documentId}&populate=*`)
+      );
+      
+      // Wait for all promises to resolve
+      const productsResponses = await Promise.all(productPromises);
+      
+      // Process the responses to extract product details
+      const fetchedProducts = productsResponses
+        .filter(response => {
+          // Check if we have valid data
+          return response && 
+                 (response.data || response.data === 0) && 
+                 (Array.isArray(response.data) ? response.data.length > 0 : true);
+        })
+        .map(response => {
+          // Handle both array and direct object responses
+          return Array.isArray(response.data) ? response.data[0] : response.data;
+        });
+      
+      // Transform the products to match the expected structure for ProductCard components
+      const transformedProducts = fetchedProducts.map(product => {
+        // Skip processing if product is undefined or null
+        if (!product) {
+          return null;
+        }
+        
+        // Extract image URLs with proper formatting based on the API response structure
+        let imgSrc = DEFAULT_IMAGE;
+        if (product.imgSrc) {
+          // Check if formats are available
+          if (product.imgSrc.formats && product.imgSrc.formats.medium) {
+            imgSrc = `${API_URL}${product.imgSrc.formats.medium.url}`;
+          } else if (product.imgSrc.url) {
+            imgSrc = `${API_URL}${product.imgSrc.url}`;
+          }
+        }
+        
+        // Ensure imgSrc is never an empty string
+        imgSrc = imgSrc || DEFAULT_IMAGE;
+        
+        // Handle hover image similarly
+        let imgHover = imgSrc; // Default to main image
+        if (product.imgHover) {
+          // Check if formats are available
+          if (product.imgHover.formats && product.imgHover.formats.medium) {
+            imgHover = `${API_URL}${product.imgHover.formats.medium.url}`;
+          } else if (product.imgHover.url) {
+            imgHover = `${API_URL}${product.imgHover.url}`;
+          }
+        }
+        
+        // Ensure imgHover is never an empty string
+        imgHover = imgHover || imgSrc || DEFAULT_IMAGE;
+        
+        // Process colors to ensure they're in the correct format - convert string arrays to objects
+        let processedColors = null;
+        
+        if (Array.isArray(product.colors)) {
+          // If colors is a simple array of strings, convert to objects with color names
+          if (typeof product.colors[0] === 'string') {
+            processedColors = product.colors.map(color => ({
+              name: color,
+              bgColor: `bg-${color.toLowerCase().replace(/\s+/g, '-')}`,
+              // We don't have actual color images, so use the main product image
+              imgSrc: imgSrc
+            }));
+          } else {
+            // If colors is already an array of objects, use as is
+            processedColors = product.colors;
+          }
+        }
+        
+        // Extract gallery images if available
+        const gallery = Array.isArray(product.gallery) 
+          ? product.gallery.map(img => {
+              if (!img) return { id: 0, url: DEFAULT_IMAGE };
+              
+              let imageUrl = DEFAULT_IMAGE;
+              if (img.formats && img.formats.medium) {
+                imageUrl = `${API_URL}${img.formats.medium.url}`;
+              } else if (img.url) {
+                imageUrl = `${API_URL}${img.url}`;
+              }
+              
+              // Ensure gallery image URL is never an empty string
+              imageUrl = imageUrl || DEFAULT_IMAGE;
+              
+              return {
+                id: img.id || img.documentId || 0,
+                url: imageUrl
+              };
+            }) 
+          : [];
+        
+        // Make sure filterSizes is converted to sizes if sizes is null
+        const sizes = product.sizes || product.filterSizes || [];
+        
+        return {
+          ...product,
+          id: product.id || product.documentId || Math.random().toString(36).substring(7),
+          imgSrc,
+          imgHover,
+          gallery,
+          colors: processedColors,
+          sizes,
+          // Make sure other required fields are present
+          title: product.title || "Untitled Product",
+          price: product.price || 0,
+          oldPrice: product.oldPrice || null,
+          isOnSale: !!product.oldPrice,
+          salePercentage: product.salePercentage || "25%"
+        };
+      }).filter(Boolean); // Remove any null values from the array
+      
+      setProductDetails(transformedProducts);
+      
+      // Update the filtered and sorted state with the transformed products
+      dispatch({ type: "SET_FILTERED", payload: transformedProducts });
+      dispatch({ type: "SET_SORTED", payload: transformedProducts });
+      
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching product details:", error);
+      setLoading(false);
+    }
+  };
 
   const {
     price,
@@ -85,258 +252,48 @@ export default function Products14({ parentClass = "flat-spacing", collection = 
       dispatch({ type: "CLEAR_FILTER" });
     },
   };
-
-  // Fetch product details including image URLs
-  const fetchProductDetails = async (product) => {
-    try {
-      if (!product.documentId) return product;
-      
-      const response = await fetchDataFromApi(PRODUCT_BY_DOCUMENT_ID_API(product.documentId));
-      
-      if (!response?.data) return product;
-      
-      // Function to get image URL with the right format
-      const getImageUrl = (imageObj, preferLarge = true) => {
-        if (!imageObj) return '/images/placeholder.jpg';
-        
-        let imageUrl = '';
-        
-        // Get URL from formats or fallback to original
-        if (imageObj.formats) {
-          if (preferLarge && imageObj.formats.large) {
-            imageUrl = imageObj.formats.large.url;
-          } else if (imageObj.formats.small) {
-            imageUrl = imageObj.formats.small.url;
-          }
-        }
-        
-        // Fallback to original URL if formats not available
-        if (!imageUrl && imageObj.url) {
-          imageUrl = imageObj.url;
-        }
-        
-        // Ensure URL is absolute
-        if (!imageUrl) return '/images/placeholder.jpg';
-        if (imageUrl.startsWith('http')) return imageUrl;
-        return `https://admin.traditionalalley.com.np${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
-      };
-      
-      return {
-        ...product,
-        imgSrc: getImageUrl(response.data.imgSrc, true),
-        imgHover: getImageUrl(response.data.imgHover, true),
-        inStock: response.data.inStock ?? product.inStock,
-        isOnSale: response.data.isOnSale ?? product.isOnSale,
-        oldPrice: response.data.oldPrice || product.oldPrice,
-        filterBrands: response.data.filterBrands || product.filterBrands,
-        filterColor: response.data.filterColor || product.filterColor,
-        filterSizes: response.data.filterSizes || product.filterSizes
-      };
-    } catch (error) {
-      return product;
-    }
-  };
-
-  // Transform products and fetch detailed info including images
-  const transformAndFetchProductDetails = async (productsData) => {
-    if (!Array.isArray(productsData)) {
-      return [];
-    }
-
-    // First transform the basic product data
-    const basicTransformedProducts = productsData.map(item => {
-      try {
-        if (!item) return null;
-        
-        return {
-          id: item.id || 0,
-          documentId: item.documentId || "",
-          title: item.title || "Unknown Product",
-          price: typeof item.price === 'number' ? item.price : 0,
-          oldPrice: item.oldPrice || null,
-          imgSrc: '/images/placeholder.jpg', // Placeholder until we fetch detailed info
-          imgHover: '/images/placeholder.jpg', // Placeholder until we fetch detailed info
-          isOnSale: Boolean(item.isOnSale),
-          salePercentage: item.salePercentage || null,
-          hotSale: Boolean(item.hotSale),
-          inStock: Boolean(item.inStock),
-          countdown: item.countdown || null,
-          filterBrands: Array.isArray(item.filterBrands) ? item.filterBrands : [],
-          filterColor: Array.isArray(item.filterColor) ? item.filterColor : [],
-          filterSizes: Array.isArray(item.filterSizes) ? item.filterSizes : [],
-          tabFilterOptions: Array.isArray(item.tabFilterOptions) ? item.tabFilterOptions : [],
-          tabFilterOptions2: Array.isArray(item.tabFilterOptions2) ? item.tabFilterOptions2 : [],
-          colors: Array.isArray(item.colors) ? item.colors : [],
-          sizes: Array.isArray(item.sizes) ? item.sizes : [],
-          addToCart: item.addToCart || {},
-          slug: item.slug || '',
-        };
-      } catch (err) {
-        return null;
-      }
-    }).filter(Boolean); // Remove any null items
-    
-    // Fetch detailed product info for each product
-    const detailedProducts = await Promise.all(
-      basicTransformedProducts.map(product => fetchProductDetails(product))
-    );
-    
-    return detailedProducts;
-  };
-
-  // Fetch collection by slug, then fetch products by collection ID
   useEffect(() => {
-    const fetchCollectionAndProducts = async () => {
-      try {
-        setLoading(true);
-        let productsData = [];
-        
-        if (collection && collection !== 'all') {
-          const collectionResponse = await fetchDataFromApi(COLLECTION_BY_SLUG_API(collection));
-          
-          if (collectionResponse && collectionResponse.data && Array.isArray(collectionResponse.data) && collectionResponse.data.length > 0) {
-            const collectionData = collectionResponse.data[0];
-            
-            if (collectionData && typeof collectionData === 'object') {
-              if (collectionData.attributes) {
-                // Get documentId from attributes or directly from the object
-                let documentId = null;
-                if (collectionData.attributes.documentId) {
-                  documentId = collectionData.attributes.documentId;
-                } else if (collectionData.documentId) {
-                  documentId = collectionData.documentId;
-                } else {
-                  // If no documentId, try to use the id
-                  documentId = collectionData.id;
-                }
-                
-                if (documentId) {
-                  setCollectionData(collectionData);
-                  
-                  // Then fetch products using the collection documentId
-                  const productsResponse = await fetchDataFromApi(COLLECTION_BY_DOCUMENT_ID_API(documentId));
-                  
-                  // Check if we have products in the response, looking at different possible locations
-                  if (productsResponse && productsResponse.data) {
-                    if (productsResponse.data.attributes && productsResponse.data.attributes.products) {
-                      productsData = productsResponse.data.attributes.products;
-                    } else if (Array.isArray(productsResponse.data)) {
-                      productsData = productsResponse.data;
-                    } else if (productsResponse.data.products) {
-                      productsData = productsResponse.data.products;
-                    }
-                  }
-                } else {
-                  // Fallback to category-based product fetching
-                  const categoryResponse = await fetchDataFromApi(PRODUCTS_BY_CATEGORY_API(collection));
-                  if (categoryResponse && categoryResponse.data) {
-                    productsData = categoryResponse.data;
-                  }
-                }
-              } else if (collectionData.documentId) {
-                const productsResponse = await fetchDataFromApi(COLLECTION_BY_DOCUMENT_ID_API(collectionData.documentId));
-                
-                // Similar product extraction logic...
-                if (productsResponse && productsResponse.data) {
-                  if (productsResponse.data.attributes && productsResponse.data.attributes.products) {
-                    productsData = productsResponse.data.attributes.products;
-                  } else if (Array.isArray(productsResponse.data)) {
-                    productsData = productsResponse.data;
-                  } else if (productsResponse.data.products) {
-                    productsData = productsResponse.data.products;
-                  }
-                }
-              } else {
-                // Fallback to category-based approach
-                const categoryResponse = await fetchDataFromApi(PRODUCTS_BY_CATEGORY_API(collection));
-                if (categoryResponse && categoryResponse.data) {
-                  productsData = categoryResponse.data;
-                }
-              }
-            } else {
-              // Fallback to category-based approach
-              const categoryResponse = await fetchDataFromApi(PRODUCTS_BY_CATEGORY_API(collection));
-              if (categoryResponse && categoryResponse.data) {
-                productsData = categoryResponse.data;
-              }
-            }
-          } else {
-            // Fallback to category-based product fetching
-            const categoryResponse = await fetchDataFromApi(PRODUCTS_BY_CATEGORY_API(collection));
-            if (categoryResponse && categoryResponse.data) {
-              productsData = categoryResponse.data;
-            }
-          }
-        } else {
-          // If no collection specified, fetch all products
-          const allProductsResponse = await fetchDataFromApi(PRODUCTS_API);
-          if (allProductsResponse && allProductsResponse.data) {
-            productsData = allProductsResponse.data;
-          }
-        }
-        
-        // Use the transform and fetch function
-        const transformedProducts = await transformAndFetchProductDetails(productsData);
-        
-        setProducts(transformedProducts);
-        dispatch({ type: "SET_FILTERED", payload: transformedProducts });
-        dispatch({ type: "SET_SORTED", payload: transformedProducts });
-      } catch (error) {
-        setProducts([]);
-        dispatch({ type: "SET_FILTERED", payload: [] });
-        dispatch({ type: "SET_SORTED", payload: [] });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCollectionAndProducts();
-  }, [collection]);
-
-  useEffect(() => {
-    if (!products.length) return;
-    
     let filteredArrays = [];
 
     if (brands.length) {
-      const filteredByBrands = [...products].filter((elm) =>
+      const filteredByBrands = [...productWomen].filter((elm) =>
         brands.every((el) => elm.filterBrands.includes(el))
       );
       filteredArrays = [...filteredArrays, filteredByBrands];
     }
     if (availability !== "All") {
-      const filteredByavailability = [...products].filter(
+      const filteredByavailability = [...productWomen].filter(
         (elm) => availability.value === elm.inStock
       );
       filteredArrays = [...filteredArrays, filteredByavailability];
     }
     if (color !== "All") {
-      const filteredByColor = [...products].filter((elm) =>
+      const filteredByColor = [...productWomen].filter((elm) =>
         elm.filterColor.includes(color.name)
       );
       filteredArrays = [...filteredArrays, filteredByColor];
     }
     if (size !== "All" && size !== "Free Size") {
-      const filteredBysize = [...products].filter((elm) =>
+      const filteredBysize = [...productWomen].filter((elm) =>
         elm.filterSizes.includes(size)
       );
       filteredArrays = [...filteredArrays, filteredBysize];
     }
     if (activeFilterOnSale) {
-      const filteredByonSale = [...products].filter((elm) => elm.oldPrice);
+      const filteredByonSale = [...productWomen].filter((elm) => elm.oldPrice);
       filteredArrays = [...filteredArrays, filteredByonSale];
     }
 
-    const filteredByPrice = [...products].filter(
+    const filteredByPrice = [...productWomen].filter(
       (elm) => elm.price >= price[0] && elm.price <= price[1]
     );
     filteredArrays = [...filteredArrays, filteredByPrice];
 
-    const commonItems = [...products].filter((item) =>
+    const commonItems = [...productWomen].filter((item) =>
       filteredArrays.every((array) => array.includes(item))
     );
     dispatch({ type: "SET_FILTERED", payload: commonItems });
-  }, [price, availability, color, size, brands, activeFilterOnSale, products]);
+  }, [price, availability, color, size, brands, activeFilterOnSale]);
 
   useEffect(() => {
     if (sortingOption === "Price Ascending") {
@@ -366,20 +323,34 @@ export default function Products14({ parentClass = "flat-spacing", collection = 
   }, [filtered, sortingOption]);
 
   useEffect(() => {
-    setLoadedItems(sorted.slice(0, 8));
-  }, [sorted]);
+    if (productDetails.length > 0) {
+      // Use fetched product details when available
+      setLoadedItems(productDetails.slice(0, 8));
+    } else {
+      // Use sorted data from the filter reducer as fallback
+      setLoadedItems(sorted.slice(0, 8));
+    }
+  }, [sorted, productDetails]);
 
   const handleLoad = () => {
     setLoading(true);
     setTimeout(() => {
-      setLoadedItems((pre) => [
-        ...pre,
-        ...sorted.slice(pre.length, pre.length + 4),
-      ]);
+      if (productDetails.length > 0) {
+        // Load more products from productDetails
+        setLoadedItems((pre) => [
+          ...pre,
+          ...productDetails.slice(pre.length, pre.length + 4),
+        ]);
+      } else {
+        // Load more products from the sorted data as fallback
+        setLoadedItems((pre) => [
+          ...pre,
+          ...sorted.slice(pre.length, pre.length + 4),
+        ]);
+      }
       setLoading(false);
     }, 1000);
   };
-
   return (
     <>
       <section className={parentClass}>
@@ -417,26 +388,22 @@ export default function Products14({ parentClass = "flat-spacing", collection = 
             </div>
           </div>
           <div className="wrapper-control-shop">
-            <FilterMeta productLength={sorted.length} allProps={allProps} />
+            <FilterMeta 
+              productLength={productDetails.length > 0 ? productDetails.length : sorted.length} 
+              allProps={allProps} 
+            />
 
-            {loading && products.length === 0 ? (
-              <div className="text-center py-5">
-                <div className="spinner-border" role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </div>
-                <p className="mt-2">Loading products...</p>
-              </div>
-            ) : activeLayout == 1 ? (
+            {activeLayout == 1 ? (
               <div className="tf-list-layout wrapper-shop" id="listLayout">
                 <Listview pagination={false} products={loadedItems} />
-                {sorted.length == loadedItems.length ? (
+                {(productDetails.length > 0 && loadedItems.length === productDetails.length) || 
+                 (productDetails.length === 0 && sorted.length === loadedItems.length) ? (
                   ""
                 ) : (
                   <button
                     className={`load-more-btn btn-out-line tf-loading ${
                       loading ? "loading" : ""
                     } `}
-                    onClick={() => handleLoad()}
                   >
                     <span className="text-btn">Load more</span>
                   </button>
@@ -448,7 +415,8 @@ export default function Products14({ parentClass = "flat-spacing", collection = 
                 id="gridLayout"
               >
                 <GridView pagination={false} products={loadedItems} />
-                {sorted.length == loadedItems.length ? (
+                {(productDetails.length > 0 && loadedItems.length === productDetails.length) || 
+                 (productDetails.length === 0 && sorted.length === loadedItems.length) ? (
                   ""
                 ) : (
                   <div
@@ -470,7 +438,7 @@ export default function Products14({ parentClass = "flat-spacing", collection = 
         </div>
       </section>
 
-      <FilterModal allProps={allProps} products={products} />
+      <FilterModal allProps={allProps} />
     </>
   );
 }

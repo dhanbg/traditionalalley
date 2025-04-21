@@ -68,6 +68,7 @@ export default function Collections() {
                     src={category.imgSrc}
                     width={category.imgWidth}
                     height={category.imgHeight}
+                    priority={index === 0 || category.imgSrc.includes('p2_2215d1f166.jpg')}
                   />
                 </a>
                 <div className="content">

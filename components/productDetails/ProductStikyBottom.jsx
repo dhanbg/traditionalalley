@@ -2,18 +2,27 @@
 import { useContextElement } from "@/context/Context";
 import { products41 } from "@/data/productsWomen";
 import Image from "next/image";
-import React, { useState } from "react";
+import React, { useState, createContext, useContext } from "react";
 import QuantitySelect from "./QuantitySelect";
 import SizeSelect2 from "./SideSelect2";
+
+// Create a context for product data
+export const ProductContext = createContext(null);
+
+// Hook to use the product context
+export const useProductContext = () => useContext(ProductContext);
 
 export default function ProductStikyBottom() {
   const {
     addProductToCart,
     isAddedToCartProducts,
-
     cartProducts,
     updateQuantity,
   } = useContextElement();
+  
+  // Get the product from context
+  const product = useProductContext() || products41[2]; // Fallback to default product
+  
   const [quantity, setQuantity] = useState(1); // Initial quantity is 1
 
   return (
@@ -30,18 +39,24 @@ export default function ProductStikyBottom() {
                   <Image
                     className="lazyload"
                     alt=""
-                    src={products41[2].imgSrc}
+                    src={product.imgSrc}
                     width={600}
                     height={800}
                   />
                 </div>
                 <div className="content">
-                  <div className="text-title">{products41[2].title}</div>
+                  <div className="text-title">{product.title}</div>
                   <div className="text-caption-1 text-secondary-2">
-                    Green, XS, Cotton
+                    {product.colors && product.colors.length > 0 ? (
+                      typeof product.colors[0] === 'string' 
+                        ? product.colors[0] 
+                        : product.colors[0].name
+                    ) : ""}
+                    {product.sizes && product.sizes.length > 0 ? `, ${product.sizes[0]}` : ""}
+                    , Cotton
                   </div>
                   <div className="text-title">
-                    ${products41[2].price.toFixed(2)}
+                    ${product.price.toFixed(2)}
                   </div>
                 </div>
               </div>
@@ -54,15 +69,15 @@ export default function ProductStikyBottom() {
                   <QuantitySelect
                     styleClass="style-1"
                     quantity={
-                      isAddedToCartProducts(products41[2].id)
+                      isAddedToCartProducts(product.id)
                         ? cartProducts.filter(
-                            (elm) => elm.id == products41[2].id
+                            (elm) => elm.id == product.id
                           )[0].quantity
                         : quantity
                     }
                     setQuantity={(qty) => {
-                      if (isAddedToCartProducts(products41[2].id)) {
-                        updateQuantity(products41[2].id, qty);
+                      if (isAddedToCartProducts(product.id)) {
+                        updateQuantity(product.id, qty);
                       } else {
                         setQuantity(qty);
                       }
@@ -71,25 +86,25 @@ export default function ProductStikyBottom() {
                 </div>
                 <div className="tf-sticky-atc-btns">
                   <a
-                    onClick={() => addProductToCart(products41[2].id, quantity)}
+                    onClick={() => addProductToCart(product.id, quantity)}
                     className="tf-btn w-100 btn-reset radius-4 btn-add-to-cart"
                   >
                     <span className="text text-btn-uppercase">
                       {" "}
-                      {isAddedToCartProducts(products41[2].id)
+                      {isAddedToCartProducts(product.id)
                         ? "Already Added"
                         : "Add to cart -"}
                     </span>
                     <span className="tf-qty-price total-price">
                       $
-                      {isAddedToCartProducts(products41[2].id)
+                      {isAddedToCartProducts(product.id)
                         ? (
-                            products41[2].price *
+                            product.price *
                             cartProducts.filter(
-                              (elm) => elm.id == products41[2].id
+                              (elm) => elm.id == product.id
                             )[0].quantity
                           ).toFixed(2)
-                        : (products41[2].price * quantity).toFixed(2)}
+                        : (product.price * quantity).toFixed(2)}
                     </span>
                   </a>
                 </div>

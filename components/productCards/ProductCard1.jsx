@@ -4,8 +4,40 @@ import Image from "next/image";
 import Link from "next/link";
 import CountdownTimer from "../common/Countdown";
 import { useContextElement } from "@/context/Context";
+import { useClerk } from "@clerk/nextjs";
+
+// Default placeholder image
+const DEFAULT_IMAGE = '/images/placeholder.jpg';
+
 export default function ProductCard1({ product, gridClass = "" }) {
-  const [currentImage, setCurrentImage] = useState(product.imgSrc);
+  // Ensure product has valid image properties
+  const safeProduct = {
+    ...product,
+    imgSrc: product.imgSrc || DEFAULT_IMAGE,
+    imgHover: product.imgHover || product.imgSrc || DEFAULT_IMAGE
+  };
+  
+  // Double-check that imgSrc and imgHover are valid strings and not empty
+  if (!safeProduct.imgSrc || safeProduct.imgSrc === "") {
+    safeProduct.imgSrc = DEFAULT_IMAGE;
+  }
+  
+  if (!safeProduct.imgHover || safeProduct.imgHover === "") {
+    safeProduct.imgHover = safeProduct.imgSrc || DEFAULT_IMAGE;
+  }
+  
+  // Check if colors are just string values and convert them
+  if (safeProduct.colors && Array.isArray(safeProduct.colors) && 
+      safeProduct.colors.length > 0 && typeof safeProduct.colors[0] === 'string') {
+    // Convert string colors to objects with the necessary properties
+    safeProduct.colors = safeProduct.colors.map(color => ({
+      name: color,
+      bgColor: `bg-${color.toLowerCase().replace(/\s+/g, '-')}`,
+      imgSrc: safeProduct.imgSrc // Use the main product image
+    }));
+  }
+  
+  const [currentImage, setCurrentImage] = useState(safeProduct.imgSrc);
 
   const {
     setQuickAddItem,
@@ -16,37 +48,60 @@ export default function ProductCard1({ product, gridClass = "" }) {
     setQuickViewItem,
     addProductToCart,
     isAddedToCartProducts,
+    removeFromWishlist,
+    user
   } = useContextElement();
+  const { openSignIn } = useClerk();
 
   useEffect(() => {
-    setCurrentImage(product.imgSrc);
-  }, [product]);
+    // Ensure we never set an empty string as the currentImage
+    setCurrentImage(safeProduct.imgSrc || DEFAULT_IMAGE);
+  }, [safeProduct]);
+
+  const handleWishlistClick = () => {
+    if (!user) {
+      openSignIn();
+    } else {
+      addToWishlist(safeProduct.id);
+    }
+  };
+
+  const handleCartClick = () => {
+    if (!user) {
+      openSignIn();
+    } else {
+      addProductToCart(safeProduct.id);
+    }
+  };
 
   return (
     <div
       className={`card-product wow fadeInUp ${gridClass} ${
-        product.isOnSale ? "on-sale" : ""
-      } ${product.sizes ? "card-product-size" : ""}`}
+        safeProduct.isOnSale ? "on-sale" : ""
+      } ${safeProduct.sizes ? "card-product-size" : ""}`}
     >
       <div className="card-product-wrapper">
-        <Link href={`/product-detail/${product.id}`} className="product-img">
+        <Link href={`/product-detail/${safeProduct.documentId || safeProduct.id}`} className="product-img">
           <Image
             className="lazyload img-product"
-            src={currentImage}
-            alt={product.title}
+            src={currentImage && currentImage !== "" ? currentImage : DEFAULT_IMAGE}
+            alt={safeProduct.title || "Product"}
             width={600}
             height={800}
+            priority={currentImage === "/images/products/womens/women-19.jpg"}
           />
 
           <Image
             className="lazyload img-hover"
-            src={product.imgHover}
-            alt={product.title}
+            src={(safeProduct.imgHover && safeProduct.imgHover !== "") ? 
+                 safeProduct.imgHover : 
+                 (currentImage && currentImage !== "" ? currentImage : DEFAULT_IMAGE)}
+            alt={safeProduct.title || "Product"}
             width={600}
             height={800}
           />
         </Link>
-        {product.hotSale && (
+        {safeProduct.hotSale && (
           <div className="marquee-product bg-main">
             <div className="marquee-wrapper">
               <div className="initial-child-container">
@@ -138,15 +193,15 @@ export default function ProductCard1({ product, gridClass = "" }) {
             </div>
           </div>
         )}
-        {product.isOnSale && (
+        {safeProduct.isOnSale && (
           <div className="on-sale-wrap">
-            <span className="on-sale-item">-{product.salePercentage}</span>
+            <span className="on-sale-item">-{safeProduct.salePercentage}</span>
           </div>
         )}
-        {product.sizes && (
+        {safeProduct.sizes && (
           <div className="variant-wrap size-list">
             <ul className="variant-box">
-              {product.sizes.map((size) => (
+              {safeProduct.sizes.map((size) => (
                 <li key={size} className="size-item">
                   {size}
                 </li>
@@ -154,12 +209,12 @@ export default function ProductCard1({ product, gridClass = "" }) {
             </ul>
           </div>
         )}
-        {product.countdown && (
+        {safeProduct.countdown && (
           <div className="variant-wrap countdown-wrap">
             <div className="variant-box">
               <div
                 className="js-countdown"
-                data-timer={product.countdown}
+                data-timer={safeProduct.countdown}
                 data-labels="D :,H :,M :,S"
               >
                 <CountdownTimer />
@@ -167,7 +222,7 @@ export default function ProductCard1({ product, gridClass = "" }) {
             </div>
           </div>
         )}
-        {product.oldPrice ? (
+        {safeProduct.oldPrice ? (
           <div className="on-sale-wrap">
             <span className="on-sale-item">-25%</span>
           </div>
@@ -176,13 +231,13 @@ export default function ProductCard1({ product, gridClass = "" }) {
         )}
         <div className="list-product-btn">
           <a
-            onClick={() => addToWishlist(product.id)}
+            onClick={handleWishlistClick}
             className="box-icon wishlist btn-icon-action"
           >
             <span className="icon icon-heart" />
             <span className="tooltip">
-              {isAddedtoWishlist(product.id)
-                ? "Already Wishlished"
+              {user && isAddedtoWishlist(safeProduct.id)
+                ? "Already Wishlisted"
                 : "Wishlist"}
             </span>
           </a>
@@ -190,19 +245,19 @@ export default function ProductCard1({ product, gridClass = "" }) {
             href="#compare"
             data-bs-toggle="offcanvas"
             aria-controls="compare"
-            onClick={() => addToCompareItem(product.id)}
+            onClick={() => addToCompareItem(safeProduct.id)}
             className="box-icon compare btn-icon-action"
           >
             <span className="icon icon-gitDiff" />
             <span className="tooltip">
-              {isAddedtoCompareItem(product.id)
+              {isAddedtoCompareItem(safeProduct.id)
                 ? "Already compared"
                 : "Compare"}
             </span>
           </a>
           <a
             href="#quickView"
-            onClick={() => setQuickViewItem(product)}
+            onClick={() => setQuickViewItem(safeProduct)}
             data-bs-toggle="modal"
             className="box-icon quickview tf-btn-loading"
           >
@@ -213,44 +268,52 @@ export default function ProductCard1({ product, gridClass = "" }) {
         <div className="list-btn-main">
           <a
             className="btn-main-product"
-            onClick={() => addProductToCart(product.id)}
+            onClick={handleCartClick}
           >
-            {isAddedToCartProducts(product.id)
+            {user && isAddedToCartProducts(safeProduct.id)
               ? "Already Added"
               : "ADD TO CART"}
           </a>
         </div>
       </div>
       <div className="card-product-info">
-        <Link href={`/product-detail/${product.id}`} className="title link">
-          {product.title}
+        <Link href={`/product-detail/${safeProduct.id}`} className="title link">
+          {safeProduct.title}
         </Link>
         <span className="price">
-          {product.oldPrice && (
-            <span className="old-price">${product.oldPrice.toFixed(2)}</span>
+          {safeProduct.oldPrice && (
+            <span className="old-price">${safeProduct.oldPrice.toFixed(2)}</span>
           )}{" "}
-          ${product.price?.toFixed(2)}
+          ${safeProduct.price?.toFixed(2)}
         </span>
-        {product.colors && (
+        {safeProduct.colors && Array.isArray(safeProduct.colors) && safeProduct.colors.length > 0 && (
           <ul className="list-color-product">
-            {product.colors.map((color, index) => (
-              <li
-                key={index}
-                className={`list-color-item color-swatch ${
-                  currentImage == color.imgSrc ? "active" : ""
-                } ${color.bgColor == "bg-white" ? "line" : ""}`}
-                onMouseOver={() => setCurrentImage(color.imgSrc)}
-              >
-                <span className={`swatch-value ${color.bgColor}`} />
-                <Image
-                  className="lazyload"
-                  src={color.imgSrc}
-                  alt="color variant"
-                  width={600}
-                  height={800}
-                />
-              </li>
-            ))}
+            {safeProduct.colors.map((color, index) => {
+              // Skip rendering if no image source or it's an empty string
+              // Or if color isn't an object with imgSrc property
+              if (!color || typeof color !== 'object' || !color.imgSrc || color.imgSrc === "") {
+                return null;
+              }
+              
+              return (
+                <li
+                  key={index}
+                  className={`list-color-item color-swatch ${
+                    currentImage == color.imgSrc ? "active" : ""
+                  } ${color.bgColor == "bg-white" ? "line" : ""}`}
+                  onMouseOver={() => setCurrentImage(color.imgSrc || DEFAULT_IMAGE)}
+                >
+                  <span className={`swatch-value ${color.bgColor}`} />
+                  <Image
+                    className="lazyload"
+                    src={color.imgSrc && color.imgSrc !== "" ? color.imgSrc : DEFAULT_IMAGE}
+                    alt={`${safeProduct.title} - ${color.name || "color variant"}`}
+                    width={600}
+                    height={800}
+                  />
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

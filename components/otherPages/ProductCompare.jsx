@@ -4,18 +4,33 @@ import { allProducts } from "@/data/productsWomen";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
+import { useClerk } from "@clerk/nextjs";
 
 export default function ProductCompare() {
   const {
     compareItem,
-
-    addProductToCart,
+    setCompareItem,
+    removeFromCompareItem,
     isAddedToCartProducts,
+    addProductToCart,
+    user
   } = useContextElement();
+  const { openSignIn } = useClerk();
+  
   const [items, setItems] = useState([]);
+
   useEffect(() => {
     setItems([...allProducts.filter((elm) => compareItem.includes(elm.id))]);
   }, [compareItem]);
+
+  const handleAddToCart = (id) => {
+    if (!user) {
+      openSignIn();
+    } else {
+      addProductToCart(id);
+    }
+  };
+
   return (
     <section className="flat-spacing">
       <div className="container">
@@ -180,12 +195,12 @@ export default function ProductCompare() {
                   className="tf-compare-col tf-compare-field tf-compare-viewcart text-center"
                 >
                   <a
-                    className="btn-view-cart"
-                    onClick={() => addProductToCart(elm.id)}
+                    className="btn-style-2 radius-4 text-btn-uppercase mb_8"
+                    onClick={() => handleAddToCart(elm.id)}
                   >
-                    {isAddedToCartProducts(elm.id)
-                      ? "Already Added"
-                      : "Add to Cart"}
+                    {user && isAddedToCartProducts(elm.id)
+                      ? "ALREADY ADDED"
+                      : "Add to cart"}
                   </a>
                 </div>
               ))}

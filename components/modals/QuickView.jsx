@@ -6,11 +6,15 @@ import ColorSelect from "../productDetails/ColorSelect";
 import Grid5 from "../productDetails/grids/Grid5";
 import { useContextElement } from "@/context/Context";
 import QuantitySelect from "../productDetails/QuantitySelect";
+import { useClerk } from "@clerk/nextjs";
+
 export default function QuickView() {
   const [activeColor, setActiveColor] = useState("gray");
   const [quantity, setQuantity] = useState(1); // Initial quantity is 1
+  const [activeTab, setActiveTab] = useState(1);
   const {
     quickViewItem,
+    setQuickViewItem,
     addProductToCart,
     isAddedToCartProducts,
     addToWishlist,
@@ -19,7 +23,9 @@ export default function QuickView() {
     isAddedtoCompareItem,
     cartProducts,
     updateQuantity,
+    user,
   } = useContextElement();
+  const { openSignIn } = useClerk();
 
   const openModalSizeChoice = () => {
     const bootstrap = require("bootstrap"); // dynamically import bootstrap
@@ -40,6 +46,23 @@ export default function QuickView() {
       lastBackdrop.style.zIndex = "1057";
     }
   };
+
+  const handleAddToCart = () => {
+    if (!user) {
+      openSignIn();
+    } else {
+      addProductToCart(quickViewItem.id, quantity);
+    }
+  };
+
+  const handleWishlistClick = () => {
+    if (!user) {
+      openSignIn();
+    } else {
+      addToWishlist(quickViewItem.id);
+    }
+  };
+
   return (
     <div className="modal fullRight fade modal-quick-view" id="quickView">
       <div className="modal-dialog">
@@ -140,56 +163,48 @@ export default function QuickView() {
                   />
                 </div>
                 <div>
-                  <div className="tf-product-info-by-btn mb_10">
-                    <a
-                      className="btn-style-2 flex-grow-1 text-btn-uppercase fw-6 show-shopping-cart"
-                      onClick={() =>
-                        addProductToCart(quickViewItem.id, quantity)
-                      }
-                    >
-                      <span>
-                        {isAddedToCartProducts(quickViewItem.id)
+                  <div className="pd-btn-group">
+                    <div className="group-btn">
+                      <div className="product-quantity">
+                        <span
+                          className="product-quantity-btn decrease"
+                          onClick={() =>
+                            quantity > 1 && setQuantity(quantity - 1)
+                          }
+                        >
+                          -
+                        </span>
+                        <input
+                          type="text"
+                          name="product-quantity-input"
+                          className="product-quantity-input"
+                          value={quantity}
+                          readOnly
+                        />
+                        <span
+                          className="product-quantity-btn increase"
+                          onClick={() => setQuantity(quantity + 1)}
+                        >
+                          +
+                        </span>
+                      </div>
+                      <button
+                        className="tf-btn-2 btn-addtocart text-btn-uppercase"
+                        onClick={handleAddToCart}
+                      >
+                        {user && isAddedToCartProducts(quickViewItem.id)
                           ? "Already Added"
-                          : "Add to cart -"}
-                      </span>
-                      <span className="tf-qty-price total-price">
-                        $
-                        {isAddedToCartProducts(quickViewItem.id)
-                          ? (
-                              quickViewItem.price *
-                              cartProducts.filter(
-                                (elm) => elm.id == quickViewItem.id
-                              )[0].quantity
-                            ).toFixed(2)
-                          : (quickViewItem.price * quantity).toFixed(2)}
-                      </span>
-                    </a>
-                    <a
-                      href="#compare"
-                      onClick={() => addToCompareItem(quickViewItem.id)}
-                      data-bs-toggle="offcanvas"
-                      aria-controls="compare"
-                      className="box-icon hover-tooltip compare btn-icon-action show-compare"
+                          : "Add to cart"}
+                      </button>
+                    </div>
+                    <button
+                      className="tf-btn btn-wishlist text-btn-uppercase"
+                      onClick={handleWishlistClick}
                     >
-                      <span className="icon icon-gitDiff" />
-                      <span className="tooltip text-caption-2">
-                        {" "}
-                        {isAddedtoCompareItem(quickViewItem.id)
-                          ? "Already compared"
-                          : "Compare"}
-                      </span>
-                    </a>
-                    <a
-                      onClick={() => addToWishlist(quickViewItem.id)}
-                      className="box-icon hover-tooltip text-caption-2 wishlist btn-icon-action"
-                    >
-                      <span className="icon icon-heart" />
-                      <span className="tooltip text-caption-2">
-                        {isAddedtoWishlist(quickViewItem.id)
-                          ? "Already Wishlished"
-                          : "Wishlist"}
-                      </span>
-                    </a>
+                      {user && isAddedtoWishlist(quickViewItem.id)
+                        ? "Already Wishlisted"
+                        : "Wishlist"}
+                    </button>
                   </div>
                   <a href="#" className="btn-style-3 text-btn-uppercase">
                     Buy it now

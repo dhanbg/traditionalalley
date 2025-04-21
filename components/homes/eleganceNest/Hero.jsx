@@ -54,7 +54,7 @@ export default function Hero() {
                 width={1920}
                 height={803}
                 quality={100}
-                priority
+                priority={index === 0 || slide.imgSrc.includes('p2_2215d1f166.jpg')}
               />
               <div className="box-content">
                 <div className="content-slider">

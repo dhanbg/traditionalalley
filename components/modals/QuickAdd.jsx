@@ -7,10 +7,13 @@ import { useEffect, useState } from "react";
 import ColorSelect from "../productDetails/ColorSelect";
 import SizeSelect from "../productDetails/SizeSelect";
 import QuantitySelect from "../productDetails/QuantitySelect";
+import { useClerk } from "@clerk/nextjs";
+
 export default function QuickAdd() {
   const [quantity, setQuantity] = useState(1);
   const {
     quickAddItem,
+    setQuickAddItem,
     addProductToCart,
     isAddedToCartProducts,
     addToCompareItem,
@@ -19,14 +22,34 @@ export default function QuickAdd() {
     isAddedtoCompareItem,
     cartProducts,
     updateQuantity,
+    user,
   } = useContextElement();
+  const { openSignIn } = useClerk();
   const [item, setItem] = useState(allProducts[0]);
+
   useEffect(() => {
     const filtered = allProducts.filter((el) => el.id == quickAddItem);
     if (filtered) {
       setItem(filtered[0]);
     }
   }, [quickAddItem]);
+
+  const handleAddToCart = () => {
+    if (!user) {
+      openSignIn();
+    } else {
+      addProductToCart(quickAddItem.id, quantity);
+    }
+  };
+
+  const handleWishlistClick = () => {
+    if (!user) {
+      openSignIn();
+    } else {
+      addToWishlist(quickAddItem.id);
+    }
+  };
+
   return (
     <div className="modal fade modal-quick-add" id="quickAdd">
       <div className="modal-dialog modal-dialog-centered">
@@ -89,7 +112,7 @@ export default function QuickAdd() {
                   <div className="tf-product-info-by-btn mb_10">
                     <a
                       className="btn-style-2 flex-grow-1 text-btn-uppercase fw-6 show-shopping-cart"
-                      onClick={() => addProductToCart(item.id, quantity)}
+                      onClick={handleAddToCart}
                     >
                       <span>
                         {isAddedToCartProducts(item.id)
@@ -124,7 +147,7 @@ export default function QuickAdd() {
                       </span>
                     </a>
                     <a
-                      onClick={() => addToWishlist(item.id)}
+                      onClick={handleWishlistClick}
                       className="box-icon hover-tooltip text-caption-2 wishlist btn-icon-action"
                     >
                       <span className="icon icon-heart" />

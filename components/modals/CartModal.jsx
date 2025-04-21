@@ -4,6 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useContextElement } from "@/context/Context";
 import { products41 } from "@/data/productsWomen";
+import { useClerk, useUser } from "@clerk/nextjs";
+import { fetchDataFromApi, getImageUrl } from "@/utils/api";
+import { PRODUCT_BY_DOCUMENT_ID_API, API_URL } from "@/utils/urls";
+import { useRouter } from "next/navigation";
+
 export default function CartModal() {
   const {
     cartProducts,
@@ -11,16 +16,304 @@ export default function CartModal() {
     totalPrice,
     addProductToCart,
     isAddedToCartProducts,
+    user,
+    removeFromCart
   } = useContextElement();
+  const { openSignIn } = useClerk();
+  const [userCarts, setUserCarts] = useState([]);
+  const [serverCartProducts, setServerCartProducts] = useState([]);
+  const [serverCartLoading, setServerCartLoading] = useState(true);
+  const [serverTotalPrice, setServerTotalPrice] = useState(0);
+  const [currentOpenPopup, setCurrentOpenPopup] = useState("");
+  const [isModalInert, setIsModalInert] = useState(true);
+  const router = useRouter();
 
-  const removeItem = (id) => {
-    setCartProducts((pre) => [...pre.filter((elm) => elm.id != id)]);
+  const removeItem = (id, cartDocumentId) => {
+    console.log(`CartModal: Removing item with ID: ${id}, cartDocumentId: ${cartDocumentId}`);
+    
+    // Find the item in the cart to confirm it exists before removing
+    const itemToRemove = displayProducts.find(item => 
+      item.id == id || 
+      (item.documentId === id) || 
+      (item.cartDocumentId === cartDocumentId)
+    );
+    
+    if (itemToRemove) {
+      console.log(`CartModal: Found item to remove:`, itemToRemove);
+      
+      // Remove from local state immediately for a responsive UI
+      // This ensures the item disappears from the cart modal right away
+      setServerCartProducts(prev => prev.filter(product => 
+        product.id != id && 
+        product.documentId !== id && 
+        product.cartDocumentId !== cartDocumentId
+      ));
+      
+      // Use the removeFromCart function from Context to handle backend deletion
+      removeFromCart(id, cartDocumentId);
+    } else {
+      console.error(`CartModal: Could not find item with ID ${id} or cartDocumentId ${cartDocumentId} in cart`);
+    }
   };
 
-  const [currentOpenPopup, setCurrentOpenPopup] = useState("");
+  // Helper function to properly close the modal
+  const closeCartModal = () => {
+    const modalElement = document.querySelector('.modal-shopping-cart');
+    if (modalElement) {
+      // Remove modal classes
+      modalElement.classList.remove('show');
+      modalElement.style.display = 'none';
+      
+      // Remove body modal classes
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('overflow');
+      document.body.style.removeProperty('padding-right');
+      
+      // Remove all backdrop elements
+      const backdrops = document.querySelectorAll('.modal-backdrop');
+      backdrops.forEach(backdrop => backdrop.remove());
+    }
+  };
+
+  // Handle View Cart navigation
+  const handleViewCart = () => {
+    closeCartModal();
+    router.push('/shopping-cart');
+  };
+
+  // Handle Checkout navigation
+  const handleCheckout = () => {
+    closeCartModal();
+    router.push('/checkout');
+  };
+
+  // Handle Continue Shopping
+  const handleContinueShopping = () => {
+    closeCartModal();
+    router.push('/shop-default-grid');
+  };
+
+  // Fetch user's carts from API
+  useEffect(() => {
+    if (user) {
+      const fetchUserCarts = async () => {
+        try {
+          setServerCartLoading(true);
+          // Fetch carts data from the API
+          const response = await fetchDataFromApi(`/api/carts?populate=*`);
+          
+          // Filter carts based on the current user's clerkUserId
+          const currentUserCarts = response.data.filter(
+            cart => cart.user_datum && cart.user_datum.clerkUserId === user.id
+          );
+          
+          // Update state with user's carts
+          setUserCarts(currentUserCarts);
+          
+          console.log(`Found ${currentUserCarts.length} carts for user ${user.id}`);
+          
+          // Array to hold the complete product details
+          const productsWithDetails = [];
+          let totalPrice = 0;
+          
+          // For each cart, fetch the complete product details
+          for (const cart of currentUserCarts) {
+            const productDocId = cart.product?.documentId;
+            console.log(`Product documentId: ${productDocId}`);
+            
+            if (productDocId) {
+              try {
+                // Fetch product details using the documentId
+                const productDetails = await fetchDataFromApi(PRODUCT_BY_DOCUMENT_ID_API(productDocId));
+                
+                // Debug product response
+                console.log("Product details for cart item:", JSON.stringify(productDetails, null, 2));
+                
+                // The response will now be an array of products, get the first one
+                const productData = productDetails.data && productDetails.data.length > 0 
+                  ? productDetails.data[0] 
+                  : null;
+                
+                if (!productData) {
+                  console.error(`No product found with documentId: ${productDocId}`);
+                  continue;
+                }
+                
+                // Log the image object structure
+                console.log("Product imgSrc structure:", productData.imgSrc);
+                console.log("Product imgHover structure:", productData.imgHover);
+                
+                // Get image URLs
+                const imgSrcUrl = getImageUrl(productData.imgSrc);
+                const imgHoverUrl = getImageUrl(productData.imgHover);
+                
+                // Debug image URLs
+                console.log("Resolved image URLs:", {
+                  imgSrc: imgSrcUrl,
+                  imgHover: imgHoverUrl
+                });
+                
+                // Create a cart product object with all needed details
+                const productWithQuantity = {
+                  id: cart.product.id,
+                  documentId: productDocId,
+                  title: cart.product.title,
+                  price: cart.product.price,
+                  quantity: cart.quantity,
+                  imgSrc: imgSrcUrl,
+                  imgHover: imgHoverUrl,
+                  cartId: cart.id,
+                  cartDocumentId: cart.documentId,
+                  // Add color and size data
+                  colors: productData.colors || [],
+                  sizes: productData.sizes || productData.filterSizes || []
+                };
+                
+                // Add product to array
+                productsWithDetails.push(productWithQuantity);
+                
+                // Add to total price
+                totalPrice += cart.product.price * cart.quantity;
+              } catch (error) {
+                console.error(`Error fetching product details for ${productDocId}:`, error);
+              }
+            }
+          }
+          
+          // Update state with products and total price
+          setServerCartProducts(productsWithDetails);
+          setServerTotalPrice(totalPrice);
+          setServerCartLoading(false);
+          
+          // Replace the context cartProducts with our server data
+          setCartProducts(productsWithDetails);
+          
+        } catch (error) {
+          console.error("Error fetching user carts:", error);
+          setServerCartLoading(false);
+        }
+      };
+      
+      fetchUserCarts();
+    }
+  }, [user, setCartProducts]);
+
+  // Handle modal accessibility
+  useEffect(() => {
+    const modal = document.getElementById('shoppingCart');
+    
+    if (!modal) return;
+    
+    const handleModalShow = () => {
+      setIsModalInert(false);
+      
+      // Refresh cart data when modal opens
+      if (user) {
+        // Force a refresh of server cart data when the modal opens
+        const refreshCartData = async () => {
+          try {
+            setServerCartLoading(true);
+            const cartResponse = await fetchDataFromApi(`/api/carts?populate=*`);
+            
+            if (cartResponse?.data?.length > 0) {
+              // Process cart data...
+              console.log(`CartModal: Found ${cartResponse.data.length} cart items when refreshing`);
+              
+              // Update with fresh data from server
+              const productsWithDetails = [];
+              let totalPrice = 0;
+              
+              for (const cart of cartResponse.data) {
+                // Skip carts without product data
+                if (!cart.attributes?.product?.data) continue;
+                
+                const productData = cart.attributes.product.data;
+                const productId = productData.id;
+                const productDocId = productData.attributes?.documentId;
+                
+                // Match current user's cart items
+                const productAttrs = productData.attributes || {};
+                
+                // Get image URL
+                let imgUrl = '/images/placeholder.png';
+                if (productAttrs.imgSrc?.url) {
+                  imgUrl = `${API_URL}${productAttrs.imgSrc.url}`;
+                } else if (productAttrs.gallery && productAttrs.gallery.length > 0) {
+                  const galleryImg = productAttrs.gallery[0];
+                  imgUrl = `${API_URL}${galleryImg.url || galleryImg.formats?.thumbnail?.url || ''}`;
+                }
+                
+                // Create cart product object
+                const productWithQuantity = {
+                  id: productId,
+                  documentId: productDocId,
+                  title: productAttrs.title || 'Product Item',
+                  price: parseFloat(productAttrs.price) || 0,
+                  quantity: cart.attributes.quantity || 1,
+                  imgSrc: imgUrl,
+                  cartId: cart.id,
+                  cartDocumentId: cart.attributes.documentId,
+                  colors: productAttrs.colors || [],
+                  sizes: productAttrs.sizes || productAttrs.filterSizes || []
+                };
+                
+                productsWithDetails.push(productWithQuantity);
+                totalPrice += productWithQuantity.price * productWithQuantity.quantity;
+              }
+              
+              setServerCartProducts(productsWithDetails);
+              setServerTotalPrice(totalPrice);
+              console.log('CartModal: Cart data refreshed with items:', productsWithDetails);
+            }
+            
+            setServerCartLoading(false);
+          } catch (error) {
+            console.error('CartModal: Error refreshing cart data:', error);
+            setServerCartLoading(false);
+          }
+        };
+        
+        refreshCartData();
+      } else {
+        // For guest users, use local cart products
+        console.log("CartModal: Modal opened for guest user - using local cart products:", cartProducts);
+      }
+    };
+    
+    const handleModalHide = () => {
+      setIsModalInert(true);
+    };
+    
+    // Listen for Bootstrap modal events
+    modal.addEventListener('show.bs.modal', handleModalShow);
+    modal.addEventListener('hidden.bs.modal', handleModalHide);
+    
+    return () => {
+      // Clean up event listeners
+      modal.removeEventListener('show.bs.modal', handleModalShow);
+      modal.removeEventListener('hidden.bs.modal', handleModalHide);
+    };
+  }, [user, cartProducts]);
+
+  // For a more consistent experience, prefer serverCartProducts when available
+  const displayProducts = user 
+    ? serverCartProducts.length > 0 
+      ? serverCartProducts 
+      : cartProducts // Only fall back to context cart products if server cart is empty
+    : cartProducts; // Use local cart for guest users
+  
+  // Calculate total price from the actual displayed products
+  const displayTotalPrice = displayProducts.reduce((total, product) => {
+    return total + (product.price * product.quantity);
+  }, 0);
 
   return (
-    <div className="modal fullRight fade modal-shopping-cart" id="shoppingCart">
+    <div 
+      className="modal fullRight fade modal-shopping-cart" 
+      id="shoppingCart"
+      tabIndex="-1"
+      inert={isModalInert}
+    >
       <div className="modal-dialog">
         <div className="modal-content">
           {/* <div className="tf-minicart-recommendations">
@@ -76,6 +369,30 @@ export default function CartModal() {
               />
             </div>
             <div className="wrap">
+              {!user ? (
+                <div className="p-4 text-center">
+                  <p className="mb-4">Please sign in to view your shopping cart.</p>
+                  <button 
+                    className="btn-style-2 w-100 radius-4"
+                    onClick={openSignIn}
+                  >
+                    <span className="text-btn-uppercase">Sign In</span>
+                  </button>
+                  <div className="mt-3">
+                    <Link
+                      href="/shop-default-grid"
+                      className="text-btn-uppercase"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleContinueShopping();
+                      }}
+                    >
+                      Or continue shopping
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <>
               <div className="tf-mini-cart-threshold">
                 <div className="tf-progress-bar">
                   <div
@@ -93,27 +410,50 @@ export default function CartModal() {
               <div className="tf-mini-cart-wrap">
                 <div className="tf-mini-cart-main">
                   <div className="tf-mini-cart-sroll">
-                    {cartProducts.length ? (
+                        {serverCartLoading ? (
+                          <div className="p-4 text-center">
+                            Loading your cart...
+                          </div>
+                        ) : displayProducts.length ? (
                       <div className="tf-mini-cart-items">
-                        {cartProducts.map((product, i) => (
+                            {displayProducts.map((product, i) => (
                           <div
                             key={i}
                             className="tf-mini-cart-item file-delete"
                           >
                             <div className="tf-mini-cart-image">
-                              <Image
-                                className="lazyload"
-                                alt=""
-                                src={product.imgSrc}
-                                width={600}
-                                height={800}
-                              />
+                              {product.imgSrc ? (
+                                <Image
+                                  className="lazyload"
+                                  alt={product.title || "Product image"}
+                                  src={product.imgSrc.startsWith('http') ? product.imgSrc : `${API_URL}${product.imgSrc}`}
+                                  width={600}
+                                  height={800}
+                                  onError={(e) => {
+                                    // Try fallback to imgHover if available
+                                    if (product.imgHover) {
+                                      e.target.src = product.imgHover.startsWith('http') ? product.imgHover : `${API_URL}${product.imgHover}`;
+                                    } else {
+                                      // Use placeholder image as final fallback
+                                      e.target.src = "/images/placeholder.png";
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <Image
+                                  className="lazyload"
+                                  alt={product.title || "Product image"}
+                                  src="/images/placeholder.png"
+                                  width={600}
+                                  height={800}
+                                />
+                              )}
                             </div>
                             <div className="tf-mini-cart-info flex-grow-1">
                               <div className="mb_12 d-flex align-items-center justify-content-between flex-wrap gap-12">
                                 <div className="text-title">
                                   <Link
-                                    href={`/product-detail/${product.id}`}
+                                        href={`/product-detail/${product.documentId}`}
                                     className="link text-line-clamp-1"
                                   >
                                     {product.title}
@@ -121,13 +461,13 @@ export default function CartModal() {
                                 </div>
                                 <div
                                   className="text-button tf-btn-remove remove"
-                                  onClick={() => removeItem(product.id)}
+                                  onClick={() => removeItem(product.id, product.cartDocumentId)}
                                 >
                                   Remove
                                 </div>
                               </div>
                               <div className="d-flex align-items-center justify-content-between flex-wrap gap-12">
-                                <div className="text-secondary-2">XL/Blue</div>
+                                    <div className="text-secondary-2">Size/Color</div>
                                 <div className="text-button">
                                   {product.quantity} X $
                                   {product.price.toFixed(2)}
@@ -141,7 +481,14 @@ export default function CartModal() {
                       <div className="p-4">
                         Your Cart is empty. Start adding favorite products to
                         cart!{" "}
-                        <Link className="btn-line" href="/shop-default-grid">
+                            <Link 
+                              className="btn-line" 
+                              href="/shop-default-grid"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleContinueShopping();
+                              }}
+                            >
                           Explore Products
                         </Link>
                       </div>
@@ -265,7 +612,7 @@ export default function CartModal() {
                     <div className="tf-cart-totals-discounts">
                       <h5>Subtotal</h5>
                       <h5 className="tf-totals-total-value">
-                        ${totalPrice.toFixed(2)}
+                            ${displayTotalPrice.toFixed(2)}
                       </h5>
                     </div>
                     <div className="tf-cart-checkbox">
@@ -288,23 +635,28 @@ export default function CartModal() {
                       </label>
                     </div>
                     <div className="tf-mini-cart-view-checkout">
-                      <Link
-                        href={`/shopping-cart`}
+                          <button
+                            onClick={handleViewCart}
                         className="tf-btn w-100 btn-white radius-4 has-border"
+                            tabIndex={0}
                       >
                         <span className="text">View cart</span>
-                      </Link>
-                      <Link
-                        href={`/shopping-cart`}
+                          </button>
+                          <button
+                            onClick={handleCheckout}
                         className="tf-btn w-100 btn-fill radius-4"
                       >
                         <span className="text">Check Out</span>
-                      </Link>
+                          </button>
                     </div>
                     <div className="text-center">
                       <Link
                         className="link text-btn-uppercase"
-                        href={`/shop-default-grid`}
+                            href="/shop-default-grid"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleContinueShopping();
+                            }}
                       >
                         Or continue shopping
                       </Link>
@@ -383,7 +735,7 @@ export default function CartModal() {
                 <div
                   className={`tf-mini-cart-tool-openable ${
                     currentOpenPopup == "estimate-shipping" ? "open" : ""
-                  } `}
+                      }`}
                 >
                   <div className="tf-mini-cart-tool-content">
                     <label className="tf-mini-cart-tool-text">
@@ -497,7 +849,7 @@ export default function CartModal() {
                             </option>
                             <option
                               value="Italy"
-                              data-provinces="[['Agrigento','Agrigento'],['Alessandria','Alessandria'],['Ancona','Ancona'],['Aosta','Aosta Valley'],['Arezzo','Arezzo'],['Ascoli Piceno','Ascoli Piceno'],['Asti','Asti'],['Avellino','Avellino'],['Bari','Bari'],['Barletta-Andria-Trani','Barletta-Andria-Trani'],['Belluno','Belluno'],['Benevento','Benevento'],['Bergamo','Bergamo'],['Biella','Biella'],['Bologna','Bologna'],['Bolzano','South Tyrol'],['Brescia','Brescia'],['Brindisi','Brindisi'],['Cagliari','Cagliari'],['Caltanissetta','Caltanissetta'],['Campobasso','Campobasso'],['Carbonia-Iglesias','Carbonia-Iglesias'],['Caserta','Caserta'],['Catania','Catania'],['Catanzaro','Catanzaro'],['Chieti','Chieti'],['Como','Como'],['Cosenza','Cosenza'],['Cremona','Cremona'],['Crotone','Crotone'],['Cuneo','Cuneo'],['Enna','Enna'],['Fermo','Fermo'],['Ferrara','Ferrara'],['Firenze','Florence'],['Foggia','Foggia'],['Forlì-Cesena','Forlì-Cesena'],['Frosinone','Frosinone'],['Genova','Genoa'],['Gorizia','Gorizia'],['Grosseto','Grosseto'],['Imperia','Imperia'],['Isernia','Isernia'],['L'Aquila','L’Aquila'],['La Spezia','La Spezia'],['Latina','Latina'],['Lecce','Lecce'],['Lecco','Lecco'],['Livorno','Livorno'],['Lodi','Lodi'],['Lucca','Lucca'],['Macerata','Macerata'],['Mantova','Mantua'],['Massa-Carrara','Massa and Carrara'],['Matera','Matera'],['Medio Campidano','Medio Campidano'],['Messina','Messina'],['Milano','Milan'],['Modena','Modena'],['Monza e Brianza','Monza and Brianza'],['Napoli','Naples'],['Novara','Novara'],['Nuoro','Nuoro'],['Ogliastra','Ogliastra'],['Olbia-Tempio','Olbia-Tempio'],['Oristano','Oristano'],['Padova','Padua'],['Palermo','Palermo'],['Parma','Parma'],['Pavia','Pavia'],['Perugia','Perugia'],['Pesaro e Urbino','Pesaro and Urbino'],['Pescara','Pescara'],['Piacenza','Piacenza'],['Pisa','Pisa'],['Pistoia','Pistoia'],['Pordenone','Pordenone'],['Potenza','Potenza'],['Prato','Prato'],['Ragusa','Ragusa'],['Ravenna','Ravenna'],['Reggio Calabria','Reggio Calabria'],['Reggio Emilia','Reggio Emilia'],['Rieti','Rieti'],['Rimini','Rimini'],['Roma','Rome'],['Rovigo','Rovigo'],['Salerno','Salerno'],['Sassari','Sassari'],['Savona','Savona'],['Siena','Siena'],['Siracusa','Syracuse'],['Sondrio','Sondrio'],['Taranto','Taranto'],['Teramo','Teramo'],['Terni','Terni'],['Torino','Turin'],['Trapani','Trapani'],['Trento','Trentino'],['Treviso','Treviso'],['Trieste','Trieste'],['Udine','Udine'],['Varese','Varese'],['Venezia','Venice'],['Verbano-Cusio-Ossola','Verbano-Cusio-Ossola'],['Vercelli','Vercelli'],['Verona','Verona'],['Vibo Valentia','Vibo Valentia'],['Vicenza','Vicenza'],['Viterbo','Viterbo']]"
+                                  data-provinces="[['Agrigento','Agrigento'],['Alessandria','Alessandria'],['Ancona','Ancona'],['Aosta','Aosta Valley'],['Arezzo','Arezzo'],['Ascoli Piceno','Ascoli Piceno'],['Asti','Asti'],['Avellino','Avellino'],['Bari','Bari'],['Barletta-Andria-Trani','Barletta-Andria-Trani'],['Belluno','Belluno'],['Benevento','Benevento'],['Bergamo','Bergamo'],['Biella','Biella'],['Bologna','Bologna'],['Bolzano','South Tyrol'],['Brescia','Brescia'],['Brindisi','Brindisi'],['Cagliari','Cagliari'],['Caltanissetta','Caltanissetta'],['Campobasso','Campobasso'],['Carbonia-Iglesias','Carbonia-Iglesias'],['Caserta','Caserta'],['Catania','Catania'],['Catanzaro','Catanzaro'],['Chieti','Chieti'],['Como','Como'],['Cosenza','Cosenza'],['Cremona','Cremona'],['Crotone','Crotone'],['Cuneo','Cuneo'],['Enna','Enna'],['Fermo','Fermo'],['Ferrara','Ferrara'],['Firenze','Florence'],['Foggia','Foggia'],['Forlì-Cesena','Forlì-Cesena'],['Frosinone','Frosinone'],['Genova','Genoa'],['Gorizia','Gorizia'],['Grosseto','Grosseto'],['Imperia','Imperia'],['Isernia','Isernia'],['L'Aquila','L'Aquila'],['La Spezia','La Spezia'],['Latina','Latina'],['Lecce','Lecce'],['Lecco','Lecco'],['Livorno','Livorno'],['Lodi','Lodi'],['Lucca','Lucca'],['Macerata','Macerata'],['Mantova','Mantua'],['Massa-Carrara','Massa and Carrara'],['Matera','Matera'],['Medio Campidano','Medio Campidano'],['Messina','Messina'],['Milano','Milan'],['Modena','Modena'],['Monza e Brianza','Monza and Brianza'],['Napoli','Naples'],['Novara','Novara'],['Nuoro','Nuoro'],['Ogliastra','Ogliastra'],['Olbia-Tempio','Olbia-Tempio'],['Oristano','Oristano'],['Padova','Padua'],['Palermo','Palermo'],['Parma','Parma'],['Pavia','Pavia'],['Perugia','Perugia'],['Pesaro e Urbino','Pesaro and Urbino'],['Pescara','Pescara'],['Piacenza','Piacenza'],['Pisa','Pisa'],['Pistoia','Pistoia'],['Pordenone','Pordenone'],['Potenza','Potenza'],['Prato','Prato'],['Ragusa','Ragusa'],['Ravenna','Ravenna'],['Reggio Calabria','Reggio Calabria'],['Reggio Emilia','Reggio Emilia'],['Rieti','Rieti'],['Rimini','Rimini'],['Roma','Rome'],['Rovigo','Rovigo'],['Salerno','Salerno'],['Sassari','Sassari'],['Savona','Savona'],['Siena','Siena'],['Siracusa','Syracuse'],['Sondrio','Sondrio'],['Taranto','Taranto'],['Teramo','Teramo'],['Terni','Terni'],['Torino','Turin'],['Trapani','Trapani'],['Trento','Trentino'],['Treviso','Treviso'],['Trieste','Trieste'],['Udine','Udine'],['Varese','Varese'],['Venezia','Venice'],['Verbano-Cusio-Ossola','Verbano-Cusio-Ossola'],['Vercelli','Vercelli'],['Verona','Verona'],['Vibo Valentia','Vibo Valentia'],['Vicenza','Vicenza'],['Viterbo','Viterbo']]"
                             >
                               Italy
                             </option>
@@ -518,7 +870,7 @@ export default function CartModal() {
                             </option>
                             <option
                               value="New Zealand"
-                              data-provinces="[['Auckland','Auckland'],['Bay of Plenty','Bay of Plenty'],['Canterbury','Canterbury'],['Chatham Islands','Chatham Islands'],['Gisborne','Gisborne'],['Hawke's Bay','Hawke’s Bay'],['Manawatu-Wanganui','Manawatū-Whanganui'],['Marlborough','Marlborough'],['Nelson','Nelson'],['Northland','Northland'],['Otago','Otago'],['Southland','Southland'],['Taranaki','Taranaki'],['Tasman','Tasman'],['Waikato','Waikato'],['Wellington','Wellington'],['West Coast','West Coast']]"
+                                  data-provinces="[['Auckland','Auckland'],['Bay of Plenty','Bay of Plenty'],['Canterbury','Canterbury'],['Chatham Islands','Chatham Islands'],['Gisborne','Gisborne'],['Hawke's Bay','Hawke's Bay'],['Manawatu-Wanganui','Manawatū-Whanganui'],['Marlborough','Marlborough'],['Nelson','Nelson'],['Northland','Northland'],['Otago','Otago'],['Southland','Southland'],['Taranaki','Taranaki'],['Tasman','Tasman'],['Waikato','Waikato'],['Wellington','Wellington'],['West Coast','West Coast']]"
                             >
                               New Zealand
                             </option>
@@ -579,7 +931,7 @@ export default function CartModal() {
                           </select>
                         </div>
                       </div>
-                      <fieldset className="">
+                          <div className="mb_12">
                         <div className="text-caption-1 text-secondary mb_8">
                           Postal/Zip Code
                         </div>
@@ -593,7 +945,7 @@ export default function CartModal() {
                           aria-required="true"
                           required
                         />
-                      </fieldset>
+                          </div>
                       <div className="tf-cart-tool-btns">
                         <button type="submit" className="btn-style-2 w-100">
                           <span className="text text-btn-uppercase">
@@ -613,7 +965,7 @@ export default function CartModal() {
                 <div
                   className={`tf-mini-cart-tool-openable ${
                     currentOpenPopup == "add-coupon" ? "open" : ""
-                  } `}
+                      }`}
                 >
                   <div className="tf-mini-cart-tool-content">
                     <label className="tf-mini-cart-tool-text">
@@ -684,6 +1036,8 @@ export default function CartModal() {
                   </div>
                 </div>
               </div>
+                </>
+              )}
             </div>
           </div>
         </div>

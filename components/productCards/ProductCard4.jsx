@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useContextElement } from "@/context/Context";
 import CountdownTimer from "../common/Countdown";
+import { useClerk } from "@clerk/nextjs";
+
 export default function ProductCard4({ product }) {
   const [currentImage, setCurrentImage] = useState(product.imgSrc);
 
@@ -16,11 +18,30 @@ export default function ProductCard4({ product }) {
     setQuickViewItem,
     addProductToCart,
     isAddedToCartProducts,
+    removeFromWishlist,
+    user
   } = useContextElement();
+  const { openSignIn } = useClerk();
 
   useEffect(() => {
     setCurrentImage(product.imgSrc);
   }, [product]);
+
+  const handleWishlistClick = () => {
+    if (!user) {
+      openSignIn();
+    } else {
+      addToWishlist(product.id);
+    }
+  };
+
+  const handleCartClick = () => {
+    if (!user) {
+      openSignIn();
+    } else {
+      addProductToCart(product.id);
+    }
+  };
 
   return (
     <div
@@ -175,13 +196,13 @@ export default function ProductCard4({ product }) {
         )}
         <div className="list-product-btn">
           <a
-            onClick={() => addToWishlist(product.id)}
+            onClick={handleWishlistClick}
             className="box-icon wishlist btn-icon-action"
           >
             <span className="icon icon-heart" />
             <span className="tooltip">
-              {isAddedtoWishlist(product.id)
-                ? "Already Wishlished"
+              {user && isAddedtoWishlist(product.id)
+                ? "Already Wishlisted"
                 : "Wishlist"}
             </span>
           </a>
@@ -215,9 +236,9 @@ export default function ProductCard4({ product }) {
             href="#shoppingCart"
             data-bs-toggle="modal"
             className="btn-main-product"
-            onClick={() => addProductToCart(product.id)}
+            onClick={handleCartClick}
           >
-            {isAddedToCartProducts(product.id)
+            {user && isAddedToCartProducts(product.id)
               ? "Already Added"
               : "ADD TO CART"}
           </a>

@@ -3,13 +3,17 @@ import { products43 } from "@/data/productsWomen";
 import React, { useState } from "react";
 import Image from "next/image";
 import { useContextElement } from "@/context/Context";
+import { useClerk } from "@clerk/nextjs";
+
 const BoughtTogether = () => {
   const {
     addProductToCart,
     isAddedToCartProducts,
-
+    cartProducts,
     updateQuantity,
+    user
   } = useContextElement();
+  const { openSignIn } = useClerk();
   const [products, setProducts] = useState([
     ...products43.map((el) => ({ ...el, checked: false })),
   ]);
@@ -39,6 +43,16 @@ const BoughtTogether = () => {
     (total, product) => total + (product.oldPrice || 0),
     0
   );
+
+  const handleAddAllToCart = () => {
+    if (!user) {
+      openSignIn();
+    } else {
+      const selectedIds = selectedProducts.map((prod) => prod.id);
+      
+      selectedIds.forEach((id) => addProductToCart(id));
+    }
+  };
 
   return (
     <form className="form-bundle-product" onSubmit={(e) => e.preventDefault()}>
@@ -108,21 +122,22 @@ const BoughtTogether = () => {
           )}
         </div>
       </div>
-      <a
-        className="tf-bundle-product-btn btn-style-2 text-btn-uppercase"
-        onClick={() =>
-          products
-            .filter((el) => el.checked)
-            .forEach((el) => addProductToCart(el.id))
-        }
-      >
-        {products
-          .filter((el) => el.checked)
-          .every((el) => isAddedToCartProducts(el.id)) &&
-        products.filter((el) => el.checked).length
-          ? "Selected already in cart"
-          : "Add selected to cart"}
-      </a>
+      <div className="cart-actions">
+        <div className="cart-total">
+          <div className="text-caption-1">
+            {selectedProducts.length} items
+          </div>
+          <div className="text-title">
+            ${totalPrice.toFixed(2)}
+          </div>
+        </div>
+        <button
+          className="btn-style-2 text-btn-uppercase"
+          onClick={handleAddAllToCart}
+        >
+          Add All To Cart
+        </button>
+      </div>
     </form>
   );
 };

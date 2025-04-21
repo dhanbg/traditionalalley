@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-const sizes = [
+const defaultSizes = [
   { id: "values-s", value: "S", price: 79.99, disabled: false },
   { id: "values-m", value: "M", price: 79.99, disabled: false },
   { id: "values-l", value: "L", price: 89.99, disabled: false },
@@ -10,8 +10,8 @@ const sizes = [
   { id: "values-xxl", value: "XXL", price: 89.99, disabled: true },
 ];
 
-export default function SizeSelect() {
-  const [selectedSize, setSelectedSize] = useState("L"); // Default value is "L"
+export default function SizeSelect({ sizes = defaultSizes }) {
+  const [selectedSize, setSelectedSize] = useState(sizes[0]?.value || "L"); // Default to first available size or "L"
 
   const handleChange = (value) => {
     setSelectedSize(value);
@@ -20,7 +20,7 @@ export default function SizeSelect() {
     <div className="variant-picker-item">
       <div className="d-flex justify-content-between mb_12">
         <div className="variant-picker-label">
-          selected size:
+          Size:
           <span className="text-title variant-picker-label-value">
             {selectedSize}
           </span>

@@ -16,8 +16,8 @@ export default function RelatedProducts() {
           role="tablist"
         >
           <li className="nav-tab-item" role="presentation">
-            <a href="#ralatedProducts" className="active" data-bs-toggle="tab">
-              Ralated Products
+            <a href="#relatedProducts" className="active" data-bs-toggle="tab">
+              Related Products
             </a>
           </li>
           <li className="nav-tab-item" role="presentation">
@@ -29,7 +29,7 @@ export default function RelatedProducts() {
         <div className="tab-content">
           <div
             className="tab-pane active show"
-            id="ralatedProducts"
+            id="relatedProducts"
             role="tabpanel"
           >
             <Swiper

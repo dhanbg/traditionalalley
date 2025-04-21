@@ -974,15 +974,15 @@ export const products42 = [
 export const bossLady = [
   {
     "id": 101,
-    "title": "Classic Black Waistcoat & Pant Set",
+    "title": "Professional Waistcoat & Pant Set",
     "price": 159.99,
     "oldPrice": 199.99,
     "hotSale": true,
     "isOnSale": true,
     "isOnisOnSale": true,
     "salePercentage": "20%",
-    "imgSrc": "/images/products/boss-lady/waistcoat-1.jpg",
-    "imgHover": "/images/products/boss-lady/waistcoat-2.jpg",
+    "imgSrc": "/images/products/womens/women-19.jpg",
+    "imgHover": "/images/products/womens/women-20.jpg",
     "addToCart": "Quick Add",
     "sizes": ["S", "M", "L", "XL", "2XL"],
     "countdown": 750000,
@@ -990,12 +990,12 @@ export const bossLady = [
       {
         "name": "Black",
         "bgColor": "bg-black",
-        "imgSrc": "/images/products/boss-lady/waistcoat-1.jpg"
+        "imgSrc": "/images/products/womens/women-19.jpg"
       },
       {
         "name": "Navy Blue",
         "bgColor": "bg-dark-blue",
-        "imgSrc": "/images/products/boss-lady/waistcoat-2.jpg"
+        "imgSrc": "/images/products/womens/women-20.jpg"
       }
     ],
     "filterBrands": ["Gucci", "Zara", "Louis Vuitton"],
@@ -1014,8 +1014,8 @@ export const bossLady = [
     "isOnSale": true,
     "isOnisOnSale": true,
     "salePercentage": "18%",
-    "imgSrc": "/images/products/boss-lady/coat-1.jpg",
-    "imgHover": "/images/products/boss-lady/coat-2.jpg",
+    "imgSrc": "/images/products/womens/women-21.jpg",
+    "imgHover": "/images/products/womens/women-22.jpg",
     "addToCart": "Quick Add",
     "sizes": ["S", "M", "L", "XL"],
     "countdown": 600000,
@@ -1023,12 +1023,12 @@ export const bossLady = [
       {
         "name": "Beige",
         "bgColor": "bg-beige",
-        "imgSrc": "/images/products/boss-lady/coat-1.jpg"
+        "imgSrc": "/images/products/womens/women-21.jpg"
       },
       {
         "name": "Grey",
         "bgColor": "bg-grey",
-        "imgSrc": "/images/products/boss-lady/coat-2.jpg"
+        "imgSrc": "/images/products/womens/women-22.jpg"
       }
     ],
     "filterBrands": ["Prada", "Armani", "Zara"],
@@ -1047,8 +1047,8 @@ export const bossLady = [
     "isOnSale": true,
     "isOnisOnSale": true,
     "salePercentage": "23%",
-    "imgSrc": "/images/products/boss-lady/pants-1.jpg",
-    "imgHover": "/images/products/boss-lady/pants-2.jpg",
+    "imgSrc": "/images/products/womens/women-23.jpg",
+    "imgHover": "/images/products/womens/women-24.jpg",
     "addToCart": "Quick Add",
     "sizes": ["S", "M", "L", "XL", "2XL"],
     "countdown": 500000,
@@ -1056,12 +1056,87 @@ export const bossLady = [
       {
         "name": "Grey",
         "bgColor": "bg-grey",
-        "imgSrc": "/images/products/boss-lady/pants-1.jpg"
+        "imgSrc": "/images/products/womens/women-23.jpg"
       },
       {
         "name": "Black",
         "bgColor": "bg-black",
-        "imgSrc": "/images/products/boss-lady/pants-2.jpg"
+        "imgSrc": "/images/products/womens/women-24.jpg"
+      }
+    ],
+    "filterBrands": ["Dolce & Gabbana", "Armani", "Gucci"],
+    "inStock": true,
+    "filterColor": ["Grey", "Black", "White"],
+    "filterSizes": ["XS", "S", "M", "L", "XL", "2XL"],
+    "tabFilterOptions2": ["Best Seller"],
+    "tabFilterOptions": ["Pants", "Sale"]
+  },
+  {
+    "id": 49,
+    "imgSrc": "/images/products/womens/women-19.jpg",
+    "imgHover": "/images/products/womens/women-20.jpg",
+    "title": "Waistcoat",
+    "price": 159.99,
+    "colors": [
+      {
+        "name": "Grey",
+        "bgColor": "bg-grey",
+        "imgSrc": "/images/products/womens/women-19.jpg"
+      },
+      {
+        "name": "Black",
+        "bgColor": "bg-black", 
+        "imgSrc": "/images/products/womens/women-20.jpg"
+      }
+    ],
+    "filterBrands": ["Gucci", "Zara", "Louis Vuitton"],
+    "inStock": true,
+    "filterColor": ["Black", "Navy Blue", "Grey", "Beige"],
+    "filterSizes": ["XS", "S", "M", "L", "XL", "2XL", "3XL"],
+    "tabFilterOptions2": ["New Arrivals", "Best Seller"],
+    "tabFilterOptions": ["Waist Coat & Pant", "Coat", "Pants", "Sale"]
+  },
+  {
+    "id": 50,
+    "imgSrc": "/images/products/womens/women-21.jpg",
+    "imgHover": "/images/products/womens/women-22.jpg",
+    "title": "Coat",
+    "price": 259.99,
+    "colors": [
+      {
+        "name": "Grey",
+        "bgColor": "bg-grey",
+        "imgSrc": "/images/products/womens/women-21.jpg"
+      },
+      {
+        "name": "Black",
+        "bgColor": "bg-black", 
+        "imgSrc": "/images/products/womens/women-22.jpg"
+      }
+    ],
+    "filterBrands": ["Prada", "Armani", "Zara"],
+    "inStock": true,
+    "filterColor": ["Beige", "Grey", "White", "Black"],
+    "filterSizes": ["XS", "S", "M", "L", "XL"],
+    "tabFilterOptions2": ["New Arrivals"],
+    "tabFilterOptions": ["Coat", "Pants", "Sale"]
+  },
+  {
+    "id": 51,
+    "imgSrc": "/images/products/womens/women-23.jpg",
+    "imgHover": "/images/products/womens/women-24.jpg",
+    "title": "Pants",
+    "price": 99.99,
+    "colors": [
+      {
+        "name": "Grey",
+        "bgColor": "bg-grey",
+        "imgSrc": "/images/products/womens/women-23.jpg"
+      },
+      {
+        "name": "Black",
+        "bgColor": "bg-black", 
+        "imgSrc": "/images/products/womens/women-24.jpg"
       }
     ],
     "filterBrands": ["Dolce & Gabbana", "Armani", "Gucci"],
@@ -1083,15 +1158,15 @@ export const juvenile = [
     "isOnSale": true,
     "isOnisOnSale": true,
     "salePercentage": "18%",
-    "imgSrc": "/images/products/juvenile/pink-printed-1.jpg",
-    "imgHover": "/images/products/juvenile/pink-printed-2.jpg",
+    "imgSrc": "/images/products/womens/women-25.jpg",
+    "imgHover": "/images/products/womens/women-26.jpg",
     "addToCart": "Quick Add",
     "sizes": ["S", "M", "L", "XL"],
     "colors": [
       {
         "name": "Pink",
         "bgColor": "bg-pink",
-        "imgSrc": "/images/products/juvenile/pink-printed-1.jpg"
+        "imgSrc": "/images/products/womens/women-25.jpg"
       }
     ],
     "filterBrands": ["Zara", "Gucci", "H&M"],
@@ -1103,22 +1178,22 @@ export const juvenile = [
   },
   {
     "id": 202,
-    "title": "Black Printed Set",
-    "price": 99.99,
-    "oldPrice": 129.99,
-    "hotSale": true,
+    "title": "Black Floral Printed Dress",
+    "price": 79.99,
+    "oldPrice": 99.99,
+    "hotSale": false,
     "isOnSale": true,
     "isOnisOnSale": true,
-    "salePercentage": "23%",
-    "imgSrc": "/images/products/juvenile/black-printed-1.jpg",
-    "imgHover": "/images/products/juvenile/black-printed-2.jpg",
+    "salePercentage": "20%",
+    "imgSrc": "/images/products/womens/women-27.jpg",
+    "imgHover": "/images/products/womens/women-28.jpg",
     "addToCart": "Quick Add",
-    "sizes": ["S", "M", "L", "XL", "2XL"],
+    "sizes": ["S", "M", "L", "XL"],
     "colors": [
       {
         "name": "Black",
         "bgColor": "bg-black",
-        "imgSrc": "/images/products/juvenile/black-printed-1.jpg"
+        "imgSrc": "/images/products/womens/women-27.jpg"
       }
     ],
     "filterBrands": ["Nike", "Zalando", "Adidas"],
@@ -1136,6 +1211,96 @@ export const juvenile = [
     "hotSale": false,
     "isOnSale": true,
     "salePercentage": "18%",
+    "imgSrc": "/images/products/womens/women-25.jpg",
+    "imgHover": "/images/products/womens/women-26.jpg",
+    "sizes": ["S", "M", "L", "XL"],
+    "colors": [{ "name": "Pink", "bgColor": "bg-pink", "imgSrc": "/images/products/womens/women-25.jpg" }],
+    "filterBrands": ["Zara", "Gucci", "H&M"],
+    "inStock": true,
+    "filterColor": ["Pink", "White"],
+    "filterSizes": ["XS", "S", "M", "L", "XL"],
+    "tabFilterOptions": ["Pink Printed"]
+  },
+  {
+    "id": 202,
+    "title": "Black Floral Printed Dress",
+    "price": 79.99,
+    "oldPrice": 99.99,
+    "hotSale": false,
+    "isOnSale": true,
+    "salePercentage": "20%",
+    "imgSrc": "/images/products/womens/women-27.jpg",
+    "imgHover": "/images/products/womens/women-28.jpg",
+    "sizes": ["S", "M", "L", "XL"],
+    "colors": [{ "name": "Black", "bgColor": "bg-black", "imgSrc": "/images/products/womens/women-27.jpg" }],
+    "filterBrands": ["Nike", "Zalando", "Adidas"],
+    "inStock": true,
+    "filterColor": ["Black", "Grey"],
+    "filterSizes": ["XS", "S", "M", "L", "XL", "2XL"],
+    "tabFilterOptions": ["Black Printed Set"]
+  },
+  {
+    "id": 203,
+    "title": "Pink Solid Dress",
+    "price": 69.99,
+    "oldPrice": 89.99,
+    "hotSale": false,
+    "isOnSale": true,
+    "isOnisOnSale": true,
+    "salePercentage": "22%",
+    "imgSrc": "/images/products/womens/women-29.jpg",
+    "imgHover": "/images/products/womens/women-30.jpg",
+    "colors": [{ "name": "Pink", "bgColor": "bg-pink", "imgSrc": "/images/products/womens/women-29.jpg" }],
+    "filterBrands": ["Zara", "Gucci", "H&M"],
+    "inStock": true,
+    "filterColor": ["Pink", "White"],
+    "filterSizes": ["XS", "S", "M", "L", "XL"],
+    "tabFilterOptions": ["Pink Printed"]
+  },
+  {
+    "id": 204,
+    "title": "Black Printed Skirt",
+    "price": 59.99,
+    "oldPrice": 79.99,
+    "hotSale": false,
+    "isOnSale": true,
+    "isOnisOnSale": true,
+    "salePercentage": "25%",
+    "imgSrc": "/images/products/womens/women-31.jpg",
+    "imgHover": "/images/products/womens/women-32.jpg", 
+    "colors": [{ "name": "Black", "bgColor": "bg-black", "imgSrc": "/images/products/womens/women-31.jpg" }],
+    "filterBrands": ["Zara", "Gucci", "H&M"],
+    "inStock": true,
+    "filterColor": ["Pink", "White"],
+    "filterSizes": ["XS", "S", "M", "L", "XL"],
+    "tabFilterOptions": ["Pink Printed"]
+  },
+  {
+    "id": 205,
+    "title": "Red Floral Printed Top",
+    "price": 49.99,
+    "oldPrice": 69.99,
+    "hotSale": false,
+    "isOnSale": true,
+    "isOnisOnSale": true,
+    "salePercentage": "28%",
+    "imgSrc": "/images/products/womens/women-33.jpg",
+    "imgHover": "/images/products/womens/women-34.jpg",
+    "colors": [{ "name": "Red", "bgColor": "bg-red", "imgSrc": "/images/products/womens/women-33.jpg" }],
+    "filterBrands": ["Zara", "Gucci", "H&M"],
+    "inStock": true,
+    "filterColor": ["Pink", "White"],
+    "filterSizes": ["XS", "S", "M", "L", "XL"],
+    "tabFilterOptions": ["Pink Printed"]
+  },
+  {
+    "id": 206,
+    "title": "Pink Floral Printed Dress",
+    "price": 89.99,
+    "oldPrice": 109.99,
+    "hotSale": false,
+    "isOnSale": true,
+    "salePercentage": "18%",
     "imgSrc": "/images/products/juvenile/pink-printed-1.jpg",
     "imgHover": "/images/products/juvenile/pink-printed-2.jpg",
     "sizes": ["S", "M", "L", "XL"],
@@ -1147,7 +1312,7 @@ export const juvenile = [
     "tabFilterOptions": ["Pink Printed"]
   },
   {
-    "id": 202,
+    "id": 207,
     "title": "Black Printed Set",
     "price": 99.99,
     "oldPrice": 129.99,
@@ -1165,7 +1330,7 @@ export const juvenile = [
     "tabFilterOptions": ["Black Printed Set"]
   },
   {
-    "id": 203,
+    "id": 208,
     "title": "Red Floral Skater Dress",
     "price": 79.99,
     "oldPrice": 99.99,

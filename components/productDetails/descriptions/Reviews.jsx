@@ -85,7 +85,7 @@ export default function Reviews() {
               <div className="image">
                 <Image
                   alt=""
-                  src="/images/avatar/user-default.jpg"
+                  src="/images/avatar/user-1.jpg"
                   width={120}
                   height={120}
                 />
@@ -114,7 +114,7 @@ export default function Reviews() {
               <div className="image">
                 <Image
                   alt=""
-                  src="/images/avatar/user-Traditional Alley.jpg"
+                  src="/images/avatar/user-1.jpg"
                   width={104}
                   height={104}
                 />
@@ -142,7 +142,7 @@ export default function Reviews() {
               <div className="image">
                 <Image
                   alt=""
-                  src="/images/avatar/user-default.jpg"
+                  src="/images/avatar/user-1.jpg"
                   width={120}
                   height={120}
                 />
