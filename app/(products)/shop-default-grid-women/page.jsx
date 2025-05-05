@@ -3,7 +3,7 @@ import Header1 from "@/components/headers/Header1";
 import Topbar6 from "@/components/headers/Topbar6";
 import Products from "@/components/products/Products";
 import Link from "next/link";
-import React from "react";
+import React, { Suspense } from "react";
 
 export default function page() {
   return (
@@ -33,7 +33,9 @@ export default function page() {
           </div>
         </div>
       </div>
-      <Products categoryId={1} categoryTitle="Women" />
+      <Suspense fallback={<div>Loading products...</div>}>
+        <Products categoryId={1} categoryTitle="Women" />
+      </Suspense>
       <Footer1 />
     </>
   );
