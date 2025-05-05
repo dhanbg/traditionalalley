@@ -18,21 +18,6 @@ export default function SizeSelect({ sizes = defaultSizes }) {
   };
   return (
     <div className="variant-picker-item">
-      <div className="d-flex justify-content-between mb_12">
-        <div className="variant-picker-label">
-          Size:
-          <span className="text-title variant-picker-label-value">
-            {selectedSize}
-          </span>
-        </div>
-        <a
-          href="#size-guide"
-          data-bs-toggle="modal"
-          className="size-guide text-title link"
-        >
-          Size Guide
-        </a>
-      </div>
       <div className="variant-picker-values gap12">
         {sizes.map(({ id, value, price, disabled }) => (
           <div key={id} onClick={() => handleChange(value)}>

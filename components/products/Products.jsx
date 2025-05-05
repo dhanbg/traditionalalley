@@ -9,21 +9,158 @@ import FilterModal from "./FilterModal";
 import { initialState, reducer } from "@/reducer/filterReducer";
 import { productWomen } from "@/data/productsWomen";
 import FilterMeta from "./FilterMeta";
-import { fetchDataFromApi } from "@/utils/api";
+import { fetchDataFromApi, fetchFilterOptions } from "@/utils/api";
 import { COLLECTIONS_API, COLLECTION_BY_SLUG_API, PRODUCTS_API, PRODUCT_BY_DOCUMENT_ID_API, API_URL } from "@/utils/urls";
+import { useSearchParams } from 'next/navigation';
 
 // Default placeholder image
 const DEFAULT_IMAGE = '/images/placeholder.jpg';
 
-export default function Products({ parentClass = "flat-spacing", collection }) {
+export default function Products({ parentClass = "flat-spacing", collection, categoryId, categoryTitle }) {
+  const searchParams = useSearchParams();
   const [activeLayout, setActiveLayout] = useState(4);
   const [state, dispatch] = useReducer(reducer, initialState);
   const [loading, setLoading] = useState(false);
-  const [collections, setCollections] = useState([]);
+  const [collectionData, setCollectionData] = useState([]);
   const [collectionProducts, setCollectionProducts] = useState([]);
   const [productDetails, setProductDetails] = useState([]);
 
   const [loadedItems, setLoadedItems] = useState([]);
+  const [filterOptions, setFilterOptions] = useState({
+    brands: [],
+    colors: [],
+    sizes: [],
+    availabilityOptions: [
+      { id: "inStock", label: "In stock", count: 0, value: true },
+      { id: "outStock", label: "Out of stock", count: 0, value: false }
+    ],
+    priceRange: [20, 300]
+  });
+
+  // Fetch all products for a category
+  useEffect(() => {
+    const fetchProductsByCategory = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch all products for this category
+        const response = await fetchDataFromApi(`${PRODUCTS_API}&filters[collection][category][title][$eq]=${categoryTitle}`);
+        
+        if (response.data && response.data.length > 0) {
+          // Transform the products to match the expected structure for ProductCard components
+          const transformedProducts = response.data.map(product => {
+            // Skip processing if product is undefined or null
+            if (!product) {
+              return null;
+            }
+            
+            // Extract image URLs with proper formatting
+            let imgSrc = DEFAULT_IMAGE;
+            if (product.imgSrc) {
+              // Check if formats are available
+              if (product.imgSrc.formats && product.imgSrc.formats.medium) {
+                imgSrc = `${API_URL}${product.imgSrc.formats.medium.url}`;
+              } else if (product.imgSrc.url) {
+                imgSrc = `${API_URL}${product.imgSrc.url}`;
+              }
+            }
+            
+            // Ensure imgSrc is never an empty string
+            imgSrc = imgSrc || DEFAULT_IMAGE;
+            
+            // Handle hover image similarly
+            let imgHover = imgSrc; // Default to main image
+            if (product.imgHover) {
+              // Check if formats are available
+              if (product.imgHover.formats && product.imgHover.formats.medium) {
+                imgHover = `${API_URL}${product.imgHover.formats.medium.url}`;
+              } else if (product.imgHover.url) {
+                imgHover = `${API_URL}${product.imgHover.url}`;
+              }
+            }
+            
+            // Ensure imgHover is never an empty string
+            imgHover = imgHover || imgSrc || DEFAULT_IMAGE;
+            
+            // Process colors to ensure they're in the correct format
+            let processedColors = null;
+            
+            if (Array.isArray(product.colors)) {
+              // If colors is a simple array of strings, convert to objects with color names
+              if (typeof product.colors[0] === 'string') {
+                processedColors = product.colors.map(color => ({
+                  name: color,
+                  bgColor: `bg-${color.toLowerCase().replace(/\s+/g, '-')}`,
+                  // We don't have actual color images, so use the main product image
+                  imgSrc: imgSrc
+                }));
+              } else {
+                // If colors is already an array of objects, use as is
+                processedColors = product.colors;
+              }
+            }
+            
+            // Extract gallery images if available
+            const gallery = Array.isArray(product.gallery) 
+              ? product.gallery.map(img => {
+                  if (!img) return { id: 0, url: DEFAULT_IMAGE };
+                  
+                  let imageUrl = DEFAULT_IMAGE;
+                  if (img.formats && img.formats.medium) {
+                    imageUrl = `${API_URL}${img.formats.medium.url}`;
+                  } else if (img.url) {
+                    imageUrl = `${API_URL}${img.url}`;
+                  }
+                  
+                  // Ensure gallery image URL is never an empty string
+                  imageUrl = imageUrl || DEFAULT_IMAGE;
+                  
+                  return {
+                    id: img.id || img.documentId || 0,
+                    url: imageUrl
+                  };
+                }) 
+              : [];
+            
+            // Make sure filterSizes is converted to sizes if sizes is null
+            const sizes = product.sizes || product.filterSizes || [];
+            
+            return {
+              ...product,
+              id: product.id || product.documentId || Math.random().toString(36).substring(7),
+              imgSrc,
+              imgHover,
+              gallery,
+              colors: processedColors,
+              sizes,
+              // Make sure other required fields are present
+              title: product.title || "Untitled Product",
+              price: product.price || 0,
+              oldPrice: product.oldPrice || null,
+              isOnSale: !!product.oldPrice,
+              salePercentage: product.salePercentage || "25%"
+            };
+          }).filter(Boolean); // Remove any null values from the array
+          
+          setProductDetails(transformedProducts);
+          
+          // Update the filtered and sorted state with the transformed products
+          dispatch({ type: "SET_FILTERED", payload: transformedProducts });
+          dispatch({ type: "SET_SORTED", payload: transformedProducts });
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        // Silently handle error
+        setLoading(false);
+      }
+    };
+
+    // If categoryId and categoryTitle are provided, fetch all products for that category
+    if (categoryId && categoryTitle) {
+      fetchProductsByCategory();
+    }
+  }, [categoryId, categoryTitle]);
 
   // Fetch collection by slug and get its products
   useEffect(() => {
@@ -34,11 +171,11 @@ export default function Products({ parentClass = "flat-spacing", collection }) {
         
         if (response.data && response.data.length > 0) {
           // Get the first matching collection
-          const collectionData = response.data[0];
-          setCollections([collectionData]);
+          const collectionItem = response.data[0];
+          setCollectionData([collectionItem]);
           
           // Products are directly in the collection.products array
-          const products = collectionData.products || [];
+          const products = collectionItem.products || [];
           
           // Extract document IDs from products
           const productDocumentIds = products.map(product => product.documentId);
@@ -49,14 +186,14 @@ export default function Products({ parentClass = "flat-spacing", collection }) {
           await fetchProductsByDocumentIds(productDocumentIds);
         }
       } catch (error) {
-        console.error("Error fetching collection products:", error);
+        // Silently handle error - removed console.error
       }
     };
 
-    if (collection) {
+    if (collection && !categoryId) {
       fetchCollectionProducts();
     }
-  }, [collection]);
+  }, [collection, categoryId]);
   
   // Function to fetch product details by document IDs
   const fetchProductsByDocumentIds = async (documentIds) => {
@@ -187,7 +324,7 @@ export default function Products({ parentClass = "flat-spacing", collection }) {
       
       setLoading(false);
     } catch (error) {
-      console.error("Error fetching product details:", error);
+      // Silently handle error - removed console.error
       setLoading(false);
     }
   };
@@ -197,7 +334,7 @@ export default function Products({ parentClass = "flat-spacing", collection }) {
     availability,
     color,
     size,
-    brands,
+    collections,
 
     filtered,
     sortingOption,
@@ -213,144 +350,309 @@ export default function Products({ parentClass = "flat-spacing", collection }) {
     setPrice: (value) => dispatch({ type: "SET_PRICE", payload: value }),
 
     setColor: (value) => {
-      value == color
-        ? dispatch({ type: "SET_COLOR", payload: "All" })
-        : dispatch({ type: "SET_COLOR", payload: value });
+      if (value && typeof value === 'object' && value.name) {
+        if (color && color.name === value.name) {
+          dispatch({ type: "SET_COLOR", payload: { name: "All", className: "", imgSrc: null } });
+        } else {
+          // Make sure we have all required properties
+          const colorPayload = {
+            name: value.name,
+            className: value.className || `bg-${value.name.toLowerCase().replace(/\s+/g, '-')}`,
+            imgSrc: value.imgSrc || null
+          };
+          dispatch({ type: "SET_COLOR", payload: colorPayload });
+        }
+      } else {
+        dispatch({ type: "SET_COLOR", payload: { name: "All", className: "", imgSrc: null } });
+      }
     },
+    
     setSize: (value) => {
-      value == size
-        ? dispatch({ type: "SET_SIZE", payload: "All" })
-        : dispatch({ type: "SET_SIZE", payload: value });
+      if (value === size) {
+        dispatch({ type: "SET_SIZE", payload: "All" });
+      } else {
+        dispatch({ type: "SET_SIZE", payload: value });
+      }
     },
+    
     setAvailability: (value) => {
-      value == availability
-        ? dispatch({ type: "SET_AVAILABILITY", payload: "All" })
-        : dispatch({ type: "SET_AVAILABILITY", payload: value });
+      if (value && typeof value === 'object' && value.id) {
+        if (availability && availability.id === value.id) {
+          dispatch({ type: "SET_AVAILABILITY", payload: { id: "all", label: "All", value: null } });
+        } else {
+          dispatch({ type: "SET_AVAILABILITY", payload: value });
+        }
+      } else {
+        dispatch({ type: "SET_AVAILABILITY", payload: { id: "all", label: "All", value: null } });
+      }
     },
 
-    setBrands: (newBrand) => {
-      const updated = [...brands].includes(newBrand)
-        ? [...brands].filter((elm) => elm != newBrand)
-        : [...brands, newBrand];
-      dispatch({ type: "SET_BRANDS", payload: updated });
+    setCollection: (collectionId) => {
+      if (!collectionId) return;
+      
+      const updatedCollections = state.collections.includes(collectionId)
+        ? state.collections.filter((id) => id !== collectionId)
+        : [...state.collections, collectionId];
+        
+      dispatch({ type: "SET_COLLECTIONS", payload: updatedCollections });
     },
-    removeBrand: (newBrand) => {
-      const updated = [...brands].filter((brand) => brand != newBrand);
-
-      dispatch({ type: "SET_BRANDS", payload: updated });
+    
+    removeCollection: (collectionId) => {
+      const updatedCollections = state.collections.filter(id => id !== collectionId);
+      dispatch({ type: "SET_COLLECTIONS", payload: updatedCollections });
     },
+    
     setSortingOption: (value) =>
       dispatch({ type: "SET_SORTING_OPTION", payload: value }),
+      
     toggleFilterWithOnSale: () => dispatch({ type: "TOGGLE_FILTER_ON_SALE" }),
+    
     setCurrentPage: (value) =>
       dispatch({ type: "SET_CURRENT_PAGE", payload: value }),
+      
     setItemPerPage: (value) => {
-      dispatch({ type: "SET_CURRENT_PAGE", payload: 1 }),
+      dispatch({ type: "SET_CURRENT_PAGE", payload: 1 });
         dispatch({ type: "SET_ITEM_PER_PAGE", payload: value });
     },
+    
     clearFilter: () => {
       dispatch({ type: "CLEAR_FILTER" });
     },
   };
+
+  // Filter products
   useEffect(() => {
-    let filteredArrays = [];
+    let filteredArray = [];
+    
+    // If we have products from API, filter them based on selected filters
+    if (productDetails && Array.isArray(productDetails) && productDetails.length > 0) {
+      filteredArray = productDetails.filter((product) => {
+        // Skip invalid products
+        if (!product) return false;
+        
+        // Filter by price
+        const productPrice = typeof product.price === 'number' ? product.price : 0;
+        if (
+          productPrice < state.price[0] ||
+          productPrice > state.price[1]
+        ) {
+          return false;
+        }
+    
+        // Filter by availability
+        if (
+          state.availability && 
+          state.availability.id !== "all" &&
+          state.availability.value !== null &&
+          product.inStock !== state.availability.value
+        ) {
+          return false;
+        }
+    
+        // Filter by color
+        if (
+          state.color && 
+          state.color.name !== "All" &&
+          (!product.colors || !Array.isArray(product.colors))
+        ) {
+          return false;
+        }
+        
+        // Check if product color matches selected color
+        if (state.color && state.color.name !== "All" && Array.isArray(product.colors)) {
+          const colorMatch = product.colors.some(c => {
+            if (typeof c === 'string') {
+              return c === state.color.name;
+            } else if (c && typeof c === 'object' && c.name) {
+              return c.name === state.color.name;
+            }
+            return false;
+          });
+          
+          if (!colorMatch) return false;
+        }
+    
+        // Filter by size
+        if (
+          state.size !== "All" &&
+          (!product.sizes || !Array.isArray(product.sizes))
+        ) {
+          return false;
+        }
+        
+        // Check if product size matches selected size
+        if (state.size !== "All" && Array.isArray(product.sizes)) {
+          const sizeMatch = product.sizes.some(s => {
+            if (typeof s === 'string') {
+              return s === state.size;
+            } else if (s && typeof s === 'object' && s.name) {
+              return s.name === state.size;
+            }
+            return false;
+          });
+          
+          if (!sizeMatch) return false;
+        }
+    
+        // Filter by collections
+        if (
+          state.collections && 
+          Array.isArray(state.collections) && 
+          state.collections.length > 0
+        ) {
+          if (!product.collection || !product.collection.id) {
+            return false;
+          }
+          
+          // Check if product collection is in the selected collections
+          const collectionMatch = state.collections.includes(product.collection.id);
+          if (!collectionMatch) return false;
+        }
+    
+        // Filter by "on sale" status
+        if (state.activeFilterOnSale && !product.isOnSale) {
+          return false;
+        }
+    
+        return true;
+      });
+    }
 
-    if (brands.length) {
-      const filteredByBrands = [...productWomen].filter((elm) =>
-        brands.every((el) => elm.filterBrands.includes(el))
-      );
-      filteredArrays = [...filteredArrays, filteredByBrands];
-    }
-    if (availability !== "All") {
-      const filteredByavailability = [...productWomen].filter(
-        (elm) => availability.value === elm.inStock
-      );
-      filteredArrays = [...filteredArrays, filteredByavailability];
-    }
-    if (color !== "All") {
-      const filteredByColor = [...productWomen].filter((elm) =>
-        elm.filterColor.includes(color.name)
-      );
-      filteredArrays = [...filteredArrays, filteredByColor];
-    }
-    if (size !== "All" && size !== "Free Size") {
-      const filteredBysize = [...productWomen].filter((elm) =>
-        elm.filterSizes.includes(size)
-      );
-      filteredArrays = [...filteredArrays, filteredBysize];
-    }
-    if (activeFilterOnSale) {
-      const filteredByonSale = [...productWomen].filter((elm) => elm.oldPrice);
-      filteredArrays = [...filteredArrays, filteredByonSale];
-    }
+    dispatch({ type: "SET_FILTERED", payload: filteredArray });
+  }, [
+    state.price,
+    state.availability,
+    state.color,
+    state.size,
+    state.collections,
+    state.activeFilterOnSale,
+    productDetails,
+  ]);
 
-    const filteredByPrice = [...productWomen].filter(
-      (elm) => elm.price >= price[0] && elm.price <= price[1]
-    );
-    filteredArrays = [...filteredArrays, filteredByPrice];
-
-    const commonItems = [...productWomen].filter((item) =>
-      filteredArrays.every((array) => array.includes(item))
-    );
-    dispatch({ type: "SET_FILTERED", payload: commonItems });
-  }, [price, availability, color, size, brands, activeFilterOnSale]);
-
+  // Sort products based on selected sorting option
   useEffect(() => {
+    if (!filtered || !Array.isArray(filtered) || filtered.length === 0) {
+      dispatch({ type: "SET_SORTED", payload: [] });
+      return;
+    }
+
+    let sortedProducts = [...filtered];
+    
     if (sortingOption === "Price Ascending") {
-      dispatch({
-        type: "SET_SORTED",
-        payload: [...filtered].sort((a, b) => a.price - b.price),
+      sortedProducts = sortedProducts.sort((a, b) => {
+        // Handle undefined or non-numeric prices
+        const priceA = typeof a.price === 'number' ? a.price : 0;
+        const priceB = typeof b.price === 'number' ? b.price : 0;
+        return priceA - priceB;
       });
     } else if (sortingOption === "Price Descending") {
-      dispatch({
-        type: "SET_SORTED",
-        payload: [...filtered].sort((a, b) => b.price - a.price),
+      sortedProducts = sortedProducts.sort((a, b) => {
+        // Handle undefined or non-numeric prices
+        const priceA = typeof a.price === 'number' ? a.price : 0;
+        const priceB = typeof b.price === 'number' ? b.price : 0;
+        return priceB - priceA;
       });
     } else if (sortingOption === "Title Ascending") {
-      dispatch({
-        type: "SET_SORTED",
-        payload: [...filtered].sort((a, b) => a.title.localeCompare(b.title)),
+      sortedProducts = sortedProducts.sort((a, b) => {
+        // Handle undefined titles
+        const titleA = typeof a.title === 'string' ? a.title : "";
+        const titleB = typeof b.title === 'string' ? b.title : "";
+        return titleA.localeCompare(titleB);
       });
     } else if (sortingOption === "Title Descending") {
-      dispatch({
-        type: "SET_SORTED",
-        payload: [...filtered].sort((a, b) => b.title.localeCompare(a.title)),
+      sortedProducts = sortedProducts.sort((a, b) => {
+        // Handle undefined titles
+        const titleA = typeof a.title === 'string' ? a.title : "";
+        const titleB = typeof b.title === 'string' ? b.title : "";
+        return titleB.localeCompare(titleA);
       });
-    } else {
-      dispatch({ type: "SET_SORTED", payload: filtered });
     }
+    
+    dispatch({ type: "SET_SORTED", payload: sortedProducts });
     dispatch({ type: "SET_CURRENT_PAGE", payload: 1 });
   }, [filtered, sortingOption]);
 
+  // Update loaded items when sorted items change
   useEffect(() => {
-    if (productDetails.length > 0) {
-      // Use fetched product details when available
-      setLoadedItems(productDetails.slice(0, 8));
-    } else {
-      // Use sorted data from the filter reducer as fallback
-      setLoadedItems(sorted.slice(0, 8));
+    if (!sorted || !Array.isArray(sorted)) {
+      setLoadedItems([]);
+      return;
     }
-  }, [sorted, productDetails]);
+    
+    // Initialize with first batch of items
+    setLoadedItems(sorted.slice(0, 8));
+  }, [sorted]);
 
   const handleLoad = () => {
+    if (!sorted || !Array.isArray(sorted) || loadedItems.length >= sorted.length) {
+      return; // No more items to load
+    }
+    
     setLoading(true);
+    
     setTimeout(() => {
-      if (productDetails.length > 0) {
-        // Load more products from productDetails
-        setLoadedItems((pre) => [
-          ...pre,
-          ...productDetails.slice(pre.length, pre.length + 4),
-        ]);
-      } else {
-        // Load more products from the sorted data as fallback
+      // Load more products from the sorted items
         setLoadedItems((pre) => [
           ...pre,
           ...sorted.slice(pre.length, pre.length + 4),
         ]);
-      }
+      
       setLoading(false);
     }, 1000);
   };
+
+  // Fetch filter options for this category
+  useEffect(() => {
+    const loadFilterOptions = async () => {
+      try {
+        if (categoryTitle) {
+          const options = await fetchFilterOptions(categoryTitle);
+          
+          // Only update if we got valid data
+          if (options) {
+            setFilterOptions(options);
+            
+            // Update the initial price range in state if we have data from backend
+            if (options.priceRange && 
+                Array.isArray(options.priceRange) && 
+                options.priceRange.length === 2 &&
+                typeof options.priceRange[0] === 'number' &&
+                typeof options.priceRange[1] === 'number') {
+              dispatch({ type: "SET_PRICE", payload: options.priceRange });
+            }
+          }
+        }
+      } catch (error) {
+        // Use default values if there's an error
+        setFilterOptions({
+          brands: [],
+          colors: [],
+          sizes: [],
+          availabilityOptions: [
+            { id: "inStock", label: "In stock", count: 0, value: true },
+            { id: "outStock", label: "Out of stock", count: 0, value: false }
+          ],
+          priceRange: [20, 300]
+        });
+      }
+    };
+    
+    loadFilterOptions();
+  }, [categoryTitle]);
+
+  // Set the initial collection filter from URL parameters
+  useEffect(() => {
+    const collectionId = searchParams.get('collectionId');
+    if (collectionId) {
+      // Check if it's a valid number before setting
+      const id = parseInt(collectionId, 10);
+      if (!isNaN(id)) {
+        // Set the collection filter
+        dispatch({ type: "SET_COLLECTIONS", payload: [id] });
+      }
+    }
+  }, [searchParams]);
+
   return (
     <>
       <section className={parentClass}>
@@ -389,8 +691,11 @@ export default function Products({ parentClass = "flat-spacing", collection }) {
           </div>
           <div className="wrapper-control-shop">
             <FilterMeta 
-              productLength={productDetails.length > 0 ? productDetails.length : sorted.length} 
-              allProps={allProps} 
+              productLength={state.filtered ? state.filtered.length : 0} 
+              allProps={{
+                ...allProps,
+                filterOptions: filterOptions
+              }} 
             />
 
             {activeLayout == 1 ? (
@@ -438,7 +743,49 @@ export default function Products({ parentClass = "flat-spacing", collection }) {
         </div>
       </section>
 
-      <FilterModal allProps={allProps} />
+      <FilterModal
+        allProps={{
+          collections: state.collections,
+          setCollection: (collectionId) => {
+            if (!collectionId) return;
+            
+            const updatedCollections = state.collections.includes(collectionId)
+              ? state.collections.filter((id) => id !== collectionId)
+              : [...state.collections, collectionId];
+              
+            dispatch({ type: "SET_COLLECTIONS", payload: updatedCollections });
+          },
+          price: state.price,
+          setPrice: (price) => {
+            if (Array.isArray(price) && price.length === 2) {
+              dispatch({ type: "SET_PRICE", payload: price });
+            }
+          },
+          color: state.color,
+          setColor: (color) => {
+            if (color && typeof color === 'object') {
+              dispatch({ type: "SET_COLOR", payload: color });
+            }
+          },
+          size: state.size,
+          setSize: (size) => {
+            if (size) {
+              dispatch({ type: "SET_SIZE", payload: size });
+            }
+          },
+          availability: state.availability,
+          setAvailability: (availability) => {
+            if (availability && typeof availability === 'object') {
+              dispatch({ type: "SET_AVAILABILITY", payload: availability });
+            }
+          },
+          clearFilter: () => {
+            dispatch({ type: "CLEAR_FILTER" });
+          },
+        }}
+        products={state.filtered || []}
+        filterOptions={filterOptions}
+      />
     </>
   );
 }

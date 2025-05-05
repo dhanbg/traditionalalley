@@ -25,26 +25,6 @@ export default function Breadcumb({ product }) {
             <i className="icon icon-arrRight" />
             <span className="text text-caption-1">{product.title}</span>
           </div>
-          <div className="tf-breadcrumb-prev-next">
-            {/* The navigation arrows will be updated as we develop the site further */}
-            <Link
-              href="#"
-              className="tf-breadcrumb-prev"
-              onClick={(e) => e.preventDefault()}
-            >
-              <i className="icon icon-arrLeft" />
-            </Link>
-            <Link href="/collections" className="tf-breadcrumb-back">
-              <i className="icon icon-squares-four" />
-            </Link>
-            <Link
-              href="#"
-              className="tf-breadcrumb-next"
-              onClick={(e) => e.preventDefault()}
-            >
-              <i className="icon icon-arrRight" />
-            </Link>
-          </div>
         </div>
       </div>
     </div>

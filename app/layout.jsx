@@ -4,6 +4,7 @@ import "../public/scss/main.scss";
 import "photoswipe/style.css";
 import "react-range-slider-input/dist/style.css";
 import "../public/css/image-compare-viewer.min.css";
+import "../public/css/custom.css"; // Custom CSS for compare products
 import { useEffect, useState } from "react";
 import ScrollTop from "@/components/common/ScrollTop";
 import Context from "@/context/Context";
@@ -120,10 +121,11 @@ export default function RootLayout({ children }) {
     });
     wow.init();
   }, [pathname]);
+
   return (
     <ClerkProvider>
     <html lang="en">
-      <body className="preload-wrapper popup-loader">
+      <body className="preload-wrapper popup-loader" suppressHydrationWarning={true}>
         <Context>
           <div id="wrapper">{children}</div>
           <CartModal />

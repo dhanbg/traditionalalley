@@ -33,7 +33,7 @@ export default function page() {
           </div>
         </div>
       </div>
-      <Products collection="bossLady" />
+      <Products categoryId={1} categoryTitle="Women" />
       <Footer1 />
     </>
   );

@@ -1,0 +1,236 @@
+/* Custom CSS for the compare products page */
+
+.tf-compare-item {
+  position: relative;
+  padding-top: 20px;
+  padding-right: 20px;
+  margin-right: 10px;
+}
+
+/* Image container with relative positioning for proper remove button placement */
+.image-container {
+  position: relative;
+  width: 180px;
+  height: 220px;
+  overflow: hidden;
+  border-radius: 8px;
+  margin: 0 auto;
+}
+
+/* Improve the circle remove button styling */
+.remove-compare-item {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  z-index: 10;
+  border: 1px solid #eee;
+  background: #000;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 0;
+  transition: none;
+}
+
+.remove-compare-item:hover {
+  background: #333;
+  transform: none;
+}
+
+.remove-compare-item i {
+  font-size: 14px;
+  color: #fff;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+}
+
+/* Old price styling for compare products */
+.old-price {
+  text-decoration: line-through;
+  color: #999;
+  margin-left: 8px;
+  font-size: 0.85em;
+}
+
+/* Star rating with inactive stars */
+.list-star .icon-star.inactive {
+  opacity: 0.3;
+}
+
+/* Compare modal styling */
+.compare-wrapper {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  padding: 15px 0;
+}
+
+.compare-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px;
+  padding-top: 30px;
+  padding-right: 30px;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  margin: 10px;
+  width: 180px;
+  border: 1px solid #eee;
+  position: relative;
+}
+
+.compare-item:hover {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  transform: translateY(-3px);
+}
+
+/* Product styling in comparison table and modal */
+.product-compare-image {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.product-title {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.product-price {
+  font-weight: bold;
+}
+
+/* Product comparison image styling */
+.product-compare-img {
+  /* width: 180px !important; */
+  /* height: 220px !important; */
+  object-fit: contain;
+  border-radius: 8px;
+  transition: transform 0.3s ease;
+}
+
+.tf-compare-image {
+  display: block;
+  margin: 0 auto;
+  width: 180px;
+  height: 220px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.tf-compare-image:hover .product-compare-img {
+  transform: scale(1.05);
+}
+
+/* Make the comparison table more responsive */
+.tf-compare-table {
+  overflow-x: auto;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  margin-bottom: 30px;
+}
+
+/* Fix alignment issues */
+.tf-compare-row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid #eee;
+  width: 100%;
+}
+
+.tf-compare-row:last-child {
+  border-bottom: none;
+}
+
+.tf-compare-col {
+  padding: 15px;
+  min-width: 150px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #eee;
+}
+
+.tf-compare-col:last-child {
+  border-right: none;
+}
+
+.tf-compare-field.d-md-block.d-none {
+  font-weight: bold;
+  background-color: #f9f9f9;
+  min-width: 120px;
+  width: 120px;
+  justify-content: flex-start;
+  flex: 0 0 120px;
+}
+
+/* First row styling for product images */
+.tf-compare-grid .tf-compare-col {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-right: 15px;
+}
+
+/* Center content in each cell */
+.tf-compare-field.text-center {
+  text-align: center;
+}
+
+.tf-compare-rate {
+  flex-direction: column;
+}
+
+.compare-wrapper .product-compare-image {
+  width: 180px;
+  height: 220px;
+}
+
+/* Add to cart button styling */
+.tf-compare-viewcart button {
+  cursor: pointer;
+  display: inline-block;
+  background-color: #333;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.tf-compare-viewcart button:hover {
+  background-color: #555;
+}
+
+/* Remove button styling in compare page */
+.remove-product-btn {
+  display: none;
+}
+
+.tf-compare-content {
+  display: flex;
+  flex-direction: column;
+  margin-top: 5px;
+  width: 100%;
+  min-height: unset;
+} 

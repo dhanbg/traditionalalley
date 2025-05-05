@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import emailjs from "@emailjs/browser";
-import ToolbarBottom from "../headers/ToolbarBottom";
 import ScrollTop from "../common/ScrollTop";
 import { footerLinks, socialLinks } from "@/data/footerLinks";
 export default function Footer1({
@@ -40,7 +39,7 @@ export default function Footer1({
         }
       })
       .catch((err) => {
-        console.log(err);
+        // Remove console.log statements
       });
   };
   useEffect(() => {
@@ -327,7 +326,6 @@ export default function Footer1({
         </div>
       </footer>
       <ScrollTop hasPaddingBottom={hasPaddingBottom} />
-      <ToolbarBottom />
     </>
   );
 }

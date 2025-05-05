@@ -27,30 +27,21 @@ export default function QuantitySelect({
     setUpdateMessage("Updating quantity...");
     
     try {
-      console.log(`QuantitySelect: Changing quantity from ${quantity} to ${newQuantity}`);
-      
       // Handle both Promise and non-Promise returns from setQuantity
       const result = setQuantity(newQuantity);
       
       if (result && typeof result.then === 'function') {
         // It's a Promise
-        console.log("QuantitySelect: Awaiting promise from setQuantity");
         try {
           const response = await result;
-          console.log("QuantitySelect: Promise resolved with response:", response);
           setUpdateMessage("✅ Quantity updated!");
         } catch (error) {
-          console.error("QuantitySelect: Promise rejected with error:", error);
           setUpdateMessage("❌ Error updating quantity");
         }
       } else {
-        console.log("QuantitySelect: setQuantity did not return a Promise, result:", result);
         setUpdateMessage("✅ Quantity updated locally");
       }
-      
-      console.log("QuantitySelect: Quantity change completed");
     } catch (error) {
-      console.error("QuantitySelect: Error updating quantity:", error);
       setUpdateMessage("❌ Error updating quantity");
     } finally {
       setUpdatingQuantity(false);

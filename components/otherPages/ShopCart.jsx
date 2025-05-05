@@ -100,8 +100,6 @@ export default function ShopCart() {
   };
   
   const removeItem = (id, cartDocumentId) => {
-    console.log(`ShopCart: Removing item with ID: ${id}, cartDocumentId: ${cartDocumentId}`);
-    
     // Instead of just updating the state, use the removeFromCart function
     // which handles both frontend state and backend deletion
     removeFromCart(id, cartDocumentId);

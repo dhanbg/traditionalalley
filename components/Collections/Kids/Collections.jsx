@@ -54,7 +54,7 @@ export default function Collections() {
                 <SwiperSlide key={index}>
                   <div className="collection-circle hover-img">
                     <Link
-                      href={`/shop-collection`} // Direct link added here
+                      href={`/shop-default-grid-kids?collectionName=${collection.name}`}
                       className="img-style radius-12"
                     >
                       <Image
@@ -68,7 +68,7 @@ export default function Collections() {
                     </Link>
                     <div className="collection-content text-center">
                       <div>
-                        <Link href={`/shop-collection`} className="cls-title">
+                        <Link href={`/shop-default-grid-kids?collectionName=${collection.name}`} className="cls-title">
                           <h6 className="text">{collection.name}</h6>
                           <i className="icon icon-arrowUpRight" />
                         </Link>

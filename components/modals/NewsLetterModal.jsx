@@ -57,7 +57,6 @@ export default function NewsLetterModal() {
 
       handleShowMessage(); // Display the success or error message
     } catch (error) {
-      console.error("Error during campaign creation:", error);
       setSuccess(false); // Set success to false if there's an error
       e.target.reset(); // Reset the form
       setSuccess(true); // Set success state

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import SizeSelect from "../productDetails/SizeSelect";
 import ColorSelect from "../productDetails/ColorSelect";
@@ -7,6 +7,8 @@ import Grid5 from "../productDetails/grids/Grid5";
 import { useContextElement } from "@/context/Context";
 import QuantitySelect from "../productDetails/QuantitySelect";
 import { useClerk } from "@clerk/nextjs";
+import { PRODUCT_REVIEWS_API } from "../../utils/urls";
+import { fetchDataFromApi } from "../../utils/api";
 
 export default function QuickView() {
   const [activeColor, setActiveColor] = useState("gray");
@@ -26,6 +28,20 @@ export default function QuickView() {
     user,
   } = useContextElement();
   const { openSignIn } = useClerk();
+  const [reviewCount, setReviewCount] = useState(0);
+
+  useEffect(() => {
+    async function getReviewCount() {
+      if (!quickViewItem?.documentId) return;
+      try {
+        const res = await fetchDataFromApi(PRODUCT_REVIEWS_API(quickViewItem.documentId));
+        setReviewCount(res?.data?.length || 0);
+      } catch {
+        setReviewCount(0);
+      }
+    }
+    getReviewCount();
+  }, [quickViewItem?.documentId]);
 
   const openModalSizeChoice = () => {
     const bootstrap = require("bootstrap"); // dynamically import bootstrap
@@ -94,7 +110,9 @@ export default function QuickView() {
                         <i className="icon icon-star" />
                         <i className="icon icon-star" />
                       </div>
-                      <div className="text text-caption-1">(134 reviews)</div>
+                      <div className="text text-caption-1">
+                        ({reviewCount} reviews)
+                      </div>
                     </div>
                     <div className="tf-product-info-sold">
                       <i className="icon icon-lightning" />

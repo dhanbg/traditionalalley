@@ -5,10 +5,10 @@ import Link from "next/link";
 import { fetchDataFromApi } from "@/utils/api";
 import { PRODUCTS_API, API_URL } from "@/utils/urls";
 
-const tabItems = ["New Arrivals", "Best Seller", "On Sale"];
+const tabItems = ["Formal Wear", "Casual Wear", "Accessories", "Activewear", "Footwear"];
 const DEFAULT_IMAGE = '/images/placeholder.jpg';
 
-export default function Products3({ parentClass = "flat-spacing-3" }) {
+export default function ProductsMen({ parentClass = "flat-spacing-3 pt-0" }) {
   const [activeItem, setActiveItem] = useState(tabItems[0]); // Default the first item as active
   const [selectedItems, setSelectedItems] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
@@ -20,28 +20,66 @@ export default function Products3({ parentClass = "flat-spacing-3" }) {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        // Fetch all products with tabFilterOptions2 specified
         // Add a random parameter to prevent caching
         const timestamp = new Date().getTime();
-        // Explicitly request only products that have tabFilterOptions2
-        const response = await fetchDataFromApi(`${PRODUCTS_API}&timestamp=${timestamp}`);
+        // Filter to get only men's products
+        const response = await fetchDataFromApi(`${PRODUCTS_API}&filters[collection][category][title][$eq]=Men&timestamp=${timestamp}`);
         
         if (response && response.data && response.data.length > 0) {
           // Transform the products to the format expected by ProductCard1
           const transformedProducts = response.data.map(product => {
+            // Skip processing if product is undefined or null
             if (!product) return null;
-            // Pass the image object directly for ProductCard1 to handle small format
-            let imgSrc = product.imgSrc || null;
-            let imgHover = product.imgHover || null;
+            
+            // Extract image URLs with proper formatting
+            let imgSrc = DEFAULT_IMAGE;
+            if (product.imgSrc) {
+              if (product.imgSrc.formats && product.imgSrc.formats.medium) {
+                imgSrc = `${API_URL}${product.imgSrc.formats.medium.url}`;
+              } else if (product.imgSrc.url) {
+                imgSrc = `${API_URL}${product.imgSrc.url}`;
+              }
+            }
+            
+            // Handle hover image similarly
+            let imgHover = imgSrc; // Default to main image
+            if (product.imgHover) {
+              if (product.imgHover.formats && product.imgHover.formats.medium) {
+                imgHover = `${API_URL}${product.imgHover.formats.medium.url}`;
+              } else if (product.imgHover.url) {
+                imgHover = `${API_URL}${product.imgHover.url}`;
+              }
+            }
+            
             // Process gallery images if available
             const gallery = Array.isArray(product.gallery) 
-              ? product.gallery.map(img => img || null) 
+              ? product.gallery.map(img => {
+                  if (!img) return { id: 0, url: DEFAULT_IMAGE };
+                  
+                  let imageUrl = DEFAULT_IMAGE;
+                  if (img.formats && img.formats.medium) {
+                    imageUrl = `${API_URL}${img.formats.medium.url}`;
+                  } else if (img.url) {
+                    imageUrl = `${API_URL}${img.url}`;
+                  }
+                  
+                  return {
+                    id: img.id || 0,
+                    url: imageUrl
+                  };
+                }) 
               : [];
+            
+            // Process colors to ensure they're in the correct format
             let processedColors = null;
+            
             if (Array.isArray(product.colors)) {
               processedColors = product.colors;
             }
-            const tabFilterOptions2 = product.tabFilterOptions2 || [];
+
+            // Get tabFilterOptions directly from the product
+            const tabFilterOptions = product.tabFilterOptions || [];
+            
             return {
               id: product.id,
               documentId: product.documentId,
@@ -53,17 +91,17 @@ export default function Products3({ parentClass = "flat-spacing-3" }) {
               gallery,
               colors: processedColors,
               sizes: product.sizes || [],
-              tabFilterOptions2,
+              tabFilterOptions,
               isOnSale: !!product.oldPrice,
               salePercentage: product.salePercentage || "25%"
             };
-          }).filter(Boolean);
+          }).filter(Boolean); // Remove any null values
           
           setAllProducts(transformedProducts);
           setError(null);
         } else {
           // Set an error if no products were found
-          setError("No products found in API response");
+          setError("No men's products found in API response");
           setAllProducts([]);
         }
         
@@ -78,15 +116,14 @@ export default function Products3({ parentClass = "flat-spacing-3" }) {
     fetchProducts();
   }, []);
 
-  // Filter products based on active tab
   useEffect(() => {
-    const newArrivalsElement = document.getElementById("newArrivals");
+    const newArrivalsElement = document.getElementById("newArrivalsMen");
     if (newArrivalsElement) {
       newArrivalsElement.classList.remove("filtered");
       
       setTimeout(() => {
         const filtered = allProducts.filter(product => 
-          product.tabFilterOptions2 && product.tabFilterOptions2.includes(activeItem)
+          product.tabFilterOptions && product.tabFilterOptions.includes(activeItem)
         );
         setSelectedItems(filtered);
         newArrivalsElement.classList.add("filtered");
@@ -97,48 +134,30 @@ export default function Products3({ parentClass = "flat-spacing-3" }) {
   return (
     <section className={parentClass}>
       <div className="container">
-        <div className="flat-animate-tab">
-          <ul className="tab-product justify-content-sm-center" role="tablist">
+        <div className="heading-section text-center wow fadeInUp">
+          <h3>Men's Top Picks</h3>
+          <ul className="tab-product-v2 justify-content-sm-center">
             {tabItems.map((item) => (
               <li key={item} className="nav-tab-item">
                 <a
-                  href={`#`} // Generate href dynamically
                   className={activeItem === item ? "active" : ""}
-                  onClick={(e) => {
-                    e.preventDefault(); // Prevent default anchor behavior
-                    setActiveItem(item);
-                  }}
+                  onClick={() => setActiveItem(item)}
                 >
                   {item}
                 </a>
               </li>
             ))}
           </ul>
+        </div>
+        <div className="flat-animate-tab">
           <div className="tab-content">
             <div
               className="tab-pane active show tabFilter filtered"
-              id="newArrivals"
+              id="newArrivalsMen"
               role="tabpanel"
             >
               {loading ? (
-                <div className="text-center py-5">
-                  <span className="products3-spinner" />
-                  <style jsx>{`
-                    .products3-spinner {
-                      display: inline-block;
-                      width: 60px;
-                      height: 60px;
-                      border: 6px solid #f3f3f3;
-                      border-top: 6px solid #e43131;
-                      border-radius: 50%;
-                      animation: products3-spin 1s linear infinite;
-                    }
-                    @keyframes products3-spin {
-                      0% { transform: rotate(0deg); }
-                      100% { transform: rotate(360deg); }
-                    }
-                  `}</style>
-                </div>
+                <div className="text-center py-5">Loading products...</div>
               ) : error ? (
                 <div className="text-center py-5 text-danger">
                   {error}
@@ -155,7 +174,7 @@ export default function Products3({ parentClass = "flat-spacing-3" }) {
                     )}
                   </div>
                   <div className="sec-btn text-center">
-                    <Link href={`/shop-default-grid-women`} className="btn-line">
+                    <Link href={`/shop-default-grid-men`} className="btn-line">
                       View All Products
                     </Link>
                   </div>
@@ -167,4 +186,4 @@ export default function Products3({ parentClass = "flat-spacing-3" }) {
       </div>
     </section>
   );
-}
+} 

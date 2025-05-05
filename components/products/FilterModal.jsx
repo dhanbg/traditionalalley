@@ -1,22 +1,111 @@
 "use client";
 
 import {
-  availabilityOptions,
-  brands,
+  availabilityOptions as defaultAvailabilityOptions,
   categories,
-  colors,
-  sizes,
+  colors as defaultColors,
+  sizes as defaultSizes,
 } from "@/data/productFilterOptions";
 import RangeSlider from "react-range-slider-input";
 
-export default function FilterModal({ allProps, products = [] }) {
+export default function FilterModal({ allProps = {}, products = [], filterOptions = {} }) {
+  // Safety check for allProps
+  if (!allProps) {
+    allProps = {};
+  }
+  
+  // Ensure price exists with default values
+  const price = Array.isArray(allProps.price) && allProps.price.length === 2 
+    ? allProps.price 
+    : [20, 300];
+    
+  // Ensure other properties exist
+  const color = allProps.color && allProps.color.name 
+    ? allProps.color 
+    : { name: "All", className: "" };
+    
+  const size = typeof allProps.size === 'string' 
+    ? allProps.size 
+    : "All";
+    
+  const availability = allProps.availability && allProps.availability.id 
+    ? allProps.availability 
+    : { id: "all", label: "All", value: null };
+    
+  const selectedCollections = Array.isArray(allProps.collections) 
+    ? allProps.collections 
+    : [];
+
+  // Safety function wrappers
+  const setPrice = (value) => {
+    if (typeof allProps.setPrice === 'function') {
+      allProps.setPrice(value);
+    }
+  };
+  
+  const setColor = (value) => {
+    if (typeof allProps.setColor === 'function') {
+      allProps.setColor(value);
+    }
+  };
+  
+  const setSize = (value) => {
+    if (typeof allProps.setSize === 'function') {
+      allProps.setSize(value);
+    }
+  };
+  
+  const setAvailability = (value) => {
+    if (typeof allProps.setAvailability === 'function') {
+      allProps.setAvailability(value);
+    }
+  };
+  
+  const setCollection = (value) => {
+    if (typeof allProps.setCollection === 'function') {
+      allProps.setCollection(value);
+    }
+  };
+  
+  const clearFilter = () => {
+    if (typeof allProps.clearFilter === 'function') {
+      allProps.clearFilter();
+    }
+  };
+  
+  // Use dynamic data from API if available, fall back to static data
+  const colors = filterOptions && filterOptions.colors && Array.isArray(filterOptions.colors) && filterOptions.colors.length > 0 
+    ? filterOptions.colors 
+    : defaultColors;
+    
+  const sizes = filterOptions && filterOptions.sizes && Array.isArray(filterOptions.sizes) && filterOptions.sizes.length > 0 
+    ? filterOptions.sizes 
+    : defaultSizes;
+    
+  const collectionOptions = filterOptions && filterOptions.collections && Array.isArray(filterOptions.collections) && filterOptions.collections.length > 0 
+    ? filterOptions.collections 
+    : [];
+    
+  const availabilityOptions = filterOptions && filterOptions.availabilityOptions && Array.isArray(filterOptions.availabilityOptions) && filterOptions.availabilityOptions.length > 0 
+    ? filterOptions.availabilityOptions 
+    : defaultAvailabilityOptions;
+    
+  // Determine the price range for the slider with safety checks
+  const minPrice = filterOptions && filterOptions.priceRange && Array.isArray(filterOptions.priceRange) && filterOptions.priceRange.length > 0 
+    ? filterOptions.priceRange[0] 
+    : 10;
+    
+  const maxPrice = filterOptions && filterOptions.priceRange && Array.isArray(filterOptions.priceRange) && filterOptions.priceRange.length > 1 
+    ? filterOptions.priceRange[1] 
+    : 450;
+
   // Calculate product counts based on the actual products from the API
   const getAvailabilityCount = (option) => {
     return products.filter(el => el.inStock === option.value).length;
   };
 
-  const getBrandCount = (brand) => {
-    return products.filter(el => el.filterBrands && el.filterBrands.includes(brand.label)).length;
+  const getCollectionCount = (collection) => {
+    return products.filter(el => el.filterCollections && el.filterCollections.includes(collection.id)).length;
   };
 
   return (
@@ -37,8 +126,7 @@ export default function FilterModal({ allProps, products = [] }) {
               {categories.map((category, index) => (
                 <li key={index}>
                   <a href="#" className={`categories-item`}>
-                    {category.name}{" "}
-                    <span className="count-cate">({category.count})</span>
+                    {category.name}
                   </a>
                 </li>
               ))}
@@ -48,10 +136,10 @@ export default function FilterModal({ allProps, products = [] }) {
             <h6 className="facet-title">Price</h6>
 
             <RangeSlider
-              min={10}
-              max={450}
-              value={allProps.price}
-              onInput={(value) => allProps.setPrice(value)}
+              min={minPrice}
+              max={maxPrice}
+              value={price}
+              onInput={(value) => setPrice(value)}
             />
             <div className="box-price-product mt-3">
               <div className="box-price-item">
@@ -61,7 +149,7 @@ export default function FilterModal({ allProps, products = [] }) {
                   id="price-min-value"
                   data-currency="$"
                 >
-                  {allProps.price[0]}
+                  {price[0]}
                 </div>
               </div>
               <div className="box-price-item">
@@ -71,7 +159,7 @@ export default function FilterModal({ allProps, products = [] }) {
                   id="price-max-value"
                   data-currency="$"
                 >
-                  {allProps.price[1]}
+                  {price[1]}
                 </div>
               </div>
             </div>
@@ -79,40 +167,53 @@ export default function FilterModal({ allProps, products = [] }) {
           <div className="widget-facet facet-size">
             <h6 className="facet-title">Size</h6>
             <div className="facet-size-box size-box">
-              {sizes.map((size, index) => (
+              {sizes.map((sizeOption, index) => (
                 <span
                   key={index}
-                  onClick={() => allProps.setSize(size)}
+                  onClick={() => setSize(sizeOption)}
                   className={`size-item size-check ${
-                    allProps.size === size ? "active" : ""
+                    size === sizeOption ? "active" : ""
                   }`}
                 >
-                  {size}
+                  {typeof sizeOption === 'string' ? sizeOption : sizeOption.name || sizeOption}
                 </span>
               ))}
-              <span
-                className={`size-item size-check free-size ${
-                  allProps.size == "Free Size" ? "active" : ""
-                } `}
-                onClick={() => allProps.setSize("Free Size")}
-              >
-                Free Size
-              </span>
+              {!sizes.includes("Free Size") && (
+                <span
+                  className={`size-item size-check free-size ${
+                    size == "Free Size" ? "active" : ""
+                  } `}
+                  onClick={() => setSize("Free Size")}
+                >
+                  Free Size
+                </span>
+              )}
             </div>
           </div>
           <div className="widget-facet facet-color">
             <h6 className="facet-title">Colors</h6>
             <div className="facet-color-box">
-              {colors.map((color, index) => (
+              {colors.map((colorOption, index) => (
                 <div
-                  onClick={() => allProps.setColor(color)}
+                  onClick={() => setColor(colorOption)}
                   key={index}
                   className={`color-item color-check ${
-                    color == allProps.color ? "active" : ""
+                    colorOption.name === color.name ? "active" : ""
                   }`}
                 >
-                  <span className={`color ${color.className}`} />
-                  {color.name}
+                  {colorOption.imgSrc ? (
+                    <span 
+                      className="color color-image" 
+                      style={{ 
+                        backgroundImage: `url(${colorOption.imgSrc})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center'
+                      }}
+                    />
+                  ) : (
+                    <span className={`color ${colorOption.className}`} />
+                  )}
+                  {colorOption.name}
                 </div>
               ))}
             </div>
@@ -124,46 +225,44 @@ export default function FilterModal({ allProps, products = [] }) {
                 <fieldset
                   key={index}
                   className="fieldset-item"
-                  onClick={() => allProps.setAvailability(option)}
+                  onClick={() => setAvailability(option)}
                 >
                   <input
                     type="radio"
                     name="availability"
                     className="tf-check"
                     readOnly
-                    checked={allProps.availability === option}
+                    checked={availability.id === option.id}
                   />
                   <label>
-                    {option.label}{" "}
-                    <span className="count-stock">
-                      ({getAvailabilityCount(option)})
-                    </span>
+                    {option.label}
                   </label>
                 </fieldset>
               ))}
             </div>
           </div>
           <div className="widget-facet facet-fieldset">
-            <h6 className="facet-title">Brands</h6>
+            <h6 className="facet-title">Collections</h6>
             <div className="box-fieldset-item">
-              {brands.map((brand, index) => (
+              {collectionOptions.map((collection, index) => (
                 <fieldset
                   key={index}
                   className="fieldset-item"
-                  onClick={() => allProps.setBrands(brand.label)}
+                  onClick={() => {
+                    if (collection && collection.id) {
+                      setCollection(collection.id);
+                    }
+                  }}
                 >
                   <input
                     type="checkbox"
-                    name="brand"
+                    name="collection"
                     className="tf-check"
                     readOnly
-                    checked={allProps.brands.includes(brand.label)}
+                    checked={selectedCollections.includes(collection.id)}
                   />
                   <label>
-                    {brand.label}{" "}
-                    <span className="count-brand">
-                      ({getBrandCount(brand)})
-                    </span>
+                    {collection.name}
                   </label>
                 </fieldset>
               ))}
@@ -173,7 +272,7 @@ export default function FilterModal({ allProps, products = [] }) {
         <div className="canvas-bottom">
           <button
             id="reset-filter"
-            onClick={allProps.clearFilter}
+            onClick={clearFilter}
             className="tf-btn btn-reset"
           >
             Reset Filters

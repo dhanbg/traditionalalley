@@ -11,8 +11,12 @@ export default function Collections() {
   useEffect(() => {
     const fetchCollections = async () => {
       const response = await fetchDataFromApi("/api/collections?populate=*");
-      console.log(response);
-      const transformedCollections = response.data.map((item) => ({
+      // Filter collections to only include those with category.title === "Women"
+      const filteredCollections = response.data.filter(item => 
+        item.category && item.category.title === "Women"
+      );
+      
+      const transformedCollections = filteredCollections.map((item) => ({
         id: item.id,
         name: item.attributes?.name || item.name || "Unnamed Collection",
         slug: item.attributes?.slug || item.slug || `collection-${item.id}`,
@@ -92,7 +96,7 @@ export default function Collections() {
                 <SwiperSlide key={index}>
                   <div className="collection-circle hover-img">
                     <Link
-                      href={`/women/collections/${collection.slug}`} // Direct link added here
+                      href={`/shop-default-grid-women?collectionId=${collection.id}`}
                       className="img-style radius-12"
                     >
                       <Image
@@ -109,7 +113,7 @@ export default function Collections() {
                     <div className="collection-content text-center">
                       <div>
                         <Link
-                          href={`/women/collections/${collection.slug}`}
+                          href={`/shop-default-grid-women?collectionId=${collection.id}`}
                           className="cls-title"
                         >
                           <h6 className="text">{collection.name}</h6>

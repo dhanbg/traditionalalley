@@ -1,4 +1,4 @@
-import { API_URL, STRAPI_API_TOKEN } from "./urls"
+import { API_URL, STRAPI_API_TOKEN, PRODUCTS_API } from "./urls"
 
 // Helper function to construct proper image URLs
 export const getImageUrl = (imageObj) => {
@@ -6,6 +6,13 @@ export const getImageUrl = (imageObj) => {
   const defaultPlaceholder = "/vercel.svg";
   
   if (!imageObj) return defaultPlaceholder;
+  
+  // If imageObj is a string, handle as direct or relative URL
+  if (typeof imageObj === 'string') {
+    if (imageObj.startsWith('http')) return imageObj;
+    if (imageObj.startsWith('/uploads/')) return `${API_URL}${imageObj}`;
+    return imageObj;
+  }
   
   // Handle the case where the URL is already a full URL
   if (imageObj.url && imageObj.url.startsWith("http")) {
@@ -39,6 +46,46 @@ export const getImageUrl = (imageObj) => {
   return defaultPlaceholder;
 }
 
+// Helper function to get optimized image URL based on the image object structure
+export const getOptimizedImageUrl = (imgObj) => {
+  if (!imgObj) return null;
+  
+  // If the imgObj is just a string URL, return it directly
+  if (typeof imgObj === 'string') {
+    return imgObj;
+  }
+  
+  let imageUrl = null;
+  
+  // Handle case where imgObj is a properly formatted image object from Strapi
+  if (imgObj.formats) {
+    // Prioritize small format for better quality
+    if (imgObj.formats.small) {
+      imageUrl = imgObj.formats.small.url;
+    } 
+    // Fall back to thumbnail format if small isn't available
+    else if (imgObj.formats.thumbnail) {
+      imageUrl = imgObj.formats.thumbnail.url;
+    }
+    // Then medium as last resort for formats
+    else if (imgObj.formats.medium) {
+      imageUrl = imgObj.formats.medium.url;
+    }
+  }
+  
+  // If no optimized formats are found, use the original URL
+  if (!imageUrl && imgObj.url) {
+    imageUrl = imgObj.url;
+  }
+  
+  // If the URL doesn't start with http, prepend the API URL
+  if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/images/')) {
+    imageUrl = `${API_URL}${imageUrl}`;
+  }
+  
+  return imageUrl;
+};
+
 export const fetchDataFromApi = async (endpoint) => {
   const options = {
     method: "GET",
@@ -48,6 +95,22 @@ export const fetchDataFromApi = async (endpoint) => {
   }
 
   try {
+    // Check for known invalid product IDs to avoid unnecessary API calls
+    if (endpoint.includes('/api/products/')) {
+      // Extract the product ID from the endpoint
+      const match = endpoint.match(/\/api\/products\/(\d+)/);
+      if (match && match[1]) {
+        const productId = parseInt(match[1]);
+        // Immediately reject known invalid product IDs
+        if ([55, 60, 61].includes(productId)) {
+          const error = new Error(`HTTP error! status: 404`);
+          error.status = 404;
+          error.detail = { error: `Product with ID ${productId} is known to be invalid` };
+          throw error;
+        }
+      }
+    }
+    
     // Make sure the endpoint is properly encoded for any special characters
     // Only encode the part after the query params to avoid double-encoding the ? and = characters
     let processedEndpoint = endpoint;
@@ -67,7 +130,6 @@ export const fetchDataFromApi = async (endpoint) => {
       processedEndpoint = `${basePath}?${queryParams.join('&')}`;
     }
 
-    console.log(`Fetching from: ${API_URL}${processedEndpoint}`);
     const res = await fetch(`${API_URL}${processedEndpoint}`, options);
     
     if (!res.ok) {
@@ -81,9 +143,6 @@ export const fetchDataFromApi = async (endpoint) => {
         errorDetail = errorBody;
       }
       
-      console.error(`API request failed with status ${res.status}: ${res.statusText}`);
-      console.error(`Request was to: ${API_URL}${processedEndpoint}`);
-      
       const error = new Error(`HTTP error! status: ${res.status}`);
       error.status = res.status;
       error.detail = errorDetail;
@@ -92,11 +151,6 @@ export const fetchDataFromApi = async (endpoint) => {
     
     return res.json();
   } catch (error) {
-    console.error("API Error:", error);
-    if (error.status) {
-      console.error("Status:", error.status);
-      console.error("Detail:", error.detail);
-    }
     throw error;
   }
 }
@@ -110,8 +164,6 @@ export const createData = async (endpoint, data) => {
     },
     body: JSON.stringify(data),
   }
-
-  console.log(`API Request to ${API_URL}${endpoint}:`, options);
   
   try {
     const res = await fetch(`${API_URL}${endpoint}`, options)
@@ -135,16 +187,11 @@ export const createData = async (endpoint, data) => {
     
     return res.json()
   } catch (error) {
-    console.error("API Error:", error);
-    console.error("Status:", error.status);
-    console.error("Detail:", error.detail);
     throw error;
   }
 }
 
 export const updateData = async (endpoint, data) => {
-  console.log(`API: updateData called for endpoint ${endpoint}`);
-  
   const options = {
     method: "PUT",
     headers: {
@@ -153,37 +200,24 @@ export const updateData = async (endpoint, data) => {
     },
     body: JSON.stringify(data),
   };
-
-  console.log(`API: Update request to ${API_URL}${endpoint}`, {
-    method: options.method,
-    headers: options.headers,
-    body: data
-  });
   
   try {
     // Send the request
     const res = await fetch(`${API_URL}${endpoint}`, options);
-    console.log(`API: Response status: ${res.status}`);
     
-    // Get the response text for logging
+    // Get the response text for parsing
     const responseText = await res.text();
     
     // Try to parse the response as JSON
     let responseData;
     try {
       responseData = JSON.parse(responseText);
-      console.log(`API: Response data:`, responseData);
     } catch (parseError) {
-      console.log(`API: Response is not JSON:`, responseText);
+      // Response is not JSON
     }
     
     // Check if the request was successful
     if (!res.ok) {
-      console.error(`API: Update failed with status ${res.status}: ${res.statusText}`);
-      console.error(`API: Request was to: ${API_URL}${endpoint}`);
-      console.error(`API: Request body was:`, data);
-      console.error(`API: Response was:`, responseText);
-      
       const error = new Error(`Update failed: ${res.statusText}`);
       error.status = res.status;
       error.detail = responseData || responseText;
@@ -193,64 +227,44 @@ export const updateData = async (endpoint, data) => {
     
     return responseData;
   } catch (error) {
-    console.error("API: Update Error:", error);
-    if (error.status) {
-      console.error("API: Status:", error.status);
-      console.error("API: Detail:", error.detail);
-    }
     throw error;
   }
 }
 
 export const deleteData = async (endpoint) => {
-  console.log(`API: deleteData called for endpoint ${endpoint}`);
-  
-  // Make sure the endpoint is properly formatted
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  
   const options = {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${STRAPI_API_TOKEN}`,
-      "Content-Type": "application/json",
     },
   };
-
-  console.log(`API: Delete request to ${API_URL}${cleanEndpoint}`, {
-    method: options.method,
-    headers: options.headers
-  });
+  
+  let cleanEndpoint = endpoint;
   
   try {
-    // Send the request
+    // Send the delete request
     const res = await fetch(`${API_URL}${cleanEndpoint}`, options);
-    console.log(`API: Delete response status: ${res.status}`);
     
-    // Get the response text for logging
+    // Get response text if possible
     let responseText;
     try {
       responseText = await res.text();
-      console.log(`API: Delete response:`, responseText || "No response body");
     } catch (textError) {
-      console.log(`API: Could not get response text:`, textError);
+      // Could not get response text
     }
     
-    // Try to parse as JSON if possible
+    // Try to parse response as JSON
     let responseData;
-    if (responseText) {
-      try {
+    try {
+      if (responseText && responseText.length > 0) {
         responseData = JSON.parse(responseText);
-        console.log(`API: Delete response data:`, responseData);
-      } catch (parseError) {
-        console.log(`API: Delete response is not JSON`);
       }
+    } catch (parseError) {
+      // Response is not JSON
     }
     
     // Check if the request was successful
     if (!res.ok) {
-      console.error(`API: Delete failed with status ${res.status}: ${res.statusText}`);
-      console.error(`API: Delete request was to: ${API_URL}${cleanEndpoint}`);
-      
       const error = new Error(`Delete failed: ${res.statusText}`);
       error.status = res.status;
       error.detail = responseData || responseText;
@@ -258,37 +272,195 @@ export const deleteData = async (endpoint) => {
       throw error;
     }
     
-    return { success: true, message: "Deleted successfully", data: responseData };
+    return responseData || { success: true };
   } catch (error) {
-    console.error("API: Delete Error:", error);
-    if (error.status) {
-      console.error("API: Delete Status:", error.status);
-      console.error("API: Delete Detail:", error.detail);
-    }
     throw error;
   }
 }
 
-// Function to log the current user's clerk ID and fetch cart data
 export const getCurrentUserCart = async (user) => {
   if (!user) {
-    console.log("No user is logged in");
-    return null;
+    return { data: [] };
   }
   
   try {
-    // Log the clerk ID of the logged-in user
-    console.log("Current logged-in user's Clerk ID:", user.id);
-    
-    // Fetch cart data from the endpoint
-    const cartData = await fetchDataFromApi(`/api/carts?populate=*&filters[clerkUserId][$eq]=${user.id}`);
-    
-    // Log the cart data for debugging
-    console.log("User's cart data:", cartData);
-    
+    const userCartEndpoint = `/api/carts?filters[userId][$eq]=${user.id}&populate=*`;
+    const cartData = await fetchDataFromApi(userCartEndpoint);
     return cartData;
   } catch (error) {
-    console.error("Error fetching current user's cart:", error);
-    return null;
+    throw error;
   }
 }
+
+export const fetchFilterOptions = async (categoryTitle) => {
+  try {
+    if (!categoryTitle) {
+      return {
+        collections: [],
+        colors: [],
+        sizes: [],
+        availabilityOptions: [
+          { id: "inStock", label: "In stock", count: 0, value: true },
+          { id: "outStock", label: "Out of stock", count: 0, value: false }
+        ],
+        priceRange: [20, 300]
+      };
+    }
+    
+    // Properly encode the category title for the URL
+    const encodedCategoryTitle = encodeURIComponent(categoryTitle);
+    
+    // Use a simpler query to avoid potential encoding issues
+    const endpoint = `${PRODUCTS_API}&filters[collection][category][title]=${encodedCategoryTitle}`;
+    
+    // Fetch products for the category to extract filter options
+    const response = await fetchDataFromApi(endpoint);
+    
+    if (!response || !response.data || !Array.isArray(response.data) || response.data.length === 0) {
+      return {
+        collections: [],
+        colors: [],
+        sizes: [],
+        availabilityOptions: [
+          { id: "inStock", label: "In stock", count: 0, value: true },
+          { id: "outStock", label: "Out of stock", count: 0, value: false }
+        ],
+        priceRange: [20, 300]
+      };
+    }
+
+    const products = response.data;
+    
+    // Extract unique collections instead of brands
+    const uniqueCollections = new Map();
+    products.forEach(product => {
+      if (product && product.collection && product.collection.id) {
+        if (!uniqueCollections.has(product.collection.id)) {
+          uniqueCollections.set(product.collection.id, {
+            id: product.collection.id,
+            documentId: product.collection.documentId,
+            name: product.collection.name,
+            slug: product.collection.slug,
+            count: 1
+          });
+        } else {
+          // Increment count for this collection
+          const collection = uniqueCollections.get(product.collection.id);
+          collection.count += 1;
+          uniqueCollections.set(product.collection.id, collection);
+        }
+      }
+    });
+    
+    const collections = Array.from(uniqueCollections.values());
+    
+    // Extract unique colors
+    const uniqueColors = new Map(); // Use Map to store colors with their imgSrc
+    products.forEach(product => {
+      if (product && product.colors && Array.isArray(product.colors)) {
+        if (product.colors.length > 0) {
+          product.colors.forEach(color => {
+            if (typeof color === 'string') {
+              // Handle string format (fallback to CSS classes)
+              if (color) {
+                const className = `bg-${color.toLowerCase().replace(/\s+/g, '-')}`;
+                uniqueColors.set(color, { 
+                  name: color, 
+                  className,
+                  imgSrc: null
+                });
+              }
+            } else if (color && typeof color === 'object') {
+              // Handle object format with name and imgSrc
+              if (color.name) {
+                const className = `bg-${color.name.toLowerCase().replace(/\s+/g, '-')}`;
+                // If this color already exists in the map but doesn't have an imgSrc, and this one does, update it
+                if (!uniqueColors.has(color.name) || 
+                    (color.imgSrc && !uniqueColors.get(color.name).imgSrc)) {
+                  uniqueColors.set(color.name, {
+                    name: color.name,
+                    className: className,
+                    imgSrc: color.imgSrc || null
+                  });
+                }
+              }
+            }
+          });
+        }
+      }
+    });
+    
+    const colors = Array.from(uniqueColors.values()).map(color => {
+      return {
+        name: color.name,
+        className: color.name.toLowerCase() === 'white' ? `${color.className} line-black` : color.className,
+        imgSrc: color.imgSrc
+      };
+    });
+    
+    // Extract unique sizes
+    const uniqueSizes = new Set();
+    products.forEach(product => {
+      if (product && product.sizes && Array.isArray(product.sizes)) {
+        if (product.sizes.length > 0) {
+          if (typeof product.sizes[0] === 'string') {
+            product.sizes.forEach(size => {
+              if (size) uniqueSizes.add(size);
+            });
+          } else if (typeof product.sizes[0] === 'object') {
+            product.sizes.forEach(size => {
+              if (size && size.name) uniqueSizes.add(size.name);
+            });
+          }
+        }
+      }
+    });
+    
+    const sizes = Array.from(uniqueSizes);
+    
+    // Get availability options with counts
+    const inStockCount = products.filter(p => p && p.inStock === true).length;
+    const outOfStockCount = products.filter(p => p && p.inStock === false).length;
+    
+    const availabilityOptions = [
+      { 
+        id: "inStock", 
+        label: "In stock", 
+        count: inStockCount,
+        value: true 
+      },
+      { 
+        id: "outStock", 
+        label: "Out of stock", 
+        count: outOfStockCount,
+        value: false 
+      }
+    ];
+    
+    // Determine price range
+    const allPrices = products.map(p => p && typeof p.price === 'number' ? p.price : null).filter(Boolean);
+    const minPrice = allPrices.length > 0 ? Math.floor(Math.min(...allPrices)) : 20;
+    const maxPrice = allPrices.length > 0 ? Math.ceil(Math.max(...allPrices)) : 300;
+    const priceRange = [minPrice, maxPrice];
+    
+    return {
+      collections,
+      colors,
+      sizes,
+      availabilityOptions,
+      priceRange
+    };
+  } catch (error) {
+    // Return default values on error
+    return {
+      collections: [],
+      colors: [],
+      sizes: [],
+      availabilityOptions: [
+        { id: "inStock", label: "In stock", count: 0, value: true },
+        { id: "outStock", label: "Out of stock", count: 0, value: false }
+      ],
+      priceRange: [20, 300]
+    };
+  }
+};

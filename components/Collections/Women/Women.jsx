@@ -1,5 +1,5 @@
 import React from 'react'
-import Hero from '@/components/homes/fashion-luxeLiving/Hero'
+import Hero from '@/components/homes/CatHero'
 import Collections from './Collections'
 import Products from '@/components/common/Products'
 

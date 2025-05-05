@@ -17,7 +17,7 @@ export default function page() {
         <div className="container-full">
           <div className="row">
             <div className="col-12">
-              <h3 className="heading text-center">Women</h3>
+              <h3 className="heading text-center">Men</h3>
               <ul className="breadcrumbs d-flex align-items-center justify-content-center">
                 <li>
                   <Link className="link" href={`/`}>
@@ -27,13 +27,13 @@ export default function page() {
                 <li>
                   <i className="icon-arrRight" />
                 </li>
-                <li>Women</li>
+                <li>Men</li>
               </ul>
             </div>
           </div>
         </div>
       </div>
-      <Products collection="men" />
+      <Products categoryId={2} categoryTitle="Men" />
       <Footer1 />
     </>
   );

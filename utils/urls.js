@@ -15,3 +15,10 @@ export const COLLECTION_BY_DOCUMENT_ID_API = (documentId) => `/api/collections/$
 // Cart endpoints
 export const CARTS_API = "/api/carts?populate=*";
 export const USER_CARTS_API = (userId) => `/api/carts?filters[userId][$eq]=${userId}&populate=*`;
+
+// Reviews endpoints
+export const CUSTOMER_REVIEWS_API = "/api/customer-reviews?populate=*";
+export const PRODUCT_REVIEWS_API = (productDocumentId) => `/api/customer-reviews?filters[product][documentId][$eq]=${productDocumentId}&populate=*`;
+
+// Search endpoint
+export const SEARCH_PRODUCTS_API = (query) => `/api/products?filters[title][$containsi]=${encodeURIComponent(query)}&populate=*`;

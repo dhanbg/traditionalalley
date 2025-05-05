@@ -1,10 +1,59 @@
 "use client";
 import Link from "next/link";
-import { categoriesData } from "@/data/catnames";
+import { useState, useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
 import { Navigation, Pagination } from "swiper/modules";
+import { fetchDataFromApi } from "@/utils/api";
+import { API_URL } from "@/utils/urls";
+
 export default function Collections() {
+  const [collections, setCollections] = useState([]);
+  
+  useEffect(() => {
+    const fetchCollections = async () => {
+      try {
+        const response = await fetchDataFromApi("/api/collections?populate=*");
+        // Filter collections to only include those with category.title === "Men"
+        const filteredCollections = response.data.filter(item => 
+          item.category && item.category.title === "Men"
+        );
+        
+        const transformedCollections = filteredCollections.map((item) => ({
+          id: item.id,
+          name: item.attributes?.name || item.name || "Unnamed Collection",
+          slug: item.attributes?.slug || item.slug || `collection-${item.id}`,
+          image: getImageUrl(item),
+        }));
+        setCollections(transformedCollections);
+      } catch (error) {
+        // Silently handle error
+      }
+    };
+
+    // Helper function to extract the correct image URL
+    const getImageUrl = (item) => {
+      // For attributes-based structure (Strapi v4)
+      if (item.attributes?.image?.data?.attributes) {
+        const imageData = item.attributes.image.data.attributes;
+        // Use medium format if available, otherwise use the main URL
+        const imageUrl = imageData.formats?.medium?.url || imageData.url;
+        return imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`;
+      }
+      
+      // For direct structure
+      if (item.image) {
+        // Use medium format if available, otherwise use the main URL
+        const imageUrl = item.image.formats?.medium?.url || item.image.url;
+        return imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`;
+      }
+      
+      return "/placeholder.jpg";
+    };
+
+    fetchCollections();
+  }, []);
+  
   return (
     <section className="flat-spacing-2">
       <div className="container">
@@ -50,11 +99,11 @@ export default function Collections() {
                 nextEl: ".snbn3",
               }}
             >
-              {categoriesData.men.map((collection, index) => (
+              {collections.map((collection, index) => (
                 <SwiperSlide key={index}>
                   <div className="collection-circle hover-img">
                     <Link
-                      href={`/shop-collection`} // Direct link added here
+                      href={`/shop-default-grid-men?collectionId=${collection.id}`}
                       className="img-style radius-12"
                     >
                       <Image
@@ -64,11 +113,13 @@ export default function Collections() {
                         src={collection.image}
                         width={468}
                         height={624}
+                        style={{ height: "300px", objectFit: "cover" }}
+                        priority={index === 0}
                       />
                     </Link>
                     <div className="collection-content text-center">
                       <div>
-                        <Link href={`/shop-collection`} className="cls-title">
+                        <Link href={`/shop-default-grid-men?collectionId=${collection.id}`} className="cls-title">
                           <h6 className="text">{collection.name}</h6>
                           <i className="icon icon-arrowUpRight" />
                         </Link>

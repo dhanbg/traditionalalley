@@ -1,6 +1,57 @@
 import React from "react";
 
-export default function FilterMeta({ allProps, productLength }) {
+export default function FilterMeta({ allProps = {}, productLength = 0 }) {
+  // Add safety check
+  if (!allProps) {
+    return null;
+  }
+  
+  // Extract and provide safe defaults for filter properties
+  const availability = allProps.availability || { id: "all", label: "All", value: null };
+  const size = allProps.size || "All";
+  const color = allProps.color || { name: "All", className: "" };
+  const collections = Array.isArray(allProps.collections) ? allProps.collections : [];
+  const collectionObjects = Array.isArray(allProps.filterOptions?.collections) 
+    ? allProps.filterOptions.collections 
+    : [];
+  
+  // Safely wrap callbacks
+  const setAvailability = (val) => {
+    if (typeof allProps.setAvailability === 'function') {
+      allProps.setAvailability(val);
+    }
+  };
+  
+  const setSize = (val) => {
+    if (typeof allProps.setSize === 'function') {
+      allProps.setSize(val);
+    }
+  };
+  
+  const setColor = (val) => {
+    if (typeof allProps.setColor === 'function') {
+      allProps.setColor(val);
+    }
+  };
+  
+  const removeCollection = (val) => {
+    if (typeof allProps.removeCollection === 'function') {
+      allProps.removeCollection(val);
+    }
+  };
+  
+  const clearFilter = () => {
+    if (typeof allProps.clearFilter === 'function') {
+      allProps.clearFilter();
+    }
+  };
+
+  // Helper function to get collection name from ID
+  const getCollectionName = (collectionId) => {
+    const collection = collectionObjects.find(c => c.id === collectionId);
+    return collection ? collection.name : collectionId;
+  };
+  
   return (
     <div className="meta-filter-shop" style={{}}>
       <div id="product-count-grid" className="count-text">
@@ -8,47 +59,61 @@ export default function FilterMeta({ allProps, productLength }) {
       </div>
 
       <div id="applied-filters">
-        {allProps.availability != "All" ? (
+        {availability && availability.id !== "all" ? (
           <span
             className="filter-tag"
-            onClick={() => allProps.setAvailability("All")}
+            onClick={() => setAvailability({ id: "all", label: "All", value: null })}
           >
-            {allProps.availability.label}
+            {availability.label}
             <span className="remove-tag icon-close" />
           </span>
         ) : (
           ""
         )}
-        {allProps.size != "All" ? (
-          <span className="filter-tag" onClick={() => allProps.setSize("All")}>
-            {allProps.size}
+        {size !== "All" ? (
+          <span 
+            className="filter-tag" 
+            onClick={() => setSize("All")}
+          >
+            {size}
             <span className="remove-tag icon-close" />
           </span>
         ) : (
           ""
         )}
-        {allProps.color != "All" ? (
+        {color && color.name !== "All" ? (
           <span
             className="filter-tag color-tag"
-            onClick={() => allProps.setColor("All")}
+            onClick={() => setColor({ name: "All", className: "", imgSrc: null })}
           >
-            <span className={`color bg-red ${allProps.color.className} `} />
-            {allProps.color.name}
+            {color.imgSrc ? (
+              <span 
+                className="color color-image" 
+                style={{ 
+                  backgroundImage: `url(${color.imgSrc})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                }}
+              />
+            ) : (
+              <span className={`color ${color.className || ""}`} />
+            )}
+            {color.name}
             <span className="remove-tag icon-close" />
           </span>
         ) : (
           ""
         )}
 
-        {allProps.brands.length ? (
+        {collections && collections.length ? (
           <React.Fragment>
-            {allProps.brands.map((brand, i) => (
+            {collections.map((collectionId, i) => (
               <span
                 key={i}
                 className="filter-tag"
-                onClick={() => allProps.removeBrand(brand)}
+                onClick={() => removeCollection(collectionId)}
               >
-                {brand}
+                {getCollectionName(collectionId)}
                 <span className="remove-tag icon-close" />
               </span>
             ))}
@@ -57,14 +122,14 @@ export default function FilterMeta({ allProps, productLength }) {
           ""
         )}
       </div>
-      {allProps.availability != "All" ||
-      allProps.size != "All" ||
-      allProps.color != "All" ||
-      allProps.brands.length ? (
+      {(availability && availability.id !== "all") ||
+      size !== "All" ||
+      (color && color.name !== "All") ||
+      (collections && collections.length) ? (
         <button
           id="remove-all"
           className="remove-all-filters text-btn-uppercase"
-          onClick={allProps.clearFilter}
+          onClick={clearFilter}
         >
           REMOVE ALL <i className="icon icon-close" />
         </button>

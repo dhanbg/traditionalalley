@@ -24,8 +24,11 @@
     ],
     "baseUrl": ".", // Set baseUrl to the root of your project
     "paths": {
-      "@/*": ["./*"] // This creates an alias for @ to point to the root directory
-    }
+      "@/*": [
+        "./*"
+      ] // This creates an alias for @ to point to the root directory
+    },
+    "strictNullChecks": true
   },
   "include": [
     "next-env.d.ts",

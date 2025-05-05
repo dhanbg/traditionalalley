@@ -29,8 +29,6 @@ export default function CartModal() {
   const router = useRouter();
 
   const removeItem = (id, cartDocumentId) => {
-    console.log(`CartModal: Removing item with ID: ${id}, cartDocumentId: ${cartDocumentId}`);
-    
     // Find the item in the cart to confirm it exists before removing
     const itemToRemove = displayProducts.find(item => 
       item.id == id || 
@@ -39,8 +37,6 @@ export default function CartModal() {
     );
     
     if (itemToRemove) {
-      console.log(`CartModal: Found item to remove:`, itemToRemove);
-      
       // Remove from local state immediately for a responsive UI
       // This ensures the item disappears from the cart modal right away
       setServerCartProducts(prev => prev.filter(product => 
@@ -51,8 +47,6 @@ export default function CartModal() {
       
       // Use the removeFromCart function from Context to handle backend deletion
       removeFromCart(id, cartDocumentId);
-    } else {
-      console.error(`CartModal: Could not find item with ID ${id} or cartDocumentId ${cartDocumentId} in cart`);
     }
   };
 
@@ -110,8 +104,6 @@ export default function CartModal() {
           // Update state with user's carts
           setUserCarts(currentUserCarts);
           
-          console.log(`Found ${currentUserCarts.length} carts for user ${user.id}`);
-          
           // Array to hold the complete product details
           const productsWithDetails = [];
           let totalPrice = 0;
@@ -119,15 +111,11 @@ export default function CartModal() {
           // For each cart, fetch the complete product details
           for (const cart of currentUserCarts) {
             const productDocId = cart.product?.documentId;
-            console.log(`Product documentId: ${productDocId}`);
             
             if (productDocId) {
               try {
                 // Fetch product details using the documentId
                 const productDetails = await fetchDataFromApi(PRODUCT_BY_DOCUMENT_ID_API(productDocId));
-                
-                // Debug product response
-                console.log("Product details for cart item:", JSON.stringify(productDetails, null, 2));
                 
                 // The response will now be an array of products, get the first one
                 const productData = productDetails.data && productDetails.data.length > 0 
@@ -135,23 +123,22 @@ export default function CartModal() {
                   : null;
                 
                 if (!productData) {
-                  console.error(`No product found with documentId: ${productDocId}`);
                   continue;
                 }
                 
-                // Log the image object structure
-                console.log("Product imgSrc structure:", productData.imgSrc);
-                console.log("Product imgHover structure:", productData.imgHover);
-                
-                // Get image URLs
-                const imgSrcUrl = getImageUrl(productData.imgSrc);
-                const imgHoverUrl = getImageUrl(productData.imgHover);
-                
-                // Debug image URLs
-                console.log("Resolved image URLs:", {
-                  imgSrc: imgSrcUrl,
-                  imgHover: imgHoverUrl
-                });
+                // Get image URLs, prefer small format
+                let imgSrcUrl = null;
+                if (productData.imgSrc && productData.imgSrc.formats && productData.imgSrc.formats.small && productData.imgSrc.formats.small.url) {
+                  imgSrcUrl = `${API_URL}${productData.imgSrc.formats.small.url}`;
+                } else {
+                  imgSrcUrl = getImageUrl(productData.imgSrc);
+                }
+                let imgHoverUrl = null;
+                if (productData.imgHover && productData.imgHover.formats && productData.imgHover.formats.small && productData.imgHover.formats.small.url) {
+                  imgHoverUrl = `${API_URL}${productData.imgHover.formats.small.url}`;
+                } else {
+                  imgHoverUrl = getImageUrl(productData.imgHover);
+                }
                 
                 // Create a cart product object with all needed details
                 const productWithQuantity = {
@@ -175,7 +162,6 @@ export default function CartModal() {
                 // Add to total price
                 totalPrice += cart.product.price * cart.quantity;
               } catch (error) {
-                console.error(`Error fetching product details for ${productDocId}:`, error);
               }
             }
           }
@@ -189,7 +175,6 @@ export default function CartModal() {
           setCartProducts(productsWithDetails);
           
         } catch (error) {
-          console.error("Error fetching user carts:", error);
           setServerCartLoading(false);
         }
       };
@@ -217,8 +202,6 @@ export default function CartModal() {
             
             if (cartResponse?.data?.length > 0) {
               // Process cart data...
-              console.log(`CartModal: Found ${cartResponse.data.length} cart items when refreshing`);
-              
               // Update with fresh data from server
               const productsWithDetails = [];
               let totalPrice = 0;
@@ -234,13 +217,18 @@ export default function CartModal() {
                 // Match current user's cart items
                 const productAttrs = productData.attributes || {};
                 
-                // Get image URL
-                let imgUrl = '/images/placeholder.png';
-                if (productAttrs.imgSrc?.url) {
-                  imgUrl = `${API_URL}${productAttrs.imgSrc.url}`;
-                } else if (productAttrs.gallery && productAttrs.gallery.length > 0) {
-                  const galleryImg = productAttrs.gallery[0];
-                  imgUrl = `${API_URL}${galleryImg.url || galleryImg.formats?.thumbnail?.url || ''}`;
+                // Get image URLs, prefer small format
+                let imgSrcUrl = null;
+                if (productAttrs.imgSrc && productAttrs.imgSrc.formats && productAttrs.imgSrc.formats.small && productAttrs.imgSrc.formats.small.url) {
+                  imgSrcUrl = `${API_URL}${productAttrs.imgSrc.formats.small.url}`;
+                } else {
+                  imgSrcUrl = getImageUrl(productAttrs.imgSrc);
+                }
+                let imgHoverUrl = null;
+                if (productAttrs.imgHover && productAttrs.imgHover.formats && productAttrs.imgHover.formats.small && productAttrs.imgHover.formats.small.url) {
+                  imgHoverUrl = `${API_URL}${productAttrs.imgHover.formats.small.url}`;
+                } else {
+                  imgHoverUrl = getImageUrl(productAttrs.imgHover);
                 }
                 
                 // Create cart product object
@@ -250,7 +238,7 @@ export default function CartModal() {
                   title: productAttrs.title || 'Product Item',
                   price: parseFloat(productAttrs.price) || 0,
                   quantity: cart.attributes.quantity || 1,
-                  imgSrc: imgUrl,
+                  imgSrc: imgSrcUrl,
                   cartId: cart.id,
                   cartDocumentId: cart.attributes.documentId,
                   colors: productAttrs.colors || [],
@@ -263,12 +251,10 @@ export default function CartModal() {
               
               setServerCartProducts(productsWithDetails);
               setServerTotalPrice(totalPrice);
-              console.log('CartModal: Cart data refreshed with items:', productsWithDetails);
             }
             
             setServerCartLoading(false);
           } catch (error) {
-            console.error('CartModal: Error refreshing cart data:', error);
             setServerCartLoading(false);
           }
         };
@@ -276,7 +262,6 @@ export default function CartModal() {
         refreshCartData();
       } else {
         // For guest users, use local cart products
-        console.log("CartModal: Modal opened for guest user - using local cart products:", cartProducts);
       }
     };
     
@@ -422,32 +407,15 @@ export default function CartModal() {
                             className="tf-mini-cart-item file-delete"
                           >
                             <div className="tf-mini-cart-image">
-                              {product.imgSrc ? (
-                                <Image
-                                  className="lazyload"
-                                  alt={product.title || "Product image"}
-                                  src={product.imgSrc.startsWith('http') ? product.imgSrc : `${API_URL}${product.imgSrc}`}
-                                  width={600}
-                                  height={800}
-                                  onError={(e) => {
-                                    // Try fallback to imgHover if available
-                                    if (product.imgHover) {
-                                      e.target.src = product.imgHover.startsWith('http') ? product.imgHover : `${API_URL}${product.imgHover}`;
-                                    } else {
-                                      // Use placeholder image as final fallback
-                                      e.target.src = "/images/placeholder.png";
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                <Image
-                                  className="lazyload"
-                                  alt={product.title || "Product image"}
-                                  src="/images/placeholder.png"
-                                  width={600}
-                                  height={800}
-                                />
-                              )}
+                              <img
+                                className="cart-product-img"
+                                data-src={product.imgSrc}
+                                src={product.imgSrc}
+                                alt={product.title}
+                                width={80}
+                                height={100}
+                                style={{ objectFit: "cover", borderRadius: "8px" }}
+                              />
                             </div>
                             <div className="tf-mini-cart-info flex-grow-1">
                               <div className="mb_12 d-flex align-items-center justify-content-between flex-wrap gap-12">

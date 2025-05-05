@@ -50,8 +50,8 @@ export default async function page({ params }) {
       <Header1 />
       <Breadcumb product={product} />
       {product && <Details1 product={product} />}
-      <Descriptions1 />
-      <RelatedProducts />
+      <Descriptions1 product={product} />
+      <RelatedProducts product={product} />
       <Footer1 hasPaddingBottom />
     </>
   );
@@ -61,25 +61,18 @@ export default async function page({ params }) {
 function transformProduct(rawProduct) {
   if (!rawProduct) return null;
   
-  // Extract image URLs with proper formatting
-  let imgSrc = '/vercel.svg';
-  if (rawProduct.imgSrc) {
-    if (rawProduct.imgSrc.url && rawProduct.imgSrc.url.startsWith('http')) {
-      imgSrc = rawProduct.imgSrc.url;
-    } else if (rawProduct.imgSrc.formats && rawProduct.imgSrc.formats.small) {
-      imgSrc = `${API_URL}${rawProduct.imgSrc.formats.small.url}`;
-    } else if (rawProduct.imgSrc.url) {
-      imgSrc = `${API_URL}${rawProduct.imgSrc.url}`;
-    }
-  }
+  // Pass through the original imgSrc object
+  const imgSrc = rawProduct.imgSrc || '/vercel.svg';
   
-  // Handle hover image similarly
+  // Handle hover image: prefer medium, then small, then original
   let imgHover = imgSrc; // Default to main image
   if (rawProduct.imgHover) {
-    if (rawProduct.imgHover.url && rawProduct.imgHover.url.startsWith('http')) {
-      imgHover = rawProduct.imgHover.url;
+    if (rawProduct.imgHover.formats && rawProduct.imgHover.formats.medium) {
+      imgHover = `${API_URL}${rawProduct.imgHover.formats.medium.url}`;
     } else if (rawProduct.imgHover.formats && rawProduct.imgHover.formats.small) {
       imgHover = `${API_URL}${rawProduct.imgHover.formats.small.url}`;
+    } else if (rawProduct.imgHover.url && rawProduct.imgHover.url.startsWith('http')) {
+      imgHover = rawProduct.imgHover.url;
     } else if (rawProduct.imgHover.url) {
       imgHover = `${API_URL}${rawProduct.imgHover.url}`;
     }
@@ -106,24 +99,21 @@ function transformProduct(rawProduct) {
     }
   }
   
-  // Extract gallery images if available
+  // Extract gallery images if available, prefer medium > small > original
   const gallery = Array.isArray(rawProduct.gallery) 
     ? rawProduct.gallery.map(img => {
         if (!img) return { id: 0, url: '/vercel.svg' };
-        
         let imageUrl = '/vercel.svg';
-        if (img.url && img.url.startsWith('http')) {
-          imageUrl = img.url;
+        if (img.formats && img.formats.medium) {
+          imageUrl = `${API_URL}${img.formats.medium.url}`;
         } else if (img.formats && img.formats.small) {
           imageUrl = `${API_URL}${img.formats.small.url}`;
+        } else if (img.url && img.url.startsWith('http')) {
+          imageUrl = img.url;
         } else if (img.url) {
           imageUrl = `${API_URL}${img.url}`;
         }
-        
-        return {
-          id: img.id || img.documentId || 0,
-          url: imageUrl
-        };
+        return { id: img.id || img.documentId || 0, url: imageUrl };
       }) 
     : [];
   
@@ -135,7 +125,7 @@ function transformProduct(rawProduct) {
   return {
     ...rawProduct,
     id: rawProduct.documentId, // Use documentId as the id for consistent reference
-    imgSrc,
+    imgSrc, // Now the full object, not a string
     imgHover,
     gallery,
     colors: processedColors,

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Slider1 from "../sliders/Slider1";
 import ColorSelect from "../ColorSelect";
 import SizeSelect from "../SizeSelect";
@@ -8,6 +8,10 @@ import Image from "next/image";
 import { useContextElement } from "@/context/Context";
 import { useClerk } from "@clerk/nextjs";
 import Link from "next/link";
+import CustomOrderForm from "../CustomOrderForm";
+import SizeGuideModal from "../SizeGuideModal";
+import { PRODUCT_REVIEWS_API } from "../../../utils/urls";
+import { fetchDataFromApi } from "../../../utils/api";
 
 export default function Details1({ product }) {
   // Set default values for missing properties to prevent errors
@@ -17,7 +21,22 @@ export default function Details1({ product }) {
     sizes: product.sizes || [],
     price: product.price || 0,
     oldPrice: product.oldPrice || null,
-    imgSrc: product.imgSrc || '/images/placeholder.jpg',
+    imgSrc:
+      product.imgSrc && product.imgSrc.formats && product.imgSrc.formats.medium && product.imgSrc.formats.medium.url
+        ? (product.imgSrc.formats.medium.url.startsWith('http')
+            ? product.imgSrc.formats.medium.url
+            : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337'}${product.imgSrc.formats.medium.url}`)
+        : product.imgSrc && product.imgSrc.formats && product.imgSrc.formats.small && product.imgSrc.formats.small.url
+        ? (product.imgSrc.formats.small.url.startsWith('http')
+            ? product.imgSrc.formats.small.url
+            : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337'}${product.imgSrc.formats.small.url}`)
+        : product.imgSrc && product.imgSrc.url
+        ? (product.imgSrc.url.startsWith('http')
+            ? product.imgSrc.url
+            : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337'}${product.imgSrc.url}`)
+        : typeof product.imgSrc === 'string'
+        ? product.imgSrc
+        : '/images/placeholder.jpg',
     imgHover: product.imgHover || product.imgSrc || '/images/placeholder.jpg',
     gallery: product.gallery || []
   };
@@ -30,6 +49,9 @@ export default function Details1({ product }) {
       : "Gray"
   );
   const [quantity, setQuantity] = useState(1);
+  const [showCustomOrderForm, setShowCustomOrderForm] = useState(false);
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [reviewCount, setReviewCount] = useState(0);
   const {
     addProductToCart,
     isAddedToCartProducts,
@@ -42,6 +64,19 @@ export default function Details1({ product }) {
     user,
   } = useContextElement();
   const { openSignIn } = useClerk();
+
+  useEffect(() => {
+    async function getReviewCount() {
+      if (!product?.documentId) return;
+      try {
+        const res = await fetchDataFromApi(PRODUCT_REVIEWS_API(product.documentId));
+        setReviewCount(res?.data?.length || 0);
+      } catch {
+        setReviewCount(0);
+      }
+    }
+    getReviewCount();
+  }, [product?.documentId]);
 
   const handleWishlistClick = () => {
     if (!user) {
@@ -113,15 +148,15 @@ export default function Details1({ product }) {
                             <i className="icon icon-star" />
                           </div>
                           <div className="text text-caption-1">
-                            (134 reviews)
+                            ({reviewCount} reviews)
                           </div>
                         </div>
-                        <div className="tf-product-info-sold">
+                        {/* <div className="tf-product-info-sold">
                           <i className="icon icon-lightning" />
                           <div className="text text-caption-1">
                             18&nbsp;sold in last&nbsp;32&nbsp;hours
                           </div>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                     <div className="tf-product-info-desc">
@@ -149,13 +184,13 @@ export default function Details1({ product }) {
                         have been produced using sustainable fibres or
                         processes, reducing their environmental impact.
                       </p>
-                      <div className="tf-product-info-liveview">
+                      {/* <div className="tf-product-info-liveview">
                         <i className="icon icon-eye" />
                         <p className="text-caption-1">
                           <span className="liveview-count">28</span> people are
                           viewing this right now
                         </p>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                   <div className="tf-product-info-choose-option">
@@ -195,6 +230,31 @@ export default function Details1({ product }) {
                     {/* Sizes section */}
                     {safeProduct.sizes && safeProduct.sizes.length > 0 && (
                       <div className="tf-product-info-size">
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                          <div className="title" style={{ fontWeight: "500" }}>Size:</div>
+                          <button 
+                            onClick={() => setShowSizeGuide(true)}
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              color: "#000",
+                              fontSize: "14px",
+                              fontWeight: "500",
+                              textDecoration: "underline",
+                              cursor: "pointer",
+                              padding: "0",
+                              transition: "all 0.2s ease"
+                            }}
+                            onMouseOver={(e) => {
+                              e.currentTarget.style.color = "#777";
+                            }}
+                            onMouseOut={(e) => {
+                              e.currentTarget.style.color = "#000";
+                            }}
+                          >
+                            Size Guide
+                          </button>
+                        </div>
                         <SizeSelect 
                           sizes={
                             safeProduct.sizes.map((size, index) => ({
@@ -219,25 +279,27 @@ export default function Details1({ product }) {
                             : quantity
                         }
                         setQuantity={(qty) => {
-                          console.log(`Details1: setQuantity called with qty ${qty}`);
                           if (isAddedToCartProducts(safeProduct.id)) {
-                            console.log(`Details1: Product ${safeProduct.id} in cart, calling updateQuantity`);
-                            // Return the Promise from updateQuantity so it can be awaited
                             return updateQuantity(safeProduct.id, qty);
                           } else {
-                            console.log(`Details1: Product ${safeProduct.id} not in cart, updating local state`);
                             setQuantity(qty);
-                            // Return a resolved Promise for consistent behavior
                             return Promise.resolve();
                           }
                         }}
                       />
                     </div>
-                    <div style={{ display: "flex", gap: "10px" }}>
-                      <div className="tf-product-info-by-btn mb_10">
+                    
+                    <div className="tf-product-action-btns" style={{ display: "flex", gap: "10px", justifyContent: "space-between" }}>
+                      <div className="tf-product-info-by-btn mb_10" style={{ flex: "1.5" }}>
                         <a
                           onClick={handleCartClick}
                           className="btn-style-2 flex-grow-1 text-btn-uppercase fw-6 btn-add-to-cart"
+                          style={{ 
+                            height: "46px", 
+                            display: "flex", 
+                            alignItems: "center",
+                            padding: "0 12px"
+                          }}
                         >
                           <span>
                             {user && isAddedToCartProducts(safeProduct.id)
@@ -260,19 +322,20 @@ export default function Details1({ product }) {
                           href="#compare"
                           data-bs-toggle="offcanvas"
                           aria-controls="compare"
-                          onClick={() => addToCompareItem(safeProduct.id)}
+                          onClick={() => addToCompareItem(safeProduct.documentId || safeProduct.id)}
                           className="box-icon hover-tooltip compare btn-icon-action"
                         >
                           <span className="icon icon-gitDiff" />
                           <span className="tooltip text-caption-2">
-                            {isAddedtoCompareItem(safeProduct.id)
-                              ? "Already compared"
+                            {isAddedtoCompareItem(safeProduct.documentId || safeProduct.id)
+                              ? "Already Compared"
                               : "Compare"}
                           </span>
                         </a>
                         <a
                           onClick={handleWishlistClick}
                           className="box-icon hover-tooltip text-caption-2 wishlist btn-icon-action"
+                          style={{ height: "46px", display: "flex", alignItems: "center", justifyContent: "center" }}
                         >
                           <span className="icon icon-heart" />
                           <span className="tooltip text-caption-2">
@@ -282,10 +345,36 @@ export default function Details1({ product }) {
                           </span>
                         </a>
                       </div>
-                      <a href="#" className="btn-style-3 text-btn-uppercase">
+                      <a 
+                        href="#" 
+                        className="btn-style-3 text-btn-uppercase"
+                        style={{ 
+                          height: "46px", 
+                          display: "flex", 
+                          alignItems: "center", 
+                          justifyContent: "center",
+                          flex: "0.7",
+                          padding: "0 15px"
+                        }}
+                      >
                         Buy it now
                       </a>
+                      <button 
+                        onClick={() => setShowCustomOrderForm(true)}
+                        className="btn-style-1 text-btn-uppercase fw-6"
+                        style={{ 
+                          height: "46px", 
+                          display: "flex", 
+                          alignItems: "center", 
+                          justifyContent: "center",
+                          flex: "0.7",
+                          padding: "0 15px"
+                        }}
+                      >
+                        Custom Order?
+                      </button>
                     </div>
+                    
                     <div className="tf-product-info-help">
                       <div className="tf-product-info-extra-link">
                         <a
@@ -462,6 +551,19 @@ export default function Details1({ product }) {
           </div>
         </div>
       </div>
+      
+      {/* Size guide modal */}
+      <SizeGuideModal 
+        isOpen={showSizeGuide} 
+        onClose={() => setShowSizeGuide(false)}
+      />
+      
+      {/* Custom Order Form Modal */}
+      <CustomOrderForm 
+        isOpen={showCustomOrderForm} 
+        onClose={() => setShowCustomOrderForm(false)}
+        product={safeProduct}
+      />
     </section>
   );
 }

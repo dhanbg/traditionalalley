@@ -1,36 +1,118 @@
 import React from "react";
 import Image from "next/image";
-export default function Description() {
+
+// Component to render a rich text block
+const RenderBlock = ({ block }) => {
+  if (!block) return null;
+
+  switch (block.type) {
+    case "heading":
+      const HeadingTag = `h${block.level}`;
+      return (
+        <HeadingTag className="letter-1 text-btn-uppercase mb_12">
+          {block.children[0]?.text || ""}
+        </HeadingTag>
+      );
+
+    case "paragraph":
+      return (
+        <p className="mb_12 text-secondary">{block.children[0]?.text || ""}</p>
+      );
+
+    case "list":
+      if (block.format === "unordered") {
+        return (
+          <ul className="list-text type-disc mb_12 gap-6">
+            {block.children.map((item, idx) => (
+              <li key={idx} className="font-2">
+                {item.children[0]?.text || ""}
+              </li>
+            ))}
+          </ul>
+        );
+      }
+      return (
+        <ol className="mb_12">
+          {block.children.map((item, idx) => (
+            <li key={idx}>{item.children[0]?.text || ""}</li>
+          ))}
+        </ol>
+      );
+
+    default:
+      return null;
+  }
+};
+
+export default function Description({ product }) {
+  // If no product or description is provided, show default content or null
+  if (!product || !product.description) {
+    return (
+      <div className="right">
+        <p className="text-secondary">No product description available.</p>
+      </div>
+    );
+  }
+
+  // Find section divider point - typically after the main product description
+  // and before the care instructions
+  const mainDescriptionBlocks = [];
+  const careGuidelinesBlocks = [];
+
+  let careGuidelinesStarted = false;
+
+  // Group blocks by section
+  product.description.forEach((block) => {
+    // Check if this block starts the care guidelines section
+    if (
+      (block.type === "heading" &&
+        block.children[0]?.text?.toUpperCase().includes("ORIGIN")) ||
+      block.children[0]?.text?.toUpperCase().includes("CARE")
+    ) {
+      careGuidelinesStarted = true;
+      careGuidelinesBlocks.push(block);
+    } else if (careGuidelinesStarted) {
+      careGuidelinesBlocks.push(block);
+    } else {
+      mainDescriptionBlocks.push(block);
+    }
+  });
+
   return (
     <>
-      {" "}
       <div className="right">
-        <div className="letter-1 text-btn-uppercase mb_12">
-          Stretch strap top
-        </div>
-        <p className="mb_12 text-secondary">
-          Nodding to retro styles, this Hyperbola T-shirt is defined by its
-          off-the-shoulder design. It's spun from a green stretch cotton jersey
-          and adorned with an embroidered AC logo on the front, a brand's
-          signature.
-        </p>
-        <p className="text-secondary">
-          Thick knitted fabric. Short design. Straight design. Rounded neck.
-          Sleeveless. Straps. Unclosed. Cable knit finish. Co-ord.
-        </p>
+        {mainDescriptionBlocks.map((block, index) => (
+          <RenderBlock key={index} block={block} />
+        ))}
       </div>
+
       <div className="left">
-        <div className="letter-1 text-btn-uppercase mb_12">
-          COMPOSITION, ORIGIN AND CARE GUIDELINES
-        </div>
-        <ul className="list-text type-disc mb_12 gap-6">
-          <li className="font-2">
-            Composition: 55% polyester, 30% acrylic, 13% polyamide, 2% elastane
-          </li>
-          <li className="font-2">Designed in Barcelona</li>
-          <li className="font-2">Origin</li>
-          <li className="font-2">Manufacture: USA</li>
-        </ul>
+        {careGuidelinesBlocks.length > 0 ? (
+          careGuidelinesBlocks.map((block, index) => (
+            <RenderBlock key={index} block={block} />
+          ))
+        ) : (
+          <>
+            <div className="letter-1 text-btn-uppercase mb_12">
+              COMPOSITION, ORIGIN AND CARE GUIDELINES
+            </div>
+            <ul className="list-text type-disc mb_12 gap-6">
+              {product.composition && (
+                <li className="font-2">{product.composition}</li>
+              )}
+              {product.origin && (
+                <>
+                  <li className="font-2">Designed in {product.origin}</li>
+                  <li className="font-2">Origin</li>
+                </>
+              )}
+              {product.manufacture && (
+                <li className="font-2">Manufacture: {product.manufacture}</li>
+              )}
+            </ul>
+          </>
+        )}
+
         <div className="d-flex gap-20 mb_12 list-icon-guideline">
           <div className="d-flex">
             <svg

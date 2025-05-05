@@ -1,8 +1,8 @@
 "use client";
 import { slides } from "@/data/singleProductSliders";
 import PhotoSwipeLightbox from "photoswipe/lightbox";
-import { useEffect, useRef, useState } from "react";
-import { Navigation, Thumbs } from "swiper/modules";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { Thumbs } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
 
@@ -19,54 +19,65 @@ export default function Slider1({
   // Use gallery if provided, or fallback to slideItems
   const useGallery = gallery && gallery.length > 0;
   
-  let items = [...slideItems];
-  
-  // If we have a gallery from API, use that instead
-  if (useGallery) {
-    items = gallery.map((item, idx) => ({
-      id: idx + 2, // Start from 2 to leave room for main image and hover image
-      src: item.url,
-      alt: `Gallery image ${idx + 1}`,
-      color: activeColor,
-      width: 600,
-      height: 800
-    }));
-    
-    // Add the main product image and hover image at the beginning
-    // If we have a firstItem (main product image), add it at the beginning
-    if (firstItem) {
-      items.unshift({
-        id: 0,
-        src: firstItem,
-        alt: "Main product image",
+  // --- NEW: items as state, update on relevant changes ---
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    let newItems;
+    if (useGallery) {
+      newItems = gallery.map((item, idx) => ({
+        id: idx + 2, // Start from 2 to leave room for main image and hover image
+        src: item.url,
+        alt: `Gallery image ${idx + 1}`,
         color: activeColor,
         width: 600,
         height: 800
-      });
+      }));
+      // Add the main product image and hover image at the beginning
+      if (firstItem) {
+        newItems.unshift({
+          id: 0,
+          src: firstItem,
+          alt: "Main product image",
+          color: activeColor,
+          width: 600,
+          height: 800
+        });
+      }
+      if (imgHover && imgHover !== firstItem) {
+        newItems.splice(1, 0, {
+          id: 1,
+          src: imgHover,
+          alt: "Product hover image",
+          color: activeColor,
+          width: 600,
+          height: 800
+        });
+      }
+    } else {
+      newItems = [...slideItems];
+      newItems[0].src = firstItem ?? newItems[0].src;
     }
-    
-    // If we have an imgHover, add it as second item
-    if (imgHover && imgHover !== firstItem) {
-      items.splice(1, 0, {
-        id: 1,
-        src: imgHover,
-        alt: "Product hover image",
-        color: activeColor,
-        width: 600,
-        height: 800
-      });
-    }
-  } else {
-    // Using default slide items
-    items[0].src = firstItem ?? items[0].src;
-  }
+    setItems(newItems);
+  }, [useGallery, gallery, slideItems, firstItem, imgHover, activeColor]);
 
   const lightboxRef = useRef(null);
+  const [thumbsSwiper, setThumbsSwiper] = useState(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const swiperRef = useRef(null);
+  
+  // Function to open lightbox manually
+  const openLightbox = (index) => {
+    if (lightboxRef.current) {
+      lightboxRef.current.loadAndOpen(index);
+    }
+  };
+  
   useEffect(() => {
     // Initialize PhotoSwipeLightbox
     const lightbox = new PhotoSwipeLightbox({
       gallery: "#gallery-swiper-started",
-      children: ".item",
+      children: ".pswp-item",
       pswpModule: () => import("photoswipe"),
     });
 
@@ -78,12 +89,9 @@ export default function Slider1({
     // Cleanup: destroy the lightbox when the component unmounts
     return () => {
       lightbox.destroy();
+      lightboxRef.current = null;
     };
   }, []);
-
-  const [thumbsSwiper, setThumbsSwiper] = useState(null);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const swiperRef = useRef(null);
   
   // Function to get the image URL for the selected color
   const getColorImageUrl = (colorName) => {
@@ -96,31 +104,15 @@ export default function Slider1({
     return colorObj?.imgSrc || firstItem;
   };
   
+  // --- NEW: Reset Swiper to first slide on items/color change (mobile fix) ---
   useEffect(() => {
-    if (!useGallery && !(items[activeIndex].color == activeColor)) {
-      const slideIndex =
-        items.filter((elm) => elm.color == activeColor)[0]?.id - 1;
-      if (swiperRef.current && slideIndex !== undefined) {
-        swiperRef.current.slideTo(slideIndex);
-      }
+    if (swiperRef.current) {
+      swiperRef.current.slideTo(0, 0);
+      setTimeout(() => {
+        swiperRef.current.update && swiperRef.current.update();
+      }, 100);
     }
-    
-    // If the activeColor changes, update the main image with the image for that color
-    if (useGallery) {
-      // Find image URL for the selected color
-      const colorImageUrl = getColorImageUrl(activeColor);
-      
-      // If we have a color-specific image, update the first item
-      if (colorImageUrl && items.length > 0) {
-        items[0].src = colorImageUrl;
-        
-        // If the swiper is initialized, slide to the first image
-        if (swiperRef.current) {
-          swiperRef.current.slideTo(0);
-        }
-      }
-    }
-  }, [activeColor, useGallery, items, activeIndex, firstItem]);
+  }, [items, activeColor]);
   
   useEffect(() => {
     setTimeout(() => {
@@ -133,6 +125,21 @@ export default function Slider1({
       }
     });
   }, []);
+
+  // Handle thumbnail click
+  const handleThumbnailClick = (index) => {
+    if (swiperRef.current) {
+      swiperRef.current.slideTo(index);
+      // Mobile-specific fix: force update after slideTo
+      if (typeof window !== 'undefined' && window.innerWidth <= 991.98) {
+        setTimeout(() => {
+          if (swiperRef.current && swiperRef.current.update) {
+            swiperRef.current.update();
+          }
+        }, 100);
+      }
+    }
+  };
 
   return (
     <div className="thumbs-slider">
@@ -176,14 +183,28 @@ export default function Slider1({
             slidesPerView: thumbSlidePerView,
           },
         }}
+        style={{ maxHeight: '531px' }}
       >
         {items.map((slide, index) => (
           <SwiperSlide
             className="swiper-slide stagger-item"
             data-color={slide.color}
             key={index}
+            onClick={() => handleThumbnailClick(index)}
           >
-            <div className="item" style={{ aspectRatio: '3/4' }}>
+            <div className="item" style={{ 
+              aspectRatio: '3/4', 
+              cursor: 'pointer',
+              transition: 'transform 0.3s ease',
+              margin: '8px 0 8px 8px'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+            >
               <Image
                 className="lazyload"
                 data-src={slide.src}
@@ -195,7 +216,8 @@ export default function Slider1({
                   width: '100%',
                   height: '100%',
                   objectFit: 'cover',
-                  borderRadius: '8px'
+                  borderRadius: '8px',
+                  border: '1px solid #f0f0f0'
                 }}
               />
             </div>
@@ -214,33 +236,54 @@ export default function Slider1({
         onSlideChange={(swiper) => {
           if (items[swiper.activeIndex]) {
             setActiveIndex(swiper.activeIndex);
-            setActiveColor(items[swiper.activeIndex]?.color.toLowerCase());
+            if (items[swiper.activeIndex]?.color) {
+              setActiveColor(items[swiper.activeIndex].color.toLowerCase());
+            }
           }
         }}
+        style={{ maxHeight: '531px' }}
       >
         {items.map((slide, index) => (
-          <SwiperSlide key={index} className="swiper-slide" data-color="gray">
+          <SwiperSlide key={index} className="swiper-slide" data-color={slide.color || "gray"}>
             <a
               href={slide.src}
               target="_blank"
-              className="item"
+              className="pswp-item"
               data-pswp-width={slide.width}
               data-pswp-height={slide.height}
-              //   onClick={() => openLightbox(index)}
+              onClick={(e) => {
+                e.preventDefault();
+                openLightbox(index);
+              }}
+              style={{ 
+                cursor: 'pointer', 
+                display: 'block',
+                transition: 'transform 0.3s ease'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'scale(1.02)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
             >
               <Image
                 className="lazyload"
                 data-src={slide.src}
-                alt=""
+                alt={slide.alt || ""}
                 src={slide.src}
-                width={slide.width * 0.6}
-                height={slide.height * 0.6}
+                width={600}
+                height={800}
                 style={{
-                  height: '100%',
-                  width: '80%',
-                  objectFit: 'cover',
-                  borderRadius: '12px',
-                  margin: '0 auto'
+                  width: '100%',
+                  height: 'auto',
+                  aspectRatio: '3/4',
+                  objectFit: 'contain',
+                  margin: '0 auto',
+                  maxHeight: '531px',
+                  borderRadius: '16px',
+                  border: '1px solid #f0f0f0',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
                 }}
               />
             </a>

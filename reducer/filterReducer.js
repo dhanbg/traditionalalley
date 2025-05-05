@@ -1,10 +1,10 @@
 export const initialState = {
   price: [20, 300],
-  availability: "All",
-  color: "All",
+  availability: { id: "all", label: "All", value: null },
+  color: { name: "All", className: "", imgSrc: null },
   size: "All",
   activeFilterOnSale: false,
-  brands: [],
+  collections: [],
   filtered: [], // Will be populated from API
   sortingOption: "Sort by (Default)",
   sorted: [], // Will be populated from API
@@ -26,8 +26,8 @@ export function reducer(state, action) {
     case "SET_AVAILABILITY":
       return { ...state, availability: action.payload };
 
-    case "SET_BRANDS":
-      return { ...state, brands: action.payload };
+    case "SET_COLLECTIONS":
+      return { ...state, collections: action.payload };
 
     case "SET_FILTERED":
       return { ...state, filtered: [...action.payload] };
@@ -51,10 +51,10 @@ export function reducer(state, action) {
       return {
         ...state,
         price: [20, 300],
-        availability: "All",
-        color: "All",
+        availability: { id: "all", label: "All", value: null },
+        color: { name: "All", className: "", imgSrc: null },
         size: "All",
-        brands: [],
+        collections: [],
         activeFilterOnSale: false,
       };
 

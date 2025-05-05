@@ -5,16 +5,39 @@ import Link from "next/link";
 import CountdownTimer from "../common/Countdown";
 import { useContextElement } from "@/context/Context";
 import { useClerk } from "@clerk/nextjs";
+import { getImageUrl } from "@/utils/api";
 
 // Default placeholder image
 const DEFAULT_IMAGE = '/images/placeholder.jpg';
+
+function getStrapiSmallImage(imageObj) {
+  if (!imageObj) return DEFAULT_IMAGE;
+  if (imageObj.formats && imageObj.formats.small && imageObj.formats.small.url) {
+    // If the URL is already absolute, use it; otherwise, prepend API_URL
+    if (imageObj.formats.small.url.startsWith('http')) {
+      return imageObj.formats.small.url;
+    } else {
+      // Import API_URL from utils/urls
+      try {
+        // Dynamically import to avoid circular dependency
+        // eslint-disable-next-line global-require
+        const { API_URL } = require("@/utils/urls");
+        return `${API_URL}${imageObj.formats.small.url}`;
+      } catch {
+        return imageObj.formats.small.url;
+      }
+    }
+  }
+  // fallback to getImageUrl utility
+  return getImageUrl(imageObj) || DEFAULT_IMAGE;
+}
 
 export default function ProductCard1({ product, gridClass = "" }) {
   // Ensure product has valid image properties
   const safeProduct = {
     ...product,
-    imgSrc: product.imgSrc || DEFAULT_IMAGE,
-    imgHover: product.imgHover || product.imgSrc || DEFAULT_IMAGE
+    imgSrc: getStrapiSmallImage(product.imgSrc) || DEFAULT_IMAGE,
+    imgHover: getStrapiSmallImage(product.imgHover) || getStrapiSmallImage(product.imgSrc) || DEFAULT_IMAGE
   };
   
   // Double-check that imgSrc and imgHover are valid strings and not empty
@@ -245,12 +268,12 @@ export default function ProductCard1({ product, gridClass = "" }) {
             href="#compare"
             data-bs-toggle="offcanvas"
             aria-controls="compare"
-            onClick={() => addToCompareItem(safeProduct.id)}
+            onClick={() => addToCompareItem(safeProduct.documentId || safeProduct.id)}
             className="box-icon compare btn-icon-action"
           >
             <span className="icon icon-gitDiff" />
             <span className="tooltip">
-              {isAddedtoCompareItem(safeProduct.id)
+              {isAddedtoCompareItem(safeProduct.documentId || safeProduct.id)
                 ? "Already compared"
                 : "Compare"}
             </span>

@@ -4,7 +4,7 @@ import { openCartModal } from "@/utils/openCartModal";
 import { openWistlistModal } from "@/utils/openWishlist";
 import { useUser } from "@clerk/nextjs";
 import { API_URL, STRAPI_API_TOKEN, CARTS_API, USER_CARTS_API, PRODUCT_BY_DOCUMENT_ID_API } from "@/utils/urls";
-import { fetchDataFromApi, createData, updateData, deleteData } from "@/utils/api";
+import { fetchDataFromApi, createData, updateData, deleteData, getImageUrl } from "@/utils/api";
 
 import React, { useContext, useEffect, useState } from "react";
 const dataContext = React.createContext();
@@ -15,11 +15,84 @@ export const useContextElement = () => {
 export default function Context({ children }) {
   const { user } = useUser();
   const [cartProducts, setCartProducts] = useState([]);
-  const [wishList, setWishList] = useState([1, 2, 3]);
-  const [compareItem, setCompareItem] = useState([1, 2, 3]);
+  const [wishList, setWishList] = useState([]);
+  const [compareItem, setCompareItem] = useState([]);
   const [quickViewItem, setQuickViewItem] = useState(allProducts[0]);
   const [quickAddItem, setQuickAddItem] = useState(1);
   const [totalPrice, setTotalPrice] = useState(0);
+  
+  // Load compare items from localStorage on mount and validate them
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedCompareItems = JSON.parse(localStorage.getItem('compareItems')) || [];
+        
+        // Clear localStorage if we detect the hard-coded test IDs are still there
+        const containsTestIds = savedCompareItems.some(id => [55, 60, 61].includes(Number(id)));
+        if (containsTestIds) {
+          localStorage.removeItem('compareItems');
+          setCompareItem([]);
+          return;
+        }
+        
+        // Validate that the IDs exist on the server
+        const validateIds = async () => {
+          try {
+            // Only validate if there are items to check
+            if (savedCompareItems.length === 0) return;
+            
+            const validIds = [];
+            
+            // For each ID, make a request to check if the product exists
+            for (const id of savedCompareItems) {
+              try {
+                let response;
+                
+                // Different endpoint based on if it's a number or string (documentId)
+                if (!isNaN(parseInt(id))) {
+                  response = await fetchDataFromApi(`/api/products/${parseInt(id)}?populate=*`);
+                } else {
+                  response = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*`);
+                }
+                
+                // If the response has data, the product exists
+                if (response && response.data) {
+                  validIds.push(id);
+                }
+              } catch (error) {
+                console.log(`Product ID ${id} is invalid, removing from compare list`);
+              }
+            }
+            
+            // Update localStorage and state with only valid IDs
+            localStorage.setItem('compareItems', JSON.stringify(validIds));
+            setCompareItem(validIds);
+          } catch (error) {
+            console.error("Error validating compare items:", error);
+          }
+        };
+        
+        // Set the state immediately with what's in localStorage
+        setCompareItem(savedCompareItems);
+        
+        // Then validate in the background
+        validateIds();
+      } catch (error) {
+        console.error("Error loading compare items from localStorage:", error);
+        // Clear localStorage if there's an error
+        localStorage.removeItem('compareItems');
+        setCompareItem([]);
+      }
+    }
+  }, []);
+  
+  // Save compare items to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('compareItems', JSON.stringify(compareItem));
+    }
+  }, [compareItem]);
+
   useEffect(() => {
     const subtotal = cartProducts.reduce((accumulator, product) => {
       return accumulator + product.quantity * product.price;
@@ -66,12 +139,10 @@ export default function Context({ children }) {
   
   const addProductToCart = async (id, qty, isModal = true) => {
     // Log the product ID that was clicked
-    console.log("Product ID clicked for add-to-cart:", id);
+    const productIdClicked = id;
     
     // Check if product is already in cart by ID
     if (isAddedToCartProducts(id)) {
-      console.log("Product already in cart:", id);
-      // Optional: Show a notification to user that product is already in cart
       if (isModal) {
         // Still open the cart modal to show them the product is already there
         openCartModal();
@@ -84,7 +155,12 @@ export default function Context({ children }) {
     let productToAdd = null;
     
     if (productInfo) {
-      console.log("Found product in allProducts:", productInfo);
+      let imgSrc = '/images/placeholder.png';
+      if (productInfo.imgSrc && productInfo.imgSrc.formats && productInfo.imgSrc.formats.small && productInfo.imgSrc.formats.small.url) {
+        imgSrc = `${API_URL}${productInfo.imgSrc.formats.small.url}`;
+      } else {
+        imgSrc = getImageUrl(productInfo.imgSrc);
+      }
       productToAdd = {
         id: productInfo.id,
         documentId: productInfo.documentId,
@@ -93,12 +169,9 @@ export default function Context({ children }) {
         quantity: qty || 1,
         colors: productInfo.colors || [],
         sizes: productInfo.sizes || [],
-        imgSrc: productInfo.imgSrc?.url ? 
-                `${API_URL}${productInfo.imgSrc.url}` : 
-                (typeof productInfo.imgSrc === 'string' ? productInfo.imgSrc : '/images/placeholder.png')
+        imgSrc: imgSrc
       };
     } else {
-      console.log("Product not found in allProducts, fetching from API...");
       // The ID might be a documentId, especially if it's a string that looks like a UUID/hash
       try {
         let productResponse = null;
@@ -125,7 +198,9 @@ export default function Context({ children }) {
           
           // Check if imgSrc is a relation or direct field
           let imgUrl = '/images/placeholder.png';
-          if (productData.imgSrc?.data?.attributes?.url) {
+          if (productData.imgSrc && productData.imgSrc.formats && productData.imgSrc.formats.small && productData.imgSrc.formats.small.url) {
+            imgUrl = `${API_URL}${productData.imgSrc.formats.small.url}`;
+          } else if (productData.imgSrc?.data?.attributes?.url) {
             imgUrl = `${API_URL}${productData.imgSrc.data.attributes.url}`;
           } else if (productData.imgSrc?.url) {
             imgUrl = `${API_URL}${productData.imgSrc.url}`;
@@ -147,8 +222,6 @@ export default function Context({ children }) {
             sizes: productData.sizes || [],
             imgSrc: imgUrl
           };
-          
-          console.log("Created product object from API response:", productToAdd);
         }
       } catch (fetchError) {
         console.error("Error fetching product details:", fetchError);
@@ -157,7 +230,6 @@ export default function Context({ children }) {
     
     // If we still don't have complete product info, create a basic dummy product
     if (!productToAdd) {
-      console.warn("Creating basic product info without details");
       productToAdd = {
         id: id,
         documentId: typeof id === 'string' && id.length > 20 ? id : null,
@@ -173,7 +245,6 @@ export default function Context({ children }) {
     if (user) {
       try {
         // Get the current logged-in user data
-        console.log(`Getting user data for current user: ${user.id}`);
         const currentUserData = await fetchDataFromApi(`/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=user_bag`);
         
         // If the user doesn't exist in our system, we need to handle this case
@@ -367,7 +438,6 @@ export default function Context({ children }) {
           }
           
           // Create cart entry
-          console.log("Creating cart entry with payload:", completeCartPayload);
           const cartResponse = await createData("/api/carts", completeCartPayload);
           console.log("Added to cart:", cartResponse);
           
@@ -414,111 +484,43 @@ export default function Context({ children }) {
   };
 
   const updateQuantity = (id, amount, isIncrement = false) => {
-    console.log("Updating quantity for ID:", id, "Amount:", amount, "IsIncrement:", isIncrement);
-    
-    try {
-      // First, update the UI immediately for a responsive experience
-      const updatedProducts = cartProducts.map((item) => {
-        // Try to match either by ID or documentId
-        const itemMatches = item.id == id || (item.documentId && item.documentId === id);
+    const updatedProducts = cartProducts.map((item) => {
+      // Try to match either by ID or documentId
+      const itemMatches = item.id == id || (item.documentId && item.documentId === id);
+      
+      if (itemMatches) {
+        // For increment mode, add the amount to current quantity
+        // For direct mode, set the quantity to the amount
+        const newQuantity = isIncrement ? item.quantity + amount : amount;
         
-        if (itemMatches) {
-          console.log("Found matching item in cart:", item);
-          
-          // For increment mode, add the amount to current quantity
-          // For direct mode, set the quantity to the amount
-          const newQuantity = isIncrement ? item.quantity + amount : amount;
-          
-          // Optional: Enforce minimum quantity of 1
-          const finalQuantity = Math.max(1, newQuantity);
-          
-          // Return updated item for frontend state
-          return { ...item, quantity: finalQuantity };
-        }
+        // Optional: Enforce minimum quantity of 1
+        const finalQuantity = Math.max(1, newQuantity);
         
-        // Return unchanged item if no match
-        return item;
-      });
-      
-      // Update local state immediately
-      setCartProducts(updatedProducts);
-      
-      // Then handle the backend update
-      const matchingItem = updatedProducts.find(item => item.id == id || (item.documentId && item.documentId === id));
-      
-      if (!matchingItem) {
-        console.error("No matching item found in cart for ID:", id);
-        return;
+        // Return updated item for frontend state
+        return { ...item, quantity: finalQuantity };
       }
       
-      const finalQuantity = matchingItem.quantity;
-      console.log("Updating backend with quantity:", finalQuantity);
-      
-      // Backend update function
-      const updateBackend = async () => {
-        try {
-          // If we already have the cart document ID, use it directly
-          if (matchingItem.cartDocumentId) {
-            console.log(`Using known cart document ID for update: ${matchingItem.cartDocumentId}`);
-            const updatePayload = {
-              data: {
-                quantity: finalQuantity
-              }
-            };
-            
-            try {
-              // Use the documentId in the URL instead of numeric ID
-              const updateResponse = await updateData(`/api/carts/${matchingItem.cartDocumentId}`, updatePayload);
-              console.log("✅ Backend update successful with cartDocumentId:", updateResponse);
-              return;
-            } catch (updateError) {
-              console.error(`❌ Error updating cart with cartDocumentId ${matchingItem.cartDocumentId}:`, updateError);
-              // Continue to fallback methods
-            }
-          }
-          
-          // Get all cart items to find the correct one
-          console.log("Fetching current cart data to find the right cart item...");
-          const cartResponse = await fetchDataFromApi(`/api/carts?populate=*`);
-          
-          if (!cartResponse?.data?.length) {
-            console.log("No cart items found in backend");
-            return;
-          }
-          
-          console.log(`Found ${cartResponse.data.length} cart items in backend`);
-          
-          // Find the matching cart item
-          let foundCartItem = null;
-          let cartDocumentId = null;
-          
-          // Try to match based on product ID or documentId
-          for (const cartItem of cartResponse.data) {
-            // Skip cart items without product data
-            if (!cartItem.attributes?.product?.data) continue;
-            
-            const productData = cartItem.attributes.product.data;
-            const productId = productData.id;
-            const productDocId = productData.attributes?.documentId;
-            
-            const matchesProductId = productId == id;
-            const matchesDocumentId = productDocId && matchingItem.documentId && productDocId === matchingItem.documentId;
-            
-            if (matchesProductId || matchesDocumentId) {
-              foundCartItem = cartItem;
-              cartDocumentId = cartItem.attributes.documentId;
-              console.log(`Found matching cart item with document ID: ${cartDocumentId}`);
-              break;
-            }
-          }
-          
-          if (!foundCartItem || !cartDocumentId) {
-            console.error("Could not find cart item in backend that matches product ID or documentId");
-            return;
-          }
-          
-          // Update the item using the document ID we found
-          console.log(`Updating cart with document ID: ${cartDocumentId}`);
+      // Return unchanged item if no match
+      return item;
+    });
+    
+    // Update local state immediately
+    setCartProducts(updatedProducts);
+    
+    // Then handle the backend update
+    const matchingItem = updatedProducts.find(item => item.id == id || (item.documentId && item.documentId === id));
+    
+    if (!matchingItem) {
+      return;
+    }
+    
+    const finalQuantity = matchingItem.quantity;
+    
+    // Backend update function
+    const updateBackend = async () => {
+      try {
+        // If we already have the cart document ID, use it directly
+        if (matchingItem.cartDocumentId) {
           const updatePayload = {
             data: {
               quantity: finalQuantity
@@ -527,60 +529,170 @@ export default function Context({ children }) {
           
           try {
             // Use the documentId in the URL instead of numeric ID
-            const updateResponse = await updateData(`/api/carts/${cartDocumentId}`, updatePayload);
-            console.log("✅ Backend update successful with documentId:", updateResponse);
-            
-            // Store the cart document ID for future use
-            setCartProducts(prev => prev.map(item => {
-              if (item.id == id || (item.documentId && item.documentId === matchingItem.documentId)) {
-                return { ...item, cartDocumentId };
-              }
-              return item;
-            }));
+            const updateResponse = await updateData(`/api/carts/${matchingItem.cartDocumentId}`, updatePayload);
+            return;
           } catch (updateError) {
-            console.error(`❌ Error updating cart with documentId ${cartDocumentId}:`, updateError);
-            
-            // Try direct fetch as last resort
-            try {
-              console.log(`Last resort: direct fetch to ${API_URL}/api/carts/${cartDocumentId}`);
-              
-              const directResponse = await fetch(`${API_URL}/api/carts/${cartDocumentId}?populate=*`, {
-                method: 'PUT',
-                headers: {
-                  'Authorization': `Bearer ${STRAPI_API_TOKEN}`,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(updatePayload)
-              });
-              
-              if (directResponse.ok) {
-                console.log("✅ Direct fetch update successful");
-                // Store the cart document ID for future use
-                setCartProducts(prev => prev.map(item => {
-                  if (item.id == id || (item.documentId && item.documentId === matchingItem.documentId)) {
-                    return { ...item, cartDocumentId };
-                  }
-                  return item;
-                }));
-              } else {
-                const errorText = await directResponse.text();
-                console.error(`❌ Direct fetch failed: ${directResponse.status}`, errorText);
-              }
-            } catch (directError) {
-              console.error("❌ All update attempts failed:", directError);
-            }
+            // Continue to fallback methods
           }
-        } catch (error) {
-          console.error("❌ Error in backend update process:", error);
         }
-      };
-      
-      // Fire and forget the backend update - don't block the UI
-      updateBackend();
-      
-    } catch (error) {
-      console.error("Error in updateQuantity function:", error);
-    }
+        
+        // Get all cart items to find the correct one
+        const cartResponse = await fetchDataFromApi(`/api/carts?populate=*`);
+        
+        if (!cartResponse?.data?.length) {
+          return;
+        }
+        
+        // Find the matching cart item
+        let foundCartItem = null;
+        let cartDocumentId = null;
+        
+        // Try to match based on product ID or documentId AND user_datum
+        for (const cartItem of cartResponse.data) {
+          // Skip cart items without product data
+          if (!cartItem.attributes?.product?.data) continue;
+          
+          const productData = cartItem.attributes.product.data;
+          const productId = productData.id;
+          const productDocId = productData.attributes?.documentId;
+          
+          // Check if this cart item matches the product we're looking for
+          const matchesProductId = productId == id;
+          const matchesDocumentId = productDocId && matchingItem.documentId && productDocId === matchingItem.documentId;
+          
+          // If we have the cartId stored, prioritize exact cart item match
+          if (matchingItem.cartId && cartItem.id == matchingItem.cartId) {
+            foundCartItem = cartItem;
+            cartDocumentId = cartItem.attributes.documentId;
+            break; // Exact match found, no need to look further
+          }
+          
+          // If we have the cartDocumentId stored, prioritize exact match
+          if (matchingItem.cartDocumentId && cartItem.attributes.documentId === matchingItem.cartDocumentId) {
+            foundCartItem = cartItem;
+            cartDocumentId = cartItem.attributes.documentId;
+            break; // Exact match found, no need to look further
+          }
+          
+          // Otherwise use product matching as a fallback
+          if ((matchesProductId || matchesDocumentId) && !foundCartItem) {
+            foundCartItem = cartItem;
+            cartDocumentId = cartItem.attributes.documentId;
+          }
+        }
+        
+        if (!foundCartItem || !cartDocumentId) {
+          // Check if we should create a new item or just update local state
+          if (matchingItem.cartId || matchingItem.cartDocumentId) {
+            return;
+          }
+          
+          // Create a new cart item since we couldn't find an existing one
+          try {
+            // Create cart item in the backend
+            const createPayload = {
+              data: {
+                quantity: finalQuantity,
+                product: matchingItem.id
+              }
+            };
+            
+            // Add user_datum if available
+            if (user) {
+              // Get user data for the current user
+              const userDataResponse = await fetchDataFromApi(`/api/user-datas?filters[clerkUserId][$eq]=${user.id}`);
+              
+              if (userDataResponse?.data && userDataResponse.data.length > 0) {
+                const userData = userDataResponse.data[0];
+                createPayload.data.user_datum = userData.id;
+                
+                // Also check if the user has a bag
+                const userBagResponse = await fetchDataFromApi(`/api/user-bags?filters[user_datum][id][$eq]=${userData.id}`);
+                
+                if (userBagResponse?.data && userBagResponse.data.length > 0) {
+                  const userBag = userBagResponse.data[0];
+                  createPayload.data.user_bag = userBag.id;
+                }
+              }
+            }
+            
+            const createResponse = await createData("/api/carts", createPayload);
+            
+            // Update local state with the new cart ID and document ID
+            if (createResponse?.data) {
+              const newCartId = createResponse.data.id;
+              const newCartDocumentId = createResponse.data.attributes?.documentId;
+              
+              setCartProducts(prev => prev.map(item => {
+                if (item.id == id || (item.documentId && item.documentId === matchingItem.documentId)) {
+                  return { 
+                    ...item, 
+                    cartId: newCartId,
+                    cartDocumentId: newCartDocumentId
+                  };
+                }
+                return item;
+              }));
+            }
+          } catch (createError) {
+            console.error("❌ Error creating new cart item:", createError);
+          }
+          
+          return;
+        }
+        
+        // Update the item using the document ID we found
+        const updatePayload = {
+          data: {
+            quantity: finalQuantity
+          }
+        };
+        
+        try {
+          // Use the documentId in the URL instead of numeric ID
+          const updateResponse = await updateData(`/api/carts/${cartDocumentId}`, updatePayload);
+          
+          // Store the cart document ID for future use
+          setCartProducts(prev => prev.map(item => {
+            if (item.id == id || (item.documentId && item.documentId === matchingItem.documentId)) {
+              return { ...item, cartDocumentId };
+            }
+            return item;
+          }));
+        } catch (updateError) {
+          // Try direct fetch as last resort
+          try {
+            const directResponse = await fetch(`${API_URL}/api/carts/${cartDocumentId}?populate=*`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${STRAPI_API_TOKEN}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(updatePayload)
+            });
+            
+            if (directResponse.ok) {
+              // Store the cart document ID for future use
+              setCartProducts(prev => prev.map(item => {
+                if (item.id == id || (item.documentId && item.documentId === matchingItem.documentId)) {
+                  return { ...item, cartDocumentId };
+                }
+                return item;
+              }));
+            } else {
+              const errorText = await directResponse.text();
+            }
+          } catch (directError) {
+            console.error("❌ All update attempts failed:", directError);
+          }
+        }
+      } catch (error) {
+        console.error("❌ Error in backend update process:", error);
+      }
+    };
+    
+    // Fire and forget the backend update - don't block the UI
+    updateBackend();
   };
 
   const addToWishlist = (id) => {
@@ -595,15 +707,96 @@ export default function Context({ children }) {
       setWishList((pre) => [...pre.filter((elm) => elm != id)]);
     }
   };
-  const addToCompareItem = (id) => {
-    if (!compareItem.includes(id)) {
-      setCompareItem((pre) => [...pre, id]);
+  const addToCompareItem = async (id) => {
+    // Skip empty or undefined IDs
+    if (!id) {
+      return;
+    }
+    
+    // If the ID is a numeric string, convert it for consistent comparison
+    let formattedId = id;
+    if (!isNaN(Number(id)) && typeof id !== 'number') {
+      formattedId = Number(id);
+    }
+    
+    // Immediately reject hardcoded test IDs that we know are invalid
+    if ([55, 60, 61].includes(Number(formattedId))) {
+      return;
+    }
+    
+    // Check if this ID is already in the compare list
+    const isAlreadyInList = compareItem.some(existingId => {
+      if (typeof existingId === 'number' && typeof formattedId === 'number') {
+        return existingId === formattedId;
+      }
+      return String(existingId) === String(formattedId);
+    });
+    
+    if (isAlreadyInList) {
+      return;
+    }
+    
+    // Before adding the product, verify it exists by fetching it
+    try {
+      let response = null;
+      let productExists = false;
+      let productData = null;
+      
+      // Try to fetch by documentId if it looks like one (longer string)
+      if (typeof formattedId === 'string' && formattedId.length > 8) {
+        response = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${formattedId}&populate=*`);
+        productExists = response?.data && Array.isArray(response.data) && response.data.length > 0;
+        if (productExists) {
+          productData = response.data[0];
+        }
+      }
+      
+      // If not found by documentId, try as regular ID
+      if (!productExists) {
+        try {
+          response = await fetchDataFromApi(`/api/products/${formattedId}?populate=*`);
+          productExists = response?.data !== null && response?.data !== undefined;
+          if (productExists) {
+            productData = response.data;
+          }
+        } catch (error) {
+          // Explicitly handle 404 errors
+          if (error.message && error.message.includes("404")) {
+            productExists = false;
+          } else {
+            throw error; // Re-throw other errors
+          }
+        }
+      }
+      
+      if (productExists && productData) {
+        // Extract the document ID if available, otherwise use the ID we have
+        let idToStore = formattedId;
+        if (productData.attributes?.documentId) {
+          idToStore = productData.attributes.documentId;
+        }
+        setCompareItem(prev => [...prev, idToStore]);
+      } else {
+        return;
+      }
+    } catch (error) {
+      // Don't add the product if verification failed
     }
   };
   const removeFromCompareItem = (id) => {
-    if (compareItem.includes(id)) {
-      setCompareItem((pre) => [...pre.filter((elm) => elm != id)]);
+    // Convert numeric strings to actual numbers to ensure consistent comparison
+    let formattedId = id;
+    if (!isNaN(Number(id)) && typeof id !== 'number') {
+      formattedId = Number(id);
     }
+    
+    // Filter out the matching item, accounting for type inconsistencies
+    setCompareItem(prev => prev.filter(existingId => {
+      if (typeof existingId === 'number' && typeof formattedId === 'number') {
+        return existingId !== formattedId;
+      }
+      return String(existingId) !== String(formattedId);
+    }));
   };
   const isAddedtoWishlist = (id) => {
     if (wishList.includes(id)) {
@@ -612,28 +805,33 @@ export default function Context({ children }) {
     return false;
   };
   const isAddedtoCompareItem = (id) => {
-    if (compareItem.includes(id)) {
-      return true;
+    // Convert numeric strings to actual numbers to ensure consistent comparison
+    let formattedId = id;
+    if (!isNaN(Number(id)) && typeof id !== 'number') {
+      formattedId = Number(id);
     }
-    return false;
+    
+    // Check if this ID exists in the compare list
+    return compareItem.some(existingId => {
+      if (typeof existingId === 'number' && typeof formattedId === 'number') {
+        return existingId === formattedId;
+      }
+      return String(existingId) === String(formattedId);
+    });
   };
   
   // Load cart data from backend when user logs in
   useEffect(() => {
     if (user) {
-      console.log("User logged in, loading cart data from backend");
-      
       const loadCartFromBackend = async () => {
         try {
           // Fetch user-specific carts from backend
           const cartResponse = await fetchDataFromApi(`/api/carts?populate=*`);
-          console.log("Fetched cart data from backend:", cartResponse);
           
           if (cartResponse?.data?.length > 0) {
             // Transform backend cart items into the format expected by the UI
             const backendCarts = cartResponse.data.map(cartItem => {
               if (!cartItem || !cartItem.attributes) {
-                console.log("Invalid cart item:", cartItem);
                 return null; // Skip this item
               }
               
@@ -646,7 +844,6 @@ export default function Context({ children }) {
               
               // Skip items without product data
               if (!productId) {
-                console.log(`Cart item ${cartItem.id} has no associated product, skipping`);
                 return null;
               }
               
@@ -665,14 +862,11 @@ export default function Context({ children }) {
             // Filter out null entries (invalid items)
             .filter(item => item !== null);
             
-            console.log("Transformed cart items:", backendCarts);
             setCartProducts(backendCarts);
       } else {
-            console.log("No cart items found in backend");
             setCartProducts([]);
           }
         } catch (error) {
-          console.error("Error loading cart from backend:", error);
           // Set empty cart on error to avoid UI issues
           setCartProducts([]);
         }
@@ -681,7 +875,6 @@ export default function Context({ children }) {
       loadCartFromBackend();
     } else {
       // User logged out, clear the cart
-      console.log("User logged out, clearing cart");
       setCartProducts([]);
     }
   }, [user]);
@@ -705,14 +898,7 @@ export default function Context({ children }) {
   // Add debug logging when cart items are added or updated
   useEffect(() => {
     if (cartProducts.length > 0) {
-      console.log("Cart products updated:", cartProducts);
       cartProducts.forEach(item => {
-        console.log(`Cart item ${item.id}:`, {
-          id: item.id,
-          documentId: item.documentId,
-          quantity: item.quantity,
-          hasDocumentId: !!item.documentId
-        });
       });
     }
   }, [cartProducts]);
@@ -727,8 +913,6 @@ export default function Context({ children }) {
 
   // Clear all localStorage data on component mount
   useEffect(() => {
-    console.log("Clearing all localStorage data");
-    
     // Clear anonymous cart data
     localStorage.removeItem("cartList");
     
@@ -737,24 +921,21 @@ export default function Context({ children }) {
     for (const key of localStorageKeys) {
       if (key.startsWith("cartList_") || key.startsWith("wishlist_")) {
         localStorage.removeItem(key);
-        console.log(`Removed localStorage item: ${key}`);
       }
     }
     
     // Clear wishlist data
-    localStorage.removeItem("wishlist");
+          localStorage.removeItem("wishlist");
     
     // Clear any other localStorage items related to the app
-    localStorage.removeItem("compareItems");
+    // We want to keep the compare items
+    // localStorage.removeItem("compareItems");
     
-    console.log("All localStorage data cleared");
   }, []);
 
   // Function to remove item from cart (both frontend and backend)
   const removeFromCart = async (id, directCartDocumentId = null) => {
     try {
-      console.log(`Context: Removing cart item with id: ${id}, directCartDocumentId: ${directCartDocumentId}`);
-      
       // First update the local state to remove the item
       const updatedCart = cartProducts.filter(item => {
         // Filter out the item with matching id
@@ -776,29 +957,21 @@ export default function Context({ children }) {
       );
       
       if (!cartItem) {
-        console.log(`Context: Could not find cart item with id ${id} in local state`);
         return;
       }
       
       // If directCartDocumentId was provided directly (first priority)
       if (directCartDocumentId) {
-        console.log(`Context: Using provided directCartDocumentId ${directCartDocumentId} for deletion`);
-        
         try {
           await deleteData(`/api/carts/${directCartDocumentId}`);
-          console.log(`Context: Successfully deleted cart item with directCartDocumentId ${directCartDocumentId}`);
           return;
         } catch (directIdError) {
-          console.log(`Context: Failed to delete by provided directCartDocumentId: ${directIdError.message}`);
-          
           // If error mentions document ID not valid, try to delete by numeric ID as fallback
           if (directIdError.message && directIdError.message.includes("not valid") && cartItem.cartId) {
             try {
               await deleteData(`/api/carts/${cartItem.cartId}`);
-              console.log(`Context: Successfully deleted cart item by numeric ID ${cartItem.cartId} after document ID failed`);
               return;
             } catch (numericIdError) {
-              console.error(`Context: Failed to delete by numeric ID after document ID failed:`, numericIdError);
             }
           }
         }
@@ -806,34 +979,24 @@ export default function Context({ children }) {
       
       // Try with cartDocumentId stored in the cart item object (second priority)
       if (cartItem.cartDocumentId) {
-        console.log(`Context: Using cart item's cartDocumentId ${cartItem.cartDocumentId} for deletion`);
-        
         try {
           await deleteData(`/api/carts/${cartItem.cartDocumentId}`);
-          console.log(`Context: Successfully deleted cart item with cartDocumentId ${cartItem.cartDocumentId}`);
           return;
         } catch (cartDocumentIdError) {
-          console.error("Context: Error deleting by cartDocumentId:", cartDocumentIdError);
         }
       }
       
       // Try with cartId stored in the product object (third priority)
       if (cartItem.cartId) {
-        console.log(`Context: Using stored cartId ${cartItem.cartId} for deletion`);
-        
         try {
           // Try direct deletion by numeric ID
           await deleteData(`/api/carts/${cartItem.cartId}`);
-          console.log(`Context: Successfully deleted cart item ${cartItem.cartId} from backend`);
           return;
         } catch (cartIdError) {
-          console.log(`Context: Failed to delete by numeric ID: ${cartIdError.message}`);
         }
       }
       
       // If all direct approaches failed, get all carts and find the one with matching product
-      console.log(`Context: All direct deletion approaches failed, searching in all carts...`);
-      
       const cartResponse = await fetchDataFromApi(`/api/carts?populate=*`);
       
       if (cartResponse?.data?.length > 0) {
@@ -848,7 +1011,6 @@ export default function Context({ children }) {
           // Match by product ID
           if (productData.id == id) {
             foundCartItem = item;
-            console.log(`Context: Found cart item ${item.id} with matching product ID ${id}`);
             break;
           }
           
@@ -859,7 +1021,6 @@ export default function Context({ children }) {
           
           if (productDocumentId && backendDocumentId && productDocumentId === backendDocumentId) {
             foundCartItem = item;
-            console.log(`Context: Found cart item ${item.id} with matching product documentId ${backendDocumentId}`);
             break;
           }
         }
@@ -869,36 +1030,80 @@ export default function Context({ children }) {
           const cartDocumentId = foundCartItem.attributes.documentId;
           
           if (cartDocumentId) {
-            console.log(`Context: Deleting cart item using documentId ${cartDocumentId}`);
-            
             try {
               await deleteData(`/api/carts/${cartDocumentId}`);
-              console.log(`Context: Successfully deleted cart item with documentId ${cartDocumentId}`);
               return;
             } catch (documentIdError) {
-              console.error("Context: Error deleting by documentId:", documentIdError);
               // Continue to fallback method
             }
           }
           
           // Fallback to ID-based deletion
-          console.log(`Context: Falling back to deleting cart item by ID ${foundCartItem.id}`);
           try {
             await deleteData(`/api/carts/${foundCartItem.id}`);
-            console.log(`Context: Successfully deleted cart item by ID ${foundCartItem.id}`);
           } catch (idError) {
-            console.error("Context: Error deleting by ID:", idError);
           }
         } else {
-          console.log(`Context: Could not find matching cart item in backend to delete`);
         }
-      } else {
+    } else {
         console.log(`Context: No carts found in backend`);
       }
     } catch (error) {
       console.error("Context: Error deleting cart item from backend:", error);
     }
   };
+
+  // Helper function to get the most appropriate image URL, preferring smaller formats for better performance
+  const getOptimizedImageUrl = (imageObj) => {
+    // Default placeholder that's built into Next.js
+    const defaultPlaceholder = "/vercel.svg";
+    
+    if (!imageObj) return defaultPlaceholder;
+    
+    // Handle the case where the URL is already a full URL
+    if (imageObj.url && imageObj.url.startsWith("http")) {
+      return imageObj.url;
+    }
+    
+    // Prefer smaller image formats for better performance
+    
+    // Check for formats in the data structure used by Strapi v4
+    if (imageObj.data?.attributes?.formats) {
+      // Try small format first
+      if (imageObj.data.attributes.formats.small?.url) {
+        return `${API_URL}${imageObj.data.attributes.formats.small.url}`;
+      }
+      // Try thumbnail next
+      if (imageObj.data.attributes.formats.thumbnail?.url) {
+        return `${API_URL}${imageObj.data.attributes.formats.thumbnail.url}`;
+      }
+    }
+    
+    // Check for formats in the flattened structure
+    if (imageObj.formats) {
+      // Try small format first
+      if (imageObj.formats.small?.url) {
+        return `${API_URL}${imageObj.formats.small.url}`;
+      }
+      // Try thumbnail next
+      if (imageObj.formats.thumbnail?.url) {
+        return `${API_URL}${imageObj.formats.thumbnail.url}`;
+      }
+    }
+    
+    // Fallback to main URL if formats not available
+    if (imageObj.data?.attributes?.url) {
+      return `${API_URL}${imageObj.data.attributes.url}`;
+    }
+    
+    // Handle the structure where URL is directly in the object
+    if (imageObj.url) {
+      return `${API_URL}${imageObj.url}`;
+    }
+    
+    // Return placeholder if no valid URL found
+    return defaultPlaceholder;
+  }
 
   const contextElement = {
     user,
@@ -922,6 +1127,7 @@ export default function Context({ children }) {
     setCompareItem,
     updateQuantity,
     removeFromCart,
+    getOptimizedImageUrl,
   };
   return (
     <dataContext.Provider value={contextElement}>
