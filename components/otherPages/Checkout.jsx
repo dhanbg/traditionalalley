@@ -32,7 +32,7 @@ export default function Checkout() {
           <div className="col-xl-6">
             <div className="flat-spacing tf-page-checkout">
               <div className="wrap">
-                <div className="title-login">
+                {/* <div className="title-login">
                   <p>Already have an account?</p>{" "}
                   <Link href={`/login`} className="text-button">
                     Login here
@@ -49,7 +49,7 @@ export default function Checkout() {
                   <button className="tf-btn" type="submit">
                     <span className="text">Login</span>
                   </button>
-                </form>
+                </form> */}
               </div>
               <div className="wrap">
                 <h5 className="title">Information</h5>
@@ -131,7 +131,7 @@ export default function Checkout() {
                       </option>
                       <option
                         value="Italy"
-                        data-provinces="[['Agrigento','Agrigento'],['Alessandria','Alessandria'],['Ancona','Ancona'],['Aosta','Aosta Valley'],['Arezzo','Arezzo'],['Ascoli Piceno','Ascoli Piceno'],['Asti','Asti'],['Avellino','Avellino'],['Bari','Bari'],['Barletta-Andria-Trani','Barletta-Andria-Trani'],['Belluno','Belluno'],['Benevento','Benevento'],['Bergamo','Bergamo'],['Biella','Biella'],['Bologna','Bologna'],['Bolzano','South Tyrol'],['Brescia','Brescia'],['Brindisi','Brindisi'],['Cagliari','Cagliari'],['Caltanissetta','Caltanissetta'],['Campobasso','Campobasso'],['Carbonia-Iglesias','Carbonia-Iglesias'],['Caserta','Caserta'],['Catania','Catania'],['Catanzaro','Catanzaro'],['Chieti','Chieti'],['Como','Como'],['Cosenza','Cosenza'],['Cremona','Cremona'],['Crotone','Crotone'],['Cuneo','Cuneo'],['Enna','Enna'],['Fermo','Fermo'],['Ferrara','Ferrara'],['Firenze','Florence'],['Foggia','Foggia'],['Forlì-Cesena','Forlì-Cesena'],['Frosinone','Frosinone'],['Genova','Genoa'],['Gorizia','Gorizia'],['Grosseto','Grosseto'],['Imperia','Imperia'],['Isernia','Isernia'],['L'Aquila','L’Aquila'],['La Spezia','La Spezia'],['Latina','Latina'],['Lecce','Lecce'],['Lecco','Lecco'],['Livorno','Livorno'],['Lodi','Lodi'],['Lucca','Lucca'],['Macerata','Macerata'],['Mantova','Mantua'],['Massa-Carrara','Massa and Carrara'],['Matera','Matera'],['Medio Campidano','Medio Campidano'],['Messina','Messina'],['Milano','Milan'],['Modena','Modena'],['Monza e Brianza','Monza and Brianza'],['Napoli','Naples'],['Novara','Novara'],['Nuoro','Nuoro'],['Ogliastra','Ogliastra'],['Olbia-Tempio','Olbia-Tempio'],['Oristano','Oristano'],['Padova','Padua'],['Palermo','Palermo'],['Parma','Parma'],['Pavia','Pavia'],['Perugia','Perugia'],['Pesaro e Urbino','Pesaro and Urbino'],['Pescara','Pescara'],['Piacenza','Piacenza'],['Pisa','Pisa'],['Pistoia','Pistoia'],['Pordenone','Pordenone'],['Potenza','Potenza'],['Prato','Prato'],['Ragusa','Ragusa'],['Ravenna','Ravenna'],['Reggio Calabria','Reggio Calabria'],['Reggio Emilia','Reggio Emilia'],['Rieti','Rieti'],['Rimini','Rimini'],['Roma','Rome'],['Rovigo','Rovigo'],['Salerno','Salerno'],['Sassari','Sassari'],['Savona','Savona'],['Siena','Siena'],['Siracusa','Syracuse'],['Sondrio','Sondrio'],['Taranto','Taranto'],['Teramo','Teramo'],['Terni','Terni'],['Torino','Turin'],['Trapani','Trapani'],['Trento','Trentino'],['Treviso','Treviso'],['Trieste','Trieste'],['Udine','Udine'],['Varese','Varese'],['Venezia','Venice'],['Verbano-Cusio-Ossola','Verbano-Cusio-Ossola'],['Vercelli','Vercelli'],['Verona','Verona'],['Vibo Valentia','Vibo Valentia'],['Vicenza','Vicenza'],['Viterbo','Viterbo']]"
+                        data-provinces="[['Agrigento','Agrigento'],['Alessandria','Alessandria'],['Ancona','Ancona'],['Aosta','Aosta Valley'],['Arezzo','Arezzo'],['Ascoli Piceno','Ascoli Piceno'],['Asti','Asti'],['Avellino','Avellino'],['Bari','Bari'],['Barletta-Andria-Trani','Barletta-Andria-Trani'],['Belluno','Belluno'],['Benevento','Benevento'],['Bergamo','Bergamo'],['Biella','Biella'],['Bologna','Bologna'],['Bolzano','South Tyrol'],['Brescia','Brescia'],['Brindisi','Brindisi'],['Cagliari','Cagliari'],['Caltanissetta','Caltanissetta'],['Campobasso','Campobasso'],['Carbonia-Iglesias','Carbonia-Iglesias'],['Caserta','Caserta'],['Catania','Catania'],['Catanzaro','Catanzaro'],['Chieti','Chieti'],['Como','Como'],['Cosenza','Cosenza'],['Cremona','Cremona'],['Crotone','Crotone'],['Cuneo','Cuneo'],['Enna','Enna'],['Fermo','Fermo'],['Ferrara','Ferrara'],['Firenze','Florence'],['Foggia','Foggia'],['Forlì-Cesena','Forlì-Cesena'],['Frosinone','Frosinone'],['Genova','Genoa'],['Gorizia','Gorizia'],['Grosseto','Grosseto'],['Imperia','Imperia'],['Isernia','Isernia'],['L'Aquila','L'Aquila'],['La Spezia','La Spezia'],['Latina','Latina'],['Lecce','Lecce'],['Lecco','Lecco'],['Livorno','Livorno'],['Lodi','Lodi'],['Lucca','Lucca'],['Macerata','Macerata'],['Mantova','Mantua'],['Massa-Carrara','Massa and Carrara'],['Matera','Matera'],['Medio Campidano','Medio Campidano'],['Messina','Messina'],['Milano','Milan'],['Modena','Modena'],['Monza e Brianza','Monza and Brianza'],['Napoli','Naples'],['Novara','Novara'],['Nuoro','Nuoro'],['Ogliastra','Ogliastra'],['Olbia-Tempio','Olbia-Tempio'],['Oristano','Oristano'],['Padova','Padua'],['Palermo','Palermo'],['Parma','Parma'],['Pavia','Pavia'],['Perugia','Perugia'],['Pesaro e Urbino','Pesaro and Urbino'],['Pescara','Pescara'],['Piacenza','Piacenza'],['Pisa','Pisa'],['Pistoia','Pistoia'],['Pordenone','Pordenone'],['Potenza','Potenza'],['Prato','Prato'],['Ragusa','Ragusa'],['Ravenna','Ravenna'],['Reggio Calabria','Reggio Calabria'],['Reggio Emilia','Reggio Emilia'],['Rieti','Rieti'],['Rimini','Rimini'],['Roma','Rome'],['Rovigo','Rovigo'],['Salerno','Salerno'],['Sassari','Sassari'],['Savona','Savona'],['Siena','Siena'],['Siracusa','Syracuse'],['Sondrio','Sondrio'],['Taranto','Taranto'],['Teramo','Teramo'],['Terni','Terni'],['Torino','Turin'],['Trapani','Trapani'],['Trento','Trentino'],['Treviso','Treviso'],['Trieste','Trieste'],['Udine','Udine'],['Varese','Varese'],['Venezia','Venice'],['Verbano-Cusio-Ossola','Verbano-Cusio-Ossola'],['Vercelli','Vercelli'],['Verona','Verona'],['Vibo Valentia','Vibo Valentia'],['Vicenza','Vicenza'],['Viterbo','Viterbo']]"
                       >
                         Italy
                       </option>
@@ -152,7 +152,7 @@ export default function Checkout() {
                       </option>
                       <option
                         value="New Zealand"
-                        data-provinces="[['Auckland','Auckland'],['Bay of Plenty','Bay of Plenty'],['Canterbury','Canterbury'],['Chatham Islands','Chatham Islands'],['Gisborne','Gisborne'],['Hawke's Bay','Hawke’s Bay'],['Manawatu-Wanganui','Manawatū-Whanganui'],['Marlborough','Marlborough'],['Nelson','Nelson'],['Northland','Northland'],['Otago','Otago'],['Southland','Southland'],['Taranaki','Taranaki'],['Tasman','Tasman'],['Waikato','Waikato'],['Wellington','Wellington'],['West Coast','West Coast']]"
+                        data-provinces="[['Auckland','Auckland'],['Bay of Plenty','Bay of Plenty'],['Canterbury','Canterbury'],['Chatham Islands','Chatham Islands'],['Gisborne','Gisborne'],['Hawke's Bay','Hawke's Bay'],['Manawatu-Wanganui','Manawatū-Whanganui'],['Marlborough','Marlborough'],['Nelson','Nelson'],['Northland','Northland'],['Otago','Otago'],['Southland','Southland'],['Taranaki','Taranaki'],['Tasman','Tasman'],['Waikato','Waikato'],['Wellington','Wellington'],['West Coast','West Coast']]"
                       >
                         New Zealand
                       </option>
@@ -243,88 +243,10 @@ export default function Checkout() {
                   onSubmit={(e) => e.preventDefault()}
                 >
                   <div className="payment-box" id="payment-box">
-                    <div className="payment-item payment-choose-card active">
-                      <label
-                        htmlFor="credit-card-method"
-                        className="payment-header"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#credit-card-payment"
-                        aria-controls="credit-card-payment"
-                      >
-                        <input
-                          type="radio"
-                          name="payment-method"
-                          className="tf-check-rounded"
-                          id="credit-card-method"
-                          defaultChecked
-                        />
-                        <span className="text-title">Credit Card</span>
-                      </label>
-                      <div
-                        id="credit-card-payment"
-                        className="collapse show"
-                        data-bs-parent="#payment-box"
-                      >
-                        <div className="payment-body">
-                          <p className="text-secondary">
-                            Make your payment directly into our bank account.
-                            Your order will not be shipped until the funds have
-                            cleared in our account.
-                          </p>
-                          <div className="input-payment-box">
-                            <input type="text" placeholder="Name On Card*" />
-                            <div className="ip-card">
-                              <input type="text" placeholder="Card Numbers*" />
-                              <div className="list-card">
-                                <Image
-                                  width={48}
-                                  height={16}
-                                  alt="card"
-                                  src="/images/payment/img-7.png"
-                                />
-                                <Image
-                                  width={21}
-                                  height={16}
-                                  alt="card"
-                                  src="/images/payment/img-8.png"
-                                />
-                                <Image
-                                  width={22}
-                                  height={16}
-                                  alt="card"
-                                  src="/images/payment/img-9.png"
-                                />
-                                <Image
-                                  width={24}
-                                  height={16}
-                                  alt="card"
-                                  src="/images/payment/img-10.png"
-                                />
-                              </div>
-                            </div>
-                            <div className="grid-2">
-                              <input type="date" />
-                              <input type="text" placeholder="CVV*" />
-                            </div>
-                          </div>
-                          <div className="check-save">
-                            <input
-                              type="checkbox"
-                              className="tf-check"
-                              id="check-card"
-                              defaultChecked
-                            />
-                            <label htmlFor="check-card">
-                              Save Card Details
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                     <div className="payment-item">
                       <label
                         htmlFor="delivery-method"
-                        className="payment-header collapsed"
+                        className="payment-header"
                         data-bs-toggle="collapse"
                         data-bs-target="#delivery-payment"
                         aria-controls="delivery-payment"
@@ -334,71 +256,13 @@ export default function Checkout() {
                           name="payment-method"
                           className="tf-check-rounded"
                           id="delivery-method"
+                          defaultChecked
                         />
                         <span className="text-title">Cash on delivery</span>
                       </label>
                       <div
                         id="delivery-payment"
-                        className="collapse"
-                        data-bs-parent="#payment-box"
-                      />
-                    </div>
-                    <div className="payment-item">
-                      <label
-                        htmlFor="apple-method"
-                        className="payment-header collapsed"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#apple-payment"
-                        aria-controls="apple-payment"
-                      >
-                        <input
-                          type="radio"
-                          name="payment-method"
-                          className="tf-check-rounded"
-                          id="apple-method"
-                        />
-                        <span className="text-title apple-pay-title">
-                          <Image
-                            alt="apple"
-                            src="/images/payment/applePay.png"
-                            width={13}
-                            height={18}
-                          />
-                          Apple Pay
-                        </span>
-                      </label>
-                      <div
-                        id="apple-payment"
-                        className="collapse"
-                        data-bs-parent="#payment-box"
-                      />
-                    </div>
-                    <div className="payment-item paypal-item">
-                      <label
-                        htmlFor="paypal-method"
-                        className="payment-header collapsed"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#paypal-method-payment"
-                        aria-controls="paypal-method-payment"
-                      >
-                        <input
-                          type="radio"
-                          name="payment-method"
-                          className="tf-check-rounded"
-                          id="paypal-method"
-                        />
-                        <span className="paypal-title">
-                          <Image
-                            alt="apple"
-                            src="/images/payment/paypal.png"
-                            width={90}
-                            height={23}
-                          />
-                        </span>
-                      </label>
-                      <div
-                        id="paypal-method-payment"
-                        className="collapse"
+                        className="collapse show"
                         data-bs-parent="#payment-box"
                       />
                     </div>
