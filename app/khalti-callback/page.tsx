@@ -1,11 +1,12 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { fetchDataFromApi, updateUserBagWithPayment } from "@/utils/api";
 import type { PaymentData } from "@/types/khalti";
 
-const KhaltiCallbackPage = () => {
+// Wrapper component that uses searchParams
+const KhaltiCallbackContent = () => {
   const searchParams = useSearchParams();
   const { user } = useUser();
 
@@ -74,4 +75,13 @@ const KhaltiCallbackPage = () => {
   return null;
 };
 
-export default KhaltiCallbackPage; 
+// Main page component with Suspense boundary
+const KhaltiCallbackPage = () => {
+  return (
+    <Suspense fallback={<div>Loading payment information...</div>}>
+      <KhaltiCallbackContent />
+    </Suspense>
+  );
+};
+
+export default KhaltiCallbackPage;
