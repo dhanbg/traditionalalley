@@ -24,22 +24,14 @@ const discounts = [
     code: "Mo234231",
   },
 ];
+
+// Define a default shipping option with zero price
 const shippingOptions = [
-  // {
-  //   id: "free",
-  //   label: "Free Shipping",
-  //   price: 0.0,
-  // },
   {
-    id: "local",
-    label: "Local:",
-    price: 15.0,
-  },
-  {
-    id: "rate",
-    label: "International:",
-    price: 35.0,
-  },
+    id: "free",
+    label: "Free Shipping",
+    price: 0.0,
+  }
 ];
 
 export default function ShopCart() {
@@ -50,10 +42,64 @@ export default function ShopCart() {
     setCartProducts,
     updateQuantity,
     removeFromCart,
-    totalPrice
+    totalPrice,
+    selectedCartItems,
+    toggleCartItemSelection,
+    selectAllCartItems,
+    getSelectedCartItems,
+    getSelectedItemsTotal
   } = useContextElement();
   const [selectedColors, setSelectedColors] = useState({});
   const [selectedSizes, setSelectedSizes] = useState({});
+  const [isAgreed, setIsAgreed] = useState(false);
+  
+  // State for tracking oldPrice update status
+  const [updateStatus, setUpdateStatus] = useState({
+    loading: false,
+    success: false,
+    error: null
+  });
+  
+  // Add state to store products with updated oldPrice values
+  const [productsWithOldPrice, setProductsWithOldPrice] = useState({});
+  
+  // Fetch product details for each cart item to get accurate oldPrice
+  useEffect(() => {
+    async function fetchProductDetails() {
+      const updatedProducts = {};
+      
+      for (const product of cartProducts) {
+        if (product.documentId) {
+          try {
+            // Only use direct API fetch with documentId
+            const productEndpoint = `/api/products?filters[documentId][$eq]=${product.documentId}`;
+            
+            const response = await fetchDataFromApi(productEndpoint);
+            
+            if (response?.data && Array.isArray(response.data) && response.data.length > 0) {
+              const productData = response.data[0];
+              
+              // Check if oldPrice exists in the API response
+              if (productData.oldPrice) {
+                updatedProducts[product.id] = {
+                  ...product,
+                  oldPrice: parseFloat(productData.oldPrice)
+                };
+              }
+            }
+          } catch (error) {
+            // Silent error handling
+          }
+        }
+      }
+      
+      setProductsWithOldPrice(updatedProducts);
+    }
+    
+    if (cartProducts.length > 0) {
+      fetchProductDetails();
+    }
+  }, [cartProducts]);
   
   useEffect(() => {
     const initialColors = {};
@@ -95,13 +141,10 @@ export default function ShopCart() {
     if (quantity < 1) return;
     
     // Use the updateQuantity function from Context
-    // This will update both frontend state and backend
     updateQuantity(id, quantity);
   };
   
   const removeItem = (id, cartDocumentId) => {
-    // Instead of just updating the state, use the removeFromCart function
-    // which handles both frontend state and backend deletion
     removeFromCart(id, cartDocumentId);
   };
   
@@ -109,64 +152,115 @@ export default function ShopCart() {
     setSelectedOption(elm);
   };
 
-  // useEffect(() => {
-  //   document.querySelector(".progress-cart .value").style.width = "70%";
-  // }, []);
+  // Function to update product oldPrice in the database
+  const updateProductOldPrice = async (productId, documentId, oldPrice) => {
+    try {
+      setUpdateStatus({ loading: true, success: false, error: null });
+      
+      // Call our API endpoint to update the product
+      const response = await fetch('/api/update-product-old-price', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productId,
+          documentId,
+          oldPrice
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update product');
+      }
+      
+      const data = await response.json();
+      
+      setUpdateStatus({ loading: false, success: true, error: null });
+      
+      // Refresh cart products to show the updated oldPrice
+      setCartProducts(prevProducts => 
+        prevProducts.map(product => {
+          if ((product.id == productId) || 
+              (product.documentId === documentId)) {
+            return {
+              ...product,
+              oldPrice: parseFloat(oldPrice)
+            };
+          }
+          return product;
+        })
+      );
+    } catch (error) {
+      setUpdateStatus({ loading: false, success: false, error: error.message });
+    }
+  };
+
+  // Calculate subtotal: sum of oldPrice (if available) or price, times quantity
+  const subtotal = cartProducts.reduce((acc, product) => {
+    const fetchedProduct = productsWithOldPrice[product.id];
+    const priceToUse = fetchedProduct?.oldPrice ? parseFloat(fetchedProduct.oldPrice) : parseFloat(product.price);
+    return acc + priceToUse * product.quantity;
+  }, 0);
+
+  // Calculate actual total: sum of price * quantity
+  const actualTotal = cartProducts.reduce((acc, product) => acc + parseFloat(product.price) * product.quantity, 0);
+
+  // Calculate total discounts: subtotal - actualTotal (if positive)
+  const totalDiscounts = subtotal > actualTotal ? subtotal - actualTotal : 0;
+
+  // Check if all items are selected
+  const areAllItemsSelected = cartProducts.length > 0 && cartProducts.every(product => selectedCartItems[product.id]);
+  
+  // Handler for the "select all" checkbox
+  const handleSelectAll = (e) => {
+    selectAllCartItems(e.target.checked);
+  };
+  
+  // Calculate selected items count
+  const selectedItemsCount = getSelectedCartItems().length;
 
   return (
     <>
       <section className="flat-spacing">
         <div className="container">
+          {updateStatus.loading && (
+            <div className="alert alert-info" role="alert">
+              Updating product price...
+            </div>
+          )}
+          {updateStatus.success && (
+            <div className="alert alert-success" role="alert">
+              Product price updated successfully! The original price will now be permanently saved.
+            </div>
+          )}
+          {updateStatus.error && (
+            <div className="alert alert-danger" role="alert">
+              Error updating product price: {updateStatus.error}
+            </div>
+          )}
+          
           <div className="row">
             <div className="col-xl-8">
-              {/* <div className="tf-cart-sold">
-                <div className="notification-sold bg-surface">
-                  <Image
-                    className="icon"
-                    alt="img"
-                    src="/images/logo/icon-fire.png"
-                    width={48}
-                    height={49}
-                  />
-                  <div className="count-text">
-                    Your cart will expire in
-                    <div
-                      className="js-countdown time-count"
-                      data-timer={600}
-                      data-labels=":,:,:,"
-                    >
-                      <CountdownTimer
-                        style={4}
-                        targetDate={new Date(new Date().getTime() - 30 * 60000)}
-                      />
-                    </div>
-                    minutes! Please checkout now before your items sell out!
-                  </div>
-                </div>
-                <div className="notification-progress">
-                  <div className="text">
-                    Buy
-                    <span className="fw-semibold text-primary">
-                      $70.00
-                    </span>{" "}
-                    more to get <span className="fw-semibold">Freeship</span>
-                  </div>
-                  <div className="progress-cart">
-                    <div
-                      className="value"
-                      style={{ width: "0%" }}
-                      data-progress={50}
-                    >
-                      <span className="round" />
-                    </div>
-                  </div>
-                </div>
-              </div> */}
               {cartProducts.length ? (
                 <form onSubmit={(e) => e.preventDefault()}>
                   <table className="tf-table-page-cart">
                     <thead>
                       <tr>
+                        <th style={{ width: "40px" }}>
+                          <label className="modern-checkbox">
+                            <input 
+                              type="checkbox" 
+                              className="tf-check-rounded"
+                              checked={areAllItemsSelected}
+                              onChange={handleSelectAll}
+                              id="select-all-products"
+                              style={{ display: 'none' }}
+                            />
+                            <span className="custom-checkmark"></span>
+                          </label>
+                        </th>
                         <th>Products</th>
                         <th>Price</th>
                         <th>Quantity</th>
@@ -177,6 +271,19 @@ export default function ShopCart() {
                     <tbody>
                       {cartProducts.map((elm, i) => (
                         <tr key={i} className="tf-cart-item file-delete">
+                          <td style={{ textAlign: "center" }}>
+                            <label className="modern-checkbox">
+                              <input 
+                                type="checkbox" 
+                                className="tf-check-rounded"
+                                checked={selectedCartItems[elm.id] || false}
+                                onChange={() => toggleCartItemSelection(elm.id)}
+                                id={`select-product-${elm.id}`}
+                                style={{ display: 'none' }}
+                              />
+                              <span className="custom-checkmark"></span>
+                            </label>
+                          </td>
                           <td className="tf-cart-item_product">
                             <Link
                               href={`/product-detail/${elm.documentId}`}
@@ -240,6 +347,50 @@ export default function ShopCart() {
                           >
                             <div className="cart-price text-button price-on-sale">
                               ${elm.price.toFixed(2)}
+                              {(() => {
+                                // ONLY use oldPrice from the API
+                                const fetchedProduct = productsWithOldPrice[elm.id];
+                                const oldPrice = fetchedProduct?.oldPrice;
+                                
+                                // Only proceed if we have a real oldPrice from the API
+                                if (!oldPrice) {
+                                  return null;
+                                }
+                                
+                                const parsedOldPrice = parseFloat(oldPrice);
+                                const currentPrice = parseFloat(elm.price);
+                                
+                                if (parsedOldPrice > currentPrice) {
+                                  const discount = ((parsedOldPrice - currentPrice) / parsedOldPrice * 100).toFixed(2);
+                                  
+                                  return (
+                                    <>
+                                      <div className="compare-at-price font-2" style={{ 
+                                        textDecoration: "line-through", 
+                                        fontSize: "16px", 
+                                        color: "#777",
+                                        margin: "5px 0",
+                                        fontWeight: "500",
+                                        display: "block"
+                                      }}>
+                                        ${parsedOldPrice.toFixed(2)}
+                                      </div>
+                                      <div className="badges-on-sale text-btn-uppercase" style={{ 
+                                        fontSize: "13px", 
+                                        color: "#ff5722", 
+                                        fontWeight: "bold",
+                                        backgroundColor: "#fff0eb",
+                                        padding: "2px 6px",
+                                        borderRadius: "4px",
+                                        display: "inline-block"
+                                      }}>
+                                        -{discount}%
+                                      </div>
+                                    </>
+                                  );
+                                }
+                                return null;
+                              })()}
                             </div>
                           </td>
                           <td
@@ -330,11 +481,11 @@ export default function ShopCart() {
                   </div>
                 </form>
               ) : (
-                <div>
-                  Your wishlist is empty. Start adding your favorite products to
-                  save them for later!{" "}
-                  <Link className="btn-line" href="/shop-default-grid">
-                    Explore Products
+                <div className="empty-cart text-center">
+                  <h3 className="mt-5 mb-3">Your cart is empty</h3>
+                  <p className="mb-5">Add some products to your cart to continue shopping</p>
+                  <Link href="/shop-default-grid" className="tf-btn">
+                    <span className="text">Shop Now</span>
                   </Link>
                 </div>
               )}
@@ -344,43 +495,20 @@ export default function ShopCart() {
                 <div className="box-order bg-surface">
                   <h5 className="title">Order Summary</h5>
                   <div className="subtotal text-button d-flex justify-content-between align-items-center">
+                    <span>Selected Items ({selectedItemsCount}/{cartProducts.length})</span>
+                  </div>
+                  <div className="subtotal text-button d-flex justify-content-between align-items-center">
                     <span>Subtotal</span>
-                    <span className="total">${totalPrice.toFixed(2)}</span>
+                    <span className="total">${getSelectedItemsTotal().toFixed(2)}</span>
                   </div>
                   <div className="discount text-button d-flex justify-content-between align-items-center">
-                    <span>Discounts</span>
-                    <span className="total">${totalPrice ? "20" : 0}</span>
-                  </div>
-                  <div className="ship">
-                    <span className="text-button">Shipping</span>
-                    <div className="flex-grow-1">
-                      {shippingOptions.map((option) => (
-                        <fieldset key={option.id} className="ship-item">
-                          <input
-                            type="radio"
-                            name="ship-check"
-                            className="tf-check-rounded"
-                            id={option.id}
-                            checked={selectedOption === option}
-                            onChange={() => handleOptionChange(option)}
-                          />
-                          <label htmlFor={option.id}>
-                            <span>{option.label}</span>
-                            <span className="price">
-                              ${option.price.toFixed(2)}
-                            </span>
-                          </label>
-                        </fieldset>
-                      ))}
-                    </div>
+                    <span>Total Discounts</span>
+                    <span className="total">$0.00</span>
                   </div>
                   <h5 className="total-order d-flex justify-content-between align-items-center">
-                    <span>Total</span>
+                    <span>Total (Without Shipping Charges)</span>
                     <span className="total">
-                      $
-                      {totalPrice
-                        ? (selectedOption.price + totalPrice).toFixed(2)
-                        : 0}
+                      ${getSelectedItemsTotal().toFixed(2)}
                     </span>
                   </h5>
                   <div className="box-progress-checkout">
@@ -389,15 +517,29 @@ export default function ShopCart() {
                         type="checkbox"
                         id="check-agree"
                         className="tf-check-rounded"
+                        checked={isAgreed}
+                        onChange={e => setIsAgreed(e.target.checked)}
                       />
                       <label htmlFor="check-agree">
                         I agree with the
                         <Link href={`/term-of-use`}>terms and conditions</Link>
                       </label>
                     </fieldset>
-                    <Link href={`/checkout`} className="tf-btn btn-reset">
+                    <Link 
+                      href={isAgreed && selectedItemsCount > 0 ? "/checkout" : "#"} 
+                      className="tf-btn btn-reset" 
+                      style={{ 
+                        pointerEvents: (isAgreed && selectedItemsCount > 0) ? 'auto' : 'none', 
+                        opacity: (isAgreed && selectedItemsCount > 0) ? 1 : 0.5 
+                      }}
+                    >
                       Process To Checkout
                     </Link>
+                    {selectedItemsCount === 0 && (
+                      <div className="text-warning mt-2 text-center">
+                        Please select at least one product
+                      </div>
+                    )}
                     <p className="text-button text-center">
                       Or continue shopping
                     </p>
@@ -408,6 +550,55 @@ export default function ShopCart() {
           </div>
         </div>
       </section>
+      <style jsx>{`
+        .modern-checkbox {
+          display: inline-block;
+          position: relative;
+          cursor: pointer;
+          width: 24px;
+          height: 24px;
+        }
+        .modern-checkbox input[type="checkbox"]:checked + .custom-checkmark {
+          background: linear-gradient(135deg, #a0a5a1 60%, #181818 100%);
+          border-color: #a0a5a1;
+        }
+        .custom-checkmark {
+          display: block;
+          width: 24px;
+          height: 24px;
+          border-radius: 8px;
+          border: 2px solid #bbb;
+          background: #fff;
+          transition: all 0.2s cubic-bezier(.4,2,.6,1);
+          position: relative;
+        }
+        .modern-checkbox input[type="checkbox"]:checked + .custom-checkmark:after {
+          content: '';
+          position: absolute;
+          left: 7px;
+          top: 3px;
+          width: 6px;
+          height: 12px;
+          border: solid #fff;
+          border-width: 0 3px 3px 0;
+          border-radius: 2px;
+          transform: rotate(45deg);
+          transition: border-color 0.2s;
+        }
+        .custom-checkmark:after {
+          content: '';
+          position: absolute;
+          left: 7px;
+          top: 3px;
+          width: 6px;
+          height: 12px;
+          border: solid transparent;
+          border-width: 0 3px 3px 0;
+          border-radius: 2px;
+          transform: rotate(45deg);
+          transition: border-color 0.2s;
+        }
+      `}</style>
     </>
   );
 }

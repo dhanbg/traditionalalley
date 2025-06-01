@@ -746,21 +746,17 @@ export default function CustomOrderForm({ isOpen, onClose, product }) {
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
-                        display: "inline-block",
-                        backgroundColor: "#25D366",
-                        color: "white",
-                        padding: "8px 16px",
-                        borderRadius: "4px",
+                        color: "#25D366",
                         textDecoration: "none",
                         fontWeight: "500",
                         fontSize: "14px",
-                        transition: "all 0.2s ease",
-                        position: "relative",
-                        overflow: "hidden",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px"
                       }}
-                      className="whatsapp-button-hover"
                     >
-                      Chat with us on WhatsApp
+                      <img src="/whatsapp.svg" alt="WhatsApp" style={{ width: '20px', height: '20px', display: 'inline-block', verticalAlign: 'middle' }} />
+                      Contact us on WhatsApp
                     </Link>
                     <style jsx global>{`
                       .whatsapp-button-hover {
@@ -803,8 +799,12 @@ export default function CustomOrderForm({ isOpen, onClose, product }) {
                         textDecoration: "none",
                         fontWeight: "500",
                         fontSize: "14px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px"
                       }}
                     >
+                      <img src="/whatsapp.svg" alt="WhatsApp" style={{ width: '20px', height: '20px', display: 'inline-block', verticalAlign: 'middle' }} />
                       Contact us on WhatsApp
                     </Link>
                   </div>

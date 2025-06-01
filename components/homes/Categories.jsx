@@ -208,15 +208,17 @@ export default function Collections() {
         }
         .category-fade-in {
           opacity: 0;
-          transform: translateY(40px);
+          transform: translateY(40px) scale(0.96);
+          filter: blur(4px);
         }
         .category-fade-in.in-view {
-          animation: categoryFadeIn 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+          animation: categoryFadeIn 1s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
         }
         @keyframes categoryFadeIn {
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
+            filter: blur(0);
           }
         }
       `}</style>

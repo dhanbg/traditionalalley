@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import CountdownTimer from "../common/Countdown";
@@ -32,7 +32,7 @@ function getStrapiSmallImage(imageObj) {
   return getImageUrl(imageObj) || DEFAULT_IMAGE;
 }
 
-export default function ProductCard1({ product, gridClass = "" }) {
+export default function ProductCard1({ product, gridClass = "", index = 0 }) {
   // Ensure product has valid image properties
   const safeProduct = {
     ...product,
@@ -49,6 +49,11 @@ export default function ProductCard1({ product, gridClass = "" }) {
     safeProduct.imgHover = safeProduct.imgSrc || DEFAULT_IMAGE;
   }
   
+  // Calculate discount percentage
+  const discountPercentage = safeProduct.price && safeProduct.oldPrice 
+    ? ((safeProduct.oldPrice - safeProduct.price) / safeProduct.oldPrice * 100).toFixed(2) 
+    : "25";
+  
   // Check if colors are just string values and convert them
   if (safeProduct.colors && Array.isArray(safeProduct.colors) && 
       safeProduct.colors.length > 0 && typeof safeProduct.colors[0] === 'string') {
@@ -61,6 +66,8 @@ export default function ProductCard1({ product, gridClass = "" }) {
   }
   
   const [currentImage, setCurrentImage] = useState(safeProduct.imgSrc);
+  const [inView, setInView] = useState(false);
+  const cardRef = useRef(null);
 
   const {
     setQuickAddItem,
@@ -81,6 +88,25 @@ export default function ProductCard1({ product, gridClass = "" }) {
     setCurrentImage(safeProduct.imgSrc || DEFAULT_IMAGE);
   }, [safeProduct]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const observer = new window.IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setInView(true);
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+    if (cardRef.current) observer.observe(cardRef.current);
+    return () => {
+      if (cardRef.current) observer.unobserve(cardRef.current);
+    };
+  }, []);
+
   const handleWishlistClick = () => {
     if (!user) {
       openSignIn();
@@ -99,9 +125,11 @@ export default function ProductCard1({ product, gridClass = "" }) {
 
   return (
     <div
-      className={`card-product wow fadeInUp ${gridClass} ${
+      ref={cardRef}
+      className={`card-product product-fade-in${inView ? ' in-view' : ''} wow fadeInUp ${gridClass} ${
         safeProduct.isOnSale ? "on-sale" : ""
       } ${safeProduct.sizes ? "card-product-size" : ""}`}
+      style={{ animationDelay: `${index * 0.12 + 0.1}s` }}
     >
       <div className="card-product-wrapper">
         <Link href={`/product-detail/${safeProduct.documentId || safeProduct.id}`} className="product-img">
@@ -130,7 +158,7 @@ export default function ProductCard1({ product, gridClass = "" }) {
               <div className="initial-child-container">
                 <div className="marquee-child-item">
                   <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
+                    Hot Sale {discountPercentage}% OFF
                   </p>
                 </div>
                 <div className="marquee-child-item">
@@ -138,7 +166,7 @@ export default function ProductCard1({ product, gridClass = "" }) {
                 </div>
                 <div className="marquee-child-item">
                   <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
+                    Hot Sale {discountPercentage}% OFF
                   </p>
                 </div>
                 <div className="marquee-child-item">
@@ -146,7 +174,7 @@ export default function ProductCard1({ product, gridClass = "" }) {
                 </div>
                 <div className="marquee-child-item">
                   <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
+                    Hot Sale {discountPercentage}% OFF
                   </p>
                 </div>
                 <div className="marquee-child-item">
@@ -154,7 +182,7 @@ export default function ProductCard1({ product, gridClass = "" }) {
                 </div>
                 <div className="marquee-child-item">
                   <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
+                    Hot Sale {discountPercentage}% OFF
                   </p>
                 </div>
                 <div className="marquee-child-item">
@@ -162,7 +190,7 @@ export default function ProductCard1({ product, gridClass = "" }) {
                 </div>
                 <div className="marquee-child-item">
                   <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
+                    Hot Sale {discountPercentage}% OFF
                   </p>
                 </div>
                 <div className="marquee-child-item">
@@ -174,7 +202,7 @@ export default function ProductCard1({ product, gridClass = "" }) {
               <div className="initial-child-container">
                 <div className="marquee-child-item">
                   <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
+                    Hot Sale {discountPercentage}% OFF
                   </p>
                 </div>
                 <div className="marquee-child-item">
@@ -182,7 +210,7 @@ export default function ProductCard1({ product, gridClass = "" }) {
                 </div>
                 <div className="marquee-child-item">
                   <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
+                    Hot Sale {discountPercentage}% OFF
                   </p>
                 </div>
                 <div className="marquee-child-item">
@@ -190,7 +218,7 @@ export default function ProductCard1({ product, gridClass = "" }) {
                 </div>
                 <div className="marquee-child-item">
                   <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
+                    Hot Sale {discountPercentage}% OFF
                   </p>
                 </div>
                 <div className="marquee-child-item">
@@ -198,7 +226,7 @@ export default function ProductCard1({ product, gridClass = "" }) {
                 </div>
                 <div className="marquee-child-item">
                   <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
+                    Hot Sale {discountPercentage}% OFF
                   </p>
                 </div>
                 <div className="marquee-child-item">
@@ -206,7 +234,7 @@ export default function ProductCard1({ product, gridClass = "" }) {
                 </div>
                 <div className="marquee-child-item">
                   <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale 25% OFF
+                    Hot Sale {discountPercentage}% OFF
                   </p>
                 </div>
                 <div className="marquee-child-item">
@@ -218,7 +246,7 @@ export default function ProductCard1({ product, gridClass = "" }) {
         )}
         {safeProduct.isOnSale && (
           <div className="on-sale-wrap">
-            <span className="on-sale-item">-{safeProduct.salePercentage}</span>
+            <span className="on-sale-item">-{safeProduct.price && safeProduct.oldPrice ? discountPercentage : safeProduct.salePercentage}%</span>
           </div>
         )}
         {safeProduct.sizes && (
@@ -247,7 +275,7 @@ export default function ProductCard1({ product, gridClass = "" }) {
         )}
         {safeProduct.oldPrice ? (
           <div className="on-sale-wrap">
-            <span className="on-sale-item">-25%</span>
+            <span className="on-sale-item">-{discountPercentage}%</span>
           </div>
         ) : (
           ""

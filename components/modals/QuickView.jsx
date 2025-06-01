@@ -134,7 +134,7 @@ export default function QuickView() {
                           ${quickViewItem.oldPrice.toFixed(2)}
                         </div>
                         <div className="badges-on-sale text-btn-uppercase">
-                          -25%
+                          -{((quickViewItem.oldPrice - quickViewItem.price) / quickViewItem.oldPrice * 100).toFixed(2)}%
                         </div>
                       </>
                     ) : (
@@ -207,26 +207,28 @@ export default function QuickView() {
                         </span>
                       </div>
                       <button
-                        className="tf-btn-2 btn-addtocart text-btn-uppercase"
+                        className="tf-btn-2 btn-addtocart"
                         onClick={handleAddToCart}
+                        style={{ minWidth: "120px", padding: "0 15px" }}
                       >
                         {user && isAddedToCartProducts(quickViewItem.id)
-                          ? "Already Added"
+                          ? "Added"
                           : "Add to cart"}
                       </button>
                     </div>
                     <button
-                      className="tf-btn btn-wishlist text-btn-uppercase"
+                      className="tf-btn btn-wishlist"
                       onClick={handleWishlistClick}
+                      style={{ minWidth: "100px", padding: "0 15px" }}
                     >
                       {user && isAddedtoWishlist(quickViewItem.id)
-                        ? "Already Wishlisted"
+                        ? "Wishlisted"
                         : "Wishlist"}
                     </button>
                   </div>
-                  <a href="#" className="btn-style-3 text-btn-uppercase">
+                  {/* <a href="#" className="btn-style-3 text-btn-uppercase">
                     Buy it now
-                  </a>
+                  </a> */}
                 </div>
               </div>
             </div>

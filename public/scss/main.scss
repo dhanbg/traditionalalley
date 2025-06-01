@@ -8,3 +8,8 @@
 @import "/css/swiper-bundle.min.css";
 @import "/css/animate.css";
 @include meta.load-css("app.scss");
+
+#scroll-top.type-1 {
+    bottom: 113px;
+    right: 30px;
+}

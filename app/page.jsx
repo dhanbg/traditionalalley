@@ -31,7 +31,7 @@ export default function Home() {
       <ShopGram />
       <Features />
       <Blogs />
-      <Footer1 />
+      <Footer1 hasPaddingBottom />
     </>
   );
 }

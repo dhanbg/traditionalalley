@@ -32,12 +32,32 @@ export default function ScrollTop({ hasPaddingBottom = false }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Styles for the button
+  const buttonStyles = {
+    position: 'fixed',
+    bottom: hasPaddingBottom ? '100px' : '94px',
+    right: '24px',
+    zIndex: 9998,
+    background: '#000000',
+    color: 'white',
+    borderRadius: '50%',
+    width: '60px',
+    height: '60px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: 'none',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+    cursor: 'pointer',
+    opacity: isButtonVisible ? 1 : 0,
+    visibility: isButtonVisible ? 'visible' : 'hidden',
+    transition: 'opacity 0.3s, visibility 0.3s',
+  };
+
   return (
     <button
       id="scroll-top"
-      className={`scroll-top-button ${hasPaddingBottom ? "type-1" : ""} ${
-        isButtonVisible ? "show" : ""
-      }`}
+      style={buttonStyles}
       onClick={handleScrollToTop}
     >
       <svg

@@ -3,8 +3,9 @@ import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import emailjs from "@emailjs/browser";
-import ScrollTop from "../common/ScrollTop";
 import { footerLinks, socialLinks } from "@/data/footerLinks";
+import { usePathname } from "next/navigation";
+
 export default function Footer1({
   border = true,
   dark = false,
@@ -13,6 +14,8 @@ export default function Footer1({
   const formRef = useRef();
   const [success, setSuccess] = useState(true);
   const [showMessage, setShowMessage] = useState(false);
+  const pathname = usePathname();
+  const isHomepage = pathname === "/";
 
   const handleShowMessage = () => {
     setShowMessage(true);
@@ -144,23 +147,25 @@ export default function Footer1({
                         <div className="tf-collapse-content">
                           <ul className="footer-menu-list">
                             {section.items.map((item, itemIndex) => (
-                              <li className="text-caption-1" key={itemIndex}>
-                                {item.isLink ? (
-                                  <Link
-                                    href={item.href}
-                                    className="footer-menu_item"
-                                  >
-                                    {item.label}
-                                  </Link>
-                                ) : (
-                                  <a
-                                    href={item.href}
-                                    className="footer-menu_item"
-                                  >
-                                    {item.label}
-                                  </a>
-                                )}
-                              </li>
+                              item.label === "My Account" ? null : (
+                                <li className="text-caption-1" key={itemIndex}>
+                                  {item.isLink ? (
+                                    <Link
+                                      href={item.href}
+                                      className="footer-menu_item"
+                                    >
+                                      {item.label}
+                                    </Link>
+                                  ) : (
+                                    <a
+                                      href={item.href}
+                                      className="footer-menu_item"
+                                    >
+                                      {item.label}
+                                    </a>
+                                  )}
+                                </li>
+                              )
                             ))}
                           </ul>
                         </div>
@@ -325,7 +330,6 @@ export default function Footer1({
           </div>
         </div>
       </footer>
-      <ScrollTop hasPaddingBottom={hasPaddingBottom} />
     </>
   );
 }

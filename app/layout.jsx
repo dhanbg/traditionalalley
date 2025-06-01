@@ -5,8 +5,8 @@ import "photoswipe/style.css";
 import "react-range-slider-input/dist/style.css";
 import "../public/css/image-compare-viewer.min.css";
 import "../public/css/custom.css"; // Custom CSS for compare products
+import "../public/css/drift-basic.min.css"; // Drift zoom CSS
 import { useEffect, useState } from "react";
-import ScrollTop from "@/components/common/ScrollTop";
 import Context from "@/context/Context";
 import CartModal from "@/components/modals/CartModal";
 import QuickView from "@/components/modals/QuickView";
@@ -19,6 +19,7 @@ import SizeGuide from "@/components/modals/SizeGuide";
 import Wishlist from "@/components/modals/Wishlist";
 import DemoModal from "@/components/modals/DemoModal";
 import Categories from "@/components/modals/Categories";
+import ScrollTop from "@/components/common/ScrollTop";
 import { ClerkProvider } from "@clerk/nextjs";
 
 export default function RootLayout({ children }) {
@@ -140,6 +141,36 @@ export default function RootLayout({ children }) {
           <Wishlist />
           <DemoModal />
           <Categories />
+          <ScrollTop />
+
+          {/* WhatsApp Floating Button */}
+          <a
+            href="https://wa.me/9779844594187"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              position: 'fixed',
+              bottom: '24px',
+              right: '24px',
+              zIndex: 10000,
+              background: 'white',
+              borderRadius: '50%',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              width: '60px',
+              height: '60px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'box-shadow 0.2s',
+            }}
+            aria-label="Chat with us on WhatsApp"
+          >
+            <img
+              src="/whatsapp.svg"
+              alt="WhatsApp"
+              style={{ width: '38px', height: '38px', display: 'block' }}
+            />
+          </a>
         </Context>
       </body>
     </html>

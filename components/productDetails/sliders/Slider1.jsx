@@ -1,10 +1,10 @@
 "use client";
 import { slides } from "@/data/singleProductSliders";
-import PhotoSwipeLightbox from "photoswipe/lightbox";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { Thumbs } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
+import Drift from 'drift-zoom';
 
 export default function Slider1({
   activeColor = "gray",
@@ -21,6 +21,9 @@ export default function Slider1({
   
   // --- NEW: items as state, update on relevant changes ---
   const [items, setItems] = useState([]);
+  const driftInstancesRef = useRef([]);
+  const swiperRef = useRef(null);
+  const imageRefs = useRef([]);
 
   useEffect(() => {
     let newItems;
@@ -60,49 +63,6 @@ export default function Slider1({
     }
     setItems(newItems);
   }, [useGallery, gallery, slideItems, firstItem, imgHover, activeColor]);
-
-  const lightboxRef = useRef(null);
-  const [thumbsSwiper, setThumbsSwiper] = useState(null);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const swiperRef = useRef(null);
-  
-  // Function to open lightbox manually
-  const openLightbox = (index) => {
-    if (lightboxRef.current) {
-      lightboxRef.current.loadAndOpen(index);
-    }
-  };
-  
-  useEffect(() => {
-    // Initialize PhotoSwipeLightbox
-    const lightbox = new PhotoSwipeLightbox({
-      gallery: "#gallery-swiper-started",
-      children: ".pswp-item",
-      pswpModule: () => import("photoswipe"),
-    });
-
-    lightbox.init();
-
-    // Store the lightbox instance in the ref for later use
-    lightboxRef.current = lightbox;
-
-    // Cleanup: destroy the lightbox when the component unmounts
-    return () => {
-      lightbox.destroy();
-      lightboxRef.current = null;
-    };
-  }, []);
-  
-  // Function to get the image URL for the selected color
-  const getColorImageUrl = (colorName) => {
-    // Check if we have color objects with imgSrc property in the slideItems
-    const colorObj = slideItems.find(item => 
-      item.color && item.color.toLowerCase() === colorName.toLowerCase() && item.imgSrc
-    );
-    
-    // Return the color's image URL if found, otherwise use the first item
-    return colorObj?.imgSrc || firstItem;
-  };
   
   // --- NEW: Reset Swiper to first slide on items/color change (mobile fix) ---
   useEffect(() => {
@@ -125,6 +85,75 @@ export default function Slider1({
       }
     });
   }, []);
+
+  // Initialize Drift zoom on images after render and when active slide changes
+  useEffect(() => {
+    // Clean up previous instances
+    driftInstancesRef.current.forEach(instance => {
+      if (instance && typeof instance.destroy === 'function') {
+        instance.destroy();
+      }
+    });
+    driftInstancesRef.current = [];
+
+    // Create new instances for visible images
+    imageRefs.current.forEach((imgEl, index) => {
+      if (imgEl) {
+        const driftInstance = new Drift(imgEl, {
+          paneContainer: document.querySelector('.tf-zoom-main'),
+          inlinePane: false,
+          containInline: false,
+          hoverBoundingBox: true,
+          zoomFactor: 2.5,
+          touchDelay: 100,
+          sourceAttribute: 'src',
+          handleTouch: true,
+          inlineOffsetX: 0,
+          inlineOffsetY: 0,
+          hoverDelay: 0,
+          boundingBoxContainer: document.body
+        });
+        driftInstancesRef.current[index] = driftInstance;
+      }
+    });
+
+    // Register swiper slide change event to update zoom
+    if (swiperRef.current) {
+      swiperRef.current.on('slideChange', () => {
+        // Instead of destroying all instances, just create/update for active slide
+        setTimeout(() => {
+          const activeIndex = swiperRef.current?.activeIndex || 0;
+          const imgEl = imageRefs.current[activeIndex];
+          if (imgEl && !driftInstancesRef.current[activeIndex]) {
+            const driftInstance = new Drift(imgEl, {
+              paneContainer: document.querySelector('.tf-zoom-main'),
+              inlinePane: false,
+              containInline: false,
+              hoverBoundingBox: true,
+              zoomFactor: 2.5,
+              touchDelay: 100,
+              sourceAttribute: 'src',
+              handleTouch: true,
+              inlineOffsetX: 0,
+              inlineOffsetY: 0,
+              hoverDelay: 0,
+              boundingBoxContainer: document.body
+            });
+            driftInstancesRef.current[activeIndex] = driftInstance;
+          }
+        }, 50); // Reduced timeout for faster response
+      });
+    }
+
+    return () => {
+      // Clean up instances on component unmount
+      driftInstancesRef.current.forEach(instance => {
+        if (instance && typeof instance.destroy === 'function') {
+          instance.destroy();
+        }
+      });
+    };
+  }, [items]);
 
   // Handle thumbnail click
   const handleThumbnailClick = (index) => {
@@ -149,7 +178,7 @@ export default function Slider1({
         direction="vertical"
         spaceBetween={10}
         slidesPerView={thumbSlidePerView}
-        onSwiper={setThumbsSwiper}
+        onSwiper={swiper => { swiperRef.current = swiper; }}
         modules={[Thumbs]}
         initialSlide={1}
         breakpoints={{
@@ -198,12 +227,6 @@ export default function Slider1({
               transition: 'transform 0.3s ease',
               margin: '8px 0 8px 8px'
             }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
             >
               <Image
                 className="lazyload"
@@ -230,45 +253,20 @@ export default function Slider1({
         id="gallery-swiper-started"
         spaceBetween={10}
         slidesPerView={1}
-        thumbs={{ swiper: thumbsSwiper }}
-        modules={[Thumbs]}
         onSwiper={(swiper) => (swiperRef.current = swiper)}
-        onSlideChange={(swiper) => {
-          if (items[swiper.activeIndex]) {
-            setActiveIndex(swiper.activeIndex);
-            if (items[swiper.activeIndex]?.color) {
-              setActiveColor(items[swiper.activeIndex].color.toLowerCase());
-            }
-          }
-        }}
         style={{ maxHeight: '531px' }}
       >
         {items.map((slide, index) => (
           <SwiperSlide key={index} className="swiper-slide" data-color={slide.color || "gray"}>
-            <a
-              href={slide.src}
-              target="_blank"
-              className="pswp-item"
-              data-pswp-width={slide.width}
-              data-pswp-height={slide.height}
-              onClick={(e) => {
-                e.preventDefault();
-                openLightbox(index);
-              }}
+            <div
               style={{ 
                 cursor: 'pointer', 
                 display: 'block',
                 transition: 'transform 0.3s ease'
               }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'scale(1.02)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
             >
               <Image
-                className="lazyload"
+                className="lazyload drift-zoom-target"
                 data-src={slide.src}
                 alt={slide.alt || ""}
                 src={slide.src}
@@ -285,8 +283,13 @@ export default function Slider1({
                   border: '1px solid #f0f0f0',
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
                 }}
+                ref={el => {
+                  if (el) {
+                    imageRefs.current[index] = el;
+                  }
+                }}
               />
-            </a>
+            </div>
           </SwiperSlide>
         ))}
       </Swiper>

@@ -3,8 +3,11 @@
 import { useContextElement } from "@/context/Context";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
+import KhaltiPaymentForm from "../payments/KhaltiPaymentForm";
+import { fetchDataFromApi } from "@/utils/api";
+
 const discounts = [
   {
     discount: "10% OFF",
@@ -24,7 +27,83 @@ const discounts = [
 ];
 export default function Checkout() {
   const [activeDiscountIndex, setActiveDiscountIndex] = useState(1);
-  const { cartProducts, totalPrice } = useContextElement();
+  const { 
+    cartProducts, 
+    totalPrice, 
+    getSelectedCartItems, 
+    getSelectedItemsTotal 
+  } = useContextElement();
+  
+  // Get only the selected products for checkout
+  const selectedProducts = getSelectedCartItems();
+
+  // Add state to store products with updated oldPrice values
+  const [productsWithOldPrice, setProductsWithOldPrice] = useState({});
+
+  // Fetch product details for each cart item to get accurate oldPrice
+  useEffect(() => {
+    async function fetchProductDetails() {
+      const updatedProducts = {};
+      for (const product of selectedProducts) {
+        if (product.documentId) {
+          try {
+            const productEndpoint = `/api/products?filters[documentId][$eq]=${product.documentId}`;
+            const response = await fetchDataFromApi(productEndpoint);
+            if (response?.data && Array.isArray(response.data) && response.data.length > 0) {
+              const productData = response.data[0];
+              if (productData.oldPrice) {
+                updatedProducts[product.id] = {
+                  ...product,
+                  oldPrice: parseFloat(productData.oldPrice)
+                };
+              }
+            }
+          } catch (error) {
+            // Silent error handling
+          }
+        }
+      }
+      setProductsWithOldPrice(updatedProducts);
+    }
+    if (selectedProducts.length > 0) {
+      fetchProductDetails();
+    }
+  }, [selectedProducts]);
+
+  // Calculate subtotal: sum of oldPrice (if available) or price, times quantity
+  const subtotal = selectedProducts.reduce((acc, product) => {
+    const fetchedProduct = productsWithOldPrice[product.id];
+    const priceToUse = fetchedProduct?.oldPrice ? parseFloat(fetchedProduct.oldPrice) : parseFloat(product.price);
+    return acc + priceToUse * product.quantity;
+  }, 0);
+
+  // Calculate actual total: sum of price * quantity
+  const actualTotal = selectedProducts.reduce((acc, product) => acc + parseFloat(product.price) * product.quantity, 0);
+
+  // Calculate total discounts: subtotal - actualTotal (if positive)
+  const totalDiscounts = subtotal > actualTotal ? subtotal - actualTotal : 0;
+
+  // Check if cart is empty
+  if (selectedProducts.length === 0) {
+    return (
+      <section className="flat-spacing">
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-md-8 text-center">
+              <div className="empty-cart p-5">
+                <h3 className="mb-3">No items selected for checkout</h3>
+                <p className="mb-4">Please go back to your cart and select items to checkout.</p>
+                <Link href="/shopping-cart" className="tf-btn">
+                  <span className="text">Return to Cart</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section>
       <div className="container">
@@ -67,9 +146,9 @@ export default function Checkout() {
                       className="text-title"
                       name="address[country]"
                       data-default=""
+                      defaultValue="Choose Country/Region"
                     >
                       <option
-                        selected=""
                         value="Choose Country/Region"
                         data-provinces="[]"
                       >
@@ -212,8 +291,8 @@ export default function Checkout() {
                   </div>
                   <div className="grid-2">
                     <div className="tf-select">
-                      <select className="text-title" data-default="">
-                        <option selected="" value="Choose State">
+                      <select className="text-title" data-default="" defaultValue="Choose State">
+                        <option value="Choose State">
                           Choose State
                         </option>
                         <option value="California">California</option>
@@ -278,9 +357,30 @@ export default function Checkout() {
           <div className="col-xl-5">
             <div className="flat-spacing flat-sidebar-checkout">
               <div className="sidebar-checkout-content">
-                <h5 className="title">Shopping Cart</h5>
+                <h5 className="title" style={{ 
+                  position: 'relative',
+                  display: 'inline-block',
+                  marginBottom: '25px',
+                  background: 'linear-gradient(90deg, #25D366 0%, #181818 100%)',
+                  color: 'white',
+                  padding: '8px 15px',
+                  borderRadius: '4px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}>
+                  Shopping Cart
+                </h5>
+                <div className="checkout-summary-vertical" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+                  <div className="d-flex align-items-center justify-content-between text-button">
+                    <span>Selected Items</span>
+                    <span>{selectedProducts.length}</span>
+                  </div>
+                  <div className="d-flex align-items-center justify-content-between text-button">
+                    <span>Subtotal</span>
+                    <span>${subtotal.toFixed(2)}</span>
+                  </div>
+                </div>
                 <div className="list-product">
-                  {cartProducts.map((elm, i) => (
+                  {selectedProducts.map((elm, i) => (
                     <div key={i} className="item-product">
                       <Link
                         href={`/product-detail/${elm.id}`}
@@ -380,23 +480,32 @@ export default function Checkout() {
                 <div className="sec-total-price">
                   <div className="top">
                     <div className="item d-flex align-items-center justify-content-between text-button">
-                      <span>Shipping</span>
-                      <span>Free</span>
+                      <span>Subtotal</span>
+                      <span>${subtotal.toFixed(2)}</span>
                     </div>
                     <div className="item d-flex align-items-center justify-content-between text-button">
-                      <span>Discounts</span>
-                      <span>-$80.00</span>
+                      <span>Total Discounts</span>
+                      <span>-${totalDiscounts.toFixed(2)}</span>
+                    </div>
+                    <div className="item d-flex align-items-center justify-content-between text-button">
+                      <span>Total (Without Shipping Charges)</span>
+                      <span>${actualTotal.toFixed(2)}</span>
+                    </div>
+                    <div className="item d-flex align-items-center justify-content-between text-button">
+                      <span>Shipping</span>
+                      <span>Free</span>
                     </div>
                   </div>
                   <div className="bottom">
                     <h5 className="d-flex justify-content-between">
-                      <span>Total</span>
+                      <span>Grand Total</span>
                       <span className="total-price-checkout">
-                        ${totalPrice.toFixed(2)}
+                        ${actualTotal.toFixed(2)}
                       </span>
                     </h5>
                   </div>
                 </div>
+                <KhaltiPaymentForm product={{ id: "checkout", name: "Checkout Order", price: totalPrice }} />
               </div>
             </div>
           </div>

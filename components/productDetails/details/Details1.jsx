@@ -78,6 +78,25 @@ export default function Details1({ product }) {
     getReviewCount();
   }, [product?.documentId]);
 
+  // Pre-initialize the zoom container to avoid delay on first hover
+  useEffect(() => {
+    // Create the zoom container if it doesn't exist
+    let zoomContainer = document.querySelector('.tf-zoom-main');
+    if (!zoomContainer) {
+      zoomContainer = document.createElement('div');
+      zoomContainer.className = 'tf-zoom-main';
+      const productInfoWrap = document.querySelector('.tf-product-info-wrap');
+      if (productInfoWrap) {
+        productInfoWrap.appendChild(zoomContainer);
+      }
+    }
+    
+    // Force-trigger browser layout/reflow to ensure the container is ready
+    if (zoomContainer) {
+      zoomContainer.getBoundingClientRect();
+    }
+  }, []);
+
   const handleWishlistClick = () => {
     if (!user) {
       openSignIn();
@@ -99,7 +118,7 @@ export default function Details1({ product }) {
       <div className="tf-main-product section-image-zoom">
         <div className="container">
           <div className="row">
-            {/* Product default */}
+            {/* Product default */} 
             <div className="col-md-66">
               <div className="tf-product-media-wrap sticky-top">
                 <Slider1
@@ -172,7 +191,7 @@ export default function Details1({ product }) {
                               ${safeProduct.oldPrice.toFixed(2)}
                             </div>
                             <div className="badges-on-sale text-btn-uppercase">
-                              -25%
+                              -{((safeProduct.oldPrice - safeProduct.price) / safeProduct.oldPrice * 100).toFixed(2)}%
                             </div>
                           </>
                         ) : (
@@ -268,7 +287,8 @@ export default function Details1({ product }) {
                       </div>
                     )}
 
-                    <div className="tf-product-info-quantity">
+                    {/* Commented quantity section */}
+                    {/* <div className="tf-product-info-quantity">
                       <div className="title mb_12">Quantity:</div>
                       <QuantitySelect
                         quantity={
@@ -287,35 +307,26 @@ export default function Details1({ product }) {
                           }
                         }}
                       />
-                    </div>
+                    </div> */}
                     
-                    <div className="tf-product-action-btns" style={{ display: "flex", gap: "10px", justifyContent: "space-between" }}>
-                      <div className="tf-product-info-by-btn mb_10" style={{ flex: "1.5" }}>
+                    <div className="tf-product-action-btns" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                      <div className="tf-product-info-by-btn mb_10" style={{ display: "flex", alignItems: "center" }}>
                         <a
                           onClick={handleCartClick}
-                          className="btn-style-2 flex-grow-1 text-btn-uppercase fw-6 btn-add-to-cart"
+                          className="btn-style-2 fw-6 btn-add-to-cart"
                           style={{ 
                             height: "46px", 
                             display: "flex", 
                             alignItems: "center",
-                            padding: "0 12px"
+                            justifyContent: "center",
+                            padding: "0 15px",
+                            minWidth: "120px"
                           }}
                         >
                           <span>
                             {user && isAddedToCartProducts(safeProduct.id)
-                              ? "Already Added"
-                              : "Add to cart -"}
-                          </span>
-                          <span className="tf-qty-price total-price">
-                            $
-                            {user && isAddedToCartProducts(safeProduct.id)
-                              ? (
-                                  safeProduct.price *
-                                  (cartProducts.filter(
-                                    (elm) => elm.id == safeProduct.id
-                                  )[0]?.quantity || 1)
-                                ).toFixed(2)
-                              : (safeProduct.price * quantity).toFixed(2)}{" "}
+                              ? "Added"
+                              : "Add to cart"}
                           </span>
                         </a>
                         <a
@@ -344,8 +355,25 @@ export default function Details1({ product }) {
                               : "Wishlist"}
                           </span>
                         </a>
+                        <button 
+                          onClick={() => setShowCustomOrderForm(true)}
+                          className="btn-style-1 text-btn-uppercase fw-6"
+                          style={{ 
+                            height: "46px", 
+                            display: "flex", 
+                            alignItems: "center", 
+                            justifyContent: "center",
+                            width: "auto",
+                            minWidth: "140px",
+                            padding: "0 25px",
+                            whiteSpace: "nowrap",
+                            marginLeft: "10px"
+                          }}
+                        >
+                          Custom Order
+                        </button>
                       </div>
-                      <a 
+                      {/* <a 
                         href="#" 
                         className="btn-style-3 text-btn-uppercase"
                         style={{ 
@@ -358,21 +386,7 @@ export default function Details1({ product }) {
                         }}
                       >
                         Buy it now
-                      </a>
-                      <button 
-                        onClick={() => setShowCustomOrderForm(true)}
-                        className="btn-style-1 text-btn-uppercase fw-6"
-                        style={{ 
-                          height: "46px", 
-                          display: "flex", 
-                          alignItems: "center", 
-                          justifyContent: "center",
-                          flex: "0.7",
-                          padding: "0 15px"
-                        }}
-                      >
-                        Custom Order?
-                      </button>
+                      </a> */}
                     </div>
                     
                     <div className="tf-product-info-help">
@@ -449,7 +463,7 @@ export default function Details1({ product }) {
                             </div>
                             <div className="line-bt" />
                             <div>
-                              <h6>Fashion Modave</h6>
+                              <h6>Fashion Traditional Alley</h6>
                               <p>Pickup available. Usually ready in 24 hours</p>
                             </div>
                             <div>
@@ -461,13 +475,13 @@ export default function Details1({ product }) {
                       </div>
                     </div>
                     <ul className="tf-product-info-sku">
-                      <li>
-                        <p className="text-caption-1">SKU:</p>
+                      {/* <li>
+                        <p className="text-caption-1">Product ID:</p>
                         <p className="text-caption-1 text-1">53453412</p>
-                      </li>
+                      </li> */}
                       <li>
-                        <p className="text-caption-1">Vendor:</p>
-                        <p className="text-caption-1 text-1">Modave</p>
+                        <p className="text-caption-1">Designed By:</p>
+                        <p className="text-caption-1 text-1">Traditional Alley</p>
                       </li>
                       <li>
                         <p className="text-caption-1">Available:</p>
@@ -495,6 +509,14 @@ export default function Details1({ product }) {
                       <div className="tf-payment">
                         <a href="#">
                           <Image
+                            alt="Khalti"
+                            src="/khalti.png"
+                            width={100}
+                            height={64}
+                          />
+                        </a>
+                        <a href="#">
+                          <Image
                             alt=""
                             src="/images/payment/img-1.png"
                             width={100}
@@ -506,38 +528,6 @@ export default function Details1({ product }) {
                             alt=""
                             src="/images/payment/img-2.png"
                             width={100}
-                            height={64}
-                          />
-                        </a>
-                        <a href="#">
-                          <Image
-                            alt=""
-                            src="/images/payment/img-3.png"
-                            width={100}
-                            height={64}
-                          />
-                        </a>
-                        <a href="#">
-                          <Image
-                            alt=""
-                            src="/images/payment/img-4.png"
-                            width={98}
-                            height={64}
-                          />
-                        </a>
-                        <a href="#">
-                          <Image
-                            alt=""
-                            src="/images/payment/img-5.png"
-                            width={102}
-                            height={64}
-                          />
-                        </a>
-                        <a href="#">
-                          <Image
-                            alt=""
-                            src="/images/payment/img-6.png"
-                            width={98}
                             height={64}
                           />
                         </a>
