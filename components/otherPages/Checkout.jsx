@@ -3,10 +3,11 @@
 import { useContextElement } from "@/context/Context";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import KhaltiPaymentForm from "../payments/KhaltiPaymentForm";
-import { fetchDataFromApi } from "@/utils/api";
+import { fetchDataFromApi, updateData, saveCashPaymentOrder } from "@/utils/api";
+import { useUser } from "@clerk/nextjs";
 
 const discounts = [
   {
@@ -31,14 +32,187 @@ export default function Checkout() {
     cartProducts, 
     totalPrice, 
     getSelectedCartItems, 
-    getSelectedItemsTotal 
+    getSelectedItemsTotal,
+    selectedCartItems
   } = useContextElement();
   
-  // Get only the selected products for checkout
-  const selectedProducts = getSelectedCartItems();
+  const { user } = useUser();
+  
+  // Memoize selected products to prevent infinite re-renders
+  const selectedProducts = useMemo(() => {
+    return cartProducts.filter(product => selectedCartItems[product.id]);
+  }, [cartProducts, selectedCartItems]);
 
   // Add state to store products with updated oldPrice values
   const [productsWithOldPrice, setProductsWithOldPrice] = useState({});
+
+  // Add state for selected payment method
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cod');
+
+  // Add state for form data
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    country: 'Choose Country/Region',
+    city: '',
+    street: '',
+    state: 'Choose State',
+    postalCode: '',
+    note: ''
+  });
+
+  // Add state for loading and success states
+  const [isProcessingOrder, setIsProcessingOrder] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Function to get user's bag documentId
+  const getUserBagDocumentId = async () => {
+    if (!user?.id) return null;
+    
+    try {
+      const currentUserData = await fetchDataFromApi(
+        `/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=user_bag`
+      );
+
+      if (!currentUserData?.data || currentUserData.data.length === 0) {
+        console.error("User data not found");
+        return null;
+      }
+
+      const userData = currentUserData.data[0];
+      const userBag = userData.user_bag;
+
+      if (!userBag || !userBag.documentId) {
+        console.error("User bag not found");
+        return null;
+      }
+
+      return userBag.documentId;
+    } catch (error) {
+      console.error("Error getting user bag documentId:", error);
+      return null;
+    }
+  };
+
+  // Function to handle cash payment order
+  const handleCashPaymentOrder = async () => {
+    if (!user) {
+      alert('Please log in to place an order');
+      return;
+    }
+
+    // Validate required fields
+    const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'city', 'street'];
+    const missingFields = requiredFields.filter(field => !formData[field].trim());
+    
+    if (missingFields.length > 0) {
+      alert(`Please fill in the following required fields: ${missingFields.join(', ')}`);
+      return;
+    }
+
+    if (selectedProducts.length === 0) {
+      alert('No products selected for checkout');
+      return;
+    }
+
+    setIsProcessingOrder(true);
+
+    try {
+      const userBagDocumentId = await getUserBagDocumentId();
+      
+      if (!userBagDocumentId) {
+        throw new Error('User bag not found');
+      }
+
+      // Prepare product order details
+      const products = selectedProducts.map(product => {
+        const fetchedProduct = productsWithOldPrice[product.id];
+        const unitPrice = parseFloat(product.price);
+        const oldPrice = fetchedProduct?.oldPrice ? parseFloat(fetchedProduct.oldPrice) : unitPrice;
+        const subtotal = oldPrice * product.quantity;
+        const discount = oldPrice > unitPrice ? ((oldPrice - unitPrice) / oldPrice) * 100 : 0;
+        const finalPrice = unitPrice * product.quantity;
+
+        // Get size and color from product's available options
+        const availableSize = product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M";
+        const availableColor = product.colors && product.colors.length > 0 
+          ? (typeof product.colors[0] === 'string' ? product.colors[0] : product.colors[0].name || "default")
+          : "default";
+
+        return {
+          size: availableSize,
+          color: availableColor,
+          discount: Math.round(discount),
+          quantity: product.quantity,
+          subtotal: subtotal,
+          unitPrice: unitPrice,
+          documentId: product.documentId,
+          finalPrice: finalPrice
+        };
+      });
+
+      // Prepare receiver details
+      const receiver_details = {
+        note: formData.note || "",
+        email: formData.email,
+        phone: formData.phone,
+        address: {
+          city: formData.city,
+          state: formData.state !== 'Choose State' ? formData.state : "",
+          street: formData.street,
+          country: formData.country !== 'Choose Country/Region' ? formData.country : "",
+          postalCode: formData.postalCode
+        },
+        lastName: formData.lastName,
+        firstName: formData.firstName
+      };
+
+      // Prepare order data
+      const orderData = {
+        products: products,
+        shippingPrice: 5, // Default shipping price
+        receiver_details: receiver_details
+      };
+
+      // Save the order using the utility function
+      await saveCashPaymentOrder(userBagDocumentId, orderData);
+      
+      setOrderSuccess(true);
+      
+      // Reset form after successful order
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        country: 'Choose Country/Region',
+        city: '',
+        street: '',
+        state: 'Choose State',
+        postalCode: '',
+        note: ''
+      });
+
+      alert('Order placed successfully! You will receive a confirmation shortly.');
+      
+    } catch (error) {
+      console.error('Error processing cash payment order:', error);
+      alert('Failed to place order. Please try again.');
+    } finally {
+      setIsProcessingOrder(false);
+    }
+  };
 
   // Fetch product details for each cart item to get accurate oldPrice
   useEffect(() => {
@@ -134,19 +308,47 @@ export default function Checkout() {
                 <h5 className="title">Information</h5>
                 <form className="info-box" onSubmit={(e) => e.preventDefault()}>
                   <div className="grid-2">
-                    <input type="text" placeholder="First Name*" />
-                    <input type="text" placeholder="Last Name*" />
+                    <input 
+                      type="text" 
+                      name="firstName"
+                      placeholder="First Name*" 
+                      value={formData.firstName}
+                      onChange={handleInputChange}
+                      required
+                    />
+                    <input 
+                      type="text" 
+                      name="lastName"
+                      placeholder="Last Name*" 
+                      value={formData.lastName}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
                   <div className="grid-2">
-                    <input type="text" placeholder="Email Address*" />
-                    <input type="text" placeholder="Phone Number*" />
+                    <input 
+                      type="email" 
+                      name="email"
+                      placeholder="Email Address*" 
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                    />
+                    <input 
+                      type="tel" 
+                      name="phone"
+                      placeholder="Phone Number*" 
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
                   <div className="tf-select">
                     <select
                       className="text-title"
-                      name="address[country]"
-                      data-default=""
-                      defaultValue="Choose Country/Region"
+                      name="country"
+                      value={formData.country}
+                      onChange={handleInputChange}
                     >
                       <option
                         value="Choose Country/Region"
@@ -286,17 +488,36 @@ export default function Checkout() {
                     </select>
                   </div>
                   <div className="grid-2">
-                    <input type="text" placeholder="Town/City*" />
-                    <input type="text" placeholder="Street,..." />
+                    <input 
+                      type="text" 
+                      name="city"
+                      placeholder="Town/City*" 
+                      value={formData.city}
+                      onChange={handleInputChange}
+                      required
+                    />
+                    <input 
+                      type="text" 
+                      name="street"
+                      placeholder="Street,..." 
+                      value={formData.street}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
                   <div className="grid-2">
                     <div className="tf-select">
-                      <select className="text-title" data-default="" defaultValue="Choose State">
+                      <select 
+                        className="text-title" 
+                        name="state"
+                        value={formData.state}
+                        onChange={handleInputChange}
+                      >
                         <option value="Choose State">
                           Choose State
                         </option>
                         <option value="California">California</option>
-                        <option value="Alabama">Alabam</option>
+                        <option value="Alabama">Alabama</option>
                         <option value="Alaska">Alaska</option>
                         <option value="Arizona">Arizona</option>
                         <option value="Arkansas">Arkansas</option>
@@ -310,10 +531,123 @@ export default function Checkout() {
                         <option value="Illinois">Illinois</option>
                       </select>
                     </div>
-                    <input type="text" placeholder="Postal Code*" />
+                    <input 
+                      type="text" 
+                      name="postalCode"
+                      placeholder="Postal Code*" 
+                      value={formData.postalCode}
+                      onChange={handleInputChange}
+                    />
                   </div>
-                  <textarea placeholder="Write note..." defaultValue={""} />
+                  <textarea 
+                    name="note"
+                    placeholder="Write note..." 
+                    value={formData.note}
+                    onChange={handleInputChange}
+                  />
                 </form>
+              </div>
+              <div className="wrap">
+                {/* Discount Coupons Section */}
+                <div className="discount-section" style={{ marginTop: '40px', marginBottom: '20px', borderTop: '1px solid #eaeaea', paddingTop: '20px' }}>
+                  <h5 className="title" style={{ marginBottom: '15px' }}>Discount Coupons</h5>
+                  <div className="sec-discount">
+                    <Swiper
+                      dir="ltr"
+                      className="swiper tf-sw-categories"
+                      slidesPerView={2.25} // data-preview="2.25"
+                      breakpoints={{
+                        1024: {
+                          slidesPerView: 2.25, // data-tablet={3}
+                        },
+                        768: {
+                          slidesPerView: 3, // data-tablet={3}
+                        },
+                        640: {
+                          slidesPerView: 2.5, // data-mobile-sm="2.5"
+                        },
+                        0: {
+                          slidesPerView: 1.2, // data-mobile="1.2"
+                        },
+                      }}
+                      spaceBetween={20}
+                    >
+                      {discounts.map((item, index) => (
+                        <SwiperSlide key={index}>
+                          <div
+                            className={`box-discount ${
+                              activeDiscountIndex === index ? "active" : ""
+                            }`}
+                            onClick={() => setActiveDiscountIndex(index)}
+                          >
+                            <div className="discount-top">
+                              <div className="discount-off">
+                                <div className="text-caption-1">Discount</div>
+                                <span className="sale-off text-btn-uppercase">
+                                  {item.discount}
+                                </span>
+                              </div>
+                              <div className="discount-from">
+                                <p className="text-caption-1">{item.details}</p>
+                              </div>
+                            </div>
+                            <div className="discount-bot">
+                              <span className="text-btn-uppercase">
+                                {item.code}
+                              </span>
+                              <button className="tf-btn">
+                                <span className="text">Apply Code</span>
+                              </button>
+                            </div>
+                          </div>{" "}
+                        </SwiperSlide>
+                      ))}
+                    </Swiper>
+                    <div className="ip-discount-code" style={{ marginTop: '15px', marginBottom: '10px' }}>
+                      <input type="text" placeholder="Add voucher discount" style={{ borderRadius: '4px', borderColor: '#ddd' }} />
+                      <button className="tf-btn" style={{ marginLeft: '10px' }}>
+                        <span className="text">Apply Code</span>
+                      </button>
+                    </div>
+                    <p style={{ fontSize: '13px', color: '#666', marginTop: '5px' }}>
+                      Discount code is only used for orders with a total value of
+                      products over $500.00
+                    </p>
+                  </div>
+                  
+                  {/* Order Summary */}
+                  <div className="order-summary-section" style={{ marginTop: '30px', marginBottom: '20px', borderTop: '1px solid #eaeaea', paddingTop: '20px' }}>
+                    <h5 className="title" style={{ marginBottom: '15px' }}>Order Summary</h5>
+                    <div className="sec-total-price">
+                      <div className="top">
+                        <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
+                          <span>Subtotal</span>
+                          <span>${subtotal.toFixed(2)}</span>
+                        </div>
+                        <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
+                          <span>Total Discounts</span>
+                          <span>-${totalDiscounts.toFixed(2)}</span>
+                        </div>
+                        <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
+                          <span>Total (Without Shipping Charges)</span>
+                          <span>${actualTotal.toFixed(2)}</span>
+                        </div>
+                        <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
+                          <span>Shipping</span>
+                          <span>Free</span>
+                        </div>
+                      </div>
+                      <div className="bottom">
+                        <h5 className="d-flex justify-content-between">
+                          <span>Grand Total</span>
+                          <span className="total-price-checkout">
+                            ${actualTotal.toFixed(2)}
+                          </span>
+                        </h5>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="wrap">
                 <h5 className="title">Choose payment Option:</h5>
@@ -335,7 +669,8 @@ export default function Checkout() {
                           name="payment-method"
                           className="tf-check-rounded"
                           id="delivery-method"
-                          defaultChecked
+                          checked={selectedPaymentMethod === 'cod'}
+                          onChange={() => setSelectedPaymentMethod('cod')}
                         />
                         <span className="text-title">Cash on delivery</span>
                       </label>
@@ -345,8 +680,87 @@ export default function Checkout() {
                         data-bs-parent="#payment-box"
                       />
                     </div>
+                    <div className="payment-item">
+                      <label
+                        htmlFor="khalti-method"
+                        className="payment-header"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#khalti-payment"
+                        aria-controls="khalti-payment"
+                      >
+                        <input
+                          type="radio"
+                          name="payment-method"
+                          className="tf-check-rounded"
+                          id="khalti-method"
+                          checked={selectedPaymentMethod === 'khalti'}
+                          onChange={() => setSelectedPaymentMethod('khalti')}
+                        />
+                        <span className="text-title">Pay with Khalti</span>
+                      </label>
+                    </div>
                   </div>
-                  <button className="tf-btn btn-reset">Payment</button>
+                  
+                  {/* Payment button container with fixed height to prevent jumping */}
+                  <div style={{ marginTop: '20px', minHeight: '45px' }}>
+                    {selectedPaymentMethod === 'khalti' && (
+                      <KhaltiPaymentForm 
+                        product={{ id: "checkout", name: "Checkout Order", price: actualTotal }} 
+                        orderData={{
+                          products: selectedProducts.map(product => {
+                            const fetchedProduct = productsWithOldPrice[product.id];
+                            const unitPrice = parseFloat(product.price);
+                            const oldPrice = fetchedProduct?.oldPrice ? parseFloat(fetchedProduct.oldPrice) : unitPrice;
+                            const subtotal = oldPrice * product.quantity;
+                            const discount = oldPrice > unitPrice ? ((oldPrice - unitPrice) / oldPrice) * 100 : 0;
+                            const finalPrice = unitPrice * product.quantity;
+
+                            // Get size and color from product's available options
+                            const availableSize = product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M";
+                            const availableColor = product.colors && product.colors.length > 0 
+                              ? (typeof product.colors[0] === 'string' ? product.colors[0] : product.colors[0].name || "default")
+                              : "default";
+
+                            return {
+                              size: availableSize,
+                              color: availableColor,
+                              discount: Math.round(discount),
+                              quantity: product.quantity,
+                              subtotal: subtotal,
+                              unitPrice: unitPrice,
+                              documentId: product.documentId,
+                              finalPrice: finalPrice
+                            };
+                          }),
+                          shippingPrice: 5,
+                          receiver_details: {
+                            note: formData.note || "",
+                            email: formData.email,
+                            phone: formData.phone,
+                            address: {
+                              city: formData.city,
+                              state: formData.state !== 'Choose State' ? formData.state : "",
+                              street: formData.street,
+                              country: formData.country !== 'Choose Country/Region' ? formData.country : "",
+                              postalCode: formData.postalCode
+                            },
+                            lastName: formData.lastName,
+                            firstName: formData.firstName
+                          }
+                        }}
+                        formData={formData}
+                      />
+                    )}
+                    {selectedPaymentMethod === 'cod' && (
+                      <button 
+                        className="tf-btn btn-reset"
+                        onClick={handleCashPaymentOrder}
+                        disabled={isProcessingOrder}
+                      >
+                        {isProcessingOrder ? 'Processing Order...' : 'Place Order (Cash on Delivery)'}
+                      </button>
+                    )}
+                  </div>
                 </form>
               </div>
             </div>
@@ -414,98 +828,6 @@ export default function Checkout() {
                     </div>
                   ))}
                 </div>
-                <div className="sec-discount">
-                  <Swiper
-                    dir="ltr"
-                    className="swiper tf-sw-categories"
-                    slidesPerView={2.25} // data-preview="2.25"
-                    breakpoints={{
-                      1024: {
-                        slidesPerView: 2.25, // data-tablet={3}
-                      },
-                      768: {
-                        slidesPerView: 3, // data-tablet={3}
-                      },
-                      640: {
-                        slidesPerView: 2.5, // data-mobile-sm="2.5"
-                      },
-                      0: {
-                        slidesPerView: 1.2, // data-mobile="1.2"
-                      },
-                    }}
-                    spaceBetween={20}
-                  >
-                    {discounts.map((item, index) => (
-                      <SwiperSlide key={index}>
-                        <div
-                          className={`box-discount ${
-                            activeDiscountIndex === index ? "active" : ""
-                          }`}
-                          onClick={() => setActiveDiscountIndex(index)}
-                        >
-                          <div className="discount-top">
-                            <div className="discount-off">
-                              <div className="text-caption-1">Discount</div>
-                              <span className="sale-off text-btn-uppercase">
-                                {item.discount}
-                              </span>
-                            </div>
-                            <div className="discount-from">
-                              <p className="text-caption-1">{item.details}</p>
-                            </div>
-                          </div>
-                          <div className="discount-bot">
-                            <span className="text-btn-uppercase">
-                              {item.code}
-                            </span>
-                            <button className="tf-btn">
-                              <span className="text">Apply Code</span>
-                            </button>
-                          </div>
-                        </div>{" "}
-                      </SwiperSlide>
-                    ))}
-                  </Swiper>
-                  <div className="ip-discount-code">
-                    <input type="text" placeholder="Add voucher discount" />
-                    <button className="tf-btn">
-                      <span className="text">Apply Code</span>
-                    </button>
-                  </div>
-                  <p>
-                    Discount code is only used for orders with a total value of
-                    products over $500.00
-                  </p>
-                </div>
-                <div className="sec-total-price">
-                  <div className="top">
-                    <div className="item d-flex align-items-center justify-content-between text-button">
-                      <span>Subtotal</span>
-                      <span>${subtotal.toFixed(2)}</span>
-                    </div>
-                    <div className="item d-flex align-items-center justify-content-between text-button">
-                      <span>Total Discounts</span>
-                      <span>-${totalDiscounts.toFixed(2)}</span>
-                    </div>
-                    <div className="item d-flex align-items-center justify-content-between text-button">
-                      <span>Total (Without Shipping Charges)</span>
-                      <span>${actualTotal.toFixed(2)}</span>
-                    </div>
-                    <div className="item d-flex align-items-center justify-content-between text-button">
-                      <span>Shipping</span>
-                      <span>Free</span>
-                    </div>
-                  </div>
-                  <div className="bottom">
-                    <h5 className="d-flex justify-content-between">
-                      <span>Grand Total</span>
-                      <span className="total-price-checkout">
-                        ${actualTotal.toFixed(2)}
-                      </span>
-                    </h5>
-                  </div>
-                </div>
-                <KhaltiPaymentForm product={{ id: "checkout", name: "Checkout Order", price: totalPrice }} />
               </div>
             </div>
           </div>

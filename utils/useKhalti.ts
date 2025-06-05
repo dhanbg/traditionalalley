@@ -7,14 +7,17 @@ import type {
   PaymentLookupResponse,
   UseKhaltiOptions,
   PaymentData,
+  OrderData,
 } from "../types/khalti";
-import { updateUserBagWithPayment, fetchDataFromApi } from "./api";
+import { updateUserBagWithPayment, fetchDataFromApi, saveCashPaymentOrder } from "./api";
+const { generateLocalTimestamp } = require('./timezone');
 
 export function useKhalti({
   onSuccess,
   onError,
   autoRedirect = true,
   userBagDocumentId,
+  orderData,
 }: UseKhaltiOptions & { userBagDocumentId?: string } = {}) {
   const [pidx, setPidx] = useState<string | null>(null);
   const [initiationError, setInitiationError] = useState<Error | null>(null);
@@ -43,11 +46,17 @@ export function useKhalti({
             purchaseOrderId: data.purchase_order_id,
             purchaseOrderName: data.purchase_order_name,
             mobile: data.customer_info?.phone,
-            timestamp: new Date().toISOString(),
+            timestamp: generateLocalTimestamp(),
           };
           
           await updateUserBagWithPayment(userBagDocumentId, paymentData);
           console.log("Payment initiation data saved to user-bag");
+
+          // Save order data if provided
+          if (orderData) {
+            await saveCashPaymentOrder(userBagDocumentId, orderData);
+            console.log("Order data saved to user-bag during payment initiation");
+          }
         } catch (saveError) {
           console.error("Error saving payment initiation data:", saveError);
         }
