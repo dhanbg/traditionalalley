@@ -35,6 +35,35 @@ export interface PaymentData {
   purchaseOrderName: string;
   mobile?: string;
   timestamp: string;
+  webhook_processed?: boolean;
+}
+
+export interface OrderData {
+  products: Array<{
+    size: string;
+    color: string;
+    discount: number;
+    quantity: number;
+    subtotal: number;
+    unitPrice: number;
+    documentId: string;
+    finalPrice: number;
+  }>;
+  shippingPrice: number;
+  receiver_details: {
+    note: string;
+    email: string;
+    phone: string;
+    address: {
+      city: string;
+      state: string;
+      street: string;
+      country: string;
+      postalCode: string;
+    };
+    lastName: string;
+    firstName: string;
+  };
 }
 
 export interface UserBagPayload {
@@ -47,4 +76,5 @@ export interface UseKhaltiOptions {
   onError?: (error: Error) => void;
   autoRedirect?: boolean;
   userBagDocumentId?: string;
+  orderData?: OrderData;
 } 

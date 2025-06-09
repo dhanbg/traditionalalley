@@ -1,4 +1,5 @@
 import { API_URL, STRAPI_API_TOKEN, PRODUCTS_API } from "./urls"
+const { generateLocalTimestamp } = require('./timezone');
 
 // Helper function to construct proper image URLs
 export const getImageUrl = (imageObj) => {
@@ -480,8 +481,24 @@ export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) =
     // Initialize payments array if it doesn't exist
     const existingPayments = currentPayload.payments || [];
     
-    // Add the new payment data
-    const updatedPayments = [...existingPayments, paymentData];
+    // Check if a payment with the same pidx already exists
+    const existingPaymentIndex = existingPayments.findIndex(payment => payment.pidx === paymentData.pidx);
+    
+    let updatedPayments;
+    if (existingPaymentIndex !== -1) {
+      // Update existing payment
+      updatedPayments = [...existingPayments];
+      updatedPayments[existingPaymentIndex] = {
+        ...updatedPayments[existingPaymentIndex],
+        ...paymentData,
+        timestamp: generateLocalTimestamp() // Update timestamp for the update
+      };
+      console.log(`Updating existing payment with pidx: ${paymentData.pidx}`);
+    } else {
+      // Add new payment
+      updatedPayments = [...existingPayments, paymentData];
+      console.log(`Adding new payment with pidx: ${paymentData.pidx}`);
+    }
     
     // Update the payload
     const updatedPayload = {
@@ -503,6 +520,106 @@ export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) =
     
   } catch (error) {
     console.error('Error updating user-bag with payment data:', error);
+    throw error;
+  }
+};
+
+export const saveCashPaymentOrder = async (userBagDocumentId, orderData) => {
+  try {
+    // First, fetch the current user-bag to get existing user_orders
+    const currentBagResponse = await fetchDataFromApi(`/api/user-bags/${userBagDocumentId}?populate=*`);
+    
+    if (!currentBagResponse || !currentBagResponse.data) {
+      throw new Error(`User bag with documentId ${userBagDocumentId} not found`);
+    }
+
+    const currentBag = currentBagResponse.data;
+    const currentUserOrders = currentBag.user_orders || {};
+    
+    // Create new order entry with local timezone timestamp
+    const localTimestamp = generateLocalTimestamp();
+    
+    const newOrder = {
+      products: orderData.products,
+      shippingPrice: orderData.shippingPrice || 5,
+      receiver_details: orderData.receiver_details
+    };
+
+    // Update user_orders with new order
+    const updatedUserOrders = {
+      ...currentUserOrders,
+      [localTimestamp]: newOrder
+    };
+
+    // Update the user-bag with the new order
+    const updatePayload = {
+      data: {
+        user_orders: updatedUserOrders
+      }
+    };
+
+    const updateResponse = await updateData(`/api/user-bags/${userBagDocumentId}`, updatePayload);
+    
+    console.log('Successfully saved cash payment order:', updateResponse);
+    return updateResponse;
+    
+  } catch (error) {
+    console.error('Error saving cash payment order:', error);
+    throw error;
+  }
+};
+
+export const saveKhaltiPaymentOrder = async (userBagDocumentId, orderData, paymentData) => {
+  try {
+    // First, fetch the current user-bag to get existing user_orders
+    const currentBagResponse = await fetchDataFromApi(`/api/user-bags/${userBagDocumentId}?populate=*`);
+    
+    if (!currentBagResponse || !currentBagResponse.data) {
+      throw new Error(`User bag with documentId ${userBagDocumentId} not found`);
+    }
+
+    const currentBag = currentBagResponse.data;
+    const currentUserOrders = currentBag.user_orders || {};
+    
+    // Create new order entry with local timezone timestamp
+    const localTimestamp = generateLocalTimestamp();
+    
+    const newOrder = {
+      products: orderData.products,
+      shippingPrice: orderData.shippingPrice || 5,
+      receiver_details: orderData.receiver_details,
+      payment_info: {
+        provider: "khalti",
+        pidx: paymentData.pidx,
+        transactionId: paymentData.transactionId,
+        amount: paymentData.amount,
+        status: paymentData.status,
+        purchaseOrderId: paymentData.purchaseOrderId,
+        mobile: paymentData.mobile,
+        timestamp: paymentData.timestamp
+      }
+    };
+
+    // Update user_orders with new order
+    const updatedUserOrders = {
+      ...currentUserOrders,
+      [localTimestamp]: newOrder
+    };
+
+    // Update the user-bag with the new order
+    const updatePayload = {
+      data: {
+        user_orders: updatedUserOrders
+      }
+    };
+
+    const updateResponse = await updateData(`/api/user-bags/${userBagDocumentId}`, updatePayload);
+    
+    console.log('Successfully saved Khalti payment order:', updateResponse);
+    return updateResponse;
+    
+  } catch (error) {
+    console.error('Error saving Khalti payment order:', error);
     throw error;
   }
 };

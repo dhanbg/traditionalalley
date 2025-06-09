@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useKhalti } from "../../utils/useKhalti";
+import type { OrderData } from "../../types/khalti";
 
 interface Product {
   id: string;
@@ -10,23 +11,35 @@ interface Product {
 
 interface KhaltiPaymentFormProps {
   product: Product;
+  orderData?: OrderData;
+  formData?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    country: string;
+    city: string;
+    street: string;
+    state: string;
+    postalCode: string;
+    note: string;
+  };
 }
 
-const KhaltiPaymentForm = ({ product }: KhaltiPaymentFormProps) => {
+const KhaltiPaymentForm = ({ product, orderData, formData }: KhaltiPaymentFormProps) => {
   const { user } = useUser();
-  const [customerName, setCustomerName] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
   const [userBagDocumentId, setUserBagDocumentId] = useState<string | null>(null);
   
   const { initiate, initiationError, isLoading, getUserBagDocumentId } = useKhalti({
     onSuccess: (response) => {
-      window.location.href = `/khalti-callback?purchase_order_id=${response.purchase_order_id}`;
+      // Let Khalti handle the redirect naturally - don't override it
+      console.log("Payment initiated successfully:", response);
     },
     onError: (error) => {
       console.error("Payment error:", error.message);
     },
     userBagDocumentId: userBagDocumentId || undefined,
+    orderData: orderData, // Pass order data to the hook
   });
 
   // Get user's bag documentId when component mounts
@@ -46,99 +59,54 @@ const KhaltiPaymentForm = ({ product }: KhaltiPaymentFormProps) => {
     fetchUserBagId();
   }, [user, getUserBagDocumentId]);
 
-  // Pre-fill customer info if user is logged in
-  useEffect(() => {
-    if (user) {
-      setCustomerName(`${user.firstName || ""} ${user.lastName || ""}`.trim());
-      setCustomerEmail(user.primaryEmailAddress?.emailAddress || "");
-      // Phone number would need to be stored in user profile or entered manually
-    }
-  }, [user]);
-
   const handlePayment = () => {
-    if (product) {
+    if (product && user) {
+      // Validate required form fields if formData is provided
+      if (formData) {
+        const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'city', 'street'];
+        const missingFields = requiredFields.filter(field => !formData[field]?.trim());
+        
+        if (missingFields.length > 0) {
+          alert(`Please fill in the following required fields: ${missingFields.join(', ')}`);
+          return;
+        }
+      }
+
+      // Use form data if available, otherwise fall back to user data
+      const customerName = formData 
+        ? `${formData.firstName} ${formData.lastName}`.trim()
+        : `${user.firstName || ""} ${user.lastName || ""}`.trim();
+      
+      const customerEmail = formData?.email || user.primaryEmailAddress?.emailAddress || "";
+      const customerPhone = formData?.phone || "";
+      
+      // Get the current domain dynamically
+      const currentDomain = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+      
       const paymentRequest = {
         amount: product.price * 100, // NPR to paisa
-        purchase_order_id: `order-${product.id}-${Date.now()}`,
+        purchase_order_id: `order-${product.id}-${Date.now()}-${user.id}`,
         purchase_order_name: product.name,
         customer_info: {
           name: customerName,
           email: customerEmail,
           phone: customerPhone,
         },
-        return_url: "http://localhost:3000/khalti-callback",
-        website_url: "http://localhost:3000",
+        return_url: `${currentDomain}/khalti-callback`,
+        website_url: currentDomain,
       };
+      
+      console.log("=== INITIATING KHALTI PAYMENT ===");
+      console.log("Payment request:", paymentRequest);
+      console.log("Return URL:", paymentRequest.return_url);
+      console.log("Order data:", orderData);
+      
       initiate(paymentRequest);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
-      <h3 className="text-lg font-semibold mb-4">Payment Information</h3>
-      
-      {/* User bag status */}
-      {user && (
-        <div className="mb-4 p-3 bg-gray-50 rounded">
-          <p className="text-sm text-gray-600">
-            User: {user.firstName} {user.lastName}
-          </p>
-          <p className="text-sm text-gray-600">
-            Bag ID: {userBagDocumentId || "Loading..."}
-          </p>
-        </div>
-      )}
-
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Full Name
-          </label>
-          <input 
-            type="text"
-            value={customerName} 
-            onChange={e => setCustomerName(e.target.value)} 
-            placeholder="Enter your full name"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email Address
-          </label>
-          <input 
-            type="email"
-            value={customerEmail} 
-            onChange={e => setCustomerEmail(e.target.value)} 
-            placeholder="Enter your email"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Phone Number
-          </label>
-          <input 
-            type="tel"
-            value={customerPhone} 
-            onChange={e => setCustomerPhone(e.target.value)} 
-            placeholder="Enter your phone number"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-        </div>
-      </div>
-
-      {/* Product info */}
-      <div className="mt-4 p-3 bg-blue-50 rounded">
-        <p className="text-sm font-medium">Product: {product.name}</p>
-        <p className="text-sm text-gray-600">Amount: NPR {product.price}</p>
-      </div>
-
+    <>
       {/* Error display */}
       {initiationError && (
         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded">
@@ -149,8 +117,8 @@ const KhaltiPaymentForm = ({ product }: KhaltiPaymentFormProps) => {
       {/* Payment button */}
       <button 
         onClick={handlePayment} 
-        disabled={isLoading || !customerName || !customerEmail || !customerPhone}
-        className="w-full mt-6 bg-purple-600 text-white py-3 px-4 rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+        disabled={isLoading || !user}
+        className="tf-btn btn-reset"
       >
         {isLoading ? (
           <span className="flex items-center justify-center">
@@ -158,18 +126,18 @@ const KhaltiPaymentForm = ({ product }: KhaltiPaymentFormProps) => {
             Processing payment...
           </span>
         ) : (
-          `Pay NPR ${product.price} with Khalti`
+          `Pay with Khalti`
         )}
       </button>
 
-      {/* Note about payment tracking */}
-      {userBagDocumentId && (
-        <p className="mt-3 text-xs text-gray-500 text-center">
-          Payment details will be saved to your account for tracking
+      {/* Login warning if not logged in */}
+      {!user && (
+        <p className="mt-3 text-xs text-red-500 text-center">
+          Please log in to make a payment
         </p>
       )}
-    </div>
+    </>
   );
 };
 
-export default KhaltiPaymentForm; 
+export default KhaltiPaymentForm;

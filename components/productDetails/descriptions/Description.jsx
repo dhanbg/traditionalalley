@@ -1,6 +1,31 @@
 import React from "react";
 import Image from "next/image";
 
+// Helper to render text with inline marks (bold, italic, uppercase, etc.)
+function renderTextWithMarks(child) {
+  let el = child.text || "";
+  if (!el) return null;
+
+  // Wrap in <strong> if bold
+  if (child.bold) {
+    el = <strong>{el}</strong>;
+  }
+  // Wrap in <em> if italic
+  if (child.italic) {
+    el = <em>{el}</em>;
+  }
+  // Wrap in <u> if underline
+  if (child.underline) {
+    el = <u>{el}</u>;
+  }
+  // Wrap in <span className="text-btn-uppercase"> if uppercase
+  if (child.uppercase) {
+    el = <span className="text-btn-uppercase">{el}</span>;
+  }
+  // You can add more mark handling here if needed
+  return el;
+}
+
 // Component to render a rich text block
 const RenderBlock = ({ block }) => {
   if (!block) return null;
@@ -9,14 +34,20 @@ const RenderBlock = ({ block }) => {
     case "heading":
       const HeadingTag = `h${block.level}`;
       return (
-        <HeadingTag className="letter-1 text-btn-uppercase mb_12">
-          {block.children[0]?.text || ""}
+        <HeadingTag className="letter-1 mb_12">
+          {block.children.map((child, idx) => (
+            <React.Fragment key={idx}>{renderTextWithMarks(child)}</React.Fragment>
+          ))}
         </HeadingTag>
       );
 
     case "paragraph":
       return (
-        <p className="mb_12 text-secondary">{block.children[0]?.text || ""}</p>
+        <p className="mb_12 text-secondary">
+          {block.children.map((child, idx) => (
+            <React.Fragment key={idx}>{renderTextWithMarks(child)}</React.Fragment>
+          ))}
+        </p>
       );
 
     case "list":
@@ -25,7 +56,9 @@ const RenderBlock = ({ block }) => {
           <ul className="list-text type-disc mb_12 gap-6">
             {block.children.map((item, idx) => (
               <li key={idx} className="font-2">
-                {item.children[0]?.text || ""}
+                {item.children.map((child, cidx) => (
+                  <React.Fragment key={cidx}>{renderTextWithMarks(child)}</React.Fragment>
+                ))}
               </li>
             ))}
           </ul>
@@ -34,7 +67,11 @@ const RenderBlock = ({ block }) => {
       return (
         <ol className="mb_12">
           {block.children.map((item, idx) => (
-            <li key={idx}>{item.children[0]?.text || ""}</li>
+            <li key={idx}>
+              {item.children.map((child, cidx) => (
+                <React.Fragment key={cidx}>{renderTextWithMarks(child)}</React.Fragment>
+              ))}
+            </li>
           ))}
         </ol>
       );
@@ -48,7 +85,7 @@ export default function Description({ product }) {
   // If no product or description is provided, show default content or null
   if (!product || !product.description) {
     return (
-      <div className="right">
+      <div className="single-column">
         <p className="text-secondary">No product description available.</p>
       </div>
     );
@@ -78,41 +115,57 @@ export default function Description({ product }) {
     }
   });
 
+  // Combine all content blocks for balanced distribution
+  const allContentBlocks = [
+    ...mainDescriptionBlocks,
+    // Add Material & Care section as blocks
+    ...(careGuidelinesBlocks.length > 0 ? careGuidelinesBlocks : [
+      {
+        type: "heading",
+        level: 3,
+        children: [{ text: "Material & Care" }]
+      },
+      ...(product.composition ? [{
+        type: "paragraph",
+        children: [{ text: product.composition }]
+      }] : []),
+      ...(product.origin ? [
+        {
+          type: "paragraph",
+          children: [{ text: `Designed in ${product.origin}` }]
+        },
+        {
+          type: "paragraph",
+          children: [{ text: "Origin" }]
+        }
+      ] : []),
+      ...(product.manufacture ? [{
+        type: "paragraph",
+        children: [{ text: `Manufacture: ${product.manufacture}` }]
+      }] : [])
+    ])
+  ];
+
+  // Split content into two balanced columns
+  const midPoint = Math.ceil(allContentBlocks.length / 2);
+  const leftColumnBlocks = allContentBlocks.slice(0, midPoint);
+  const rightColumnBlocks = allContentBlocks.slice(midPoint);
+
   return (
-    <>
-      <div className="right">
-        {mainDescriptionBlocks.map((block, index) => (
-          <RenderBlock key={index} block={block} />
+    <div className="d-flex" style={{ gap: '40px' }}>
+      {/* Left Column */}
+      <div style={{ flex: '1', width: '48%', maxWidth: '48%', paddingRight: '30px', boxSizing: 'border-box' }}>
+        {leftColumnBlocks.map((block, index) => (
+          <RenderBlock key={`left-${index}`} block={block} />
         ))}
       </div>
 
-      <div className="left">
-        {careGuidelinesBlocks.length > 0 ? (
-          careGuidelinesBlocks.map((block, index) => (
-            <RenderBlock key={index} block={block} />
-          ))
-        ) : (
-          <>
-            <div className="letter-1 text-btn-uppercase mb_12">
-              COMPOSITION, ORIGIN AND CARE GUIDELINES
-            </div>
-            <ul className="list-text type-disc mb_12 gap-6">
-              {product.composition && (
-                <li className="font-2">{product.composition}</li>
-              )}
-              {product.origin && (
-                <>
-                  <li className="font-2">Designed in {product.origin}</li>
-                  <li className="font-2">Origin</li>
-                </>
-              )}
-              {product.manufacture && (
-                <li className="font-2">Manufacture: {product.manufacture}</li>
-              )}
-            </ul>
-          </>
-        )}
-
+      {/* Right Column */}
+      <div style={{ flex: '1', width: '48%', maxWidth: '48%', boxSizing: 'border-box' }}>
+        {rightColumnBlocks.map((block, index) => (
+          <RenderBlock key={`right-${index}`} block={block} />
+        ))}
+        
         <div className="d-flex gap-20 mb_12 list-icon-guideline">
           <div className="d-flex">
             <svg
@@ -294,11 +347,47 @@ export default function Description({ product }) {
               </defs>
             </svg>
           </div>
+          <div className="d-flex">
+            <svg
+              width={24}
+              height={22}
+              viewBox="0 0 24 22"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              xmlnsXlink="http://www.w3.org/1999/xlink"
+            >
+              <rect
+                width={24}
+                height="21.6"
+                fill="url(#pattern0_15741_41606)"
+              />
+              <defs>
+                <pattern
+                  id="pattern0_15741_41606"
+                  patternContentUnits="objectBoundingBox"
+                  width={1}
+                  height={1}
+                >
+                  <use
+                    xlinkHref="#image0_15741_41606"
+                    transform="scale(0.0125 0.0138889)"
+                  />
+                </pattern>
+                <image
+                  id="image0_15741_41606"
+                  width={80}
+                  height={72}
+                  alt=""
+                  xlinkHref="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABICAYAAABhlHJbAAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAUKADAAQAAAABAAAASAAAAABhcJAMAAAKd0lEQVR4Ae2bv28UVxDHbWOQKC1RAKI6lxEF3JUpfWVKu01n/wl2mXRcmdJu6ewy6XxtOh8IIaXjWiOK0CJAON/P6M3m7d7u3v6ysfGedN7d92PezHfmzY9365WV/tMj0CPQI9Aj0CPQI9Aj0CNwGxFYrSL08+fPdzVuu8rYGzrm4NWrV7MmvK9XmXRxcbGxtra2VWXsTRzz7du3jaZ8VwIwIj7XYkfR842+lVG8aCtACsCnT59u3Lt3b2s2m53kEZYlzl+/fj3J67uJbcPhMBdAcLh79+62tvVSY1mLBRd4h3o+FuFjiMR9t+Vesm8LvHerq6uH8v3DZXInFpgBbFtgDp89e7Yni5suI9K2n7XX19eNWTE+CD4Xd/ER2lfFg4DDInfFw4p4+Agfy2RbiMICbV8E+PrkCYLgL0RwKrMeLyO6rN+3iNbYEs2taK2yqXPW19hpkYspm5zXJ2u7oF3yHUg+Mo0Bz6zz5cuXnbdv35oCaSv6LADIwGC6h2I2ZcJtAZRyAGtbX5i1j2jC5AzaoSl10ViEGuiaZAHM0fPR58+fjyTkPDWhxoMD6FOgq++kjp/PBdAJYo1xpBLxmSxw5P1Vr7K4gVwC28NzSbbnkUDAoivnXyhA/GC1bDPbIVjP169fAXKptcT8sgvE07/ehmy636vDD3NLAWRAYJrgUtu8mR+S8BcIDJP6HnTh06ArmvuBL7b3TlXhCRQazw4zJej+SHP34Lfu586yCe/fv58/fPjwvhazLaTrAH/x+PHj+fn5+T9l8yUkTP6mMZ/E5O8C7lfolc2p2qe1Zw8ePHh5546J8IvW2X306JGazwstGqt78uTJHxqLQu/7WuLtoClfSwFkETH2sxYEQDS9ons0ty0Q70uI2YcPHz4xzj+B0T81Dk3P5JDHb968+cv7u7qyrgCbSsF/iyYgGk+0ZdfAryvSnwY56CbX/Ykb8fiyKYCpPBBiZR8tNBcYI12dwX2F/lOYi+ep7TgwegJ4bRx9TLfoPriEMcrSmH1t0VSCjC8XP2fqI0X6iN9UJN8polenPckDq04KYIw9wIgxwDvTM75tErYt1nrSFZNVeMP/yfLHKFQ87YsPlD0NyjQFA7DaSE86cSPwVcsCY0EASwwRkY0ZorU0Twa/C6NKMRo55XiNuvchEu9hZeLjUOCdBQVbrieQR12CB3+NAWQyWhdQbGmvGS1Sq6t2WgG9Lj6yMBRqgUTg4atJmcYovAv6WRqtAIQYWicFwOqcONpnKxNMvO0qrqRcsjp2gWUMYc2T4CMvhYXWAMKVwCInw8+cCEgLMHreVaKKb4yFuRQhIErgkBvB/5FvklQTJLDGfSnSd4Yeu/10AqCYJqFd0XbmZHdMlAtskjOeEnC6Zft/alLeUF8irK2BArWNR9TLurdtK6u8tPVbA0hWL+ZJD5K61AOM2mxbE2AQsmtLCIrB6izKojgU6IFC9/jmObuh67Vdha0BFCGrb6X1lJMW85ZAq9/aEZKo2IU14luluGMUI7oWKKSsUV6gcCtUEu11uMveybUVgAgCgFiaaz3migCjrXRAFNQYUgt+WyHdaXxgi8UTKFg3rDUhE0Bh8dp+L8Xa6brW9vHe1cm1FYAKEhYgBE7uTwDOIVFQgmzq2ccZCGH7+7DSa7A6KgyqnCRQoCAUVTSZPvHHOeLwMrZxKwDFtPkeXXO1HwsVrHEHP+XWqH5+PngRLDkenronUMjqTtUYB4pNAkVqYMEDANIlhTu/BSPrN7cCUIwZQ3XyrOCnvG6F49x62kXBZ8p6shUFgaLQ6nxudDUFS3mDqK2T21YAioOhQFxqfVlO8Vf6UgYmAQaQ4gCDVcryTvGZzGcdfXMDRZZ+9lkHrl5uXi8LxBeJ2TqWkJItDjB0hHSH051dAoXoexI+kQ8dFwWKFNGcB1mrASgFdF4ZtbXAHHbrNWUDDKDpa6fFEtgqimWBot6K3Y7+7gAiDv5M/ukoABZLeKIUxc8e4/Zrc38tAMT3afvGdaxtOVnildbTTbTyXQEkL6PEiwOFhBhry26S7gSBBoAbB5gmgl7WnFYAsuVkJYMmzAEIpZ3me2ScEJk9UJDuiH7qwBawmyTDmudrmGU34bdoTisARZQUZrAsEY4XZyylHFYn8KyOlbVhdW5xyXDAjA9sARvQ61qjK1kKuV4AiiFz8P5eSyJ5wY0EtwNPdXtdSpAgtysMFAQYAcnPAzvB4pvU026BtXPWAlGS5i4skPzN87WEcPaGkg1fhtUBhL57srpK759AS2P5hS/+RbByPa21jL8yRWX5rfrcCkAYAgwt5ha1sC7+B9+ljriOxdf57ygLc4oaSIg1LzmwDS6gtJ7GZ7L1RbNS3Vy0dlF7KwADURgb5J2s4KvEfBIoiKwA4JVBEVPL2j3ASHm+JQvraR0g+ItM1xNAbSurZyWMM7pCoJDVJXWsAOGNhkZ1bBGYUsTCgS3KigMMfAS+5riAIlpt2tfbTGYu1iSwOG/bIkjIz8F08uKOhnDgOSEYtF0rOz/QPJD1c9BgaxLdxc+WFLvHKbT4gp+FCJ+l1fS5NYAsDLPaKhT/x3rc0NXe8NSVQHEpmo8FZg1Z21Q88BYZoBHtcR2WJjXxtzH9svtKPlBa5YUiom0uLTFrjAaGGUPErHzgmUu0ZiPWKCCzB7Yocs5Wrkmu8vB8RCpPt/cHkxd3omknl7FlI/qFtwQYdSZWH6zxHe6lcFKLjsYASquD0WiUBAppGj9k76XoWukN9xZ8F06V/+NHfns/x+tpdoZ2zym5aOHEhh2NACRlkb8ht3Oteh1LbncQtvLCa28Neaw8LYB3KAV+lAvZ8XRHBLyE462tM329MqlMu2hgLQDF2IasjmiX/DKWrWNx2FjiVYMYgydhk1yTdCdbT6u/s9OdWgAKFDRn+Z5Aoo7dpBrJaicGUXNSuVl2bNtnAoTAQ6lmeaK3cPSPPxZPC/V027WZXxXAxOTZHvraG55lgQIQsU7Gh9zsFL/ZBdNOg8CAKxF45vOI/Fic92evpDsaE9fTNkTzG/NV+pY+vgLN6usAzgVK5bfh4Q4LUZrjr/ySVuAneSu+UFCTquQPPlh0CBbmg8WTvR1bMmWhi4oFxUYdjRL+QgDFJMU/KUqcQ03Pzs4a/acSQoseDJu2BQBRm3RjlucG1J58UIIsDbBQJHScBm887GkneJBI5lS5EU/2n0o+Fp50X+t/RRYADMxidX7CQh07C8+NAXQmA5DQdvrWpTUo9Ras0q3M54dxbEXKw0bAOS0HUDStFPX2OhadAjDUshZhISbCBArKNLYL1tMaQGfSrUrM+r9xUQK6q/Bh8IBw/GoHuEutNZlY4cYBFO2xtnOqhmfdKta9Hq8jIkl6IgIcPdmZnRaKh3VyHwKQVwx2otMJ4YZEvJ52f43lYzgiV3oQsZZZj1A/JW9y8DL9P/QjSpXcdmArAyJ/XKrYlAWiBSHkVvFDg1UmXKinl4IHjRSAZUTpk1aG1L/xOPmP+PHW3dcCUH6BlGYrRklt8eOtu68EYIiApc70JiPnr7/dZBl63nsEegR6BHoEegR6BHoEaiLwH7GgG3FC8yIKAAAAAElFTkSuQmCC"
+                />
+              </defs>
+            </svg>
+          </div>
         </div>
         <div className="text-caption-2">
           MACHINE WASHING MAX 30°C / 85ºF SHORT SPIN DRY
         </div>
       </div>
-    </>
+    </div>
   );
 }
