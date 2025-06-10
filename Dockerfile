@@ -32,7 +32,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
 
 # Install only production dependencies
-RUN npm install --omit=dev
+RUN npm install --omit=dev --legacy-peer-deps
 
 # Expose the port the app runs on
 EXPOSE 3000
