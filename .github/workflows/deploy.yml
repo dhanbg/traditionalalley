@@ -49,5 +49,5 @@ jobs:
             docker pull docker.io/traditionalalley/ta-frontend:latest
             docker stop nextjs-app || true
             docker rm nextjs-app || true
-            docker run -d --name nextjs-app -p 3000:3000 --env-file /traditional_frontend/prod/.env docker.io/traditionalalley/ta-frontend:latest
+            docker run -d --name nextjs-app -p 3000:3000 --env-file ~/traditional_frontend/prod/.env docker.io/traditionalalley/ta-frontend:latest
           ENDSSH
