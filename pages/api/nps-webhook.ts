@@ -36,7 +36,8 @@ export default async function handler(
 
     console.log(`Processing webhook for merchant transaction: ${merchantTxnId}, gateway transaction: ${gatewayTxnId}`);
 
-    // Verify transaction status with NPS
+    // STEP 1: Verify transaction status with NPS (as per documentation)
+    console.log('=== VERIFYING TRANSACTION WITH NPS ===');
     const statusRequest: CheckTransactionStatusRequest = {
       MerchantId: npsConfig.merchantId,
       MerchantName: npsConfig.merchantName,
@@ -49,82 +50,132 @@ export default async function handler(
       statusRequest
     );
 
-    console.log('Transaction verification response:', statusResponse.data);
+    console.log('NPS Transaction verification response:', statusResponse.data);
 
     if (statusResponse.data.code !== "0") {
-      console.error('Transaction verification failed:', statusResponse.data);
+      console.error('Transaction verification failed with NPS:', statusResponse.data);
       return res.status(400).send('Transaction verification failed');
     }
 
     const transactionData = statusResponse.data.data;
-
-    // Extract user ID from merchant transaction ID
-    // Expected format: order-{productId}-{timestamp}-{userId}
-    let userId: string | null = null;
-    const orderIdParts = merchantTxnId.split('-');
-    if (orderIdParts.length >= 4) {
-      userId = orderIdParts[orderIdParts.length - 1]; // Last part should be user ID
-    }
-
-    if (!userId) {
-      console.error('Could not extract user ID from merchant transaction ID:', merchantTxnId);
-      return res.status(400).send('Could not identify user');
-    }
-
-    // Find the user's bag
-    const currentUserData = await fetchDataFromApi(
-      `/api/user-datas?filters[clerkUserId][$eq]=${userId}&populate=user_bag`
-    );
-
-    if (!currentUserData?.data || currentUserData.data.length === 0) {
-      console.error('User data not found for user:', userId);
-      return res.status(404).send('User not found');
-    }
-
-    const userData = currentUserData.data[0];
-    const userBag = userData.user_bag;
-
-    if (!userBag || !userBag.documentId) {
-      console.error('User bag not found for user:', userId);
-      return res.status(404).send('User bag not found');
-    }
-
-    console.log('Found user bag:', userBag.documentId);
-
-    // Prepare payment data for storage
-    const paymentData: NPSPaymentData = {
-      provider: "nps",
-      processId: transactionData.ProcessId,
-      merchantTxnId: transactionData.MerchantTxnId,
-      gatewayReferenceNo: transactionData.GatewayReferenceNo,
-      amount: parseFloat(transactionData.Amount),
+    console.log('✅ Transaction verified with NPS:', {
       status: transactionData.Status,
-      transactionDate: transactionData.TransactionDate,
-      institution: transactionData.Institution,
-      instrument: transactionData.Instrument,
-      serviceCharge: transactionData.ServiceCharge,
-      cbsMessage: transactionData.CbsMessage,
-      timestamp: generateLocalTimestamp(),
-      webhook_processed: true, // Flag to indicate this came from webhook
-    };
+      amount: transactionData.Amount,
+      gatewayRef: transactionData.GatewayReferenceNo
+    });
 
-    // Save payment data to user-bag
-    await updateUserBagWithPayment(userBag.documentId, paymentData);
+    // STEP 2: Extract user ID from merchant transaction ID (only after NPS verification)
+    let userId: string | null = null;
     
-    console.log('✅ Webhook payment data saved successfully:', paymentData);
+    console.log('=== EXTRACTING USER ID ===');
+    console.log('Parsing merchant transaction ID:', merchantTxnId);
+    
+    if (merchantTxnId.startsWith('TXN-')) {
+      const parts = merchantTxnId.split('-');
+      console.log('Transaction ID parts:', parts);
+      
+      if (parts.length >= 3) {
+        // Format: TXN-{timestamp}-{userId}
+        userId = parts.slice(2).join('-'); // Join remaining parts in case userId contains dashes
+        console.log('Extracted user ID:', userId);
+      }
+    }
 
-    // Respond to NPS that webhook was processed successfully
-    // NPS expects plain text response
+    // STEP 3: If we can't identify the user, still acknowledge the webhook
+    // This prevents NPS from retrying, but log the issue for manual review
+    if (!userId) {
+      console.error('⚠️ Could not extract user ID from merchant transaction ID:', merchantTxnId);
+      console.error('Expected format: TXN-{timestamp}-{userId}');
+      console.log('✅ Transaction verified with NPS but user identification failed');
+      console.log('Acknowledging webhook to prevent retries');
+      return res.status(200).send('received');
+    }
+
+    // STEP 4: Find the user's bag (only if user ID was extracted)
+    console.log('=== LOOKING UP USER DATA ===');
+    console.log('Looking up user data for user ID:', userId);
+    
+    try {
+      const currentUserData = await fetchDataFromApi(
+        `/api/user-datas?filters[clerkUserId][$eq]=${userId}&populate=user_bag`
+      );
+
+      if (!currentUserData?.data || currentUserData.data.length === 0) {
+        console.error('⚠️ User data not found for user:', userId);
+        console.log('✅ Transaction verified with NPS but user not found in database');
+        console.log('Acknowledging webhook to prevent retries');
+        return res.status(200).send('received');
+      }
+
+      const userData = currentUserData.data[0];
+      const userBag = userData.user_bag;
+
+      if (!userBag || !userBag.documentId) {
+        console.error('⚠️ User bag not found for user:', userId);
+        console.log('✅ Transaction verified with NPS but user bag not found');
+        console.log('Acknowledging webhook to prevent retries');
+        return res.status(200).send('received');
+      }
+
+      console.log('✅ Found user bag:', userBag.documentId);
+
+      // STEP 5: Check if this transaction has already been processed
+      const existingPayments = userBag.payments || [];
+      const existingPayment = existingPayments.find((payment: any) => 
+        payment.merchantTxnId === merchantTxnId || 
+        payment.gatewayReferenceNo === transactionData.GatewayReferenceNo
+      );
+
+      if (existingPayment) {
+        console.log('✅ Transaction already processed:', merchantTxnId);
+        return res.status(200).send('already received');
+      }
+
+      // STEP 6: Save payment data to user-bag
+      console.log('=== SAVING PAYMENT DATA ===');
+      const paymentData: NPSPaymentData = {
+        provider: "nps",
+        processId: transactionData.ProcessId,
+        merchantTxnId: transactionData.MerchantTxnId,
+        gatewayReferenceNo: transactionData.GatewayReferenceNo,
+        amount: parseFloat(transactionData.Amount),
+        status: transactionData.Status,
+        transactionDate: transactionData.TransactionDate,
+        institution: transactionData.Institution,
+        instrument: transactionData.Instrument,
+        serviceCharge: transactionData.ServiceCharge,
+        cbsMessage: transactionData.CbsMessage,
+        timestamp: generateLocalTimestamp(),
+        webhook_processed: true, // Flag to indicate this came from webhook
+      };
+
+      await updateUserBagWithPayment(userBag.documentId, paymentData);
+      
+      console.log('✅ Webhook payment data saved successfully:', paymentData);
+
+    } catch (dbError: any) {
+      console.error('⚠️ Database error during webhook processing:', dbError);
+      console.log('✅ Transaction verified with NPS but database operation failed');
+      console.log('Acknowledging webhook to prevent retries');
+    }
+
+    // STEP 7: Always acknowledge the webhook to NPS
+    // NPS expects plain text response "received" for first time
+    console.log('✅ Sending acknowledgment to NPS');
     return res.status(200).send('received');
 
   } catch (error: any) {
     console.error('❌ Webhook processing error:', error);
+    console.error('Error stack:', error.stack);
     
-    // For subsequent webhook calls for the same transaction
-    if (error.message && error.message.includes('already')) {
-      return res.status(200).send('already received');
+    // Even if there's an error, we should acknowledge to prevent infinite retries
+    // unless it's a critical NPS verification error
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      console.error('❌ NPS authentication error - not acknowledging');
+      return res.status(500).send('Authentication error');
     }
     
-    return res.status(500).send('Internal server error');
+    console.log('⚠️ Error occurred but acknowledging webhook to prevent retries');
+    return res.status(200).send('received');
   }
 } 
