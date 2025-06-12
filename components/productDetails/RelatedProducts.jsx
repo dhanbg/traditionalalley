@@ -87,7 +87,8 @@ const transformProduct = (rawProduct) => {
     price: rawProduct.price || rawProduct.attributes?.price || 0,
     oldPrice: rawProduct.oldPrice || rawProduct.attributes?.oldPrice || null,
     isOnSale: !!rawProduct.oldPrice || !!rawProduct.attributes?.oldPrice,
-    salePercentage: rawProduct.salePercentage || rawProduct.attributes?.salePercentage || "25%"
+    salePercentage: rawProduct.salePercentage || rawProduct.attributes?.salePercentage || "25%",
+    weight: rawProduct.weight || rawProduct.attributes?.weight || null
   };
 };
 

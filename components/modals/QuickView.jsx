@@ -43,6 +43,18 @@ export default function QuickView() {
     getReviewCount();
   }, [quickViewItem?.documentId]);
 
+  // Update activeColor when quickViewItem changes
+  useEffect(() => {
+    if (quickViewItem?.colors && quickViewItem.colors.length > 0) {
+      const firstColor = typeof quickViewItem.colors[0] === 'string' 
+        ? quickViewItem.colors[0]
+        : quickViewItem.colors[0].name || "Gray";
+      setActiveColor(firstColor);
+    } else {
+      setActiveColor("Gray");
+    }
+  }, [quickViewItem]);
+
   const openModalSizeChoice = () => {
     const bootstrap = require("bootstrap"); // dynamically import bootstrap
     var myModal = new bootstrap.Modal(document.getElementById("size-guide"), {
@@ -79,6 +91,67 @@ export default function QuickView() {
     }
   };
 
+  // Create fallback gallery if product doesn't have gallery images
+  const getProductImages = () => {
+    // Helper function to get proper image URL string
+    const getImageUrlString = (imageObj) => {
+      if (!imageObj) return null;
+      
+      if (typeof imageObj === 'string') {
+        return imageObj;
+      }
+      
+      if (imageObj.url) {
+        return imageObj.url;
+      }
+      
+      if (imageObj.src) {
+        return imageObj.src;
+      }
+      
+      return null;
+    };
+
+    // Always prioritize main image and hover image first
+    const imageGallery = [];
+    
+    // 1. Add main image first
+    const mainImageUrl = getImageUrlString(quickViewItem.imgSrc);
+    if (mainImageUrl) {
+      imageGallery.push({
+        id: 1,
+        url: mainImageUrl,
+        alt: quickViewItem.title || 'Product main image'
+      });
+    }
+    
+    // 2. Add hover image second (if different from main)
+    const hoverImageUrl = getImageUrlString(quickViewItem.imgHover);
+    if (hoverImageUrl && hoverImageUrl !== mainImageUrl) {
+      imageGallery.push({
+        id: 2,
+        url: hoverImageUrl,
+        alt: quickViewItem.title || 'Product hover image'
+      });
+    }
+    
+    // 3. Add gallery images if available
+    if (quickViewItem.gallery && quickViewItem.gallery.length > 0) {
+      quickViewItem.gallery.forEach((img, index) => {
+        const galleryImageUrl = getImageUrlString(img);
+        if (galleryImageUrl && !imageGallery.some(existing => existing.url === galleryImageUrl)) {
+          imageGallery.push({
+            id: index + 10,
+            url: galleryImageUrl,
+            alt: img.alt || `${quickViewItem.title} - Gallery image ${index + 1}`
+          });
+        }
+      });
+    }
+    
+    return imageGallery;
+  };
+
   return (
     <div className="modal fullRight fade modal-quick-view" id="quickView">
       <div className="modal-dialog">
@@ -87,16 +160,17 @@ export default function QuickView() {
             firstItem={quickViewItem.imgSrc}
             activeColor={activeColor}
             setActiveColor={setActiveColor}
+            productImages={getProductImages()}
           />
-          <div className="wrap mw-100p-hidden">
-            <div className="header">
+          <div className="wrap mw-100p-hidden" style={{ maxWidth: '500px', margin: '0', padding: '32px 24px 24px 24px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <div className="header" style={{ width: '100%' }}>
               <h5 className="title">Quick View</h5>
               <span
                 className="icon-close icon-close-popup"
                 data-bs-dismiss="modal"
               />
             </div>
-            <div className="tf-product-info-list">
+            <div className="tf-product-info-list" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '16px' }}>
               <div className="tf-product-info-heading">
                 <div className="tf-product-info-name">
                   <div className="text text-btn-uppercase">Clothing</div>
@@ -141,11 +215,12 @@ export default function QuickView() {
                       ""
                     )}
                   </div>
-                  <p>
+                  {/* Sustainability information: Explains what "Committed" label means for eco-friendly products */}
+                  {/* <p>
                     The garments labelled as Committed are products that have
                     been produced using sustainable fibres or processes,
                     reducing their environmental impact.
-                  </p>
+                  </p> */}
                   <div className="tf-product-info-liveview">
                     <i className="icon icon-eye" />
                     <p className="text-caption-1">
@@ -156,75 +231,81 @@ export default function QuickView() {
                 </div>
               </div>
               <div className="tf-product-info-choose-option">
-                <ColorSelect
-                  activeColor={activeColor}
-                  setActiveColor={setActiveColor}
-                />
-                <SizeSelect />
-                <div className="tf-product-info-quantity">
-                  <div className="title mb_12">Quantity:</div>
-                  <QuantitySelect
-                    quantity={
-                      isAddedToCartProducts(quickViewItem.id)
-                        ? cartProducts.filter(
-                            (elm) => elm.id == quickViewItem.id
-                          )[0].quantity
-                        : quantity
-                    }
-                    setQuantity={(qty) => {
-                      if (isAddedToCartProducts(quickViewItem.id)) {
-                        updateQuantity(quickViewItem.id, qty);
-                      } else {
-                        setQuantity(qty);
+                {/* Sizes section */}
+                {quickViewItem.sizes && quickViewItem.sizes.length > 0 && (
+                  <div className="tf-product-info-size">
+                    <SizeSelect 
+                      sizes={
+                        quickViewItem.sizes.map((size, index) => ({
+                          id: `values-${typeof size === 'string' ? size.toLowerCase() : size}-${index}`,
+                          value: typeof size === 'string' ? size : size,
+                          price: quickViewItem.price,
+                          disabled: false
+                        }))
                       }
-                    }}
-                  />
-                </div>
-                <div>
-                  <div className="pd-btn-group">
-                    <div className="group-btn">
-                      <div className="product-quantity">
-                        <span
-                          className="product-quantity-btn decrease"
-                          onClick={() =>
-                            quantity > 1 && setQuantity(quantity - 1)
+                    />
+                  </div>
+                )}
+
+                {/* Colors section */}
+                {quickViewItem.colors && quickViewItem.colors.length > 0 && (
+                  <div className="tf-product-info-color" style={{ position: 'relative', left: '-8px', width: '100%' }}>
+                    <ColorSelect
+                      activeColor={activeColor}
+                      setActiveColor={setActiveColor}
+                      colorOptions={
+                        quickViewItem.colors.map((color, index) => {
+                          // Handle different color formats
+                          if (typeof color === 'string') {
+                            return {
+                              id: `values-${color.toLowerCase()}-${index}`,
+                              value: color,
+                              color: color.toLowerCase()
+                            };
+                          } else if (color.name) {
+                            return {
+                              id: `values-${color.name.toLowerCase()}-${index}`,
+                              value: color.name,
+                              color: color.name.toLowerCase()
+                            };
                           }
-                        >
-                          -
-                        </span>
-                        <input
-                          type="text"
-                          name="product-quantity-input"
-                          className="product-quantity-input"
-                          value={quantity}
-                          readOnly
-                        />
-                        <span
-                          className="product-quantity-btn increase"
-                          onClick={() => setQuantity(quantity + 1)}
-                        >
-                          +
-                        </span>
-                      </div>
+                          return {
+                            id: `values-unknown-${index}`,
+                            value: "Unknown",
+                            color: "gray"
+                          };
+                        })
+                      }
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <div className="pd-btn-group" style={{ display: 'flex', justifyContent: 'flex-start', gap: '10px', marginTop: '20px' }}>
+                    <div className="group-btn" style={{ width: '100%' }}>
                       <button
-                        className="tf-btn-2 btn-addtocart"
+                        className="btn-style-2 fw-6 btn-add-to-cart"
                         onClick={handleAddToCart}
-                        style={{ minWidth: "120px", padding: "0 15px" }}
+                        style={{ 
+                          height: "46px", 
+                          display: "flex", 
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: "0 30px",
+                          minWidth: "180px",
+                          width: "100%",
+                          fontSize: "14px",
+                          fontWeight: "600",
+                          borderRadius: "4px"
+                        }}
                       >
-                        {user && isAddedToCartProducts(quickViewItem.id)
-                          ? "Added"
-                          : "Add to cart"}
+                        <span>
+                          {user && isAddedToCartProducts(quickViewItem.id)
+                            ? "Added"
+                            : "Add to cart"}
+                        </span>
                       </button>
                     </div>
-                    <button
-                      className="tf-btn btn-wishlist"
-                      onClick={handleWishlistClick}
-                      style={{ minWidth: "100px", padding: "0 15px" }}
-                    >
-                      {user && isAddedtoWishlist(quickViewItem.id)
-                        ? "Wishlisted"
-                        : "Wishlist"}
-                    </button>
                   </div>
                   {/* <a href="#" className="btn-style-3 text-btn-uppercase">
                     Buy it now

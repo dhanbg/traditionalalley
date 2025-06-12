@@ -481,8 +481,14 @@ export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) =
     // Initialize payments array if it doesn't exist
     const existingPayments = currentPayload.payments || [];
     
-    // Check if a payment with the same pidx already exists
-    const existingPaymentIndex = existingPayments.findIndex(payment => payment.pidx === paymentData.pidx);
+    // Check if a payment with the same merchantTxnId already exists (NPS only)
+    let existingPaymentIndex = -1;
+    let paymentIdentifier = '';
+    
+    if (paymentData.provider === 'nps' && paymentData.merchantTxnId) {
+      existingPaymentIndex = existingPayments.findIndex(payment => payment.merchantTxnId === paymentData.merchantTxnId);
+      paymentIdentifier = paymentData.merchantTxnId;
+    }
     
     let updatedPayments;
     if (existingPaymentIndex !== -1) {
@@ -493,11 +499,11 @@ export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) =
         ...paymentData,
         timestamp: generateLocalTimestamp() // Update timestamp for the update
       };
-      console.log(`Updating existing payment with pidx: ${paymentData.pidx}`);
+      console.log(`Updating existing payment with identifier: ${paymentIdentifier}`);
     } else {
       // Add new payment
       updatedPayments = [...existingPayments, paymentData];
-      console.log(`Adding new payment with pidx: ${paymentData.pidx}`);
+      console.log(`Adding new payment with identifier: ${paymentIdentifier}`);
     }
     
     // Update the payload
@@ -569,7 +575,7 @@ export const saveCashPaymentOrder = async (userBagDocumentId, orderData) => {
   }
 };
 
-export const saveKhaltiPaymentOrder = async (userBagDocumentId, orderData, paymentData) => {
+export const saveNPSPaymentOrder = async (userBagDocumentId, orderData, paymentData) => {
   try {
     // First, fetch the current user-bag to get existing user_orders
     const currentBagResponse = await fetchDataFromApi(`/api/user-bags/${userBagDocumentId}?populate=*`);
@@ -589,13 +595,12 @@ export const saveKhaltiPaymentOrder = async (userBagDocumentId, orderData, payme
       shippingPrice: orderData.shippingPrice || 5,
       receiver_details: orderData.receiver_details,
       payment_info: {
-        provider: "khalti",
-        pidx: paymentData.pidx,
-        transactionId: paymentData.transactionId,
+        provider: "nps",
+        processId: paymentData.processId,
+        merchantTxnId: paymentData.merchantTxnId,
+        gatewayReferenceNo: paymentData.gatewayReferenceNo,
         amount: paymentData.amount,
         status: paymentData.status,
-        purchaseOrderId: paymentData.purchaseOrderId,
-        mobile: paymentData.mobile,
         timestamp: paymentData.timestamp
       }
     };
@@ -615,11 +620,11 @@ export const saveKhaltiPaymentOrder = async (userBagDocumentId, orderData, payme
 
     const updateResponse = await updateData(`/api/user-bags/${userBagDocumentId}`, updatePayload);
     
-    console.log('Successfully saved Khalti payment order:', updateResponse);
+    console.log('Successfully saved NPS payment order:', updateResponse);
     return updateResponse;
     
   } catch (error) {
-    console.error('Error saving Khalti payment order:', error);
+    console.error('Error saving NPS payment order:', error);
     throw error;
   }
 };

@@ -134,6 +134,7 @@ function transformProduct(rawProduct) {
     price: rawProduct.price || 0,
     oldPrice: rawProduct.oldPrice || null,
     isOnSale: !!rawProduct.oldPrice,
-    salePercentage: rawProduct.salePercentage || "25%"
+    salePercentage: rawProduct.salePercentage || "25%",
+    weight: rawProduct.weight || null
   };
 }

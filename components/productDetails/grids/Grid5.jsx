@@ -5,13 +5,69 @@ import { useEffect, useRef, useState } from "react";
 import { items } from "@/data/singleProductSliders";
 import Image from "next/image";
 import { products } from "@/data/productsWomen";
+import { API_URL } from "@/utils/urls";
+
 export default function Grid5({
   activeColor = "gray",
   setActiveColor = () => {},
   firstItem,
+  productImages = [],
 }) {
-  const finalItems = [...items];
-  items[0].src = firstItem ?? items[0].src;
+  // Helper function to construct proper image URLs
+  const getImageUrl = (imageObj) => {
+    if (!imageObj) return firstItem || '/images/placeholder.jpg';
+    
+    // If it's already a full URL, return as is
+    if (typeof imageObj === 'string') {
+      if (imageObj.startsWith('http')) return imageObj;
+      if (imageObj.startsWith('/uploads/')) return `${API_URL}${imageObj}`;
+      return imageObj;
+    }
+    
+    // Handle object with url property
+    if (imageObj.url) {
+      if (imageObj.url.startsWith('http')) return imageObj.url;
+      return `${API_URL}${imageObj.url}`;
+    }
+    
+    // Handle object with src property
+    if (imageObj.src) {
+      if (imageObj.src.startsWith('http')) return imageObj.src;
+      return `${API_URL}${imageObj.src}`;
+    }
+    
+    return firstItem || '/images/placeholder.jpg';
+  };
+
+  // Create items from product images if available, otherwise use static items
+  const createItemsFromImages = () => {
+    if (productImages && productImages.length > 0) {
+      return productImages.map((img, index) => {
+        const imageUrl = getImageUrl(img);
+        return {
+          href: imageUrl,
+          target: "_blank",
+          scroll: activeColor, // Use activeColor for scroll reference
+          zoom: imageUrl,
+          src: imageUrl,
+          alt: img.alt || `Product image ${index + 1}`,
+          width: 600,
+          height: 800,
+        };
+      });
+    }
+    
+    // Fallback to static items with firstItem replacement
+    const fallbackItems = [...items];
+    if (firstItem) {
+      fallbackItems[0].src = firstItem;
+      fallbackItems[0].href = firstItem;
+      fallbackItems[0].zoom = firstItem;
+    }
+    return fallbackItems;
+  };
+
+  const finalItems = createItemsFromImages();
 
   // itemsFinal2[0].src = products[0].imgSrc;
 

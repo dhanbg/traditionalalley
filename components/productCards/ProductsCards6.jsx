@@ -78,11 +78,12 @@ export default function ProductsCards6({ product }) {
           )}{" "}
           ${safeProduct.price?.toFixed(2)}
         </span>
-        <p className="description text-secondary text-line-clamp-2">
+        {/* Sustainability information: Explains what "Committed" label means for eco-friendly products */}
+        {/* <p className="description text-secondary text-line-clamp-2">
           The garments labelled as Committed are products that have been
           produced using sustainable fibres or processes, reducing their
           environmental impact.
-        </p>
+        </p> */}
         <div className="variant-wrap-list">
           {safeProduct.colors && safeProduct.colors.length > 0 && (
             <ul className="list-color-product">

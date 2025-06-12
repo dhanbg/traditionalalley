@@ -210,7 +210,8 @@ export default function Context({ children }) {
         quantity: qty || 1,
         colors: productInfo.colors || [],
         sizes: productInfo.sizes || [],
-        imgSrc: imgSrc
+        imgSrc: imgSrc,
+        weight: productInfo.weight || null
       };
       
       console.log("Product data from allProducts:", productInfo);
@@ -278,7 +279,8 @@ export default function Context({ children }) {
             quantity: qty || 1,
             colors: productData.colors || [],
             sizes: productData.sizes || [],
-            imgSrc: imgUrl
+            imgSrc: imgUrl,
+            weight: productData.weight || null
           };
           
           console.log("Created productToAdd:", productToAdd);
@@ -308,7 +310,8 @@ export default function Context({ children }) {
         quantity: qty || 1,
         colors: [],
         sizes: [],
-        imgSrc: '/images/placeholder.png'
+        imgSrc: '/images/placeholder.png',
+        weight: null
       };
     }
     

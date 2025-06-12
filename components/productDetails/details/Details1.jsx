@@ -198,11 +198,12 @@ export default function Details1({ product }) {
                           ""
                         )}
                       </div>
-                      <p>
+                      {/* Sustainability information: Explains what "Committed" label means for eco-friendly products */}
+                      {/* <p>
                         The garments labelled as Committed are products that
                         have been produced using sustainable fibres or
                         processes, reducing their environmental impact.
-                      </p>
+                      </p> */}
                       {/* <div className="tf-product-info-liveview">
                         <i className="icon icon-eye" />
                         <p className="text-caption-1">
@@ -284,6 +285,23 @@ export default function Details1({ product }) {
                             }))
                           }
                         />
+                      </div>
+                    )}
+
+                    {/* Weight section */}
+                    {safeProduct.weight && (
+                      <div className="tf-product-info-weight" style={{ marginBottom: "20px" }}>
+                        <div className="title" style={{ fontWeight: "500", marginBottom: "8px" }}>Weight:</div>
+                        <div className="weight-value" style={{ 
+                          fontSize: "14px", 
+                          color: "#666",
+                          padding: "8px 12px",
+                          backgroundColor: "#f8f9fa",
+                          borderRadius: "4px",
+                          display: "inline-block"
+                        }}>
+                          {safeProduct.weight}
+                        </div>
                       </div>
                     )}
 
@@ -507,30 +525,11 @@ export default function Details1({ product }) {
                     <div className="tf-product-info-guranteed">
                       <div className="text-title">Guranteed safe checkout:</div>
                       <div className="tf-payment">
-                        <a href="#">
-                          <Image
-                            alt="Khalti"
-                            src="/khalti.png"
-                            width={100}
-                            height={64}
-                          />
-                        </a>
-                        <a href="#">
-                          <Image
-                            alt=""
-                            src="/images/payment/img-1.png"
-                            width={100}
-                            height={64}
-                          />
-                        </a>
-                        <a href="#">
-                          <Image
-                            alt=""
-                            src="/images/payment/img-2.png"
-                            width={100}
-                            height={64}
-                          />
-                        </a>
+                        <img
+                          alt="NPS"
+                          src="/nps.png"
+                          className="w-16 h-8 object-contain"
+                        />
                       </div>
                     </div>
                   </div>

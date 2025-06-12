@@ -516,23 +516,23 @@ export default function CartModal() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         <h5 className="text-secondary-2">Selected Items: </h5>
                         <h5 className="text-secondary-2">Subtotal: </h5>
-                      </div>
+                    </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginLeft: 40, marginTop: 4 }}>
                         <h5 className="text-button">{selectedItemsCount}/{displayProducts.length}</h5>
                         <h5 className="text-button">${selectedItemsTotal.toFixed(2)}</h5>
-                      </div>
+                    </div>
                     </div>
                   </div>
                   {/* Right: Buttons */}
                   <div className="tf-group-button d-flex flex-column gap-2 custom-cart-btn-group" style={{ minWidth: 160, alignItems: 'center', justifyContent: 'center' }}>
-                    <button
+                          <button
                       className="btn-style-1 view-cart custom-cart-btn"
                       style={{ width: '100%', maxWidth: 200, marginRight: 30, marginLeft: 100 }}
-                      onClick={handleViewCart}
-                    >
+                            onClick={handleViewCart}
+                      >
                       <span className="text-btn-uppercase">View Cart</span>
-                    </button>
-                    <button
+                          </button>
+                          <button
                       className="btn-style-2 checkout custom-cart-btn"
                       style={{ width: '100%', maxWidth: 200, marginRight: 30, marginLeft: 100 }}
                       onClick={handleCheckout}
@@ -541,34 +541,34 @@ export default function CartModal() {
                       <span className="text-btn-uppercase">
                         {selectedItemsCount === 0 ? 'Select Items' : 'Check Out'}
                       </span>
-                    </button>
-                  </div>
-                </div>
+                          </button>
+                    </div>
+                    </div>
                 {/* Remove openable sections so they take no space */}
                 {/*
                 <div className="tf-mini-cart-tool">
-                  <div
-                    className={`tf-mini-cart-tool-openable ${
-                      currentOpenPopup == "add-note" ? "open" : ""
-                    }`}
-                  >
+                <div
+                  className={`tf-mini-cart-tool-openable ${
+                    currentOpenPopup == "add-note" ? "open" : ""
+                  }`}
+                >
                     ...Note openable content...
-                  </div>
-                  <div
-                    className={`tf-mini-cart-tool-openable ${
-                      currentOpenPopup == "estimate-shipping" ? "open" : ""
-                    }`}
-                  >
-                    ...Shipping openable content...
-                  </div>
-                  <div
-                    className={`tf-mini-cart-tool-openable ${
-                      currentOpenPopup == "add-coupon" ? "open" : ""
-                    }`}
-                  >
-                    ...Coupon openable content...
-                  </div>
                 </div>
+                <div
+                  className={`tf-mini-cart-tool-openable ${
+                    currentOpenPopup == "estimate-shipping" ? "open" : ""
+                      }`}
+                >
+                    ...Shipping openable content...
+                </div>
+                <div
+                  className={`tf-mini-cart-tool-openable ${
+                    currentOpenPopup == "add-coupon" ? "open" : ""
+                      }`}
+                >
+                    ...Coupon openable content...
+                        </div>
+                        </div>
                 */}
               </div>
                 </>
@@ -616,8 +616,8 @@ export default function CartModal() {
           height: 24px;
         }
         .modern-checkbox input[type="checkbox"]:checked + .custom-checkmark {
-          background: linear-gradient(135deg, #a0a5a1 60%, #181818 100%);
-          border-color: #a0a5a1;
+          background: #fff;
+          border-color: #22c55e;
         }
         .custom-checkmark {
           display: block;
@@ -636,7 +636,7 @@ export default function CartModal() {
           top: 3px;
           width: 6px;
           height: 12px;
-          border: solid #fff;
+          border: solid #22c55e;
           border-width: 0 3px 3px 0;
           border-radius: 2px;
           transform: rotate(45deg);

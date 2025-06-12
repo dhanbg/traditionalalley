@@ -3,7 +3,7 @@
     "id": "payment-1747909606839",
     "userId": "user_2vAec0ymsGPDgey61LZS5Rlz6iY",
     "payment": {
-      "payment_method": "khalti",
+      "payment_method": "nps",
       "transaction_id": "FZk6hTg6sykzKqptKJ3yEa",
       "pidx": "u5faujgZFT5hF5cMJkcZzE",
       "amount": 100,
@@ -20,7 +20,7 @@
     "id": "payment-1747909755427",
     "userId": "user_2vAec0ymsGPDgey61LZS5Rlz6iY",
     "payment": {
-      "payment_method": "khalti",
+      "payment_method": "nps",
       "transaction_id": "FZk6hTg6sykzKqptKJ3yEa",
       "pidx": "u5faujgZFT5hF5cMJkcZzE",
       "amount": 100,
@@ -37,7 +37,7 @@
     "id": "payment-1747909794948",
     "userId": "user_2vAec0ymsGPDgey61LZS5Rlz6iY",
     "payment": {
-      "payment_method": "khalti",
+      "payment_method": "nps",
       "transaction_id": "9V4YtzVYZBkdRfV4gTN7gB",
       "pidx": "BcKo2zYzaj9aXtLeoXTs7f",
       "amount": 100,
@@ -54,7 +54,7 @@
     "id": "payment-1747909958839",
     "userId": "user_2vAec0ymsGPDgey61LZS5Rlz6iY",
     "payment": {
-      "payment_method": "khalti",
+      "payment_method": "nps",
       "transaction_id": "9V4YtzVYZBkdRfV4gTN7gB",
       "pidx": "BcKo2zYzaj9aXtLeoXTs7f",
       "amount": 100,
@@ -71,7 +71,7 @@
     "id": "payment-1747911874152",
     "userId": "user_2vAec0ymsGPDgey61LZS5Rlz6iY",
     "payment": {
-      "payment_method": "khalti",
+      "payment_method": "nps",
       "transaction_id": "sQGwevsGsi3FW3cCvKvvb9",
       "pidx": "ztYCKQ73GebV8yd8ZwCVFZ",
       "amount": 100,

@@ -506,7 +506,7 @@ export default function ShopCart() {
                     <span className="total">$0.00</span>
                   </div>
                   <h5 className="total-order d-flex justify-content-between align-items-center">
-                    <span>Total (Without Shipping Charges)</span>
+                    <span>Total<br />(Without Shipping Charges)</span>
                     <span className="total">
                       ${getSelectedItemsTotal().toFixed(2)}
                     </span>
@@ -521,7 +521,7 @@ export default function ShopCart() {
                         onChange={e => setIsAgreed(e.target.checked)}
                       />
                       <label htmlFor="check-agree">
-                        I agree with the
+                        I agree with the&nbsp;
                         <Link href={`/term-of-use`}>terms and conditions</Link>
                       </label>
                     </fieldset>
@@ -559,8 +559,8 @@ export default function ShopCart() {
           height: 24px;
         }
         .modern-checkbox input[type="checkbox"]:checked + .custom-checkmark {
-          background: linear-gradient(135deg, #a0a5a1 60%, #181818 100%);
-          border-color: #a0a5a1;
+          background: #fff;
+          border-color: #22c55e;
         }
         .custom-checkmark {
           display: block;
@@ -579,7 +579,7 @@ export default function ShopCart() {
           top: 3px;
           width: 6px;
           height: 12px;
-          border: solid #fff;
+          border: solid #22c55e;
           border-width: 0 3px 3px 0;
           border-radius: 2px;
           transform: rotate(45deg);

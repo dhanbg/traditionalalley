@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import KhaltiPaymentForm from "../payments/KhaltiPaymentForm";
+import NPSPaymentForm from "../payments/NPSPaymentForm";
 import { fetchDataFromApi, updateData, saveCashPaymentOrder } from "@/utils/api";
 import { useUser } from "@clerk/nextjs";
 
@@ -47,7 +47,7 @@ export default function Checkout() {
   const [productsWithOldPrice, setProductsWithOldPrice] = useState({});
 
   // Add state for selected payment method
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cod');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('nps');
 
   // Add state for form data
   const [formData, setFormData] = useState({
@@ -66,6 +66,7 @@ export default function Checkout() {
   // Add state for loading and success states
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [isLoadingProductDetails, setIsLoadingProductDetails] = useState(false);
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -216,33 +217,84 @@ export default function Checkout() {
 
   // Fetch product details for each cart item to get accurate oldPrice
   useEffect(() => {
+    let isMounted = true;
+    
     async function fetchProductDetails() {
+      if (selectedProducts.length === 0 || isLoadingProductDetails) return;
+      
+      setIsLoadingProductDetails(true);
+      
       const updatedProducts = {};
-      for (const product of selectedProducts) {
-        if (product.documentId) {
+      const productIds = selectedProducts.map(p => p.documentId).filter(Boolean);
+      
+      // Only fetch if we have products with documentIds
+      if (productIds.length === 0) {
+        setIsLoadingProductDetails(false);
+        return;
+      }
+      
+      try {
+        // Batch API calls instead of individual calls
+        const promises = selectedProducts.map(async (product) => {
+          if (!product.documentId) return null;
+          
           try {
             const productEndpoint = `/api/products?filters[documentId][$eq]=${product.documentId}`;
             const response = await fetchDataFromApi(productEndpoint);
             if (response?.data && Array.isArray(response.data) && response.data.length > 0) {
               const productData = response.data[0];
               if (productData.oldPrice) {
-                updatedProducts[product.id] = {
-                  ...product,
-                  oldPrice: parseFloat(productData.oldPrice)
+                return {
+                  id: product.id,
+                  data: {
+                    ...product,
+                    oldPrice: parseFloat(productData.oldPrice)
+                  }
                 };
               }
             }
+            return null;
           } catch (error) {
-            // Silent error handling
+            console.warn(`Failed to fetch details for product ${product.documentId}:`, error);
+            return null;
           }
+        });
+        
+        const results = await Promise.all(promises);
+        
+        // Only update state if component is still mounted
+        if (isMounted) {
+          results.forEach(result => {
+            if (result) {
+              updatedProducts[result.id] = result.data;
+            }
+          });
+          
+          setProductsWithOldPrice(prev => {
+            // Only update if there are actual changes
+            const hasChanges = Object.keys(updatedProducts).some(
+              id => !prev[id] || prev[id].oldPrice !== updatedProducts[id].oldPrice
+            );
+            
+            return hasChanges ? { ...prev, ...updatedProducts } : prev;
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching product details:", error);
+      } finally {
+        if (isMounted) {
+          setIsLoadingProductDetails(false);
         }
       }
-      setProductsWithOldPrice(updatedProducts);
     }
-    if (selectedProducts.length > 0) {
-      fetchProductDetails();
-    }
-  }, [selectedProducts]);
+    
+    fetchProductDetails();
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedProducts.map(p => `${p.id}-${p.documentId}`).join(','), isLoadingProductDetails]); // More stable dependency
 
   // Calculate subtotal: sum of oldPrice (if available) or price, times quantity
   const subtotal = selectedProducts.reduce((acc, product) => {
@@ -551,75 +603,75 @@ export default function Checkout() {
                 {/* Discount Coupons Section */}
                 <div className="discount-section" style={{ marginTop: '40px', marginBottom: '20px', borderTop: '1px solid #eaeaea', paddingTop: '20px' }}>
                   <h5 className="title" style={{ marginBottom: '15px' }}>Discount Coupons</h5>
-                  <div className="sec-discount">
-                    <Swiper
-                      dir="ltr"
-                      className="swiper tf-sw-categories"
-                      slidesPerView={2.25} // data-preview="2.25"
-                      breakpoints={{
-                        1024: {
-                          slidesPerView: 2.25, // data-tablet={3}
-                        },
-                        768: {
-                          slidesPerView: 3, // data-tablet={3}
-                        },
-                        640: {
-                          slidesPerView: 2.5, // data-mobile-sm="2.5"
-                        },
-                        0: {
-                          slidesPerView: 1.2, // data-mobile="1.2"
-                        },
-                      }}
-                      spaceBetween={20}
-                    >
-                      {discounts.map((item, index) => (
-                        <SwiperSlide key={index}>
-                          <div
-                            className={`box-discount ${
-                              activeDiscountIndex === index ? "active" : ""
-                            }`}
-                            onClick={() => setActiveDiscountIndex(index)}
-                          >
-                            <div className="discount-top">
-                              <div className="discount-off">
-                                <div className="text-caption-1">Discount</div>
-                                <span className="sale-off text-btn-uppercase">
-                                  {item.discount}
-                                </span>
-                              </div>
-                              <div className="discount-from">
-                                <p className="text-caption-1">{item.details}</p>
-                              </div>
-                            </div>
-                            <div className="discount-bot">
-                              <span className="text-btn-uppercase">
-                                {item.code}
+                <div className="sec-discount">
+                  <Swiper
+                    dir="ltr"
+                    className="swiper tf-sw-categories"
+                    slidesPerView={2.25} // data-preview="2.25"
+                    breakpoints={{
+                      1024: {
+                        slidesPerView: 2.25, // data-tablet={3}
+                      },
+                      768: {
+                        slidesPerView: 3, // data-tablet={3}
+                      },
+                      640: {
+                        slidesPerView: 2.5, // data-mobile-sm="2.5"
+                      },
+                      0: {
+                        slidesPerView: 1.2, // data-mobile="1.2"
+                      },
+                    }}
+                    spaceBetween={20}
+                  >
+                    {discounts.map((item, index) => (
+                      <SwiperSlide key={index}>
+                        <div
+                          className={`box-discount ${
+                            activeDiscountIndex === index ? "active" : ""
+                          }`}
+                          onClick={() => setActiveDiscountIndex(index)}
+                        >
+                          <div className="discount-top">
+                            <div className="discount-off">
+                              <div className="text-caption-1">Discount</div>
+                              <span className="sale-off text-btn-uppercase">
+                                {item.discount}
                               </span>
-                              <button className="tf-btn">
-                                <span className="text">Apply Code</span>
-                              </button>
                             </div>
-                          </div>{" "}
-                        </SwiperSlide>
-                      ))}
-                    </Swiper>
+                            <div className="discount-from">
+                              <p className="text-caption-1">{item.details}</p>
+                            </div>
+                          </div>
+                          <div className="discount-bot">
+                            <span className="text-btn-uppercase">
+                              {item.code}
+                            </span>
+                            <button className="tf-btn">
+                              <span className="text">Apply Code</span>
+                            </button>
+                          </div>
+                        </div>{" "}
+                      </SwiperSlide>
+                    ))}
+                  </Swiper>
                     <div className="ip-discount-code" style={{ marginTop: '15px', marginBottom: '10px' }}>
                       <input type="text" placeholder="Add voucher discount" style={{ borderRadius: '4px', borderColor: '#ddd' }} />
                       <button className="tf-btn" style={{ marginLeft: '10px' }}>
-                        <span className="text">Apply Code</span>
-                      </button>
-                    </div>
-                    <p style={{ fontSize: '13px', color: '#666', marginTop: '5px' }}>
-                      Discount code is only used for orders with a total value of
-                      products over $500.00
-                    </p>
+                      <span className="text">Apply Code</span>
+                    </button>
                   </div>
+                    <p style={{ fontSize: '13px', color: '#666', marginTop: '5px' }}>
+                    Discount code is only used for orders with a total value of
+                    products over $500.00
+                  </p>
+                </div>
                   
                   {/* Order Summary */}
                   <div className="order-summary-section" style={{ marginTop: '30px', marginBottom: '20px', borderTop: '1px solid #eaeaea', paddingTop: '20px' }}>
                     <h5 className="title" style={{ marginBottom: '15px' }}>Order Summary</h5>
-                    <div className="sec-total-price">
-                      <div className="top">
+                <div className="sec-total-price">
+                  <div className="top">
                         <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
                           <span>Subtotal</span>
                           <span>${subtotal.toFixed(2)}</span>
@@ -633,18 +685,18 @@ export default function Checkout() {
                           <span>${actualTotal.toFixed(2)}</span>
                         </div>
                         <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
-                          <span>Shipping</span>
-                          <span>Free</span>
-                        </div>
-                      </div>
-                      <div className="bottom">
-                        <h5 className="d-flex justify-content-between">
+                      <span>Shipping</span>
+                      <span>Free</span>
+                    </div>
+                  </div>
+                  <div className="bottom">
+                    <h5 className="d-flex justify-content-between">
                           <span>Grand Total</span>
-                          <span className="total-price-checkout">
+                      <span className="total-price-checkout">
                             ${actualTotal.toFixed(2)}
-                          </span>
-                        </h5>
-                      </div>
+                      </span>
+                    </h5>
+                  </div>
                     </div>
                   </div>
                 </div>
@@ -682,29 +734,29 @@ export default function Checkout() {
                     </div>
                     <div className="payment-item">
                       <label
-                        htmlFor="khalti-method"
+                        htmlFor="nps-method"
                         className="payment-header"
                         data-bs-toggle="collapse"
-                        data-bs-target="#khalti-payment"
-                        aria-controls="khalti-payment"
+                        data-bs-target="#nps-payment"
+                        aria-controls="nps-payment"
                       >
                         <input
                           type="radio"
                           name="payment-method"
                           className="tf-check-rounded"
-                          id="khalti-method"
-                          checked={selectedPaymentMethod === 'khalti'}
-                          onChange={() => setSelectedPaymentMethod('khalti')}
+                          id="nps-method"
+                          checked={selectedPaymentMethod === 'nps'}
+                          onChange={() => setSelectedPaymentMethod('nps')}
                         />
-                        <span className="text-title">Pay with Khalti</span>
+                        <span className="text-title">Pay with NPS</span>
                       </label>
                     </div>
                   </div>
                   
                   {/* Payment button container with fixed height to prevent jumping */}
                   <div style={{ marginTop: '20px', minHeight: '45px' }}>
-                    {selectedPaymentMethod === 'khalti' && (
-                      <KhaltiPaymentForm 
+                    {selectedPaymentMethod === 'nps' && (
+                      <NPSPaymentForm 
                         product={{ id: "checkout", name: "Checkout Order", price: actualTotal }} 
                         orderData={{
                           products: selectedProducts.map(product => {
