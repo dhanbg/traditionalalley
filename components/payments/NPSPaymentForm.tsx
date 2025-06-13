@@ -103,7 +103,7 @@ const NPSPaymentForm = ({ product, orderData, formData }: NPSPaymentFormProps) =
       const customerPhone = formData?.phone || "";
       
       // Generate unique merchant transaction ID
-      const merchantTxnId = `order-${product.id}-${Date.now()}-${user.id}`;
+      const merchantTxnId = `order-checkout-${Date.now()}`;
       
       const paymentRequest = {
         amount: product.price, // Amount in NPR

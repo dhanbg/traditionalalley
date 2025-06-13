@@ -6,7 +6,7 @@ import "react-range-slider-input/dist/style.css";
 import "../public/css/image-compare-viewer.min.css";
 import "../public/css/custom.css"; // Custom CSS for compare products
 import "../public/css/drift-basic.min.css"; // Drift zoom CSS
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Context from "@/context/Context";
 import CartModal from "@/components/modals/CartModal";
 import QuickView from "@/components/modals/QuickView";
@@ -24,21 +24,29 @@ import { ClerkProvider } from "@clerk/nextjs";
 
 export default function RootLayout({ children }) {
   const pathname = usePathname();
+  const lastScrollY = useRef(0);
+  const [scrollDirection, setScrollDirection] = useState("down");
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       // Import the script only on the client side
       import("bootstrap/dist/js/bootstrap.esm").then(() => {
-        // Module is imported, you can access any exported functionality if
+        // Module is imported, you can access any exported functionality if needed
+      }).catch((error) => {
+        console.warn('Bootstrap import failed:', error);
       });
     }
   }, []);
+
   useEffect(() => {
     const handleScroll = () => {
       const header = document.querySelector("header");
-      if (window.scrollY > 100) {
-        header.classList.add("header-bg");
-      } else {
-        header.classList.remove("header-bg");
+      if (header) {
+        if (window.scrollY > 100) {
+          header.classList.add("header-bg");
+        } else {
+          header.classList.remove("header-bg");
+        }
       }
     };
 
@@ -49,8 +57,6 @@ export default function RootLayout({ children }) {
       window.removeEventListener("scroll", handleScroll);
     };
   }, []); // Empty dependency array means this effect runs once on mount and cleans up on unmount
-
-  const [scrollDirection, setScrollDirection] = useState("down");
 
   useEffect(() => {
     setScrollDirection("up");
@@ -73,8 +79,6 @@ export default function RootLayout({ children }) {
       lastScrollY.current = currentScrollY;
     };
 
-    const lastScrollY = { current: window.scrollY };
-
     // Add scroll event listener
     window.addEventListener("scroll", handleScroll);
 
@@ -83,25 +87,35 @@ export default function RootLayout({ children }) {
       window.removeEventListener("scroll", handleScroll);
     };
   }, [pathname]);
+
   useEffect(() => {
     // Close any open modal
-    const bootstrap = require("bootstrap"); // dynamically import bootstrap
-    const modalElements = document.querySelectorAll(".modal.show");
-    modalElements.forEach((modal) => {
-      const modalInstance = bootstrap.Modal.getInstance(modal);
-      if (modalInstance) {
-        modalInstance.hide();
-      }
-    });
+    if (typeof window !== "undefined") {
+      try {
+        import("bootstrap").then((bootstrap) => {
+          const modalElements = document.querySelectorAll(".modal.show");
+          modalElements.forEach((modal) => {
+            const modalInstance = bootstrap.Modal.getInstance(modal);
+            if (modalInstance) {
+              modalInstance.hide();
+            }
+          });
 
-    // Close any open offcanvas
-    const offcanvasElements = document.querySelectorAll(".offcanvas.show");
-    offcanvasElements.forEach((offcanvas) => {
-      const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvas);
-      if (offcanvasInstance) {
-        offcanvasInstance.hide();
+          // Close any open offcanvas
+          const offcanvasElements = document.querySelectorAll(".offcanvas.show");
+          offcanvasElements.forEach((offcanvas) => {
+            const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvas);
+            if (offcanvasInstance) {
+              offcanvasInstance.hide();
+            }
+          });
+        }).catch((error) => {
+          console.warn('Bootstrap modal cleanup failed:', error);
+        });
+      } catch (error) {
+        console.warn('Bootstrap import error:', error);
       }
-    });
+    }
   }, [pathname]); // Runs every time the route changes
 
   useEffect(() => {
@@ -114,13 +128,20 @@ export default function RootLayout({ children }) {
       }
     }
   }, [scrollDirection]);
+
   useEffect(() => {
-    const WOW = require("@/utils/wow");
-    const wow = new WOW.default({
-      mobile: false,
-      live: false,
-    });
-    wow.init();
+    if (typeof window !== "undefined") {
+      try {
+        const WOW = require("@/utils/wow");
+        const wow = new WOW.default({
+          mobile: false,
+          live: false,
+        });
+        wow.init();
+      } catch (error) {
+        console.warn('WOW.js initialization failed:', error);
+      }
+    }
   }, [pathname]);
 
   return (

@@ -5,6 +5,11 @@ const isProtectedRoute = createRouteMatcher(["/order(.*)", "/forum(.*)", "/wish-
 const isAdminRoute = createRouteMatcher(["/dashboard(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
+  // Skip middleware for NPS webhook
+  if (req.nextUrl.pathname === '/api/nps-webhook') {
+    return NextResponse.next();
+  }
+
   if (isProtectedRoute(req)) await auth.protect();
 
   // Protect all routes starting with `/admin`
