@@ -28,40 +28,40 @@ const NPSCallbackContent = () => {
     console.log("User:", user?.id);
 
     const savePaymentData = async () => {
-      // Show user-friendly status updates
-      if (status === "SUCCESS") {
-        setProcessingStatus("✅ Payment successful! Saving your order...");
-      } else if (status === "FAILED") {
-        setProcessingStatus("❌ Payment failed");
-        setTimeout(() => {
-          window.location.href = "/?payment=failed";
-        }, 2000);
-        return;
-      } else if (status === "CANCELLED") {
-        setProcessingStatus("❌ Payment was cancelled");
-        setTimeout(() => {
-          window.location.href = "/?payment=cancelled";
-        }, 2000);
-        return;
-      } else {
-        setProcessingStatus("⏳ Verifying payment status...");
-      }
-
-      // Only require user and transaction IDs
-      if (!user || !merchantTxnId || !gatewayTxnId) {
-        console.log("Missing required data:", { 
-          user: !!user, 
-          merchantTxnId: !!merchantTxnId, 
-          gatewayTxnId: !!gatewayTxnId 
-        });
-        setProcessingStatus("❌ Missing payment information");
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 3000);
-        return;
-      }
-
       try {
+        // Show user-friendly status updates
+        if (status === "SUCCESS") {
+          setProcessingStatus("✅ Payment successful! Saving your order...");
+        } else if (status === "FAILED") {
+          setProcessingStatus("❌ Payment failed");
+          setTimeout(() => {
+            window.location.href = "/?payment=failed";
+          }, 2000);
+          return;
+        } else if (status === "CANCELLED") {
+          setProcessingStatus("❌ Payment was cancelled");
+          setTimeout(() => {
+            window.location.href = "/?payment=cancelled";
+          }, 2000);
+          return;
+        } else {
+          setProcessingStatus("⏳ Verifying payment status...");
+        }
+
+        // Only require user and transaction IDs
+        if (!user || !merchantTxnId || !gatewayTxnId) {
+          console.log("Missing required data:", { 
+            user: !!user, 
+            merchantTxnId: !!merchantTxnId, 
+            gatewayTxnId: !!gatewayTxnId 
+          });
+          setProcessingStatus("❌ Missing payment information");
+          setTimeout(() => {
+            window.location.href = "/";
+          }, 3000);
+          return;
+        }
+
         // Find the user's bag
         const currentUserData = await fetchDataFromApi(
           `/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=user_bag`
@@ -151,11 +151,33 @@ const NPSCallbackContent = () => {
             // Fetch the user bag to get the stored order data
             const bagWithPayments = await fetchDataFromApi(`/api/user-bags/${userBag.documentId}?populate=*`);
             
-            if (bagWithPayments?.data?.payments) {
+            console.log("=== DEBUGGING ORDER DATA RETRIEVAL ===");
+            console.log("Full bag data:", bagWithPayments.data);
+            console.log("Bag payload:", bagWithPayments.data?.payload);
+            console.log("Payments in payload:", bagWithPayments.data?.payload?.payments);
+            
+            // Payments are stored in payload.payments, not directly in data.payments
+            if (bagWithPayments?.data?.payload?.payments) {
+              console.log("Looking for payment with merchantTxnId:", merchantTxnId);
+              
               // Find the payment data that matches this transaction
-              const matchingPayment = bagWithPayments.data.payments.find(
-                (payment) => payment.merchantTxnId === merchantTxnId && payment.provider === "nps"
+              const matchingPayment = bagWithPayments.data.payload.payments.find(
+                (payment) => {
+                  console.log("Checking payment:", {
+                    paymentMerchantTxnId: payment.merchantTxnId,
+                    paymentProvider: payment.provider,
+                    hasOrderData: !!payment.orderData,
+                    orderDataKeys: payment.orderData ? Object.keys(payment.orderData) : null
+                  });
+                  return payment.merchantTxnId === merchantTxnId && payment.provider === "nps";
+                }
               );
+              
+              console.log("Matching payment found:", !!matchingPayment);
+              if (matchingPayment) {
+                console.log("Matching payment details:", matchingPayment);
+                console.log("Order data in matching payment:", matchingPayment.orderData);
+              }
               
               if (matchingPayment && matchingPayment.orderData) {
                 console.log("Found matching payment with order data:", matchingPayment);
@@ -165,13 +187,18 @@ const NPSCallbackContent = () => {
                 console.log("Order created successfully!");
                 
                 setProcessingStatus("✅ Order created successfully!");
+              } else if (matchingPayment && !matchingPayment.orderData) {
+                console.warn("Found matching payment but no order data");
+                setProcessingStatus("⚠️ Payment successful but order data missing from payment record");
               } else {
-                console.warn("No matching payment or order data found");
-                setProcessingStatus("⚠️ Payment successful but order data not found");
+                console.warn("No matching payment found");
+                console.log("Available payments:", bagWithPayments.data.payload.payments);
+                setProcessingStatus("⚠️ Payment successful but matching payment record not found");
               }
             } else {
-              console.warn("No payments found in user bag");
-              setProcessingStatus("⚠️ Payment successful but order data not found");
+              console.warn("No payments found in user bag payload");
+              console.log("Bag structure:", bagWithPayments.data);
+              setProcessingStatus("⚠️ Payment successful but no payments in bag");
             }
           } catch (orderError) {
             console.error("Error creating order:", orderError);
@@ -183,7 +210,11 @@ const NPSCallbackContent = () => {
         if (finalStatus === "Success" || finalStatus === "SUCCESS") {
           setTimeout(() => {
             window.location.href = "/?payment=success";
-          }, 3000); // Give more time to show order creation status
+          }, 3000); // Give time to show order creation status
+        } else if (finalStatus === "Fail" || finalStatus === "FAILED") {
+          setTimeout(() => {
+            window.location.href = "/?payment=failed";
+          }, 3000);
         } else {
           setProcessingStatus("⏳ Payment is being processed...");
           setTimeout(() => {
