@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import CartLength from "../common/CartLength";
+import CurrencySwitcher from "../common/CurrencySwitcher";
 import { UserButton, useClerk } from "@clerk/nextjs";
 import { useContextElement } from "@/context/Context";
 export default function Header1({ fullWidth = false }) {
@@ -43,6 +44,9 @@ export default function Header1({ fullWidth = false }) {
           </div>
           <div className="col-xl-3 col-md-4 col-3">
             <ul className="nav-icon d-flex justify-content-end align-items-center">
+              <li className="nav-currency">
+                <CurrencySwitcher className="header-currency-switcher" />
+              </li>
               <li className="nav-search">
                 <a
                   href="#search"

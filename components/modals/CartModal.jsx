@@ -19,6 +19,8 @@ export default function CartModal() {
     user,
     removeFromCart,
     cartRefreshKey,
+    isCartClearing,
+    cartClearedTimestamp,
   } = useContextElement();
   const { openSignIn } = useClerk();
   const [userCarts, setUserCarts] = useState([]);
@@ -91,7 +93,10 @@ export default function CartModal() {
 
   // Fetch user's carts from API
   useEffect(() => {
-    if (user) {
+    // Don't load cart if currently clearing or recently cleared (within 5 seconds)
+    const recentlyCleared = cartClearedTimestamp && (Date.now() - cartClearedTimestamp < 5000);
+    
+    if (user && !isCartClearing && !recentlyCleared) {
       const fetchUserCarts = async () => {
         try {
           setServerCartLoading(true);
@@ -183,7 +188,7 @@ export default function CartModal() {
       
       fetchUserCarts();
     }
-  }, [user, setCartProducts, cartRefreshKey]);
+  }, [user, setCartProducts, cartRefreshKey, isCartClearing, cartClearedTimestamp]);
 
   // Handle modal accessibility
   useEffect(() => {
@@ -195,12 +200,30 @@ export default function CartModal() {
       setIsModalInert(false);
       
       // Refresh cart data when modal opens
-      if (user) {
+      const recentlyCleared = cartClearedTimestamp && (Date.now() - cartClearedTimestamp < 5000);
+      
+      if (user && !isCartClearing && !recentlyCleared) {
         // Force a refresh of server cart data when the modal opens
         const refreshCartData = async () => {
           try {
             setServerCartLoading(true);
-            const cartResponse = await fetchDataFromApi(`/api/carts?populate=*`);
+            
+            // First, get the user's data to find their user_datum ID
+            const currentUserData = await fetchDataFromApi(
+              `/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=*`
+            );
+
+            if (!currentUserData?.data || currentUserData.data.length === 0) {
+              setServerCartLoading(false);
+              return;
+            }
+
+            const userData = currentUserData.data[0];
+            const userDataId = userData.id;
+            
+            const cartResponse = await fetchDataFromApi(
+              `/api/carts?filters[user_datum][id][$eq]=${userDataId}&populate=*`
+            );
             
             if (cartResponse?.data?.length > 0) {
               // Process cart data...
@@ -280,7 +303,7 @@ export default function CartModal() {
       modal.removeEventListener('show.bs.modal', handleModalShow);
       modal.removeEventListener('hidden.bs.modal', handleModalHide);
     };
-  }, [user, cartProducts]);
+  }, [user, cartProducts, isCartClearing, cartClearedTimestamp]);
 
   // For a more consistent experience, prefer serverCartProducts when available
   const displayProducts = user 

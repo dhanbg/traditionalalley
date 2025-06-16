@@ -94,8 +94,8 @@ export default async function handler(
       // Find the user bag that contains this payment
       let targetUserBag: any = null;
       for (const bag of userBagsResponse.data) {
-        if (bag.payload?.payments) {
-          const payment = bag.payload.payments.find((p: any) => 
+        if (bag.user_orders?.payments) {
+          const payment = bag.user_orders.payments.find((p: any) => 
             p.merchantTxnId === merchantTxnId || 
             p.gatewayReferenceNo === transactionData.GatewayReferenceNo
           );
@@ -118,7 +118,7 @@ export default async function handler(
       }
 
       // STEP 3: Check if this transaction has already been processed
-      const existingPayments = targetUserBag.payload?.payments || [];
+      const existingPayments = targetUserBag.user_orders?.payments || [];
       const existingPayment = existingPayments.find((payment: any) => 
         payment.merchantTxnId === merchantTxnId && payment.webhook_processed === true
       );

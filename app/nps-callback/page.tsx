@@ -2,14 +2,16 @@
 import { useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useEffect, Suspense, useState } from "react";
-import { fetchDataFromApi, updateUserBagWithPayment, saveNPSPaymentOrder } from "@/utils/api";
+import { fetchDataFromApi, updateUserBagWithPayment } from "@/utils/api";
 const { generateLocalTimestamp } = require("@/utils/timezone");
 import type { NPSPaymentData } from "@/types/nps";
+import { useContextElement } from "@/context/Context";
 
 // Wrapper component that uses searchParams
 const NPSCallbackContent = () => {
   const searchParams = useSearchParams();
   const { user } = useUser();
+  const { clearPurchasedItemsFromCart } = useContextElement();
   const [isProcessing, setIsProcessing] = useState(true);
   const [processingStatus, setProcessingStatus] = useState("Processing your payment...");
 
@@ -153,15 +155,15 @@ const NPSCallbackContent = () => {
             
             console.log("=== DEBUGGING ORDER DATA RETRIEVAL ===");
             console.log("Full bag data:", bagWithPayments.data);
-            console.log("Bag payload:", bagWithPayments.data?.payload);
-            console.log("Payments in payload:", bagWithPayments.data?.payload?.payments);
+            console.log("Bag user_orders:", bagWithPayments.data?.user_orders);
+            console.log("Payments in user_orders:", bagWithPayments.data?.user_orders?.payments);
             
-            // Payments are stored in payload.payments, not directly in data.payments
-            if (bagWithPayments?.data?.payload?.payments) {
+            // Payments are stored in user_orders.payments, not directly in data.payments
+            if (bagWithPayments?.data?.user_orders?.payments) {
               console.log("Looking for payment with merchantTxnId:", merchantTxnId);
               
               // Find the payment data that matches this transaction
-              const matchingPayment = bagWithPayments.data.payload.payments.find(
+              const matchingPayment = bagWithPayments.data.user_orders.payments.find(
                 (payment) => {
                   console.log("Checking payment:", {
                     paymentMerchantTxnId: payment.merchantTxnId,
@@ -182,21 +184,45 @@ const NPSCallbackContent = () => {
               if (matchingPayment && matchingPayment.orderData) {
                 console.log("Found matching payment with order data:", matchingPayment);
                 
-                // Create the order using the stored order data
-                await saveNPSPaymentOrder(userBag.documentId, matchingPayment.orderData, paymentData);
-                console.log("Order created successfully!");
+                // TODO: Order creation functionality removed
+                console.log("Order data available:", matchingPayment.orderData);
+                console.log("Payment data:", paymentData);
                 
-                setProcessingStatus("✅ Order created successfully!");
+                // Clear only the purchased items from the cart after successful payment
+                setProcessingStatus("🛒 Removing purchased items from cart...");
+                console.log("=== ATTEMPTING TO CLEAR PURCHASED ITEMS FROM CART AFTER PAYMENT ===");
+                console.log("User ID:", user?.id);
+                console.log("ClearPurchasedItemsFromCart function available:", typeof clearPurchasedItemsFromCart);
+                console.log("Order data products:", matchingPayment.orderData?.products);
+                console.log("Full order data:", JSON.stringify(matchingPayment.orderData, null, 2));
+                
+                try {
+                  // Extract the purchased products from the order data
+                  const purchasedProducts = matchingPayment.orderData?.products || [];
+                  console.log("Purchased products to remove from cart:", purchasedProducts.length);
+                  
+                  if (purchasedProducts.length > 0) {
+                    await clearPurchasedItemsFromCart(purchasedProducts);
+                    console.log("✅ Purchased items cleared successfully from cart after payment");
+                  } else {
+                    console.log("⚠️ No purchased products found in order data");
+                  }
+                } catch (cartError) {
+                  console.error("❌ Error clearing purchased items from cart after payment:", cartError);
+                  // Don't fail the entire process if cart clearing fails
+                }
+                
+                setProcessingStatus("✅ Payment successful!");
               } else if (matchingPayment && !matchingPayment.orderData) {
                 console.warn("Found matching payment but no order data");
                 setProcessingStatus("⚠️ Payment successful but order data missing from payment record");
               } else {
                 console.warn("No matching payment found");
-                console.log("Available payments:", bagWithPayments.data.payload.payments);
+                console.log("Available payments:", bagWithPayments.data.user_orders.payments);
                 setProcessingStatus("⚠️ Payment successful but matching payment record not found");
               }
             } else {
-              console.warn("No payments found in user bag payload");
+              console.warn("No payments found in user bag user_orders");
               console.log("Bag structure:", bagWithPayments.data);
               setProcessingStatus("⚠️ Payment successful but no payments in bag");
             }

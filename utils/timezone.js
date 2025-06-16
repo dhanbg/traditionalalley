@@ -56,8 +56,8 @@ const formatForDisplay = (timestamp, timezone = DEFAULT_TIMEZONE) => {
   });
 };
 
-// CommonJS exports for Node.js compatibility
-module.exports = {
+// ES6 exports for browser compatibility
+export {
   generateLocalTimestamp,
   formatToLocalTime,
   formatForDisplay,

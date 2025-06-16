@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import CountdownTimer from "../common/Countdown";
+import PriceDisplay from "../common/PriceDisplay";
 import { useContextElement } from "@/context/Context";
 import { useClerk } from "@clerk/nextjs";
 import { getImageUrl } from "@/utils/api";
@@ -331,12 +332,13 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
         <Link href={`/product-detail/${safeProduct.id}`} className="title link">
           {safeProduct.title}
         </Link>
-        <span className="price">
-          {safeProduct.oldPrice && (
-            <span className="old-price">${safeProduct.oldPrice.toFixed(2)}</span>
-          )}{" "}
-          ${safeProduct.price?.toFixed(2)}
-        </span>
+        <PriceDisplay 
+          price={safeProduct.price}
+          oldPrice={safeProduct.oldPrice}
+          className="product-card-price"
+          size="normal"
+          showConversion={false}
+        />
         {safeProduct.colors && Array.isArray(safeProduct.colors) && safeProduct.colors.length > 0 && (
           <ul className="list-color-product">
             {safeProduct.colors.map((color, index) => {

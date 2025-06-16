@@ -1,8 +1,8 @@
-export const openCartModal = () => {
-  const bootstrap = require("bootstrap"); // dynamically import bootstrap
+export const openCartModal = async () => {
+  const bootstrap = await import("bootstrap"); // dynamically import bootstrap
   const modalElements = document.querySelectorAll(".modal.show");
   modalElements.forEach((modal) => {
-    const modalInstance = bootstrap.Modal.getInstance(modal);
+    const modalInstance = bootstrap.default.Modal.getInstance(modal);
     if (modalInstance) {
       modalInstance.hide();
     }
@@ -11,12 +11,12 @@ export const openCartModal = () => {
   // Close any open offcanvas
   const offcanvasElements = document.querySelectorAll(".offcanvas.show");
   offcanvasElements.forEach((offcanvas) => {
-    const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvas);
+    const offcanvasInstance = bootstrap.default.Offcanvas.getInstance(offcanvas);
     if (offcanvasInstance) {
       offcanvasInstance.hide();
     }
   });
-  var myModal = new bootstrap.Modal(document.getElementById("shoppingCart"), {
+  var myModal = new bootstrap.default.Modal(document.getElementById("shoppingCart"), {
     keyboard: false,
   });
 

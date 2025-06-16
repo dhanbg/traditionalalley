@@ -1,5 +1,5 @@
 import { API_URL, STRAPI_API_TOKEN, PRODUCTS_API } from "./urls"
-const { generateLocalTimestamp } = require('./timezone');
+import { generateLocalTimestamp } from './timezone';
 
 // Helper function to construct proper image URLs
 export const getImageUrl = (imageObj) => {
@@ -468,7 +468,7 @@ export const fetchFilterOptions = async (categoryTitle) => {
 
 export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) => {
   try {
-    // First, fetch the current user-bag to get existing payload
+    // First, fetch the current user-bag to get existing user_orders
     const currentBagResponse = await fetchDataFromApi(`/api/user-bags/${userBagDocumentId}?populate=*`);
     
     if (!currentBagResponse || !currentBagResponse.data) {
@@ -476,10 +476,10 @@ export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) =
     }
 
     const currentBag = currentBagResponse.data;
-    const currentPayload = currentBag.payload || {};
+    const currentUserOrders = currentBag.user_orders || {};
     
     // Initialize payments array if it doesn't exist
-    const existingPayments = currentPayload.payments || [];
+    const existingPayments = currentUserOrders.payments || [];
     
     // Check if a payment with the same merchantTxnId already exists (NPS only)
     let existingPaymentIndex = -1;
@@ -506,16 +506,16 @@ export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) =
       console.log(`Adding new payment with identifier: ${paymentIdentifier}`);
     }
     
-    // Update the payload
-    const updatedPayload = {
-      ...currentPayload,
+    // Update the user_orders
+    const updatedUserOrders = {
+      ...currentUserOrders,
       payments: updatedPayments
     };
 
-    // Update the user-bag with the new payload
+    // Update the user-bag with the new user_orders
     const updatePayload = {
       data: {
-        payload: updatedPayload
+        user_orders: updatedUserOrders
       }
     };
 
@@ -530,101 +530,3 @@ export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) =
   }
 };
 
-export const saveCashPaymentOrder = async (userBagDocumentId, orderData) => {
-  try {
-    // First, fetch the current user-bag to get existing user_orders
-    const currentBagResponse = await fetchDataFromApi(`/api/user-bags/${userBagDocumentId}?populate=*`);
-    
-    if (!currentBagResponse || !currentBagResponse.data) {
-      throw new Error(`User bag with documentId ${userBagDocumentId} not found`);
-    }
-
-    const currentBag = currentBagResponse.data;
-    const currentUserOrders = currentBag.user_orders || {};
-    
-    // Create new order entry with local timezone timestamp
-    const localTimestamp = generateLocalTimestamp();
-    
-    const newOrder = {
-      products: orderData.products,
-      shippingPrice: orderData.shippingPrice || 5,
-      receiver_details: orderData.receiver_details
-    };
-
-    // Update user_orders with new order
-    const updatedUserOrders = {
-      ...currentUserOrders,
-      [localTimestamp]: newOrder
-    };
-
-    // Update the user-bag with the new order
-    const updatePayload = {
-      data: {
-        user_orders: updatedUserOrders
-      }
-    };
-
-    const updateResponse = await updateData(`/api/user-bags/${userBagDocumentId}`, updatePayload);
-    
-    console.log('Successfully saved cash payment order:', updateResponse);
-    return updateResponse;
-    
-  } catch (error) {
-    console.error('Error saving cash payment order:', error);
-    throw error;
-  }
-};
-
-export const saveNPSPaymentOrder = async (userBagDocumentId, orderData, paymentData) => {
-  try {
-    // First, fetch the current user-bag to get existing user_orders
-    const currentBagResponse = await fetchDataFromApi(`/api/user-bags/${userBagDocumentId}?populate=*`);
-    
-    if (!currentBagResponse || !currentBagResponse.data) {
-      throw new Error(`User bag with documentId ${userBagDocumentId} not found`);
-    }
-
-    const currentBag = currentBagResponse.data;
-    const currentUserOrders = currentBag.user_orders || {};
-    
-    // Create new order entry with local timezone timestamp
-    const localTimestamp = generateLocalTimestamp();
-    
-    const newOrder = {
-      products: orderData.products,
-      shippingPrice: orderData.shippingPrice || 5,
-      receiver_details: orderData.receiver_details,
-      payment_info: {
-        provider: "nps",
-        processId: paymentData.processId,
-        merchantTxnId: paymentData.merchantTxnId,
-        gatewayReferenceNo: paymentData.gatewayReferenceNo,
-        amount: paymentData.amount,
-        status: paymentData.status,
-        timestamp: paymentData.timestamp
-      }
-    };
-
-    // Update user_orders with new order
-    const updatedUserOrders = {
-      ...currentUserOrders,
-      [localTimestamp]: newOrder
-    };
-
-    // Update the user-bag with the new order
-    const updatePayload = {
-      data: {
-        user_orders: updatedUserOrders
-      }
-    };
-
-    const updateResponse = await updateData(`/api/user-bags/${userBagDocumentId}`, updatePayload);
-    
-    console.log('Successfully saved NPS payment order:', updateResponse);
-    return updateResponse;
-    
-  } catch (error) {
-    console.error('Error saving NPS payment order:', error);
-    throw error;
-  }
-};

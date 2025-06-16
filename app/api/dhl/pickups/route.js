@@ -1,102 +1,128 @@
 import { NextResponse } from 'next/server';
-import DHLExpressService from '@/lib/dhl-service';
+import DHLExpressService from '../../../../lib/dhl-service.js';
 
 export async function POST(request) {
   try {
-    const dhlService = new DHLExpressService();
-    const pickupData = await request.json();
-
-    const pickup = await dhlService.createPickupRequest(pickupData);
+    const body = await request.json();
     
+    // Validate required fields
+    const requiredFields = ['plannedPickupDateAndTime', 'address', 'contact'];
+    for (const field of requiredFields) {
+      if (!body[field]) {
+        return NextResponse.json(
+          { error: `Missing required field: ${field}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate address fields
+    const addressFields = ['countryCode', 'cityName', 'postalCode', 'addressLine1'];
+    for (const field of addressFields) {
+      if (!body.address[field]) {
+        return NextResponse.json(
+          { error: `Missing required field: address.${field}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate contact fields
+    const contactFields = ['fullName', 'email', 'phone'];
+    for (const field of contactFields) {
+      if (!body.contact[field]) {
+        return NextResponse.json(
+          { error: `Missing required field: contact.${field}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(body.contact.email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400 }
+      );
+    }
+
+    // Validate pickup date
+    const pickupDate = new Date(body.plannedPickupDateAndTime);
+    const today = new Date();
+    
+    if (pickupDate <= today) {
+      return NextResponse.json(
+        { error: 'Pickup date must be in the future' },
+        { status: 400 }
+      );
+    }
+
+    // Validate pickup time format (should be ISO string or valid date)
+    if (isNaN(pickupDate.getTime())) {
+      return NextResponse.json(
+        { error: 'Invalid pickup date format. Use ISO 8601 format (e.g., 2024-01-15T10:00:00Z)' },
+        { status: 400 }
+      );
+    }
+
+    const dhlService = new DHLExpressService();
+    const pickup = await dhlService.requestPickup(body);
+
     return NextResponse.json({
       success: true,
       data: pickup
     });
 
   } catch (error) {
-    console.error('DHL Create Pickup API Error:', error);
+    console.error('DHL Pickup API Error:', error);
+    
     return NextResponse.json(
       { 
-        success: false, 
-        error: error.message || 'Failed to create pickup request' 
+        error: 'Failed to request pickup',
+        message: error.message,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
       { status: 500 }
     );
   }
 }
 
-export async function PATCH(request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const pickupRequestId = searchParams.get('pickupRequestId');
-    
-    if (!pickupRequestId) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Missing required parameter: pickupRequestId' 
-        },
-        { status: 400 }
-      );
-    }
-
-    const dhlService = new DHLExpressService();
-    const pickupData = await request.json();
-
-    const updatedPickup = await dhlService.updatePickupRequest(pickupRequestId, pickupData);
-    
-    return NextResponse.json({
-      success: true,
-      data: updatedPickup
-    });
-
-  } catch (error) {
-    console.error('DHL Update Pickup API Error:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error.message || 'Failed to update pickup request' 
+export async function GET() {
+  return NextResponse.json(
+    { 
+      message: 'DHL Pickup API',
+      endpoints: {
+        'POST /api/dhl/pickups': 'Request a DHL Express pickup'
       },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const pickupRequestId = searchParams.get('pickupRequestId');
-    
-    if (!pickupRequestId) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Missing required parameter: pickupRequestId' 
+      sampleRequest: {
+        plannedPickupDateAndTime: '2024-01-15T10:00:00Z',
+        closeTime: '18:00',
+        location: 'reception',
+        locationType: 'business',
+        address: {
+          countryCode: 'NP',
+          cityName: 'Kathmandu',
+          postalCode: '44600',
+          addressLine1: '123 Main Street',
+          addressLine2: 'Building A',
+          addressLine3: 'Floor 2'
         },
-        { status: 400 }
-      );
-    }
-
-    const dhlService = new DHLExpressService();
-    const cancelParams = {
-      cancelTime: searchParams.get('cancelTime') || new Date().toISOString()
-    };
-
-    const cancelResult = await dhlService.cancelPickupRequest(pickupRequestId, cancelParams);
-    
-    return NextResponse.json({
-      success: true,
-      data: cancelResult
-    });
-
-  } catch (error) {
-    console.error('DHL Cancel Pickup API Error:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error.message || 'Failed to cancel pickup request' 
-      },
-      { status: 500 }
-    );
-  }
+        contact: {
+          fullName: 'John Doe',
+          email: 'john@example.com',
+          phone: '+977-1-1234567',
+          companyName: 'Example Company'
+        },
+        shipments: [
+          {
+            shipmentID: 'SHIP123',
+            productCode: 'P',
+            packages: 2
+          }
+        ]
+      }
+    },
+    { status: 200 }
+  );
 } 

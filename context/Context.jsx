@@ -5,6 +5,13 @@ import { openWistlistModal } from "@/utils/openWishlist";
 import { useUser } from "@clerk/nextjs";
 import { API_URL, STRAPI_API_TOKEN, CARTS_API, USER_CARTS_API, PRODUCT_BY_DOCUMENT_ID_API } from "@/utils/urls";
 import { fetchDataFromApi, createData, updateData, deleteData, getImageUrl } from "@/utils/api";
+import { 
+  detectUserCountry, 
+  getExchangeRate, 
+  getCurrencyInfo, 
+  saveCurrencyPreference, 
+  getSavedCurrencyPreference 
+} from "@/utils/currency";
 
 import React, { useContext, useEffect, useState } from "react";
 const dataContext = React.createContext();
@@ -22,6 +29,14 @@ export default function Context({ children }) {
   const [totalPrice, setTotalPrice] = useState(0);
   const [cartRefreshKey, setCartRefreshKey] = useState(0);
   const [selectedCartItems, setSelectedCartItems] = useState({});
+  const [isCartClearing, setIsCartClearing] = useState(false);
+  const [cartClearedTimestamp, setCartClearedTimestamp] = useState(null);
+  
+  // Currency and location state
+  const [userCountry, setUserCountry] = useState('US');
+  const [userCurrency, setUserCurrency] = useState('USD');
+  const [exchangeRate, setExchangeRate] = useState(null);
+  const [isLoadingCurrency, setIsLoadingCurrency] = useState(true);
   
   // Function to toggle selection of cart items
   const toggleCartItemSelection = (id) => {
@@ -51,7 +66,104 @@ export default function Context({ children }) {
       return acc + (parseFloat(product.price) * product.quantity);
     }, 0);
   };
+
+  // Currency management functions
+  const initializeCurrency = async () => {
+    setIsLoadingCurrency(true);
+    
+    try {
+      // Get saved preferences first
+      const savedPrefs = getSavedCurrencyPreference();
+      
+      // If no saved preferences, detect country
+      let country = savedPrefs.country;
+      let currency = savedPrefs.currency;
+      
+      if (!country || country === 'US') {
+        country = await detectUserCountry();
+      }
+      
+      // Set currency based on country
+      if (country === 'NP' && currency !== 'NPR') {
+        currency = 'NPR';
+      } else if (country !== 'NP' && currency !== 'USD') {
+        currency = 'USD';
+      }
+      
+      // Get exchange rate if needed
+      let rate = null;
+      if (currency === 'NPR' || country === 'NP') {
+        rate = await getExchangeRate();
+      }
+      
+      // Update state
+      setUserCountry(country);
+      setUserCurrency(currency);
+      setExchangeRate(rate);
+      
+      // Save preferences
+      saveCurrencyPreference(currency, country);
+      
+    } catch (error) {
+      console.error('Failed to initialize currency:', error);
+      // Fallback to USD
+      setUserCountry('US');
+      setUserCurrency('USD');
+      setExchangeRate(null);
+    } finally {
+      setIsLoadingCurrency(false);
+    }
+  };
+
+  const setCurrency = async (newCurrency) => {
+    setIsLoadingCurrency(true);
+    
+    try {
+      let rate = exchangeRate;
+      
+      // Get exchange rate if switching to NPR
+      if (newCurrency === 'NPR' && !rate) {
+        rate = await getExchangeRate();
+        setExchangeRate(rate);
+      }
+      
+      setUserCurrency(newCurrency);
+      saveCurrencyPreference(newCurrency, userCountry);
+      
+    } catch (error) {
+      console.error('Failed to set currency:', error);
+    } finally {
+      setIsLoadingCurrency(false);
+    }
+  };
+
+  const refreshExchangeRate = async () => {
+    try {
+      const rate = await getExchangeRate();
+      setExchangeRate(rate);
+      return rate;
+    } catch (error) {
+      console.error('Failed to refresh exchange rate:', error);
+      return exchangeRate;
+    }
+  };
   
+  // Initialize currency on mount
+  useEffect(() => {
+    initializeCurrency();
+  }, []);
+
+  // Refresh exchange rate periodically (every hour)
+  useEffect(() => {
+    if (userCurrency === 'NPR') {
+      const interval = setInterval(() => {
+        refreshExchangeRate();
+      }, 3600000); // 1 hour
+
+      return () => clearInterval(interval);
+    }
+  }, [userCurrency]);
+
   // Load compare items from localStorage on mount and validate them
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -185,7 +297,7 @@ export default function Context({ children }) {
     if (isAddedToCartProducts(id)) {
       if (isModal) {
         // Still open the cart modal to show them the product is already there
-        openCartModal();
+        openCartModal().catch(console.error);
       }
       return; // Exit function early
     }
@@ -389,7 +501,7 @@ export default function Context({ children }) {
                 
                 if (isModal) {
                   setCartRefreshKey(prev => prev + 1);
-                  openCartModal();
+                  openCartModal().catch(console.error);
                 }
                 
                 return;
@@ -412,7 +524,7 @@ export default function Context({ children }) {
           
           if (isModal) {
             setCartRefreshKey(prev => prev + 1);
-            openCartModal();
+            openCartModal().catch(console.error);
           }
           
           return;
@@ -527,7 +639,7 @@ export default function Context({ children }) {
           
           if (isModal) {
             setCartRefreshKey(prev => prev + 1);
-            openCartModal();
+            openCartModal().catch(console.error);
           }
         } catch (createCartError) {
           console.error("Error creating cart entry:", createCartError);
@@ -537,7 +649,7 @@ export default function Context({ children }) {
           
           if (isModal) {
             setCartRefreshKey(prev => prev + 1);
-            openCartModal();
+            openCartModal().catch(console.error);
           }
         }
       } catch (error) {
@@ -548,7 +660,7 @@ export default function Context({ children }) {
         
         if (isModal) {
           setCartRefreshKey(prev => prev + 1);
-          openCartModal();
+          openCartModal().catch(console.error);
         }
       }
     } else {
@@ -557,7 +669,7 @@ export default function Context({ children }) {
       
       if (isModal) {
         setCartRefreshKey(prev => prev + 1);
-        openCartModal();
+        openCartModal().catch(console.error);
       }
     }
   };
@@ -901,11 +1013,32 @@ export default function Context({ children }) {
   
   // Load cart data from backend when user logs in
   useEffect(() => {
-    if (user) {
+    // Don't load cart if currently clearing or recently cleared (within 5 seconds)
+    const recentlyCleared = cartClearedTimestamp && (Date.now() - cartClearedTimestamp < 5000);
+    
+    if (user && !isCartClearing && !recentlyCleared) {
       const loadCartFromBackend = async () => {
         try {
+          // First, get the user's data to find their user_datum ID
+          const currentUserData = await fetchDataFromApi(
+            `/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=*`
+          );
+
+          if (!currentUserData?.data || currentUserData.data.length === 0) {
+            console.log("User data not found, cannot load cart");
+            setCartProducts([]);
+            return;
+          }
+
+          const userData = currentUserData.data[0];
+          const userDataId = userData.id;
+          
+          console.log("Loading cart for user data ID:", userDataId);
+          
           // Fetch user-specific carts from backend
-          const cartResponse = await fetchDataFromApi(`/api/carts?populate=*`);
+          const cartResponse = await fetchDataFromApi(
+            `/api/carts?filters[user_datum][id][$eq]=${userDataId}&populate=*`
+          );
           
           console.log("Cart response from backend:", cartResponse);
           
@@ -994,7 +1127,7 @@ export default function Context({ children }) {
       // User logged out, clear the cart
       setCartProducts([]);
     }
-  }, [user]);
+  }, [user, isCartClearing, cartClearedTimestamp]);
 
   // Remove localStorage saving for cart data
   useEffect(() => {
@@ -1113,8 +1246,23 @@ export default function Context({ children }) {
         }
       }
       
-      // If all direct approaches failed, get all carts and find the one with matching product
-      const cartResponse = await fetchDataFromApi(`/api/carts?populate=*`);
+      // If all direct approaches failed, get user-specific carts and find the one with matching product
+      // First, get the user's data to find their user_datum ID
+      const currentUserData = await fetchDataFromApi(
+        `/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=*`
+      );
+
+      if (!currentUserData?.data || currentUserData.data.length === 0) {
+        console.log("User data not found, cannot remove cart item");
+        return;
+      }
+
+      const userData = currentUserData.data[0];
+      const userDataId = userData.id;
+      
+      const cartResponse = await fetchDataFromApi(
+        `/api/carts?filters[user_datum][id][$eq]=${userDataId}&populate=*`
+      );
       
       if (cartResponse?.data?.length > 0) {
         // Find the cart item that matches our product
@@ -1169,6 +1317,290 @@ export default function Context({ children }) {
       console.error("Context: Error deleting cart item from backend:", error);
     }
   };
+
+  // Function to clear specific purchased items from cart (both frontend and backend)
+  const clearPurchasedItemsFromCart = async (purchasedProducts) => {
+    try {
+      console.log("🚨🚨🚨 CLEAR PURCHASED ITEMS FUNCTION CALLED 🚨🚨🚨");
+      console.log("=== STARTING PURCHASED ITEMS CLEAR PROCESS ===");
+      console.log("Purchased products to remove:", purchasedProducts?.length || 0);
+      console.log("Purchased products data:", JSON.stringify(purchasedProducts, null, 2));
+      console.log("Current cart products:", cartProducts.length);
+      console.log("User ID:", user?.id);
+      
+      if (!purchasedProducts || purchasedProducts.length === 0) {
+        console.log("No purchased products provided, nothing to clear");
+        return;
+      }
+      
+      // Set flag to prevent cart reloading during clearing process
+      setIsCartClearing(true);
+      
+      // If user is not logged in, only clear frontend
+      if (!user?.id) {
+        console.log("No user logged in, clearing purchased items from frontend only");
+        const remainingProducts = cartProducts.filter(cartProduct => {
+          return !purchasedProducts.some(purchasedProduct => 
+            cartProduct.documentId === purchasedProduct.documentId
+          );
+        });
+        setCartProducts(remainingProducts);
+        console.log("✅ Frontend purchased items cleared");
+        return;
+      }
+      
+      // First, get the user's data to find their user_datum ID
+      console.log("🔍 Fetching user data to find user_datum ID...");
+      const currentUserData = await fetchDataFromApi(
+        `/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=*`
+      );
+
+      if (!currentUserData?.data || currentUserData.data.length === 0) {
+        console.log("User data not found, clearing purchased items from frontend only");
+        const remainingProducts = cartProducts.filter(cartProduct => {
+          return !purchasedProducts.some(purchasedProduct => 
+            cartProduct.documentId === purchasedProduct.documentId
+          );
+        });
+        setCartProducts(remainingProducts);
+        return;
+      }
+
+      const userData = currentUserData.data[0];
+      const userDataId = userData.id;
+      
+      console.log("Found user data ID:", userDataId);
+      
+      // Get cart items for this specific user
+      const cartResponse = await fetchDataFromApi(
+        `/api/carts?filters[user_datum][id][$eq]=${userDataId}&populate=*`
+      );
+      
+      if (cartResponse?.data?.length > 0) {
+        console.log(`Found ${cartResponse.data.length} cart items in backend for user ${user.id}`);
+        
+        // Filter cart items to find only the purchased ones
+        const cartItemsToDelete = cartResponse.data.filter(cartItem => {
+          const cartProductId = cartItem.attributes?.product?.data?.attributes?.documentId;
+          return purchasedProducts.some(purchasedProduct => 
+            purchasedProduct.documentId === cartProductId
+          );
+        });
+        
+        console.log(`Found ${cartItemsToDelete.length} purchased items to delete from backend`);
+        
+        if (cartItemsToDelete.length > 0) {
+          // Delete only the purchased cart items from backend
+          const deletePromises = cartItemsToDelete.map(async (cartItem) => {
+            try {
+              // Try to delete by documentId first if available
+              const cartDocumentId = cartItem.attributes?.documentId;
+              if (cartDocumentId) {
+                await deleteData(`/api/carts/${cartDocumentId}`);
+                console.log(`✅ Deleted purchased cart item with documentId: ${cartDocumentId}`);
+              } else {
+                // Fallback to ID-based deletion
+                await deleteData(`/api/carts/${cartItem.id}`);
+                console.log(`✅ Deleted purchased cart item with ID: ${cartItem.id}`);
+              }
+            } catch (error) {
+              console.error(`❌ Error deleting cart item ${cartItem.id}:`, error);
+              // Continue with other deletions even if one fails
+            }
+          });
+          
+          // Wait for all deletions to complete
+          await Promise.allSettled(deletePromises);
+          console.log("🗑️ Backend purchased items deletion completed");
+        }
+        
+        // Verify deletion by checking remaining cart items
+        console.log("🔍 Verifying purchased items deletion...");
+        const verificationResponse = await fetchDataFromApi(
+          `/api/carts?filters[user_datum][id][$eq]=${userDataId}&populate=*`
+        );
+        
+        const remainingItems = verificationResponse?.data?.length || 0;
+        console.log(`✅ Verification complete: ${remainingItems} items remaining in backend cart`);
+      } else {
+        console.log("No cart items found in backend for user:", user.id);
+      }
+      
+      // Update frontend state to remove only purchased products
+      const remainingProducts = cartProducts.filter(cartProduct => {
+        return !purchasedProducts.some(purchasedProduct => 
+          cartProduct.documentId === purchasedProduct.documentId
+        );
+      });
+      
+      setCartProducts(remainingProducts);
+      
+      // Also update selected cart items to remove purchased ones
+      const updatedSelectedItems = { ...selectedCartItems };
+      purchasedProducts.forEach(purchasedProduct => {
+        delete updatedSelectedItems[purchasedProduct.documentId];
+      });
+      setSelectedCartItems(updatedSelectedItems);
+      
+      console.log("✅ Frontend purchased items cleared");
+      
+      // Set timestamp to prevent cart reloading for a period
+      setCartClearedTimestamp(Date.now());
+      
+      console.log("=== PURCHASED ITEMS CLEAR PROCESS COMPLETED ===");
+    } catch (error) {
+      console.error("❌ Error clearing purchased items from cart:", error);
+      // Even if backend clearing fails, try to clear frontend
+      const remainingProducts = cartProducts.filter(cartProduct => {
+        return !purchasedProducts.some(purchasedProduct => 
+          cartProduct.documentId === purchasedProduct.documentId
+        );
+      });
+      setCartProducts(remainingProducts);
+    } finally {
+      // Add a longer delay before resetting the clearing flag to prevent immediate reloading
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      console.log("🔓 Resetting cart clearing flag after 3 second delay");
+      setIsCartClearing(false);
+    }
+  };
+
+  // Function to clear all items from cart (both frontend and backend) - kept for backward compatibility
+  const clearCart = async () => {
+    try {
+      console.log("=== STARTING CART CLEAR PROCESS ===");
+      console.log("Current cart products:", cartProducts.length);
+      console.log("User ID:", user?.id);
+      
+      // Set flag to prevent cart reloading during clearing process
+      setIsCartClearing(true);
+      
+      // Clear the frontend state immediately for responsive UI
+      setCartProducts([]);
+      setSelectedCartItems({});
+      console.log("✅ Frontend cart state cleared");
+      
+      // If user is not logged in, no backend cleanup needed
+      if (!user?.id) {
+        console.log("No user logged in, cart cleared from frontend only");
+        return;
+      }
+      
+      // First, get the user's data to find their user_datum ID
+      console.log("🔍 Fetching user data to find user_datum ID...");
+      const currentUserData = await fetchDataFromApi(
+        `/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=*`
+      );
+
+      if (!currentUserData?.data || currentUserData.data.length === 0) {
+        console.log("❌ User data not found, cannot clear backend cart");
+        return;
+      }
+
+      const userData = currentUserData.data[0];
+      const userDataId = userData.id;
+      
+      console.log("✅ Found user data ID:", userDataId);
+      console.log("🔍 Fetching cart items for deletion...");
+      
+      // Get cart items for this specific user
+      const cartResponse = await fetchDataFromApi(
+        `/api/carts?filters[user_datum][id][$eq]=${userDataId}&populate=*`
+      );
+      
+      console.log("Cart response:", cartResponse);
+      
+      if (cartResponse?.data?.length > 0) {
+        console.log(`🗑️ Found ${cartResponse.data.length} cart items in backend to delete for user ${user.id}`);
+        
+        // Delete all cart items from backend using the same method as removeFromCart
+        for (let i = 0; i < cartResponse.data.length; i++) {
+          const cartItem = cartResponse.data[i];
+          try {
+            console.log(`🗑️ [${i + 1}/${cartResponse.data.length}] Deleting cart item:`, {
+              id: cartItem.id,
+              documentId: cartItem.documentId,
+              attributes: cartItem.attributes
+            });
+            
+            // Use the same deletion logic as removeFromCart
+            const cartDocumentId = cartItem.attributes?.documentId;
+            if (cartDocumentId) {
+              try {
+                await deleteData(`/api/carts/${cartDocumentId}`);
+                console.log(`✅ [${i + 1}/${cartResponse.data.length}] Deleted cart item with documentId: ${cartDocumentId}`);
+              } catch (documentIdError) {
+                // Fallback to ID-based deletion
+                await deleteData(`/api/carts/${cartItem.id}`);
+                console.log(`✅ [${i + 1}/${cartResponse.data.length}] Deleted cart item with ID: ${cartItem.id} (fallback)`);
+              }
+            } else {
+              // Direct ID-based deletion
+              await deleteData(`/api/carts/${cartItem.id}`);
+              console.log(`✅ [${i + 1}/${cartResponse.data.length}] Deleted cart item with ID: ${cartItem.id}`);
+            }
+          } catch (error) {
+            console.error(`❌ [${i + 1}/${cartResponse.data.length}] Error deleting cart item ${cartItem.id}:`, error);
+            // Continue with other deletions even if one fails
+          }
+        }
+        
+        console.log("✅ All cart item deletions attempted");
+        
+        // Add a longer delay to ensure backend is fully updated
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log("⏳ Waited 1000ms for backend to update");
+        
+        // Verify deletion by checking if any items remain
+        console.log("🔍 Verifying cart is empty...");
+        const verificationResponse = await fetchDataFromApi(
+          `/api/carts?filters[user_datum][id][$eq]=${userDataId}&populate=*`
+        );
+        
+        if (verificationResponse?.data?.length > 0) {
+          console.warn(`⚠️ Warning: ${verificationResponse.data.length} cart items still exist after deletion!`);
+          console.log("Remaining items:", verificationResponse.data);
+          
+          // Try to delete remaining items one more time
+          for (const remainingItem of verificationResponse.data) {
+            try {
+              await deleteData(`/api/carts/${remainingItem.id}`);
+              console.log(`🔄 Retry deleted cart item with ID: ${remainingItem.id}`);
+            } catch (retryError) {
+              console.error(`❌ Retry failed for cart item ${remainingItem.id}:`, retryError);
+            }
+          }
+        } else {
+          console.log("✅ Verification complete: Cart is empty in backend");
+        }
+        
+        console.log("Cart clearing completed for user:", user.id);
+      } else {
+        console.log("ℹ️ No cart items found in backend for user:", user.id);
+      }
+      
+      // Set timestamp to prevent cart reloading for a period
+      setCartClearedTimestamp(Date.now());
+      
+      console.log("=== CART CLEAR PROCESS COMPLETED ===");
+    } catch (error) {
+      console.error("❌ Error clearing cart:", error);
+      // Even if backend clearing fails, keep the frontend cleared
+      setCartProducts([]);
+      setSelectedCartItems({});
+      setCartClearedTimestamp(Date.now());
+    } finally {
+      // Add a longer delay before resetting the clearing flag to prevent immediate reloading
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      console.log("🔓 Resetting cart clearing flag after 3 second delay");
+      setIsCartClearing(false);
+    }
+  };
+
+  // Debug function for testing cart clearing (only in development)
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    window.debugClearCart = clearCart;
+  }
 
   // Helper function to get the most appropriate image URL, preferring smaller formats for better performance
   const getOptimizedImageUrl = (imageObj) => {
@@ -1244,6 +1676,10 @@ export default function Context({ children }) {
     setCompareItem,
     updateQuantity,
     removeFromCart,
+    clearCart,
+    clearPurchasedItemsFromCart,
+    isCartClearing,
+    cartClearedTimestamp,
     getOptimizedImageUrl,
     cartRefreshKey,
     setCartRefreshKey,
@@ -1252,6 +1688,13 @@ export default function Context({ children }) {
     selectAllCartItems,
     getSelectedCartItems,
     getSelectedItemsTotal,
+    // Currency management
+    userCountry,
+    userCurrency,
+    exchangeRate,
+    isLoadingCurrency,
+    setCurrency,
+    refreshExchangeRate,
   };
   return (
     <dataContext.Provider value={contextElement}>

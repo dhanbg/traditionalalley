@@ -1,114 +1,84 @@
 import { NextResponse } from 'next/server';
-import DHLExpressService from '@/lib/dhl-service';
+import DHLExpressService from '../../../../lib/dhl-service.js';
 
-export async function GET(request) {
+export async function POST(request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const dhlService = new DHLExpressService();
+    const body = await request.json();
+    
+    // Validate required fields
+    const requiredFields = ['originAddress', 'destinationAddress', 'packages', 'plannedShippingDate'];
+    for (const field of requiredFields) {
+      if (!body[field]) {
+        return NextResponse.json(
+          { error: `Missing required field: ${field}` },
+          { status: 400 }
+        );
+      }
+    }
 
-    const params = {
-      originCountryCode: searchParams.get('originCountryCode') || 'NP',
-      originCityName: searchParams.get('originCityName') || 'Kathmandu',
-      destinationCountryCode: searchParams.get('destinationCountryCode'),
-      destinationCityName: searchParams.get('destinationCityName'),
-      weight: parseFloat(searchParams.get('weight')),
-      length: parseFloat(searchParams.get('length')),
-      width: parseFloat(searchParams.get('width')),
-      height: parseFloat(searchParams.get('height')),
-      plannedShippingDate: searchParams.get('plannedShippingDate') || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      isCustomsDeclarable: searchParams.get('isCustomsDeclarable') === 'true',
-      unitOfMeasurement: searchParams.get('unitOfMeasurement') || 'metric'
-    };
+    // Validate address fields
+    const addressFields = ['countryCode', 'cityName', 'postalCode'];
+    for (const address of ['originAddress', 'destinationAddress']) {
+      for (const field of addressFields) {
+        if (!body[address][field]) {
+          return NextResponse.json(
+            { error: `Missing required field: ${address}.${field}` },
+            { status: 400 }
+          );
+        }
+      }
+    }
 
-    // Validate required parameters
-    if (!params.destinationCountryCode || !params.destinationCityName || !params.weight) {
+    // Validate packages
+    if (!Array.isArray(body.packages) || body.packages.length === 0) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: {
-            message: 'Missing required parameters: destinationCountryCode, destinationCityName, weight',
-            code: 'MISSING_PARAMS'
-          }
-        },
+        { error: 'At least one package is required' },
         { status: 400 }
       );
     }
 
-    // Log request parameters for debugging
-    console.log('DHL Rates Request Parameters:', params);
-
-    const result = await dhlService.getRatesOnepiece(params);
-    
-    // Check if the result indicates an error
-    if (!result.success) {
-      console.error('DHL Rates API Error:', result.error);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: result.error
-        },
-        { status: result.status || 500 }
-      );
+    const packageFields = ['weight', 'length', 'width', 'height'];
+    for (let i = 0; i < body.packages.length; i++) {
+      for (const field of packageFields) {
+        if (!body.packages[i][field] || body.packages[i][field] <= 0) {
+          return NextResponse.json(
+            { error: `Invalid or missing field: packages[${i}].${field}` },
+            { status: 400 }
+          );
+        }
+      }
     }
-    
+
+    const dhlService = new DHLExpressService();
+    const rates = await dhlService.getRates(body);
+
     return NextResponse.json({
       success: true,
-      data: result.data
+      data: rates
     });
 
   } catch (error) {
     console.error('DHL Rates API Error:', error);
+    
     return NextResponse.json(
       { 
-        success: false, 
-        error: {
-          message: error.message || 'Failed to retrieve rates',
-          code: 'API_ERROR'
-        }
+        error: 'Failed to get shipping rates',
+        message: error.message,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
       { status: 500 }
     );
   }
 }
 
-export async function POST(request) {
-  try {
-    const dhlService = new DHLExpressService();
-    const shipmentData = await request.json();
-
-    // Log request data for debugging
-    console.log('DHL Multi-piece Rates Request Data:', JSON.stringify(shipmentData).substring(0, 500) + '...');
-
-    const result = await dhlService.getRatesMultipiece(shipmentData);
-    
-    // Check if the result indicates an error
-    if (!result.success) {
-      console.error('DHL Multi-piece Rates API Error:', result.error);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: result.error
-        },
-        { status: result.status || 500 }
-      );
-    }
-    
-    return NextResponse.json({
-      success: true,
-      data: result.data
-    });
-
-  } catch (error) {
-    console.error('DHL Multi-piece Rates API Error:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: {
-          message: error.message || 'Failed to retrieve multi-piece rates',
-          code: 'API_ERROR'
-        }
-      },
-      { status: 500 }
-    );
-  }
+export async function GET() {
+  return NextResponse.json(
+    { 
+      message: 'DHL Rates API',
+      endpoints: {
+        'POST /api/dhl/rates': 'Get shipping rates for a shipment'
+      }
+    },
+    { status: 200 }
+  );
 } 

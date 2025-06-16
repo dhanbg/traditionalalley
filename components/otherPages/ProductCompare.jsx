@@ -419,7 +419,7 @@ export default function ProductCompare() {
                     style={{height: '46px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 22px', width: 'auto', minWidth: 140}}
                     onClick={() => {
                       if (isAddedToCartProducts && isAddedToCartProducts(product.documentId || product.id)) {
-                        openCartModal();
+                        openCartModal().catch(console.error);
                       } else {
                         handleAddToCart(product.documentId || product.id);
                       }

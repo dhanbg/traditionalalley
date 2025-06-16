@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import NPSPaymentForm from "../payments/NPSPaymentForm";
-import { fetchDataFromApi, updateData, saveCashPaymentOrder } from "@/utils/api";
+import { fetchDataFromApi, updateData } from "@/utils/api";
 import { useUser } from "@clerk/nextjs";
 
 const discounts = [
@@ -33,7 +33,8 @@ export default function Checkout() {
     totalPrice, 
     getSelectedCartItems, 
     getSelectedItemsTotal,
-    selectedCartItems
+    selectedCartItems,
+    clearPurchasedItemsFromCart
   } = useContextElement();
   
   const { user } = useUser();
@@ -186,10 +187,32 @@ export default function Checkout() {
         receiver_details: receiver_details
       };
 
-      // Save the order using the utility function
-      await saveCashPaymentOrder(userBagDocumentId, orderData);
+      // TODO: Order saving functionality removed
+      console.log('Order data prepared:', orderData);
       
       setOrderSuccess(true);
+      
+      // Clear only the purchased items from cart after successful cash on delivery order
+      console.log("=== ATTEMPTING TO CLEAR PURCHASED ITEMS FROM CART AFTER COD ORDER ===");
+      console.log("User ID:", user?.id);
+      console.log("ClearPurchasedItemsFromCart function available:", typeof clearPurchasedItemsFromCart);
+      console.log("Order data products:", orderData.products);
+      
+      try {
+        // Extract the purchased products from the order data
+        const purchasedProducts = orderData.products || [];
+        console.log("Purchased products to remove from cart:", purchasedProducts.length);
+        
+        if (purchasedProducts.length > 0) {
+          await clearPurchasedItemsFromCart(purchasedProducts);
+          console.log("✅ Purchased items cleared successfully from cart after COD order");
+        } else {
+          console.log("⚠️ No purchased products found in order data");
+        }
+      } catch (cartError) {
+        console.error("❌ Error clearing purchased items from cart after COD order:", cartError);
+        // Don't fail the entire process if cart clearing fails
+      }
       
       // Reset form after successful order
       setFormData({
@@ -205,7 +228,7 @@ export default function Checkout() {
         note: ''
       });
 
-      alert('Order placed successfully! You will receive a confirmation shortly.');
+      alert('Order functionality temporarily disabled.');
       
     } catch (error) {
       console.error('Error processing cash payment order:', error);
