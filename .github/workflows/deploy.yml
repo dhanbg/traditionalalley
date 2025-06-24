@@ -42,6 +42,19 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
+      - name: Free up disk space on VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
+            echo "Cleaning up disk space before deployment..."
+            sudo docker system prune -af
+            sudo rm -rf /usr/local/lib/android || true
+            sudo apt-get clean
+            sudo rm -rf /opt/ghc || true
+            sudo rm -rf /usr/share/dotnet || true
+            sudo rm -rf /usr/local/share/boost || true
+            df -h
+          ENDSSH
+
       - name: Pull and run Docker image on VPS
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
