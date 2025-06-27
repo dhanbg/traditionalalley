@@ -32,6 +32,10 @@ export default function Context({ children }) {
   const [isCartClearing, setIsCartClearing] = useState(false);
   const [cartClearedTimestamp, setCartClearedTimestamp] = useState(null);
   
+  // Add cart loading state
+  const [isCartLoading, setIsCartLoading] = useState(true); // Start as loading
+  const [cartLoadedOnce, setCartLoadedOnce] = useState(false);
+  
   // Currency and location state
   const [userCountry, setUserCountry] = useState('US');
   const [userCurrency, setUserCurrency] = useState('USD');
@@ -152,6 +156,20 @@ export default function Context({ children }) {
   useEffect(() => {
     initializeCurrency();
   }, []);
+
+  // Initialize cart loading state based on user presence
+  useEffect(() => {
+    // If no user, we don't need to load cart from backend
+    if (!user) {
+      setIsCartLoading(false);
+      setCartLoadedOnce(true);
+    } else {
+      // User exists but cart hasn't been loaded yet, ensure loading state is true
+      if (!cartLoadedOnce) {
+        setIsCartLoading(true);
+      }
+    }
+  }, [user, cartLoadedOnce]);
 
   // Refresh exchange rate periodically (every hour)
   useEffect(() => {
@@ -1017,9 +1035,17 @@ export default function Context({ children }) {
     // Don't load cart if currently clearing or recently cleared (within 5 seconds)
     const recentlyCleared = cartClearedTimestamp && (Date.now() - cartClearedTimestamp < 5000);
     
+    // Reset cart loaded state when user changes
+    if (user && !cartLoadedOnce) {
+      setIsCartLoading(true);
+    }
+    
     if (user && !isCartClearing && !recentlyCleared) {
       const loadCartFromBackend = async () => {
         try {
+          // Set loading state when starting to load cart
+          setIsCartLoading(true);
+          
           // First, get the user's data to find their user_datum ID
           const currentUserData = await fetchDataFromApi(
             `/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=*`
@@ -1028,6 +1054,8 @@ export default function Context({ children }) {
           if (!currentUserData?.data || currentUserData.data.length === 0) {
             console.log("User data not found, cannot load cart");
             setCartProducts([]);
+            setIsCartLoading(false);
+            setCartLoadedOnce(true);
             return;
           }
 
@@ -1113,13 +1141,17 @@ export default function Context({ children }) {
             
             console.log("Setting cart products:", backendCarts);
             setCartProducts(backendCarts);
-      } else {
+          } else {
             setCartProducts([]);
           }
         } catch (error) {
           console.error("Error loading cart from backend:", error);
           // Set empty cart on error to avoid UI issues
           setCartProducts([]);
+        } finally {
+          // Always set loading to false and mark as loaded once
+          setIsCartLoading(false);
+          setCartLoadedOnce(true);
         }
       };
       
@@ -1127,6 +1159,9 @@ export default function Context({ children }) {
     } else {
       // User logged out, clear the cart
       setCartProducts([]);
+      // If no user, we're not loading and consider it loaded
+      setIsCartLoading(false);
+      setCartLoadedOnce(true);
     }
   }, [user, isCartClearing, cartClearedTimestamp]);
 
@@ -1689,6 +1724,9 @@ export default function Context({ children }) {
     selectAllCartItems,
     getSelectedCartItems,
     getSelectedItemsTotal,
+    // Cart loading states
+    isCartLoading,
+    cartLoadedOnce,
     // Currency management
     userCountry,
     userCurrency,
