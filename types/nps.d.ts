@@ -134,7 +134,6 @@ export interface NPSPaymentData {
   gatewayReferenceNo?: string;
   amount: number;
   status: "Success" | "Fail" | "Pending";
-  transactionDate?: string;
   institution?: string;
   instrument?: string;
   serviceCharge?: string;

@@ -76,7 +76,7 @@ export async function POST(req: Request) {
 
 async function handleUserCreated(userData: any) {
   try {
-    const { id, first_name, last_name, image_url } = userData;
+    const { id, first_name, last_name, image_url, email_addresses } = userData;
 
     if (!id) {
       console.error("Missing Clerk user ID in created event", userData);
@@ -90,6 +90,7 @@ async function handleUserCreated(userData: any) {
         firstName: first_name || "",
         lastName: last_name || "",
         avatar: image_url || "",
+        email: email_addresses?.[0]?.email_address || "",
       },
     });
 
@@ -111,7 +112,7 @@ async function handleUserCreated(userData: any) {
 
 async function handleUserUpdated(userData: any) {
   try {
-    const { id, first_name, last_name, image_url } = userData;
+    const { id, first_name, last_name, image_url, email_addresses } = userData;
 
     if (!id) {
       console.error("Missing Clerk user ID in updated event", userData);
@@ -129,6 +130,7 @@ async function handleUserUpdated(userData: any) {
           firstName: first_name || strapiUser.firstName,
           lastName: last_name || strapiUser.lastName,
           avatar: image_url || strapiUser.avatar,
+          email: email_addresses?.[0]?.email_address || strapiUser.email || "",
         },
       });
       console.log(`Updated Strapi user for Clerk ID: ${id}`, result);

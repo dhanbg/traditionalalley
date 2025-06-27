@@ -117,45 +117,55 @@ export default function PriceDisplay({
 
         /* Size variations */
         .price-display-small .current-price {
-          font-size: 14px;
+          font-size: 14px !important;
+          line-height: 1.4 !important;
         }
 
         .price-display-small .old-price {
-          font-size: 12px;
+          font-size: 12px !important;
+          line-height: 1.4 !important;
         }
 
         .price-display-small .conversion-text {
-          font-size: 10px;
+          font-size: 10px !important;
+          line-height: 1.4 !important;
         }
 
         .price-display-small .discount-badge {
-          font-size: 9px;
+          font-size: 9px !important;
           padding: 1px 4px;
+          line-height: 1.2 !important;
         }
 
         .price-display-normal .current-price {
-          font-size: 16px;
+          font-size: 16px !important;
+          line-height: 1.4 !important;
         }
 
         .price-display-normal .old-price {
-          font-size: 14px;
+          font-size: 14px !important;
+          line-height: 1.4 !important;
         }
 
         .price-display-large .current-price {
-          font-size: 24px;
+          font-size: 24px !important;
+          line-height: 1.4 !important;
         }
 
         .price-display-large .old-price {
-          font-size: 20px;
+          font-size: 20px !important;
+          line-height: 1.4 !important;
         }
 
         .price-display-large .conversion-text {
-          font-size: 14px;
+          font-size: 14px !important;
+          line-height: 1.4 !important;
         }
 
         .price-display-large .discount-badge {
-          font-size: 12px;
+          font-size: 12px !important;
           padding: 4px 8px;
+          line-height: 1.2 !important;
         }
 
         /* Responsive adjustments */

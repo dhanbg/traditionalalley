@@ -152,8 +152,9 @@ export default function CurrencySwitcher({ className = "" }) {
           background: white;
           cursor: pointer;
           transition: all 0.2s ease;
-          font-size: 14px;
+          font-size: 14px !important;
           min-width: 80px;
+          line-height: 1.4 !important;
         }
 
         .currency-switcher-trigger:hover {
@@ -172,10 +173,11 @@ export default function CurrencySwitcher({ className = "" }) {
         .currency-code {
           font-weight: 500;
           color: #333;
-          font-size: 14px;
+          font-size: 14px !important;
           min-width: 40px;
           display: flex;
           align-items: center;
+          line-height: 1.4 !important;
         }
 
         .currency-arrow {
@@ -234,16 +236,81 @@ export default function CurrencySwitcher({ className = "" }) {
           align-items: center;
         }
 
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
+        /* Mobile flag only styling - for nav positioning */
+        .mobile-flag-only {
           .currency-switcher-trigger {
-            padding: 6px 10px;
+            gap: 0;
+            padding: 6px;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            justify-content: center;
+            align-items: center;
+            min-width: auto;
+            transition: all 0.2s ease;
+          }
+
+          .currency-switcher-trigger:hover {
+            background: rgba(255, 255, 255, 1);
+            border-color: rgba(0, 0, 0, 0.25);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          }
+
+          .currency-code,
+          .currency-arrow {
+            display: none;
+          }
+
+          .currency-flag {
+            width: 18px;
+            height: 14px;
+          }
+
+          .currency-switcher-dropdown {
+            min-width: 120px;
+            left: -20px;
+          }
+        }
+
+        /* Responsive adjustments for regular currency switcher */
+        @media (max-width: 768px) {
+          .currency-switcher:not(.mobile-flag-only) .currency-switcher-trigger {
+            padding: 6px 8px;
             font-size: 13px;
-            min-width: 70px;
+            min-width: auto;
+            width: auto;
+          }
+
+          /* Hide currency code and arrow on small devices - show only flag */
+          .currency-switcher:not(.mobile-flag-only) .currency-code,
+          .currency-switcher:not(.mobile-flag-only) .currency-arrow {
+            display: none;
+          }
+
+          .currency-switcher:not(.mobile-flag-only) .currency-switcher-trigger {
+            gap: 0;
+            padding: 8px;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            justify-content: center;
+            align-items: center;
+          }
+
+          .currency-switcher:not(.mobile-flag-only) .currency-flag {
+            width: 18px;
+            height: 14px;
           }
 
           .currency-option {
             padding: 10px;
+          }
+
+          /* Adjust dropdown positioning for smaller trigger */
+          .currency-switcher:not(.mobile-flag-only) .currency-switcher-dropdown {
+            min-width: 120px;
           }
         }
       `}</style>

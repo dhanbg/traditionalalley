@@ -3,22 +3,37 @@ import crypto from "crypto";
 
 // NPS API Configuration
 export const npsConfig = {
-  // Sandbox URLs from official NPS documentation
-  baseURL: process.env.NPS_BASE_URL || 'https://apisandbox.nepalpayment.com',
-  gatewayURL: process.env.NPS_GATEWAY_URL || 'https://gatewaysandbox.nepalpayment.com/Payment/Index',
+  // Production URLs - Nepal Payment Solution
+  baseURL: process.env.NPS_BASE_URL || 'https://apigateway.nepalpayment.com',
+  gatewayURL: process.env.NPS_GATEWAY_URL || 'https://gateway.nepalpayment.com/payment/index',
   
-  // Merchant credentials from Traditional Alley document
-  merchantId: process.env.NPS_MERCHANT_ID || '7536',
-  merchantName: process.env.NPS_MERCHANT_NAME || 'Alley',
+  // Sandbox URLs (Test Environment) - Commented for reference
+  // baseURL: process.env.NPS_BASE_URL || 'https://apisandbox.nepalpayment.com',
+  // gatewayURL: process.env.NPS_GATEWAY_URL || 'https://gatewaysandbox.nepalpayment.com/Payment/Index',
   
-  // API credentials for Basic Auth
-  apiUsername: process.env.NPS_API_USERNAME || 'Alley',
-  apiPassword: process.env.NPS_API_PASSWORD || 'Alley@111',
+  // Production merchant credentials
+  merchantId: process.env.NPS_MERCHANT_ID || '530',
+  merchantName: process.env.NPS_MERCHANT_NAME || 'traditionalapiuser',
   
-  // Gateway API Secret Key for signature generation
-  secretKey: process.env.NPS_SECRET_KEY || 'Key@123',
+  // Test merchant credentials (Commented for reference)
+  // merchantId: process.env.NPS_MERCHANT_ID || '7536',
+  // merchantName: process.env.NPS_MERCHANT_NAME || 'Alley',
   
-  // Test bank credentials (for testing purposes)
+  // Production API credentials for Basic Auth
+  apiUsername: process.env.NPS_API_USERNAME || 'traditionalapiuser',
+  apiPassword: process.env.NPS_API_PASSWORD || 'D9v@eX#2LmZ!q',
+  
+  // Test API credentials (Commented for reference)
+  // apiUsername: process.env.NPS_API_USERNAME || 'Alley',
+  // apiPassword: process.env.NPS_API_PASSWORD || 'Alley@111',
+  
+  // Production Gateway API Secret Key for signature generation
+  secretKey: process.env.NPS_SECRET_KEY || 'T$5nLz#o1Xp@',
+  
+  // Test secret key (Commented for reference)
+  // secretKey: process.env.NPS_SECRET_KEY || 'Key@123',
+  
+  // Test bank credentials (for testing purposes only)
   testBank: {
     username: 'test',
     password: 'test',

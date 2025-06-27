@@ -55,23 +55,40 @@ export default function QuickView() {
     }
   }, [quickViewItem]);
 
-  const openModalSizeChoice = () => {
-    const bootstrap = require("bootstrap"); // dynamically import bootstrap
-    var myModal = new bootstrap.Modal(document.getElementById("size-guide"), {
-      keyboard: false,
-    });
+  const openModalSizeChoice = async () => {
+    try {
+      const bootstrap = await import("bootstrap/dist/js/bootstrap.esm.js");
+      
+      // Check if Modal is available
+      const Modal = bootstrap.Modal || bootstrap.default?.Modal;
+      if (!Modal) {
+        console.error("Bootstrap Modal is not available");
+        return;
+      }
+      
+      const sizeGuideElement = document.getElementById("size-guide");
+      if (!sizeGuideElement) {
+        console.error("Size guide modal element not found");
+        return;
+      }
+      
+      const myModal = new Modal(sizeGuideElement, {
+        keyboard: false,
+      });
 
-    myModal.show();
-    document
-      .getElementById("size-guide")
-      .addEventListener("hidden.bs.modal", () => {
+      myModal.show();
+      sizeGuideElement.addEventListener("hidden.bs.modal", () => {
         myModal.hide();
       });
-    const backdrops = document.querySelectorAll(".modal-backdrop");
-    if (backdrops.length > 1) {
-      // Apply z-index to the last backdrop
-      const lastBackdrop = backdrops[backdrops.length - 1];
-      lastBackdrop.style.zIndex = "1057";
+      
+      const backdrops = document.querySelectorAll(".modal-backdrop");
+      if (backdrops.length > 1) {
+        // Apply z-index to the last backdrop
+        const lastBackdrop = backdrops[backdrops.length - 1];
+        lastBackdrop.style.zIndex = "1057";
+      }
+    } catch (error) {
+      console.error("Error opening size guide modal:", error);
     }
   };
 

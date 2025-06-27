@@ -443,7 +443,8 @@ export default function Context({ children }) {
                 firstName: user.firstName || user.username || "User",
                 lastName: user.lastName || "",
                 clerkUserId: user.id,
-                avatar: user.imageUrl || ""
+                avatar: user.imageUrl || "",
+                email: user.emailAddresses?.[0]?.emailAddress || ""
               }
             };
             

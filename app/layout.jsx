@@ -33,12 +33,19 @@ export default function RootLayout({ children }) {
     }
   }, []);
   useEffect(() => {
+    // Skip header effects for dashboard and admin pages
+    if (pathname.includes('/dashboard') || pathname.includes('/admin')) {
+      return;
+    }
+
     const handleScroll = () => {
       const header = document.querySelector("header");
+      if (header) { // Add null check
       if (window.scrollY > 100) {
         header.classList.add("header-bg");
       } else {
         header.classList.remove("header-bg");
+        }
       }
     };
 
@@ -48,11 +55,16 @@ export default function RootLayout({ children }) {
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
-  }, []); // Empty dependency array means this effect runs once on mount and cleans up on unmount
+  }, [pathname]); // Add pathname dependency
 
   const [scrollDirection, setScrollDirection] = useState("down");
 
   useEffect(() => {
+    // Skip scroll direction tracking for dashboard and admin pages
+    if (pathname.includes('/dashboard') || pathname.includes('/admin')) {
+      return;
+    }
+
     setScrollDirection("up");
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
@@ -85,35 +97,56 @@ export default function RootLayout({ children }) {
   }, [pathname]);
   useEffect(() => {
     // Close any open modal
-    const bootstrap = require("bootstrap"); // dynamically import bootstrap
-    const modalElements = document.querySelectorAll(".modal.show");
-    modalElements.forEach((modal) => {
-      const modalInstance = bootstrap.Modal.getInstance(modal);
-      if (modalInstance) {
-        modalInstance.hide();
-      }
-    });
+    const closeModalsAndOffcanvas = async () => {
+      try {
+        const bootstrap = await import("bootstrap/dist/js/bootstrap.esm.js");
+        
+        // Check if Modal is available
+        const Modal = bootstrap.Modal || bootstrap.default?.Modal;
+        if (Modal) {
+          const modalElements = document.querySelectorAll(".modal.show");
+          modalElements.forEach((modal) => {
+            const modalInstance = Modal.getInstance(modal);
+            if (modalInstance) {
+              modalInstance.hide();
+            }
+          });
+        }
 
-    // Close any open offcanvas
-    const offcanvasElements = document.querySelectorAll(".offcanvas.show");
-    offcanvasElements.forEach((offcanvas) => {
-      const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvas);
-      if (offcanvasInstance) {
-        offcanvasInstance.hide();
+        // Close any open offcanvas
+        const Offcanvas = bootstrap.Offcanvas || bootstrap.default?.Offcanvas;
+        if (Offcanvas) {
+          const offcanvasElements = document.querySelectorAll(".offcanvas.show");
+          offcanvasElements.forEach((offcanvas) => {
+            const offcanvasInstance = Offcanvas.getInstance(offcanvas);
+            if (offcanvasInstance) {
+              offcanvasInstance.hide();
+            }
+          });
+        }
+      } catch (error) {
+        console.error("Error closing modals and offcanvas:", error);
       }
-    });
+    };
+    
+    closeModalsAndOffcanvas();
   }, [pathname]); // Runs every time the route changes
 
   useEffect(() => {
+    // Skip header effects for dashboard and admin pages
+    if (pathname.includes('/dashboard') || pathname.includes('/admin')) {
+      return;
+    }
+
     const header = document.querySelector("header");
-    if (header) {
+    if (header) { // This already has null check, good
       if (scrollDirection == "up") {
         header.style.top = "0px";
       } else {
         header.style.top = "-185px";
       }
     }
-  }, [scrollDirection]);
+  }, [scrollDirection, pathname]);
   useEffect(() => {
     const WOW = require("@/utils/wow");
     const wow = new WOW.default({

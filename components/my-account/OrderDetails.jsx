@@ -1,45 +1,173 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import { useUser } from "@clerk/nextjs";
+import { useSearchParams } from "next/navigation";
+import { fetchDataFromApi, getImageUrl, getOptimizedImageUrl } from "@/utils/api";
+
 export default function OrderDetails() {
-  const [activeTab, setActiveTab] = useState(1);
+  const { user } = useUser();
+  const searchParams = useSearchParams();
+  const orderId = searchParams.get('orderId');
+  
+  const [activeTab, setActiveTab] = useState(2); // Start with Item Details tab
+  const [orderData, setOrderData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [productDetails, setProductDetails] = useState([]);
+
+  useEffect(() => {
+    const fetchOrderDetails = async () => {
+      if (!user || !orderId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Fetch user data with user_bag populated
+        const userDataResponse = await fetchDataFromApi(
+          `/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=user_bag`
+        );
+
+        if (userDataResponse?.data && userDataResponse.data.length > 0) {
+          const userData = userDataResponse.data[0];
+          const userBag = userData.user_bag;
+
+          if (userBag && userBag.user_orders && userBag.user_orders.payments) {
+            // Find the specific order
+            const order = userBag.user_orders.payments.find(
+              payment => payment.merchantTxnId === orderId || payment.processId === orderId
+            );
+
+            if (order && order.status === "Success") {
+              setOrderData(order);
+              
+              // Fetch product details for each product in the order
+              if (order.orderData?.products) {
+                const productPromises = order.orderData.products.map(async (product) => {
+                  try {
+                    const productResponse = await fetchDataFromApi(
+                      `/api/products?filters[documentId][$eq]=${product.documentId}&populate=*`
+                    );
+                    return {
+                      ...product,
+                      details: productResponse?.data?.[0] || null
+                    };
+                  } catch (error) {
+                    console.error(`Error fetching product ${product.documentId}:`, error);
+                    return { ...product, details: null };
+                  }
+                });
+
+                const productsWithDetails = await Promise.all(productPromises);
+                setProductDetails(productsWithDetails);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching order details:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrderDetails();
+  }, [user, orderId]);
+
+  const formatDate = (timestamp) => {
+    return new Date(timestamp).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getOrderNumber = () => {
+    if (!orderData) return "N/A";
+    return orderData.merchantTxnId?.split('-').pop() || 
+           orderData.processId?.split('_').pop() || 
+           "Unknown";
+  };
+
+  const getFirstProductImage = () => {
+    const firstProduct = productDetails[0];
+    if (firstProduct?.details?.imgSrc) {
+      return getOptimizedImageUrl(firstProduct.details.imgSrc);
+    }
+    return "/images/products/default-product.jpg";
+  };
+
+  const getFirstProductName = () => {
+    const firstProduct = productDetails[0];
+    return firstProduct?.details?.title || "Product";
+  };
+
+  if (loading) {
+    return (
+      <div className="my-account-content">
+        <div className="account-order-details">
+          <div className="text-center">Loading order details...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!orderData) {
+    return (
+      <div className="my-account-content">
+        <div className="account-order-details">
+          <div className="text-center">
+            <h4>Order not found</h4>
+            <p>The requested order could not be found.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="my-account-content">
       <div className="account-order-details">
         <div className="wd-form-order">
           <div className="order-head">
-            <figure className="img-product">
+            <figure className="img-product" style={{ width: '80px', height: '100px', border: '1px solid var(--line)', borderRadius: '3px', overflow: 'hidden' }}>
               <Image
                 alt="product"
-                src="/images/products/womens/women-1.jpg"
-                width={600}
-                height={800}
+                src={getFirstProductImage()}
+                width={80}
+                height={100}
+                style={{ objectFit: 'cover', width: '100%', height: '100%' }}
               />
             </figure>
             <div className="content">
-              <div className="badge">In Progress</div>
-              <h6 className="mt-8 fw-5">Order #17493</h6>
+              <div className="badge">Success</div>
+              <h6 className="mt-8 fw-5">Order #{getOrderNumber()}</h6>
             </div>
           </div>
           <div className="tf-grid-layout md-col-2 gap-15">
             <div className="item">
-              <div className="text-2 text_black-2">Item</div>
-              <div className="text-2 mt_4 fw-6">Fashion</div>
+              <div className="text-2 text_black-2">Items</div>
+              <div className="text-2 mt_4 fw-6">{productDetails.length} Product{productDetails.length !== 1 ? 's' : ''}</div>
             </div>
             <div className="item">
-              <div className="text-2 text_black-2">Courier</div>
-              <div className="text-2 mt_4 fw-6">Ribbed modal T-shirt</div>
+              <div className="text-2 text_black-2">Payment Method</div>
+              <div className="text-2 mt_4 fw-6">{orderData.provider?.toUpperCase() || 'Online Payment'}</div>
             </div>
             <div className="item">
-              <div className="text-2 text_black-2">Start Time</div>
+              <div className="text-2 text_black-2">Order Date</div>
               <div className="text-2 mt_4 fw-6">
-                04 September 2024, 13:30:23
+                {formatDate(orderData.timestamp)}
               </div>
             </div>
             <div className="item">
-              <div className="text-2 text_black-2">Address</div>
+              <div className="text-2 text_black-2">Delivery Address</div>
               <div className="text-2 mt_4 fw-6">
-                1234 Fashion Street, Suite 567, New York
+                {orderData.orderData?.receiver_details?.address ? 
+                  `${orderData.orderData.receiver_details.address.street}, ${orderData.orderData.receiver_details.address.city}` :
+                  'Address not available'
+                }
               </div>
             </div>
           </div>
@@ -135,37 +263,51 @@ export default function OrderDetails() {
                   activeTab == 2 ? "active" : ""
                 } `}
               >
-                <div className="order-head">
-                  <figure className="img-product">
-                    <Image
-                      alt="product"
-                      src="/images/products/womens/women-1.jpg"
-                      width={600}
-                      height={800}
-                    />
-                  </figure>
-                  <div className="content">
-                    <div className="text-2 fw-6">Ribbed modal T-shirt</div>
-                    <div className="mt_4">
-                      <span className="fw-6">Price :</span> $28.95
-                    </div>
-                    <div className="mt_4">
-                      <span className="fw-6">Size :</span> XL
+                {productDetails.map((product, index) => (
+                  <div key={index} className={`order-head ${index > 0 ? 'mt-20' : ''}`}>
+                                         <figure className="img-product" style={{ width: '80px', height: '100px', border: '1px solid var(--line)', borderRadius: '3px', overflow: 'hidden' }}>
+                       <Image
+                         alt="product"
+                         src={product.details?.imgSrc ? getOptimizedImageUrl(product.details.imgSrc) : "/images/products/default-product.jpg"}
+                         width={80}
+                         height={100}
+                         style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                       />
+                     </figure>
+                    <div className="content">
+                                             <div className="text-2 fw-6">{product.details?.title || 'Product Name'}</div>
+                      <div className="mt_4">
+                        <span className="fw-6">Price :</span> ${product.unitPrice}
+                      </div>
+                      <div className="mt_4">
+                        <span className="fw-6">Size :</span> {product.size}
+                      </div>
+                      <div className="mt_4">
+                        <span className="fw-6">Color :</span> {product.color}
+                      </div>
+                      <div className="mt_4">
+                        <span className="fw-6">Quantity :</span> {product.quantity}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <ul>
+                ))}
+                
+                <ul className="mt-20">
                   <li className="d-flex justify-content-between text-2">
-                    <span>Total Price</span>
-                    <span className="fw-6">$28.95</span>
+                    <span>Subtotal</span>
+                    <span className="fw-6">${orderData.orderData?.products?.reduce((sum, p) => sum + p.subtotal, 0) || 0}</span>
+                  </li>
+                  <li className="d-flex justify-content-between text-2 mt_4">
+                    <span>Shipping</span>
+                    <span className="fw-6">${orderData.orderData?.shippingPrice || 0}</span>
                   </li>
                   <li className="d-flex justify-content-between text-2 mt_4 pb_8 line-bt">
                     <span>Total Discounts</span>
-                    <span className="fw-6">$10</span>
+                    <span className="fw-6">${orderData.orderData?.products?.reduce((sum, p) => sum + (p.discount || 0), 0) || 0}</span>
                   </li>
                   <li className="d-flex justify-content-between text-2 mt_8">
                     <span>Order Total</span>
-                    <span className="fw-6">$18.95</span>
+                    <span className="fw-6">${orderData.amount}</span>
                   </li>
                 </ul>
               </div>
@@ -192,22 +334,54 @@ export default function OrderDetails() {
                 } `}
               >
                 <p className="text-2 text-success">
-                  Thank you Your order has been received
+                  Thank you! Your order has been received
                 </p>
                 <ul className="mt_20">
                   <li>
-                    Order Number : <span className="fw-7">#17493</span>
+                    Order Number : <span className="fw-7">#{getOrderNumber()}</span>
                   </li>
                   <li>
-                    Date :<span className="fw-7"> 17/07/2024, 02:34pm</span>
+                    Date :<span className="fw-7"> {formatDate(orderData.timestamp)}</span>
                   </li>
                   <li>
-                    Total : <span className="fw-7">$18.95</span>
+                    Total : <span className="fw-7">${orderData.amount}</span>
                   </li>
                   <li>
-                    Payment Methods :
-                    <span className="fw-7">Cash on Delivery</span>
+                    Payment Method :
+                    <span className="fw-7"> {orderData.provider?.toUpperCase() || 'Online Payment'}</span>
                   </li>
+                  {orderData.orderData?.receiver_details && (
+                    <>
+                      <li className="mt_12">
+                        <strong>Receiver Details:</strong>
+                      </li>
+                      <li>
+                        Name: <span className="fw-7">
+                          {orderData.orderData.receiver_details.firstName} {orderData.orderData.receiver_details.lastName}
+                        </span>
+                      </li>
+                      <li>
+                        Email: <span className="fw-7">{orderData.orderData.receiver_details.email}</span>
+                      </li>
+                      <li>
+                        Phone: <span className="fw-7">{orderData.orderData.receiver_details.phone}</span>
+                      </li>
+                      {orderData.orderData.receiver_details.address && (
+                        <>
+                          <li>
+                            Address: <span className="fw-7">
+                              {orderData.orderData.receiver_details.address.street}, {orderData.orderData.receiver_details.address.city}, {orderData.orderData.receiver_details.address.state} {orderData.orderData.receiver_details.address.postalCode}, {orderData.orderData.receiver_details.address.country}
+                            </span>
+                          </li>
+                        </>
+                      )}
+                      {orderData.orderData.receiver_details.note && (
+                        <li>
+                          Note: <span className="fw-7">{orderData.orderData.receiver_details.note}</span>
+                        </li>
+                      )}
+                    </>
+                  )}
                 </ul>
               </div>
             </div>

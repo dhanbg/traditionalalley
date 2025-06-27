@@ -96,6 +96,10 @@ const NPSCallbackContent = () => {
         let finalAmount = parseFloat(amount) || 0;
         let finalStatus = status;
         let finalProcessId = "";
+        let finalInstitution = "";
+        let finalInstrument = "";
+        let finalServiceCharge = "";
+        let finalCbsMessage = "";
 
         if (!status || !amount) {
           try {
@@ -118,7 +122,11 @@ const NPSCallbackContent = () => {
                 finalAmount = parseFloat(statusData.data.Amount) || 0;
                 finalStatus = statusData.data.Status; // "Success", "Fail", or "Pending"
                 finalProcessId = statusData.data.ProcessId || "";
-                console.log("Updated from NPS API - Amount:", finalAmount, "Status:", finalStatus, "ProcessId:", finalProcessId);
+                finalInstitution = statusData.data.Institution || "";
+                finalInstrument = statusData.data.Instrument || "";
+                finalServiceCharge = statusData.data.ServiceCharge || "";
+                finalCbsMessage = statusData.data.CbsMessage || "";
+                console.log("Updated from NPS API - Amount:", finalAmount, "Status:", finalStatus, "ProcessId:", finalProcessId, "Institution:", finalInstitution, "Instrument:", finalInstrument);
               }
             }
           } catch (error) {
@@ -135,6 +143,10 @@ const NPSCallbackContent = () => {
           gatewayReferenceNo: gatewayTxnId,
           amount: finalAmount,
           status: finalStatus === "Success" ? "Success" : finalStatus === "Fail" ? "Fail" : "Pending",
+          institution: finalInstitution,
+          instrument: finalInstrument,
+          serviceCharge: finalServiceCharge,
+          cbsMessage: finalCbsMessage,
           timestamp: generateLocalTimestamp(),
           webhook_processed: false, // This came from callback, not webhook
         };

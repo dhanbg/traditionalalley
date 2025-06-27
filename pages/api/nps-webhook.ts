@@ -141,7 +141,6 @@ export default async function handler(
         gatewayReferenceNo: transactionData.GatewayReferenceNo,
         amount: parseFloat(transactionData.Amount),
         status: transactionData.Status,
-        transactionDate: transactionData.TransactionDate,
         institution: transactionData.Institution,
         instrument: transactionData.Instrument,
         serviceCharge: transactionData.ServiceCharge,

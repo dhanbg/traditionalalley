@@ -1,29 +1,23 @@
+import { createModal, closeAllModals, closeAllOffcanvas } from './bootstrapHelper';
+
 export const openCartModal = async () => {
-  const bootstrap = await import("bootstrap"); // dynamically import bootstrap
-  const modalElements = document.querySelectorAll(".modal.show");
-  modalElements.forEach((modal) => {
-    const modalInstance = bootstrap.default.Modal.getInstance(modal);
-    if (modalInstance) {
-      modalInstance.hide();
+  try {
+    // Close any existing modals and offcanvas first
+    await closeAllModals();
+    await closeAllOffcanvas();
+    
+    // Create and show the cart modal
+    const myModal = await createModal("shoppingCart");
+    myModal.show();
+    
+    // Add event listener for when modal is hidden
+    const shoppingCartElement = document.getElementById("shoppingCart");
+    if (shoppingCartElement) {
+      shoppingCartElement.addEventListener("hidden.bs.modal", () => {
+        myModal.hide();
+      });
     }
-  });
-
-  // Close any open offcanvas
-  const offcanvasElements = document.querySelectorAll(".offcanvas.show");
-  offcanvasElements.forEach((offcanvas) => {
-    const offcanvasInstance = bootstrap.default.Offcanvas.getInstance(offcanvas);
-    if (offcanvasInstance) {
-      offcanvasInstance.hide();
-    }
-  });
-  var myModal = new bootstrap.default.Modal(document.getElementById("shoppingCart"), {
-    keyboard: false,
-  });
-
-  myModal.show();
-  document
-    .getElementById("shoppingCart")
-    .addEventListener("hidden.bs.modal", () => {
-      myModal.hide();
-    });
+  } catch (error) {
+    console.error("Error opening cart modal:", error);
+  }
 };

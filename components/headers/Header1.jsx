@@ -21,14 +21,19 @@ export default function Header1({ fullWidth = false }) {
       <div className={fullWidth ? "" : "container"}>
         <div className="row wrapper-header align-items-center">
           <div className="col-md-4 col-3 d-xl-none">
-            <a
-              href="#mobileMenu"
-              className="mobile-menu"
-              data-bs-toggle="offcanvas"
-              aria-controls="mobileMenu"
-            >
-              <i className="icon icon-categories" />
-            </a>
+            <div className="d-flex align-items-center">
+              <a
+                href="#mobileMenu"
+                className="mobile-menu"
+                data-bs-toggle="offcanvas"
+                aria-controls="mobileMenu"
+              >
+                <i className="icon icon-categories" />
+              </a>
+              <div className="mobile-currency-flag ms-3">
+                <CurrencySwitcher className="header-currency-switcher mobile-flag-only" />
+              </div>
+            </div>
           </div>
           <div className="col-xl-3 col-md-4 col-6">
             <Link href={`/`} className="logo-header">
@@ -44,7 +49,7 @@ export default function Header1({ fullWidth = false }) {
           </div>
           <div className="col-xl-3 col-md-4 col-3">
             <ul className="nav-icon d-flex justify-content-end align-items-center">
-              <li className="nav-currency">
+              <li className="nav-currency d-none d-xl-block">
                 <CurrencySwitcher className="header-currency-switcher" />
               </li>
               <li className="nav-search">

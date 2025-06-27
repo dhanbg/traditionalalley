@@ -9,21 +9,36 @@ export default function NewsLetterModal() {
   useEffect(() => {
     const showModal = async () => {
       if (pathname === "/") {
-        const bootstrap = await import("bootstrap"); // dynamically import bootstrap
-        const myModal = new bootstrap.Modal(
-          document.getElementById("newsletterPopup"),
-          {
-            keyboard: false,
+        try {
+          const bootstrap = await import("bootstrap/dist/js/bootstrap.esm.js");
+          
+          // Check if Modal is available
+          const Modal = bootstrap.Modal || bootstrap.default?.Modal;
+          if (!Modal) {
+            console.error("Bootstrap Modal is not available");
+            return;
           }
-        );
+          
+          const newsletterElement = document.getElementById("newsletterPopup");
+          if (!newsletterElement) {
+            console.error("Newsletter popup element not found");
+            return;
+          }
+          
+          const myModal = new Modal(newsletterElement, {
+            keyboard: false,
+          });
 
-        // Show the modal after a delay using a promise
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        myModal.show();
+          // Show the modal after a delay using a promise
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          myModal.show();
 
-        modalElement.current.addEventListener("hidden.bs.modal", () => {
-          myModal.hide();
-        });
+          modalElement.current.addEventListener("hidden.bs.modal", () => {
+            myModal.hide();
+          });
+        } catch (error) {
+          console.error("Error showing newsletter modal:", error);
+        }
       }
     };
 

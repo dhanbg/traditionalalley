@@ -1,177 +1,395 @@
+'use client'
 import '../../globals.css'
-import React from "react";
+import React, { useState, useEffect } from "react";
+import SalesAnalytics from "../../../components/analytics/SalesAnalytics";
+import ProductAnalytics from "../../../components/analytics/ProductAnalytics";
+import CustomerAnalytics from "../../../components/analytics/CustomerAnalytics";
+import ShippingAnalytics from "../../../components/analytics/ShippingAnalytics";
+import OverviewCards from "../../../components/analytics/OverviewCards";
+import ErrorBoundary from "../../../components/analytics/ErrorBoundary";
+import ClientOnly from "../../../components/analytics/ClientOnly";
+import DateFilter from "../../../components/analytics/DateFilter";
+import CacheProvider, { useCache } from "../../../components/analytics/CacheProvider";
+import { getDateRange } from "../../../lib/date-utils";
 
-const page = () => {
-  return (
-    <section className="bg-white">
-      <div className="lg:grid lg:min-h-screen lg:grid-cols-12">
-        <aside className="relative block h-16 lg:order-last lg:col-span-5 lg:h-full xl:col-span-6">
-          <img
-            alt=""
-            src="https://images.unsplash.com/photo-1605106702734-205df224ecce?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=870&q=80"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        </aside>
-
-        <main className="flex items-center justify-center px-8 py-8 sm:px-12 lg:col-span-7 lg:px-16 lg:py-12 xl:col-span-6">
-          <div className="max-w-xl lg:max-w-3xl">
-            <a className="block text-blue-600" href="#">
-              <span className="sr-only">Home</span>
-              <svg
-                className="h-8 sm:h-10"
-                viewBox="0 0 28 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M0.41 10.3847C1.14777 7.4194 2.85643 4.7861 5.2639 2.90424C7.6714 1.02234 10.6393 0 13.695 0C16.7507 0 19.7186 1.02234 22.1261 2.90424C24.5336 4.7861 26.2422 7.4194 26.98 10.3847H25.78C23.7557 10.3549 21.7729 10.9599 20.11 12.1147C20.014 12.1842 19.9138 12.2477 19.81 12.3047H19.67C19.5662 12.2477 19.466 12.1842 19.37 12.1147C17.6924 10.9866 15.7166 10.3841 13.695 10.3841C11.6734 10.3841 9.6976 10.9866 8.02 12.1147C7.924 12.1842 7.8238 12.2477 7.72 12.3047H7.58C7.4762 12.2477 7.376 12.1842 7.28 12.1147C5.6171 10.9599 3.6343 10.3549 1.61 10.3847H0.41ZM23.62 16.6547C24.236 16.175 24.9995 15.924 25.78 15.9447H27.39V12.7347H25.78C24.4052 12.7181 23.0619 13.146 21.95 13.9547C21.3243 14.416 20.5674 14.6649 19.79 14.6649C19.0126 14.6649 18.2557 14.416 17.63 13.9547C16.4899 13.1611 15.1341 12.7356 13.745 12.7356C12.3559 12.7356 11.0001 13.1611 9.86 13.9547C9.2343 14.416 8.4774 14.6649 7.7 14.6649C6.9226 14.6649 6.1657 14.416 5.54 13.9547C4.4144 13.1356 3.0518 12.7072 1.66 12.7347H0V15.9447H1.61C2.39051 15.924 3.154 16.175 3.77 16.6547C4.908 17.4489 6.2623 17.8747 7.65 17.8747C9.0377 17.8747 10.392 17.4489 11.53 16.6547C12.1468 16.1765 12.9097 15.9257 13.69 15.9447C14.4708 15.9223 15.2348 16.1735 15.85 16.6547C16.9901 17.4484 18.3459 17.8738 19.735 17.8738C21.1241 17.8738 22.4799 17.4484 23.62 16.6547ZM23.62 22.3947C24.236 21.915 24.9995 21.664 25.78 21.6847H27.39V18.4747H25.78C24.4052 18.4581 23.0619 18.886 21.95 19.6947C21.3243 20.156 20.5674 20.4049 19.79 20.4049C19.0126 20.4049 18.2557 20.156 17.63 19.6947C16.4899 18.9011 15.1341 18.4757 13.745 18.4757C12.3559 18.4757 11.0001 18.9011 9.86 19.6947C9.2343 20.156 8.4774 20.4049 7.7 20.4049C6.9226 20.4049 6.1657 20.156 5.54 19.6947C4.4144 18.8757 3.0518 18.4472 1.66 18.4747H0V21.6847H1.61C2.39051 21.664 3.154 21.915 3.77 22.3947C4.908 23.1889 6.2623 23.6147 7.65 23.6147C9.0377 23.6147 10.392 23.1889 11.53 22.3947C12.1468 21.9165 12.9097 21.6657 13.69 21.6847C14.4708 21.6623 15.2348 21.9135 15.85 22.3947C16.9901 23.1884 18.3459 23.6138 19.735 23.6138C21.1241 23.6138 22.4799 23.1884 23.62 22.3947Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </a>
-
-            <h1 className="mt-6 text-2xl font-bold text-gray-900 sm:text-3xl md:text-4xl">
-              Welcome to Squid 🦑
-            </h1>
-
-            <p className="mt-4 leading-relaxed text-gray-500">
-              Lorem, ipsum dolor sit amet consectetur adipisicing elit. Eligendi
-              nam dolorum aliquam, quibusdam aperiam voluptatum.
-            </p>
-
-            <form action="#" className="mt-8 grid grid-cols-6 gap-6">
-              <div className="col-span-6 sm:col-span-3">
-                <label
-                  htmlFor="FirstName"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  First Name
-                </label>
-
-                <input
-                  type="text"
-                  id="FirstName"
-                  name="first_name"
-                  className="mt-1 w-full rounded-md border-gray-200 bg-white text-sm text-gray-700 shadow-xs"
-                />
-              </div>
-
-              <div className="col-span-6 sm:col-span-3">
-                <label
-                  htmlFor="LastName"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Last Name
-                </label>
-
-                <input
-                  type="text"
-                  id="LastName"
-                  name="last_name"
-                  className="mt-1 w-full rounded-md border-gray-200 bg-white text-sm text-gray-700 shadow-xs"
-                />
-              </div>
-
-              <div className="col-span-6">
-                <label
-                  htmlFor="Email"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  {" "}
-                  Email{" "}
-                </label>
-
-                <input
-                  type="email"
-                  id="Email"
-                  name="email"
-                  className="mt-1 w-full rounded-md border-gray-200 bg-white text-sm text-gray-700 shadow-xs"
-                />
-              </div>
-
-              <div className="col-span-6 sm:col-span-3">
-                <label
-                  htmlFor="Password"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  {" "}
-                  Password{" "}
-                </label>
-
-                <input
-                  type="password"
-                  id="Password"
-                  name="password"
-                  className="mt-1 w-full rounded-md border-gray-200 bg-white text-sm text-gray-700 shadow-xs"
-                />
-              </div>
-
-              <div className="col-span-6 sm:col-span-3">
-                <label
-                  htmlFor="PasswordConfirmation"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Password Confirmation
-                </label>
-
-                <input
-                  type="password"
-                  id="PasswordConfirmation"
-                  name="password_confirmation"
-                  className="mt-1 w-full rounded-md border-gray-200 bg-white text-sm text-gray-700 shadow-xs"
-                />
-              </div>
-
-              <div className="col-span-6">
-                <label htmlFor="MarketingAccept" className="flex gap-4">
-                  <input
-                    type="checkbox"
-                    id="MarketingAccept"
-                    name="marketing_accept"
-                    className="size-5 rounded-md border-gray-200 bg-white shadow-xs"
-                  />
-
-                  <span className="text-sm text-gray-700">
-                    I want to receive emails about events, product updates and
-                    company announcements.
-                  </span>
-                </label>
-              </div>
-
-              <div className="col-span-6">
-                <p className="text-sm text-gray-500">
-                  By creating an account, you agree to our
-                  <a href="#" className="text-gray-700 underline">
-                    {" "}
-                    terms and conditions{" "}
-                  </a>
-                  and
-                  <a href="#" className="text-gray-700 underline">
-                    privacy policy
-                  </a>
-                  .
-                </p>
-              </div>
-
-              <div className="col-span-6 sm:flex sm:items-center sm:gap-4">
-                <button className="inline-block shrink-0 rounded-md border border-blue-600 bg-blue-600 px-12 py-3 text-sm font-medium text-white transition hover:bg-transparent hover:text-blue-600 focus:ring-3 focus:outline-hidden">
-                  Create an account
-                </button>
-
-                <p className="mt-4 text-sm text-gray-500 sm:mt-0">
-                  Already have an account?
-                  <a href="#" className="text-gray-700 underline">
-                    Log in
-                  </a>
-                  .
-                </p>
-              </div>
-            </form>
+// Skeleton Loader Component
+const SkeletonLoader = () => (
+  <div className="animate-pulse space-y-6">
+    {/* Header skeleton */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="bg-white p-6 rounded-xl shadow-sm">
+          <div className="flex items-center">
+            <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
+            <div className="ml-4 flex-1">
+              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+              <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+            </div>
           </div>
-        </main>
+        </div>
+      ))}
+    </div>
+    
+    {/* Chart skeletons */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="bg-white p-6 rounded-xl shadow-sm">
+          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="space-y-3">
+            {[...Array(5)].map((_, j) => (
+              <div key={j} className="flex items-center space-x-3">
+                <div className="w-16 h-4 bg-gray-200 rounded"></div>
+                <div className="flex-1 h-3 bg-gray-200 rounded"></div>
+                <div className="w-12 h-4 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// Tab Content Wrapper with Smooth Transitions
+const TabContentWrapper = ({ children, isActive }) => (
+  <div className={`transition-all duration-500 ease-in-out ${
+    isActive 
+      ? 'opacity-100 translate-y-0 scale-100' 
+      : 'opacity-0 translate-y-4 scale-95 pointer-events-none absolute'
+  }`}>
+    {children}
+  </div>
+);
+
+const DashboardContent = () => {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [dateFilter, setDateFilter] = useState('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [isTabChanging, setIsTabChanging] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  
+  // Use cache context
+  const { clearCache, getCacheInfo } = useCache();
+  
+  // Get the actual date range for filtering
+  const dateRange = getDateRange(dateFilter, customStartDate, customEndDate);
+
+  // Initial loading simulation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleCustomDateChange = (field, value) => {
+    if (field === 'start') {
+      setCustomStartDate(value);
+    } else if (field === 'end') {
+      setCustomEndDate(value);
+    }
+  };
+
+  const handleTabChange = (tabId) => {
+    if (tabId === activeTab) return;
+    
+    setIsTabChanging(true);
+    
+    // Smooth tab transition
+    setTimeout(() => {
+      setActiveTab(tabId);
+      setIsMobileMenuOpen(false);
+      
+      setTimeout(() => {
+        setIsTabChanging(false);
+      }, 100);
+    }, 150);
+  };
+
+  const tabs = [
+    { id: 'overview', name: 'Overview', icon: '📊', color: 'blue' },
+    { id: 'sales', name: 'Sales Analytics', icon: '💰', color: 'green' },
+    { id: 'products', name: 'Product Analytics', icon: '📦', color: 'purple' },
+    { id: 'customers', name: 'Customer Analytics', icon: '👥', color: 'orange' },
+    { id: 'shipping', name: 'Shipping Analytics', icon: '🚚', color: 'red' }
+  ];
+
+  const renderTabContent = (tabId) => {
+    switch(tabId) {
+      case 'overview':
+        return <OverviewCards tabId="overview" dateFilter={dateRange} />;
+      case 'sales':
+        return <SalesAnalytics tabId="sales" dateFilter={dateRange} />;
+      case 'products':
+        return <ProductAnalytics tabId="products" dateFilter={dateRange} />;
+      case 'customers':
+        return <CustomerAnalytics tabId="customers" dateFilter={dateRange} />;
+      case 'shipping':
+        return <ShippingAnalytics tabId="shipping" dateFilter={dateRange} />;
+      default:
+        return <OverviewCards tabId="overview" dateFilter={dateRange} />;
+    }
+  };
+
+  const getTabColorClasses = (tab, isActive) => {
+    const colors = {
+      blue: isActive 
+        ? 'border-blue-500 text-blue-600 bg-blue-50' 
+        : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300',
+      green: isActive 
+        ? 'border-green-500 text-green-600 bg-green-50' 
+        : 'border-transparent text-gray-500 hover:text-green-600 hover:border-green-300',
+      purple: isActive 
+        ? 'border-purple-500 text-purple-600 bg-purple-50' 
+        : 'border-transparent text-gray-500 hover:text-purple-600 hover:border-purple-300',
+      orange: isActive 
+        ? 'border-orange-500 text-orange-600 bg-orange-50' 
+        : 'border-transparent text-gray-500 hover:text-orange-600 hover:border-orange-300',
+      red: isActive 
+        ? 'border-red-500 text-red-600 bg-red-50' 
+        : 'border-transparent text-gray-500 hover:text-red-600 hover:border-red-300'
+    };
+    return colors[tab.color] || colors.blue;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        {/* Header Skeleton */}
+        <div className="bg-white shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-6">
+              <div className="animate-pulse">
+                <div className="h-8 bg-gray-200 rounded w-64 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-48"></div>
+              </div>
+              <div className="animate-pulse">
+                <div className="h-10 bg-gray-200 rounded w-20"></div>
+              </div>
+            </div>
+          </div>
+              </div>
+
+        {/* Tabs Skeleton */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex space-x-8 animate-pulse">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-12 bg-gray-200 rounded w-24 my-4"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        {/* Content Skeleton */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <SkeletonLoader />
+        </div>
       </div>
-    </section>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Header with enhanced styling */}
+      <div className="bg-white shadow-lg backdrop-blur-sm bg-white/95">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-4 sm:py-6">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                Traditional Alley Analytics
+              </h1>
+              <p className="mt-1 text-xs sm:text-sm text-gray-600">
+                Real-time business analytics and insights
+              </p>
+            </div>
+            <div className="mt-4 sm:mt-0 flex items-center justify-between sm:justify-end space-x-2 sm:space-x-4">
+              <div className="hidden sm:flex items-center text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+                Real-time Analytics
+              </div>
+              <button
+                onClick={async () => {
+                  setRefreshing(true);
+                  clearCache(); // Clear all cached data
+                  // Small delay to show refresh animation
+                  setTimeout(() => {
+                    setRefreshing(false);
+                    window.location.reload();
+                  }, 500);
+                }}
+                disabled={refreshing}
+                className="group bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-3 py-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className={`w-4 h-4 transition-transform duration-500 ${refreshing ? 'animate-spin' : 'group-hover:rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+              </button>
+              
+              {/* Mobile menu button with animation */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="sm:hidden p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all duration-200"
+                >
+                <svg className={`h-6 w-6 transform transition-transform duration-300 ${isMobileMenuOpen ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Navigation Menu with smooth animation */}
+      <div className={`sm:hidden bg-white border-b border-gray-200 transition-all duration-300 ease-in-out ${
+        isMobileMenuOpen 
+          ? 'max-h-96 opacity-100' 
+          : 'max-h-0 opacity-0 overflow-hidden'
+      }`}>
+        <div className="px-4 py-2 space-y-1">
+          {tabs.map((tab, index) => (
+            <button
+              key={tab.id}
+              onClick={() => handleTabChange(tab.id)}
+              className={`${getTabColorClasses(tab, activeTab === tab.id)} w-full text-left px-4 py-3 text-sm font-medium flex items-center space-x-3 transition-all duration-200 rounded-lg transform hover:scale-[1.02]`}
+              style={{ 
+                animationDelay: `${index * 50}ms`,
+                animation: isMobileMenuOpen ? 'slideInLeft 0.3s ease-out forwards' : 'none'
+              }}
+            >
+              <span className="text-lg transform transition-transform duration-200 hover:scale-110">{tab.icon}</span>
+              <span>{tab.name}</span>
+              {activeTab === tab.id && (
+                <div className="ml-auto w-2 h-2 bg-current rounded-full animate-pulse"></div>
+              )}
+            </button>
+          ))}
+        </div>
+              </div>
+
+      {/* Desktop Navigation Tabs with enhanced styling */}
+      <div className="hidden sm:block bg-white border-b border-gray-200 sticky top-0 z-10 backdrop-blur-sm bg-white/95">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav className="-mb-px flex space-x-4 lg:space-x-8 overflow-x-auto scrollbar-hide">
+            {tabs.map((tab, index) => (
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                className={`${getTabColorClasses(tab, activeTab === tab.id)} whitespace-nowrap py-4 px-3 border-b-2 font-medium text-sm flex items-center space-x-2 transition-all duration-300 flex-shrink-0 rounded-t-lg transform hover:scale-105 relative group`}
+              >
+                <span className="text-lg transform transition-transform duration-200 group-hover:scale-110">{tab.icon}</span>
+                <span className="hidden md:inline">{tab.name}</span>
+                <span className="md:hidden">{tab.name.split(' ')[0]}</span>
+                
+                {/* Active indicator */}
+                {activeTab === tab.id && (
+                  <div className="absolute -bottom-0.5 left-1/2 transform -translate-x-1/2 w-12 h-0.5 bg-current rounded-full animate-pulse"></div>
+                )}
+                
+                {/* Hover effect */}
+                <div className="absolute inset-0 bg-current opacity-0 group-hover:opacity-5 rounded-t-lg transition-opacity duration-200"></div>
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
+
+      {/* Main Content with smooth transitions */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Date Filter with animation */}
+        <div className="mb-6 transform transition-all duration-500 hover:scale-[1.01]">
+          <DateFilter 
+            selectedFilter={dateFilter}
+            onFilterChange={setDateFilter}
+            customStartDate={customStartDate}
+            customEndDate={customEndDate}
+            onCustomDateChange={handleCustomDateChange}
+                />
+              </div>
+
+        {/* Tab Content with smooth transitions */}
+        <div className="relative">
+          {isTabChanging ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="relative">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent absolute top-0 left-0"></div>
+              </div>
+            </div>
+          ) : (
+            <div className="transition-all duration-500 ease-in-out transform">
+              <ClientOnly 
+                fallback={
+                  <div className="flex justify-center items-center h-64">
+                    <div className="relative">
+                      <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200"></div>
+                      <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent absolute top-0 left-0"></div>
+                    </div>
+                  </div>
+                }
+              >
+                <ErrorBoundary>
+                  <div className="animate-fadeIn">
+                    {renderTabContent(activeTab)}
+              </div>
+                </ErrorBoundary>
+              </ClientOnly>
+              </div>
+          )}
+          </div>
+      </div>
+
+      {/* Custom CSS for animations */}
+      <style jsx>{`
+        @keyframes slideInLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.5s ease-out;
+        }
+        
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+    </div>
   );
 };
 
-export default page;
+const AnalyticsDashboard = () => {
+  return (
+    <CacheProvider>
+      <DashboardContent />
+    </CacheProvider>
+  );
+};
+
+export default AnalyticsDashboard;
