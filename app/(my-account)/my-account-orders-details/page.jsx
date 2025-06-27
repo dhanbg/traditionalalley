@@ -4,13 +4,21 @@ import Topbar6 from "@/components/headers/Topbar6";
 import AccountSidebar from "@/components/my-account/AccountSidebar";
 import Link from "next/link";
 import OrderDetails from "@/components/my-account/OrderDetails";
-import React from "react";
+import React, { Suspense } from "react";
 
 export const metadata = {
   title:
     "My Account Order Details || Traditional Alley",
   description: "Traditional Alley",
 };
+
+function OrderDetailsWrapper() {
+  return (
+    <Suspense fallback={<div className="text-center">Loading order details...</div>}>
+      <OrderDetails />
+    </Suspense>
+  );
+}
 
 export default function page() {
   return (
@@ -62,7 +70,7 @@ export default function page() {
         <div className="container">
           <div className="my-account-wrap">
             <AccountSidebar />
-            <OrderDetails />
+            <OrderDetailsWrapper />
           </div>
         </div>
       </section>
