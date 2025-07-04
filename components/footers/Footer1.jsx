@@ -115,7 +115,7 @@ export default function Footer1({
                     <ul className="footer-info">
                       <li>
                         <i className="icon-mail" />
-                        <p>traditionalallay.com.np</p>
+                        <p>traditionaalley.com.np</p>
                       </li>
                       <li>
                         <i className="icon-phone" />
