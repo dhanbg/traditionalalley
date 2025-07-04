@@ -156,9 +156,7 @@ export default async function handler(
       MerchantTxnId: gatewayParams.MerchantTxnId,
       TransactionRemarks: transactionRemarks || `Payment for order ${shortMerchantTxnId}`,
       InstrumentCode: instrumentCode,
-      ProcessId: processId,
-      ResponseUrl: responseUrl,
-      Signature: gatewaySignature
+      ProcessId: processId
     };
 
     console.log('Gateway redirect form:', redirectForm);

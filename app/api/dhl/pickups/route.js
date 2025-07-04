@@ -6,7 +6,7 @@ export async function POST(request) {
     const body = await request.json();
     
     // Validate required fields
-    const requiredFields = ['plannedPickupDateAndTime', 'address', 'contact'];
+    const requiredFields = ['plannedPickupDate', 'address', 'contact'];
     for (const field of requiredFields) {
       if (!body[field]) {
         return NextResponse.json(
@@ -17,7 +17,7 @@ export async function POST(request) {
     }
 
     // Validate address fields
-    const addressFields = ['countryCode', 'cityName', 'postalCode', 'addressLine1'];
+    const addressFields = ['postalCode', 'cityName', 'countryCode', 'addressLine1'];
     for (const field of addressFields) {
       if (!body.address[field]) {
         return NextResponse.json(
@@ -38,36 +38,45 @@ export async function POST(request) {
       }
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(body.contact.email)) {
-      return NextResponse.json(
-        { error: 'Invalid email format' },
-        { status: 400 }
-      );
-    }
-
-    // Validate pickup date
-    const pickupDate = new Date(body.plannedPickupDateAndTime);
+    // Validate planned pickup date
+    const pickupDate = new Date(body.plannedPickupDate);
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
-    if (pickupDate <= today) {
+    if (pickupDate < today) {
       return NextResponse.json(
-        { error: 'Pickup date must be in the future' },
+        { error: 'Planned pickup date cannot be in the past' },
         { status: 400 }
       );
     }
 
-    // Validate pickup time format (should be ISO string or valid date)
-    if (isNaN(pickupDate.getTime())) {
-      return NextResponse.json(
-        { error: 'Invalid pickup date format. Use ISO 8601 format (e.g., 2024-01-15T10:00:00Z)' },
-        { status: 400 }
-      );
+    // Validate shipments if provided
+    if (body.shipments && Array.isArray(body.shipments)) {
+      for (let i = 0; i < body.shipments.length; i++) {
+        const shipment = body.shipments[i];
+        if (!shipment.packages || !Array.isArray(shipment.packages) || shipment.packages.length === 0) {
+          return NextResponse.json(
+            { error: `Shipment ${i + 1} must have at least one package` },
+            { status: 400 }
+          );
+        }
+
+        const packageFields = ['weight', 'length', 'width', 'height'];
+        for (let j = 0; j < shipment.packages.length; j++) {
+          for (const field of packageFields) {
+            if (!shipment.packages[j][field] || shipment.packages[j][field] <= 0) {
+              return NextResponse.json(
+                { error: `Invalid package in shipment ${i + 1}, package ${j + 1}: ${field} must be a positive number` },
+                { status: 400 }
+              );
+            }
+          }
+        }
+      }
     }
 
     const dhlService = new DHLExpressService();
-    const pickup = await dhlService.requestPickup(body);
+    const pickup = await dhlService.schedulePickup(body);
 
     return NextResponse.json({
       success: true,
@@ -75,54 +84,73 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('DHL Pickup API Error:', error);
+    console.error('DHL Pickups API Error:', error);
     
     return NextResponse.json(
       { 
-        error: 'Failed to request pickup',
+        error: 'Failed to schedule pickup',
         message: error.message,
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        details: error.data || null
       },
-      { status: 500 }
+      { status: error.status || 500 }
     );
   }
 }
 
-export async function GET() {
-  return NextResponse.json(
-    { 
-      message: 'DHL Pickup API',
-      endpoints: {
-        'POST /api/dhl/pickups': 'Request a DHL Express pickup'
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const postalCode = searchParams.get('postalCode');
+    const cityName = searchParams.get('cityName');
+    const countryCode = searchParams.get('countryCode');
+    const addressLine1 = searchParams.get('addressLine1');
+    const plannedPickupDate = searchParams.get('plannedPickupDate');
+    
+    if (!postalCode || !cityName || !countryCode || !addressLine1 || !plannedPickupDate) {
+      return NextResponse.json(
+        { error: 'Missing required parameters: postalCode, cityName, countryCode, addressLine1, plannedPickupDate' },
+        { status: 400 }
+      );
+    }
+
+    // Validate planned pickup date
+    const pickupDate = new Date(plannedPickupDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (pickupDate < today) {
+      return NextResponse.json(
+        { error: 'Planned pickup date cannot be in the past' },
+        { status: 400 }
+      );
+    }
+
+    const pickupRequest = {
+      postalCode,
+      cityName,
+      countryCode,
+      addressLine1,
+      plannedPickupDate
+    };
+
+    const dhlService = new DHLExpressService();
+    const pickupTimes = await dhlService.getPickupTimes(pickupRequest);
+
+    return NextResponse.json({
+      success: true,
+      data: pickupTimes
+    });
+
+  } catch (error) {
+    console.error('DHL Pickup Times API Error:', error);
+    
+    return NextResponse.json(
+      { 
+        error: 'Failed to get pickup times',
+        message: error.message,
+        details: error.data || null
       },
-      sampleRequest: {
-        plannedPickupDateAndTime: '2024-01-15T10:00:00Z',
-        closeTime: '18:00',
-        location: 'reception',
-        locationType: 'business',
-        address: {
-          countryCode: 'NP',
-          cityName: 'Kathmandu',
-          postalCode: '44600',
-          addressLine1: '123 Main Street',
-          addressLine2: 'Building A',
-          addressLine3: 'Floor 2'
-        },
-        contact: {
-          fullName: 'John Doe',
-          email: 'john@example.com',
-          phone: '+977-1-1234567',
-          companyName: 'Example Company'
-        },
-        shipments: [
-          {
-            shipmentID: 'SHIP123',
-            productCode: 'P',
-            packages: 2
-          }
-        ]
-      }
-    },
-    { status: 200 }
-  );
+      { status: error.status || 500 }
+    );
+  }
 } 

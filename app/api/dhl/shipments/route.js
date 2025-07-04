@@ -4,17 +4,10 @@ import DHLExpressService from '../../../../lib/dhl-service.js';
 export async function POST(request) {
   try {
     const body = await request.json();
+    console.log('DHL Shipments API - Received request body:', JSON.stringify(body, null, 2));
     
     // Validate required fields
-    const requiredFields = [
-      'originAddress', 
-      'destinationAddress', 
-      'packages', 
-      'plannedShippingDate',
-      'shipper',
-      'recipient'
-    ];
-    
+    const requiredFields = ['originAddress', 'destinationAddress', 'packages', 'plannedShippingDate', 'shipper', 'recipient'];
     for (const field of requiredFields) {
       if (!body[field]) {
         return NextResponse.json(
@@ -24,16 +17,20 @@ export async function POST(request) {
       }
     }
 
-    // Validate address fields
-    const addressFields = ['countryCode', 'cityName', 'postalCode', 'addressLine1'];
+    // Validate address fields (addressLine1 can be empty, but should be provided)
+    const requiredAddressFields = ['postalCode', 'cityName', 'countryCode'];
     for (const address of ['originAddress', 'destinationAddress']) {
-      for (const field of addressFields) {
+      for (const field of requiredAddressFields) {
         if (!body[address][field]) {
           return NextResponse.json(
             { error: `Missing required field: ${address}.${field}` },
             { status: 400 }
           );
         }
+      }
+      // Ensure addressLine1 exists (can be empty string)
+      if (body[address].addressLine1 === undefined) {
+        body[address].addressLine1 = '';
       }
     }
 
@@ -58,42 +55,16 @@ export async function POST(request) {
       );
     }
 
-    const packageFields = ['weight', 'length', 'width', 'height', 'description'];
+    const packageFields = ['weight', 'length', 'width', 'height'];
     for (let i = 0; i < body.packages.length; i++) {
       for (const field of packageFields) {
-        if (!body.packages[i][field]) {
+        if (!body.packages[i][field] || body.packages[i][field] <= 0) {
           return NextResponse.json(
-            { error: `Missing required field: packages[${i}].${field}` },
+            { error: `Invalid package ${i + 1}: ${field} must be a positive number` },
             { status: 400 }
           );
         }
       }
-      
-      // Validate numeric fields
-      const numericFields = ['weight', 'length', 'width', 'height'];
-      for (const field of numericFields) {
-        if (body.packages[i][field] <= 0) {
-          return NextResponse.json(
-            { error: `Invalid value for packages[${i}].${field}: must be greater than 0` },
-            { status: 400 }
-          );
-        }
-      }
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(body.shipper.email)) {
-      return NextResponse.json(
-        { error: 'Invalid shipper email format' },
-        { status: 400 }
-      );
-    }
-    if (!emailRegex.test(body.recipient.email)) {
-      return NextResponse.json(
-        { error: 'Invalid recipient email format' },
-        { status: 400 }
-      );
     }
 
     // Validate planned shipping date
@@ -108,8 +79,10 @@ export async function POST(request) {
       );
     }
 
+    console.log('DHL Shipments API - Validation passed, creating shipment...');
     const dhlService = new DHLExpressService();
     const shipment = await dhlService.createShipment(body);
+    console.log('DHL Shipments API - Shipment created successfully');
 
     return NextResponse.json({
       success: true,
@@ -123,21 +96,16 @@ export async function POST(request) {
       { 
         error: 'Failed to create shipment',
         message: error.message,
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        details: error.data || null
       },
-      { status: 500 }
+      { status: error.status || 500 }
     );
   }
 }
 
 export async function GET() {
   return NextResponse.json(
-    { 
-      message: 'DHL Shipments API',
-      endpoints: {
-        'POST /api/dhl/shipments': 'Create a new DHL Express shipment'
-      }
-    },
-    { status: 200 }
+    { error: 'Method not allowed. Use POST to create shipments.' },
+    { status: 405 }
   );
 } 

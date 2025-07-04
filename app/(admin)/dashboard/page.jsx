@@ -114,7 +114,8 @@ const DashboardContent = () => {
     { id: 'sales', name: 'Sales Analytics', icon: '💰', color: 'green' },
     { id: 'products', name: 'Product Analytics', icon: '📦', color: 'purple' },
     { id: 'customers', name: 'Customer Analytics', icon: '👥', color: 'orange' },
-    { id: 'shipping', name: 'Shipping Analytics', icon: '🚚', color: 'red' }
+    { id: 'shipping', name: 'Shipping Analytics', icon: '🚚', color: 'red' },
+    { id: 'orders', name: 'Order Management', icon: '📋', color: 'indigo' }
   ];
 
   const renderTabContent = (tabId) => {
@@ -129,6 +130,8 @@ const DashboardContent = () => {
         return <CustomerAnalytics tabId="customers" dateFilter={dateRange} />;
       case 'shipping':
         return <ShippingAnalytics tabId="shipping" dateFilter={dateRange} />;
+      case 'orders':
+        return <ShippingAnalytics tabId="orders" dateFilter={dateRange} />;
       default:
         return <OverviewCards tabId="overview" dateFilter={dateRange} />;
     }
@@ -150,7 +153,10 @@ const DashboardContent = () => {
         : 'border-transparent text-gray-500 hover:text-orange-600 hover:border-orange-300',
       red: isActive 
         ? 'border-red-500 text-red-600 bg-red-50' 
-        : 'border-transparent text-gray-500 hover:text-red-600 hover:border-red-300'
+        : 'border-transparent text-gray-500 hover:text-red-600 hover:border-red-300',
+      indigo: isActive 
+        ? 'border-indigo-500 text-indigo-600 bg-indigo-50' 
+        : 'border-transparent text-gray-500 hover:text-indigo-600 hover:border-indigo-300'
     };
     return colors[tab.color] || colors.blue;
   };

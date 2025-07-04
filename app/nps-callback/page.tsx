@@ -196,7 +196,7 @@ const NPSCallbackContent = () => {
               if (matchingPayment && matchingPayment.orderData) {
                 console.log("Found matching payment with order data:", matchingPayment);
                 
-                // TODO: Order creation functionality removed
+                // No need to update orderData since payment status is already handled in the main payment object
                 console.log("Order data available:", matchingPayment.orderData);
                 console.log("Payment data:", paymentData);
                 

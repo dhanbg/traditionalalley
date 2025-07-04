@@ -38,7 +38,16 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
               unitPrice: 50.00,
               subtotal: 100.00,
               discount: 0,
-              finalPrice: 100.00
+              finalPrice: 100.00,
+              // DHL package fields
+              weight: 1.5,
+              length: 15,
+              width: 10,
+              height: 8,
+              description: "Traditional Red Shirt",
+              declaredValue: 50.00,
+              commodityCode: "6109100000",
+              manufacturingCountryCode: "NP"
             },
             {
               documentId: "def456",
@@ -48,23 +57,33 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
               unitPrice: 40.00,
               subtotal: 40.00,
               discount: 0,
-              finalPrice: 40.00
+              finalPrice: 40.00,
+              // DHL package fields
+              weight: 1.2,
+              length: 20,
+              width: 12,
+              height: 5,
+              description: "Traditional Blue Scarf",
+              declaredValue: 40.00,
+              commodityCode: "6214100000",
+              manufacturingCountryCode: "NP"
             }
           ],
           shippingPrice: 10.00,
           receiver_details: {
-            firstName: "John",
-            lastName: "Doe",
+            fullName: "John Doe",        // Not firstName/lastName
+            companyName: "",             // Company field
             email: "john@example.com",
             phone: "9841234567",
+            countryCode: "+977",         // Phone country code
             address: {
-              street: "123 Main St",
-              city: "Kathmandu",
-              state: "Bagmati",
-              country: "Nepal",
+              addressLine1: "123 Main St",  // Not street
+              cityName: "Kathmandu",       // Not city
+              countryCode: "NP",           // Not country
               postalCode: "44600"
-            },
-            note: "Please deliver after 5 PM"
+              // No state field
+              // No note field
+            }
           }
         }
       },
@@ -96,23 +115,31 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
               unitPrice: 65.00,
               subtotal: 65.00,
               discount: 0,
-              finalPrice: 65.00
+              finalPrice: 65.00,
+              // DHL package fields
+              weight: 0.8,
+              length: 12,
+              width: 8,
+              height: 6,
+              description: "Traditional Green Dress",
+              declaredValue: 65.00,
+              commodityCode: "6204100000",
+              manufacturingCountryCode: "NP"
             }
           ],
           shippingPrice: 10.00,
           receiver_details: {
-            firstName: "Jane",
-            lastName: "Smith",
+            fullName: "Jane Smith",
+            companyName: "Smith Trading Co",
             email: "jane@example.com",
             phone: "9851234567",
+            countryCode: "+977",
             address: {
-              street: "456 Oak Ave",
-              city: "Pokhara",
-              state: "Gandaki",
-              country: "Nepal",
+              addressLine1: "456 Oak Ave",
+              cityName: "Pokhara",
+              countryCode: "NP",
               postalCode: "33700"
-            },
-            note: ""
+            }
           }
         }
       }
@@ -131,11 +158,31 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
           "serviceCharge - Fee that NPS charges YOU as merchant (deducted from your settlement amount)",
           "cbsMessage - Bank response message (usually empty for successful transactions)"
         ],
+        structure_changes: [
+          "REMOVED orderStatus from orderData - now only use payment.status",
+          "REMOVED paymentMethod from orderData - now only use payment.provider",
+          "UPDATED receiver_details to match actual DHL form:",
+          "  - fullName (not firstName/lastName)",
+          "  - companyName (added)",
+          "  - countryCode for phone (added)",
+          "  - address.addressLine1 (not street)",
+          "  - address.cityName (not city)",
+          "  - address.countryCode (not country)",
+          "  - REMOVED state and note fields",
+          "ADDED DHL package fields to products:",
+          "  - weight, length, width, height",
+          "  - description, declaredValue",
+          "  - commodityCode (HS code), manufacturingCountryCode",
+          "This structure now exactly matches the DHL shipping form"
+        ],
         usage: [
-          "You can now see which payment method each customer used for their orders",
-          "The 'instrument' field shows the specific payment method (Mobile Banking, Card, etc.)",
-          "The 'institution' field shows which bank or service provider was used",
-          "This data is automatically captured from NPS API when payments are processed"
+          "Payment method: use payment.provider ('nps' or 'cod')",
+          "Payment status: use payment.status ('Success', 'Fail', 'Pending')",
+          "Recipient info: use receiver_details.fullName (not firstName/lastName)",
+          "Address: use receiver_details.address.addressLine1 and cityName",
+          "Package details: products now include weight, dimensions, HS codes",
+          "All data structure matches DHL Express API requirements",
+          "COD orders are saved with provider='cod' and status='Pending'"
         ]
       }
     }

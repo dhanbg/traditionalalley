@@ -289,21 +289,10 @@ export default function Details1({ product }) {
                     )}
 
                     {/* Weight section */}
-                    {safeProduct.weight && (
-                      <div className="tf-product-info-weight" style={{ marginBottom: "20px" }}>
-                        <div className="title" style={{ fontWeight: "500", marginBottom: "8px" }}>Weight:</div>
-                        <div className="weight-value" style={{ 
-                          fontSize: "14px", 
-                          color: "#666",
-                          padding: "8px 12px",
-                          backgroundColor: "#f8f9fa",
-                          borderRadius: "4px",
-                          display: "inline-block"
-                        }}>
-                          {safeProduct.weight}
-                        </div>
-                      </div>
-                    )}
+                    {/* Remove weight and dimensions display */}
+
+                    {/* Dimensions section */}
+                    {/* Remove weight and dimensions display */}
 
                     {/* Commented quantity section */}
                     {/* <div className="tf-product-info-quantity">

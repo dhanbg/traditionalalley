@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import NPSPaymentForm from "../payments/NPSPaymentForm";
-import { fetchDataFromApi, updateData } from "@/utils/api";
+import DHLShippingForm from "../shipping/DHLShippingForm";
+import { fetchDataFromApi, updateData, updateUserBagWithPayment } from "@/utils/api";
 import { useUser } from "@clerk/nextjs";
 
 const discounts = [
@@ -50,33 +51,34 @@ export default function Checkout() {
   // Add state for selected payment method
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('nps');
 
-  // Add state for form data
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    country: 'Choose Country/Region',
-    city: '',
-    street: '',
-    state: 'Choose State',
-    postalCode: '',
-    note: ''
-  });
+  // Add state for DHL shipping
+  const [shippingCost, setShippingCost] = useState(0);
+  const [trackingNumber, setTrackingNumber] = useState('');
 
   // Add state for loading and success states
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [isLoadingProductDetails, setIsLoadingProductDetails] = useState(false);
 
-  // Handle form input changes
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  // Add state for receiverDetails
+  const [receiverDetails, setReceiverDetails] = useState({
+    fullName: "",
+    companyName: "",
+    email: "",
+    phone: "",
+    countryCode: "",
+    address: {
+      addressLine1: "",
+      cityName: "",
+      countryCode: "",
+      postalCode: ""
+    }
+  });
+
+  // Debug: Log when productsWithOldPrice changes
+  useEffect(() => {
+    console.log('productsWithOldPrice updated:', productsWithOldPrice);
+  }, [productsWithOldPrice]);
 
   // Function to get user's bag documentId
   const getUserBagDocumentId = async () => {
@@ -114,17 +116,13 @@ export default function Checkout() {
       return;
     }
 
-    // Validate required fields
-    const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'city', 'street'];
-    const missingFields = requiredFields.filter(field => !formData[field].trim());
-    
-    if (missingFields.length > 0) {
-      alert(`Please fill in the following required fields: ${missingFields.join(', ')}`);
+    if (selectedProducts.length === 0) {
+      alert('No products selected for checkout');
       return;
     }
 
-    if (selectedProducts.length === 0) {
-      alert('No products selected for checkout');
+    if (shippingCost === 0) {
+      alert('Please get shipping rates first by filling out the shipping form and clicking "Get Shipping Rates"');
       return;
     }
 
@@ -160,35 +158,40 @@ export default function Checkout() {
           subtotal: subtotal,
           unitPrice: unitPrice,
           documentId: product.documentId,
-          finalPrice: finalPrice
+          finalPrice: finalPrice,
+          // DHL package fields
+          weight: fetchedProduct?.weight || 1, // Default weight 1kg
+          length: fetchedProduct?.dimensions?.length || 10, // Default dimensions
+          width: fetchedProduct?.dimensions?.width || 10,
+          height: fetchedProduct?.dimensions?.height || 10,
+          description: product.title || product.name || "Product",
+          declaredValue: unitPrice,
+          commodityCode: fetchedProduct?.hsCode || "",
+          manufacturingCountryCode: "NP" // Nepal
         };
       });
 
-      // Prepare receiver details
-      const receiver_details = {
-        note: formData.note || "",
-        email: formData.email,
-        phone: formData.phone,
-        address: {
-          city: formData.city,
-          state: formData.state !== 'Choose State' ? formData.state : "",
-          street: formData.street,
-          country: formData.country !== 'Choose Country/Region' ? formData.country : "",
-          postalCode: formData.postalCode
-        },
-        lastName: formData.lastName,
-        firstName: formData.firstName
-      };
-
-      // Prepare order data
+      // Prepare order data (removed orderStatus and paymentMethod as they're redundant with the main payment object)
       const orderData = {
         products: products,
-        shippingPrice: 5, // Default shipping price
-        receiver_details: receiver_details
+        shippingPrice: shippingCost,
+        receiver_details: receiverDetails
       };
 
-      // TODO: Order saving functionality removed
-      console.log('Order data prepared:', orderData);
+      // Create COD payment record
+      const codPaymentData = {
+        provider: "cod",
+        merchantTxnId: `COD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        amount: actualTotal + shippingCost,
+        status: "Pending", // COD orders are pending until payment is received
+        timestamp: new Date().toISOString(),
+        orderData: orderData
+      };
+
+      // Save COD order to user bag
+      await updateUserBagWithPayment(userBagDocumentId, codPaymentData);
+
+      console.log('COD order saved:', codPaymentData);
       
       setOrderSuccess(true);
       
@@ -214,21 +217,7 @@ export default function Checkout() {
         // Don't fail the entire process if cart clearing fails
       }
       
-      // Reset form after successful order
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        country: 'Choose Country/Region',
-        city: '',
-        street: '',
-        state: 'Choose State',
-        postalCode: '',
-        note: ''
-      });
-
-      alert('Order functionality temporarily disabled.');
+      alert('Order placed successfully! Admin will create your DHL shipment and provide tracking details.');
       
     } catch (error) {
       console.error('Error processing cash payment order:', error);
@@ -238,43 +227,37 @@ export default function Checkout() {
     }
   };
 
-  // Fetch product details for each cart item to get accurate oldPrice
+  // Fetch product details when selectedProducts change
   useEffect(() => {
-    let isMounted = true;
+    if (selectedProducts.length === 0 || isLoadingProductDetails) return;
+    
+    setIsLoadingProductDetails(true);
     
     async function fetchProductDetails() {
-      if (selectedProducts.length === 0 || isLoadingProductDetails) return;
-      
-      setIsLoadingProductDetails(true);
-      
-      const updatedProducts = {};
-      const productIds = selectedProducts.map(p => p.documentId).filter(Boolean);
-      
-      // Only fetch if we have products with documentIds
-      if (productIds.length === 0) {
-        setIsLoadingProductDetails(false);
-        return;
-      }
-      
       try {
-        // Batch API calls instead of individual calls
+        const updatedProducts = {};
+        
         const promises = selectedProducts.map(async (product) => {
           if (!product.documentId) return null;
           
           try {
             const productEndpoint = `/api/products?filters[documentId][$eq]=${product.documentId}`;
+            console.log('Fetching product details from:', productEndpoint);
             const response = await fetchDataFromApi(productEndpoint);
+            console.log('Product API response:', response);
             if (response?.data && Array.isArray(response.data) && response.data.length > 0) {
               const productData = response.data[0];
-              if (productData.oldPrice) {
-                return {
-                  id: product.id,
-                  data: {
-                    ...product,
-                    oldPrice: parseFloat(productData.oldPrice)
-                  }
-                };
-              }
+              console.log('Product data found:', productData);
+              return {
+                id: product.id,
+                data: {
+                  ...product,
+                  oldPrice: productData.oldPrice ? parseFloat(productData.oldPrice) : null,
+                  weight: productData.weight || null,
+                  dimensions: productData.dimensions || null,
+                  hsCode: productData.hsCode || null
+                }
+              };
             }
             return null;
           } catch (error) {
@@ -284,40 +267,49 @@ export default function Checkout() {
         });
         
         const results = await Promise.all(promises);
+        console.log('All product fetch results:', results);
         
-        // Only update state if component is still mounted
-        if (isMounted) {
-          results.forEach(result => {
-            if (result) {
-              updatedProducts[result.id] = result.data;
-            }
-          });
+        // Process results without isMounted check
+        console.log('Processing results...');
+        results.forEach((result, index) => {
+          console.log(`Processing result ${index}:`, result);
+          if (result) {
+            console.log(`Adding product ${result.id} to updatedProducts`);
+            updatedProducts[result.id] = result.data;
+          } else {
+            console.log(`Result ${index} is null/undefined`);
+          }
+        });
+        
+        console.log('Updated products to set:', updatedProducts);
+        console.log('Object.keys(updatedProducts):', Object.keys(updatedProducts));
+        
+        setProductsWithOldPrice(prev => {
+          // Only update if there are actual changes
+          const hasChanges = Object.keys(updatedProducts).some(
+            id => !prev[id] || 
+                 prev[id].oldPrice !== updatedProducts[id].oldPrice ||
+                 prev[id].weight !== updatedProducts[id].weight ||
+                 prev[id].dimensions !== updatedProducts[id].dimensions ||
+                 prev[id].hsCode !== updatedProducts[id].hsCode
+          );
           
-          setProductsWithOldPrice(prev => {
-            // Only update if there are actual changes
-            const hasChanges = Object.keys(updatedProducts).some(
-              id => !prev[id] || prev[id].oldPrice !== updatedProducts[id].oldPrice
-            );
-            
-            return hasChanges ? { ...prev, ...updatedProducts } : prev;
-          });
-        }
+          console.log('Has changes:', hasChanges);
+          console.log('Previous state:', prev);
+          console.log('New state will be:', hasChanges ? { ...prev, ...updatedProducts } : prev);
+          
+          return hasChanges ? { ...prev, ...updatedProducts } : prev;
+        });
+        
       } catch (error) {
         console.error("Error fetching product details:", error);
       } finally {
-        if (isMounted) {
-          setIsLoadingProductDetails(false);
-        }
+        setIsLoadingProductDetails(false);
       }
     }
     
     fetchProductDetails();
-    
-    // Cleanup function
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedProducts.map(p => `${p.id}-${p.documentId}`).join(','), isLoadingProductDetails]); // More stable dependency
+  }, [selectedProducts.length, selectedProducts.map(p => p.documentId).join(',')]); // Simpler, more stable dependency
 
   // Calculate subtotal: sum of oldPrice (if available) or price, times quantity
   const subtotal = selectedProducts.reduce((acc, product) => {
@@ -380,247 +372,68 @@ export default function Checkout() {
                 </form> */}
               </div>
               <div className="wrap">
-                <h5 className="title">Information</h5>
-                <form className="info-box" onSubmit={(e) => e.preventDefault()}>
-                  <div className="grid-2">
-                    <input 
-                      type="text" 
-                      name="firstName"
-                      placeholder="First Name*" 
-                      value={formData.firstName}
-                      onChange={handleInputChange}
-                      required
-                    />
-                    <input 
-                      type="text" 
-                      name="lastName"
-                      placeholder="Last Name*" 
-                      value={formData.lastName}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div className="grid-2">
-                    <input 
-                      type="email" 
-                      name="email"
-                      placeholder="Email Address*" 
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                    />
-                    <input 
-                      type="tel" 
-                      name="phone"
-                      placeholder="Phone Number*" 
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div className="tf-select">
-                    <select
-                      className="text-title"
-                      name="country"
-                      value={formData.country}
-                      onChange={handleInputChange}
-                    >
-                      <option
-                        value="Choose Country/Region"
-                        data-provinces="[]"
-                      >
-                        Choose Country/Region
-                      </option>
-                      <option
-                        value="United States"
-                        data-provinces="[['Alabama','Alabama'],['Alaska','Alaska'],['American Samoa','American Samoa'],['Arizona','Arizona'],['Arkansas','Arkansas'],['Armed Forces Americas','Armed Forces Americas'],['Armed Forces Europe','Armed Forces Europe'],['Armed Forces Pacific','Armed Forces Pacific'],['California','California'],['Colorado','Colorado'],['Connecticut','Connecticut'],['Delaware','Delaware'],['District of Columbia','Washington DC'],['Federated States of Micronesia','Micronesia'],['Florida','Florida'],['Georgia','Georgia'],['Guam','Guam'],['Hawaii','Hawaii'],['Idaho','Idaho'],['Illinois','Illinois'],['Indiana','Indiana'],['Iowa','Iowa'],['Kansas','Kansas'],['Kentucky','Kentucky'],['Louisiana','Louisiana'],['Maine','Maine'],['Marshall Islands','Marshall Islands'],['Maryland','Maryland'],['Massachusetts','Massachusetts'],['Michigan','Michigan'],['Minnesota','Minnesota'],['Mississippi','Mississippi'],['Missouri','Missouri'],['Montana','Montana'],['Nebraska','Nebraska'],['Nevada','Nevada'],['New Hampshire','New Hampshire'],['New Jersey','New Jersey'],['New Mexico','New Mexico'],['New York','New York'],['North Carolina','North Carolina'],['North Dakota','North Dakota'],['Northern Mariana Islands','Northern Mariana Islands'],['Ohio','Ohio'],['Oklahoma','Oklahoma'],['Oregon','Oregon'],['Palau','Palau'],['Pennsylvania','Pennsylvania'],['Puerto Rico','Puerto Rico'],['Rhode Island','Rhode Island'],['South Carolina','South Carolina'],['South Dakota','South Dakota'],['Tennessee','Tennessee'],['Texas','Texas'],['Utah','Utah'],['Vermont','Vermont'],['Virgin Islands','U.S. Virgin Islands'],['Virginia','Virginia'],['Washington','Washington'],['West Virginia','West Virginia'],['Wisconsin','Wisconsin'],['Wyoming','Wyoming']]"
-                      >
-                        United States
-                      </option>
-                      <option
-                        value="Australia"
-                        data-provinces="[['Australian Capital Territory','Australian Capital Territory'],['New South Wales','New South Wales'],['Northern Territory','Northern Territory'],['Queensland','Queensland'],['South Australia','South Australia'],['Tasmania','Tasmania'],['Victoria','Victoria'],['Western Australia','Western Australia']]"
-                      >
-                        Australia
-                      </option>
-                      <option value="Austria" data-provinces="[]">
-                        Austria
-                      </option>
-                      <option value="Belgium" data-provinces="[]">
-                        Belgium
-                      </option>
-                      <option
-                        value="Canada"
-                        data-provinces="[['Alberta','Alberta'],['British Columbia','British Columbia'],['Manitoba','Manitoba'],['New Brunswick','New Brunswick'],['Newfoundland and Labrador','Newfoundland and Labrador'],['Northwest Territories','Northwest Territories'],['Nova Scotia','Nova Scotia'],['Nunavut','Nunavut'],['Ontario','Ontario'],['Prince Edward Island','Prince Edward Island'],['Quebec','Quebec'],['Saskatchewan','Saskatchewan'],['Yukon','Yukon']]"
-                      >
-                        Canada
-                      </option>
-                      <option value="Czech Republic" data-provinces="[]">
-                        Czechia
-                      </option>
-                      <option value="Denmark" data-provinces="[]">
-                        Denmark
-                      </option>
-                      <option value="Finland" data-provinces="[]">
-                        Finland
-                      </option>
-                      <option value="France" data-provinces="[]">
-                        France
-                      </option>
-                      <option value="Germany" data-provinces="[]">
-                        Germany
-                      </option>
-                      <option
-                        value="Hong Kong"
-                        data-provinces="[['Hong Kong Island','Hong Kong Island'],['Kowloon','Kowloon'],['New Territories','New Territories']]"
-                      >
-                        Hong Kong SAR
-                      </option>
-                      <option
-                        value="Ireland"
-                        data-provinces="[['Carlow','Carlow'],['Cavan','Cavan'],['Clare','Clare'],['Cork','Cork'],['Donegal','Donegal'],['Dublin','Dublin'],['Galway','Galway'],['Kerry','Kerry'],['Kildare','Kildare'],['Kilkenny','Kilkenny'],['Laois','Laois'],['Leitrim','Leitrim'],['Limerick','Limerick'],['Longford','Longford'],['Louth','Louth'],['Mayo','Mayo'],['Meath','Meath'],['Monaghan','Monaghan'],['Offaly','Offaly'],['Roscommon','Roscommon'],['Sligo','Sligo'],['Tipperary','Tipperary'],['Waterford','Waterford'],['Westmeath','Westmeath'],['Wexford','Wexford'],['Wicklow','Wicklow']]"
-                      >
-                        Ireland
-                      </option>
-                      <option value="Israel" data-provinces="[]">
-                        Israel
-                      </option>
-                      <option
-                        value="Italy"
-                        data-provinces="[['Agrigento','Agrigento'],['Alessandria','Alessandria'],['Ancona','Ancona'],['Aosta','Aosta Valley'],['Arezzo','Arezzo'],['Ascoli Piceno','Ascoli Piceno'],['Asti','Asti'],['Avellino','Avellino'],['Bari','Bari'],['Barletta-Andria-Trani','Barletta-Andria-Trani'],['Belluno','Belluno'],['Benevento','Benevento'],['Bergamo','Bergamo'],['Biella','Biella'],['Bologna','Bologna'],['Bolzano','South Tyrol'],['Brescia','Brescia'],['Brindisi','Brindisi'],['Cagliari','Cagliari'],['Caltanissetta','Caltanissetta'],['Campobasso','Campobasso'],['Carbonia-Iglesias','Carbonia-Iglesias'],['Caserta','Caserta'],['Catania','Catania'],['Catanzaro','Catanzaro'],['Chieti','Chieti'],['Como','Como'],['Cosenza','Cosenza'],['Cremona','Cremona'],['Crotone','Crotone'],['Cuneo','Cuneo'],['Enna','Enna'],['Fermo','Fermo'],['Ferrara','Ferrara'],['Firenze','Florence'],['Foggia','Foggia'],['Forlì-Cesena','Forlì-Cesena'],['Frosinone','Frosinone'],['Genova','Genoa'],['Gorizia','Gorizia'],['Grosseto','Grosseto'],['Imperia','Imperia'],['Isernia','Isernia'],['L'Aquila','L'Aquila'],['La Spezia','La Spezia'],['Latina','Latina'],['Lecce','Lecce'],['Lecco','Lecco'],['Livorno','Livorno'],['Lodi','Lodi'],['Lucca','Lucca'],['Macerata','Macerata'],['Mantova','Mantua'],['Massa-Carrara','Massa and Carrara'],['Matera','Matera'],['Medio Campidano','Medio Campidano'],['Messina','Messina'],['Milano','Milan'],['Modena','Modena'],['Monza e Brianza','Monza and Brianza'],['Napoli','Naples'],['Novara','Novara'],['Nuoro','Nuoro'],['Ogliastra','Ogliastra'],['Olbia-Tempio','Olbia-Tempio'],['Oristano','Oristano'],['Padova','Padua'],['Palermo','Palermo'],['Parma','Parma'],['Pavia','Pavia'],['Perugia','Perugia'],['Pesaro e Urbino','Pesaro and Urbino'],['Pescara','Pescara'],['Piacenza','Piacenza'],['Pisa','Pisa'],['Pistoia','Pistoia'],['Pordenone','Pordenone'],['Potenza','Potenza'],['Prato','Prato'],['Ragusa','Ragusa'],['Ravenna','Ravenna'],['Reggio Calabria','Reggio Calabria'],['Reggio Emilia','Reggio Emilia'],['Rieti','Rieti'],['Rimini','Rimini'],['Roma','Rome'],['Rovigo','Rovigo'],['Salerno','Salerno'],['Sassari','Sassari'],['Savona','Savona'],['Siena','Siena'],['Siracusa','Syracuse'],['Sondrio','Sondrio'],['Taranto','Taranto'],['Teramo','Teramo'],['Terni','Terni'],['Torino','Turin'],['Trapani','Trapani'],['Trento','Trentino'],['Treviso','Treviso'],['Trieste','Trieste'],['Udine','Udine'],['Varese','Varese'],['Venezia','Venice'],['Verbano-Cusio-Ossola','Verbano-Cusio-Ossola'],['Vercelli','Vercelli'],['Verona','Verona'],['Vibo Valentia','Vibo Valentia'],['Vicenza','Vicenza'],['Viterbo','Viterbo']]"
-                      >
-                        Italy
-                      </option>
-                      <option
-                        value="Japan"
-                        data-provinces="[['Aichi','Aichi'],['Akita','Akita'],['Aomori','Aomori'],['Chiba','Chiba'],['Ehime','Ehime'],['Fukui','Fukui'],['Fukuoka','Fukuoka'],['Fukushima','Fukushima'],['Gifu','Gifu'],['Gunma','Gunma'],['Hiroshima','Hiroshima'],['Hokkaidō','Hokkaido'],['Hyōgo','Hyogo'],['Ibaraki','Ibaraki'],['Ishikawa','Ishikawa'],['Iwate','Iwate'],['Kagawa','Kagawa'],['Kagoshima','Kagoshima'],['Kanagawa','Kanagawa'],['Kumamoto','Kumamoto'],['Kyōto','Kyoto'],['Kōchi','Kochi'],['Mie','Mie'],['Miyagi','Miyagi'],['Miyazaki','Miyazaki'],['Nagano','Nagano'],['Nagasaki','Nagasaki'],['Nara','Nara'],['Niigata','Niigata'],['Okayama','Okayama'],['Okinawa','Okinawa'],['Saga','Saga'],['Saitama','Saitama'],['Shiga','Shiga'],['Shimane','Shimane'],['Shizuoka','Shizuoka'],['Tochigi','Tochigi'],['Tokushima','Tokushima'],['Tottori','Tottori'],['Toyama','Toyama'],['Tōkyō','Tokyo'],['Wakayama','Wakayama'],['Yamagata','Yamagata'],['Yamaguchi','Yamaguchi'],['Yamanashi','Yamanashi'],['Ōita','Oita'],['Ōsaka','Osaka']]"
-                      >
-                        Japan
-                      </option>
-                      <option
-                        value="Malaysia"
-                        data-provinces="[['Johor','Johor'],['Kedah','Kedah'],['Kelantan','Kelantan'],['Kuala Lumpur','Kuala Lumpur'],['Labuan','Labuan'],['Melaka','Malacca'],['Negeri Sembilan','Negeri Sembilan'],['Pahang','Pahang'],['Penang','Penang'],['Perak','Perak'],['Perlis','Perlis'],['Putrajaya','Putrajaya'],['Sabah','Sabah'],['Sarawak','Sarawak'],['Selangor','Selangor'],['Terengganu','Terengganu']]"
-                      >
-                        Malaysia
-                      </option>
-                      <option value="Netherlands" data-provinces="[]">
-                        Netherlands
-                      </option>
-                      <option
-                        value="New Zealand"
-                        data-provinces="[['Auckland','Auckland'],['Bay of Plenty','Bay of Plenty'],['Canterbury','Canterbury'],['Chatham Islands','Chatham Islands'],['Gisborne','Gisborne'],['Hawke's Bay','Hawke's Bay'],['Manawatu-Wanganui','Manawatū-Whanganui'],['Marlborough','Marlborough'],['Nelson','Nelson'],['Northland','Northland'],['Otago','Otago'],['Southland','Southland'],['Taranaki','Taranaki'],['Tasman','Tasman'],['Waikato','Waikato'],['Wellington','Wellington'],['West Coast','West Coast']]"
-                      >
-                        New Zealand
-                      </option>
-                      <option value="Norway" data-provinces="[]">
-                        Norway
-                      </option>
-                      <option value="Poland" data-provinces="[]">
-                        Poland
-                      </option>
-                      <option
-                        value="Portugal"
-                        data-provinces="[['Aveiro','Aveiro'],['Açores','Azores'],['Beja','Beja'],['Braga','Braga'],['Bragança','Bragança'],['Castelo Branco','Castelo Branco'],['Coimbra','Coimbra'],['Faro','Faro'],['Guarda','Guarda'],['Leiria','Leiria'],['Lisboa','Lisbon'],['Madeira','Madeira'],['Portalegre','Portalegre'],['Porto','Porto'],['Santarém','Santarém'],['Setúbal','Setúbal'],['Viana do Castelo','Viana do Castelo'],['Vila Real','Vila Real'],['Viseu','Viseu'],['Évora','Évora']]"
-                      >
-                        Portugal
-                      </option>
-                      <option value="Singapore" data-provinces="[]">
-                        Singapore
-                      </option>
-                      <option
-                        value="South Korea"
-                        data-provinces="[['Busan','Busan'],['Chungbuk','North Chungcheong'],['Chungnam','South Chungcheong'],['Daegu','Daegu'],['Daejeon','Daejeon'],['Gangwon','Gangwon'],['Gwangju','Gwangju City'],['Gyeongbuk','North Gyeongsang'],['Gyeonggi','Gyeonggi'],['Gyeongnam','South Gyeongsang'],['Incheon','Incheon'],['Jeju','Jeju'],['Jeonbuk','North Jeolla'],['Jeonnam','South Jeolla'],['Sejong','Sejong'],['Seoul','Seoul'],['Ulsan','Ulsan']]"
-                      >
-                        South Korea
-                      </option>
-                      <option
-                        value="Spain"
-                        data-provinces="[['A Coruña','A Coruña'],['Albacete','Albacete'],['Alicante','Alicante'],['Almería','Almería'],['Asturias','Asturias Province'],['Badajoz','Badajoz'],['Balears','Balears Province'],['Barcelona','Barcelona'],['Burgos','Burgos'],['Cantabria','Cantabria Province'],['Castellón','Castellón'],['Ceuta','Ceuta'],['Ciudad Real','Ciudad Real'],['Cuenca','Cuenca'],['Cáceres','Cáceres'],['Cádiz','Cádiz'],['Córdoba','Córdoba'],['Girona','Girona'],['Granada','Granada'],['Guadalajara','Guadalajara'],['Guipúzcoa','Gipuzkoa'],['Huelva','Huelva'],['Huesca','Huesca'],['Jaén','Jaén'],['La Rioja','La Rioja Province'],['Las Palmas','Las Palmas'],['León','León'],['Lleida','Lleida'],['Lugo','Lugo'],['Madrid','Madrid Province'],['Melilla','Melilla'],['Murcia','Murcia'],['Málaga','Málaga'],['Navarra','Navarra'],['Ourense','Ourense'],['Palencia','Palencia'],['Pontevedra','Pontevedra'],['Salamanca','Salamanca'],['Santa Cruz de Tenerife','Santa Cruz de Tenerife'],['Segovia','Segovia'],['Sevilla','Seville'],['Soria','Soria'],['Tarragona','Tarragona'],['Teruel','Teruel'],['Toledo','Toledo'],['Valencia','Valencia'],['Valladolid','Valladolid'],['Vizcaya','Biscay'],['Zamora','Zamora'],['Zaragoza','Zaragoza'],['Álava','Álava'],['Ávila','Ávila']]"
-                      >
-                        Spain
-                      </option>
-                      <option value="Sweden" data-provinces="[]">
-                        Sweden
-                      </option>
-                      <option value="Switzerland" data-provinces="[]">
-                        Switzerland
-                      </option>
-                      <option
-                        value="United Arab Emirates"
-                        data-provinces="[['Abu Dhabi','Abu Dhabi'],['Ajman','Ajman'],['Dubai','Dubai'],['Fujairah','Fujairah'],['Ras al-Khaimah','Ras al-Khaimah'],['Sharjah','Sharjah'],['Umm al-Quwain','Umm al-Quwain']]"
-                      >
-                        United Arab Emirates
-                      </option>
-                      <option
-                        value="United Kingdom"
-                        data-provinces="[['British Forces','British Forces'],['England','England'],['Northern Ireland','Northern Ireland'],['Scotland','Scotland'],['Wales','Wales']]"
-                      >
-                        United Kingdom
-                      </option>
-                      <option value="Vietnam" data-provinces="[]">
-                        Vietnam
-                      </option>
-                    </select>
-                  </div>
-                  <div className="grid-2">
-                    <input 
-                      type="text" 
-                      name="city"
-                      placeholder="Town/City*" 
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      required
-                    />
-                    <input 
-                      type="text" 
-                      name="street"
-                      placeholder="Street,..." 
-                      value={formData.street}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div className="grid-2">
-                    <div className="tf-select">
-                      <select 
-                        className="text-title" 
-                        name="state"
-                        value={formData.state}
-                        onChange={handleInputChange}
-                      >
-                        <option value="Choose State">
-                          Choose State
-                        </option>
-                        <option value="California">California</option>
-                        <option value="Alabama">Alabama</option>
-                        <option value="Alaska">Alaska</option>
-                        <option value="Arizona">Arizona</option>
-                        <option value="Arkansas">Arkansas</option>
-                        <option value="Florida">Florida</option>
-                        <option value="Georgia">Georgia</option>
-                        <option value="Hawaii">Hawaii</option>
-                        <option value="Washington">Washington</option>
-                        <option value="Texas">Texas</option>
-                        <option value="Iowa">Iowa</option>
-                        <option value="Nevada">Nevada</option>
-                        <option value="Illinois">Illinois</option>
-                      </select>
-                    </div>
-                    <input 
-                      type="text" 
-                      name="postalCode"
-                      placeholder="Postal Code*" 
-                      value={formData.postalCode}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <textarea 
-                    name="note"
-                    placeholder="Write note..." 
-                    value={formData.note}
-                    onChange={handleInputChange}
-                  />
-                </form>
+                <h5 className="title">🚀 DHL Express Shipping</h5>
+                <DHLShippingForm 
+                  isCheckoutMode={true}
+                  initialPackages={selectedProducts.reduce((acc, product) => {
+                    const fetchedProduct = productsWithOldPrice[product.id];
+                    
+                    // Get weight and dimensions from either fetched data or original product data
+                    const productData = fetchedProduct || product;
+                    const weight = productData.weight || (productData.product && productData.product.weight);
+                    const dimensions = productData.dimensions || (productData.product && productData.product.dimensions);
+                    const hsCode = productData.hsCode || (productData.product && productData.product.hsCode);
+                    
+                    // Parse dimensions
+                    let length = 10, width = 10, height = 10;
+                    if (dimensions) {
+                      const dimensionMatch = dimensions.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/i);
+                      if (dimensionMatch) {
+                        length = parseFloat(dimensionMatch[1]) || 10;
+                        width = parseFloat(dimensionMatch[2]) || 10;
+                        height = parseFloat(dimensionMatch[3]) || 10;
+                      }
+                    }
+                    
+                    // Parse weight
+                    let parsedWeight = 1;
+                    if (weight) {
+                      const weightMatch = weight.toString().match(/(\d+(?:\.\d+)?)/);
+                      if (weightMatch) {
+                        let weightValue = parseFloat(weightMatch[1]);
+                        if (weight.toString().toLowerCase().includes('g') && !weight.toString().toLowerCase().includes('kg')) {
+                          weightValue = weightValue / 1000;
+                        }
+                        parsedWeight = weightValue || 1;
+                      }
+                    }
+
+                    const productQuantity = product.quantity || 1;
+
+                    // Create a separate package for each quantity
+                    for (let i = 0; i < productQuantity; i++) {
+                      const packageData = {
+                        weight: parsedWeight,
+                        length: length,
+                        width: width,
+                        height: height,
+                        description: product.title || (product.product && product.product.title) || 'Product',
+                        declaredValue: parseFloat(product.price) || (product.product && parseFloat(product.product.price)) || 0,
+                        quantity: 1, // Each package is now a single item
+                        commodityCode: hsCode || '', // Use the product's HS code
+                        manufacturingCountryCode: 'NP'
+                      };
+                      acc.push(packageData);
+                    }
+                    
+                    return acc;
+                  }, [])}
+                  onRateCalculated={(rateInfo) => {
+                    console.log('Rate calculated:', rateInfo);
+                    setShippingCost(rateInfo.price);
+                  }}
+                  onReceiverChange={setReceiverDetails}
+                />
               </div>
               <div className="wrap">
                 {/* Discount Coupons Section */}
@@ -709,14 +522,14 @@ export default function Checkout() {
                         </div>
                         <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
                       <span>Shipping</span>
-                      <span>Free</span>
+                      <span>{shippingCost > 0 ? `$${shippingCost.toFixed(2)}` : 'Get Shipping Rates'}</span>
                     </div>
                   </div>
                   <div className="bottom">
                     <h5 className="d-flex justify-content-between">
                           <span>Grand Total</span>
                       <span className="total-price-checkout">
-                            ${actualTotal.toFixed(2)}
+                            ${(actualTotal + shippingCost).toFixed(2)}
                       </span>
                     </h5>
                   </div>
@@ -780,7 +593,7 @@ export default function Checkout() {
                   <div style={{ marginTop: '20px', minHeight: '45px' }}>
                     {selectedPaymentMethod === 'nps' && (
                       <NPSPaymentForm 
-                        product={{ id: "checkout", name: "Checkout Order", price: actualTotal }} 
+                        product={{ id: "checkout", name: "Checkout Order", price: actualTotal + shippingCost }} 
                         orderData={{
                           products: selectedProducts.map(product => {
                             const fetchedProduct = productsWithOldPrice[product.id];
@@ -789,13 +602,10 @@ export default function Checkout() {
                             const subtotal = oldPrice * product.quantity;
                             const discount = oldPrice > unitPrice ? ((oldPrice - unitPrice) / oldPrice) * 100 : 0;
                             const finalPrice = unitPrice * product.quantity;
-
-                            // Get size and color from product's available options
                             const availableSize = product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M";
                             const availableColor = product.colors && product.colors.length > 0 
                               ? (typeof product.colors[0] === 'string' ? product.colors[0] : product.colors[0].name || "default")
                               : "default";
-
                             return {
                               size: availableSize,
                               color: availableColor,
@@ -804,26 +614,21 @@ export default function Checkout() {
                               subtotal: subtotal,
                               unitPrice: unitPrice,
                               documentId: product.documentId,
-                              finalPrice: finalPrice
+                              finalPrice: finalPrice,
+                              // DHL package fields
+                              weight: fetchedProduct?.weight || 1, // Default weight 1kg
+                              length: fetchedProduct?.dimensions?.length || 10, // Default dimensions
+                              width: fetchedProduct?.dimensions?.width || 10,
+                              height: fetchedProduct?.dimensions?.height || 10,
+                              description: product.title || product.name || "Product",
+                              declaredValue: unitPrice,
+                              commodityCode: fetchedProduct?.hsCode || "",
+                              manufacturingCountryCode: "NP" // Nepal
                             };
                           }),
-                          shippingPrice: 5,
-                          receiver_details: {
-                            note: formData.note || "",
-                            email: formData.email,
-                            phone: formData.phone,
-                            address: {
-                              city: formData.city,
-                              state: formData.state !== 'Choose State' ? formData.state : "",
-                              street: formData.street,
-                              country: formData.country !== 'Choose Country/Region' ? formData.country : "",
-                              postalCode: formData.postalCode
-                            },
-                            lastName: formData.lastName,
-                            firstName: formData.firstName
-                          }
+                          shippingPrice: shippingCost,
+                          receiver_details: receiverDetails
                         }}
-                        formData={formData}
                       />
                     )}
                     {selectedPaymentMethod === 'cod' && (
@@ -862,10 +667,6 @@ export default function Checkout() {
                   <div className="d-flex align-items-center justify-content-between text-button">
                     <span>Selected Items</span>
                     <span>{selectedProducts.length}</span>
-                  </div>
-                  <div className="d-flex align-items-center justify-content-between text-button">
-                    <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
                   </div>
                 </div>
                 <div className="list-product">

@@ -36,8 +36,6 @@ export interface GatewayRedirectForm {
   TransactionRemarks?: string;
   InstrumentCode?: string;
   ProcessId: string;
-  ResponseUrl?: string;
-  Signature: string;
 }
 
 // ============= NPS API Response Types =============
@@ -126,21 +124,27 @@ export interface NPSPaymentRequest {
   };
 }
 
-// Payment data stored in user bag
-export interface NPSPaymentData {
-  provider: "nps";
-  processId: string;
+// Payment data stored in user bag (supports both NPS and COD)
+export interface PaymentData {
+  provider: "nps" | "cod";
+  processId?: string; // Only for NPS
   merchantTxnId: string;
-  gatewayReferenceNo?: string;
+  gatewayReferenceNo?: string; // Only for NPS
   amount: number;
   status: "Success" | "Fail" | "Pending";
-  institution?: string;
-  instrument?: string;
-  serviceCharge?: string;
-  cbsMessage?: string;
+  institution?: string; // Only for NPS
+  instrument?: string; // Only for NPS
+  serviceCharge?: string; // Only for NPS
+  cbsMessage?: string; // Only for NPS
   timestamp: string;
-  webhook_processed?: boolean;
+  webhook_processed?: boolean; // Only for NPS
   orderData?: NPSOrderData;
+}
+
+// Backward compatibility - keeping NPSPaymentData for existing code
+export interface NPSPaymentData extends PaymentData {
+  provider: "nps";
+  processId: string;
 }
 
 // Order data structure
@@ -154,22 +158,34 @@ export interface NPSOrderData {
     unitPrice: number;
     documentId: string;
     finalPrice: number;
+    // DHL package fields
+    weight?: number;
+    length?: number;
+    width?: number;
+    height?: number;
+    description?: string;
+    declaredValue?: number;
+    commodityCode?: string;
+    manufacturingCountryCode?: string;
   }>;
   shippingPrice: number;
   receiver_details: {
-    note: string;
+    // DHL recipient fields (matches actual form)
+    fullName: string;           // Not firstName/lastName
+    companyName?: string;       // Added company field
     email: string;
     phone: string;
+    countryCode: string;        // Phone country code
     address: {
-      city: string;
-      state: string;
-      street: string;
-      country: string;
+      addressLine1: string;     // Not street
+      cityName: string;         // Not city
+      countryCode: string;      // Not country
       postalCode: string;
+      // No state field in DHL form
+      // No note field in DHL form
     };
-    lastName: string;
-    firstName: string;
   };
+  // Removed orderStatus and paymentMethod as they're redundant with the main payment object
 }
 
 // User bag payload

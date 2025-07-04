@@ -5,7 +5,7 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const trackingNumber = searchParams.get('trackingNumber');
-
+    
     if (!trackingNumber) {
       return NextResponse.json(
         { error: 'Missing required parameter: trackingNumber' },
@@ -22,11 +22,11 @@ export async function GET(request) {
     }
 
     const dhlService = new DHLExpressService();
-    const tracking = await dhlService.trackShipment(trackingNumber);
+    const trackingInfo = await dhlService.trackShipment(trackingNumber);
 
     return NextResponse.json({
       success: true,
-      data: tracking
+      data: trackingInfo
     });
 
   } catch (error) {
@@ -36,9 +36,9 @@ export async function GET(request) {
       { 
         error: 'Failed to track shipment',
         message: error.message,
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        details: error.data || null
       },
-      { status: 500 }
+      { status: error.status || 500 }
     );
   }
 }
@@ -61,9 +61,9 @@ export async function POST(request) {
       );
     }
 
-    if (body.trackingNumbers.length > 30) {
+    if (body.trackingNumbers.length > 10) {
       return NextResponse.json(
-        { error: 'Maximum 30 tracking numbers allowed per request' },
+        { error: 'Maximum 10 tracking numbers allowed per request' },
         { status: 400 }
       );
     }
@@ -87,42 +87,30 @@ export async function POST(request) {
     }
 
     const dhlService = new DHLExpressService();
-    
-    // Track multiple shipments
-    const trackingPromises = body.trackingNumbers.map(async (trackingNumber) => {
-      try {
-        const result = await dhlService.trackShipment(trackingNumber);
-        return {
-          trackingNumber,
-          success: true,
-          data: result
-        };
-      } catch (error) {
-        return {
-          trackingNumber,
-          success: false,
-          error: error.message
-        };
-      }
-    });
+    const trackingPromises = body.trackingNumbers.map(trackingNumber => 
+      dhlService.trackShipment(trackingNumber).catch(error => ({
+        trackingNumber,
+        error: error.message
+      }))
+    );
 
-    const results = await Promise.all(trackingPromises);
+    const trackingResults = await Promise.all(trackingPromises);
 
     return NextResponse.json({
       success: true,
-      data: results
+      data: trackingResults
     });
 
   } catch (error) {
-    console.error('DHL Tracking API Error:', error);
+    console.error('DHL Bulk Tracking API Error:', error);
     
     return NextResponse.json(
       { 
         error: 'Failed to track shipments',
         message: error.message,
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        details: error.data || null
       },
-      { status: 500 }
+      { status: error.status || 500 }
     );
   }
 } 
