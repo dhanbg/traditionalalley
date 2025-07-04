@@ -2,7 +2,7 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Build the Next.js app
 FROM node:20-alpine AS builder
@@ -32,7 +32,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
 
 # Install only production dependencies
-RUN npm install --omit=dev --legacy-peer-deps
+RUN npm ci --omit=dev --legacy-peer-deps
 
 # Expose the port the app runs on
 EXPOSE 3000
