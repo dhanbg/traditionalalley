@@ -254,14 +254,22 @@ export default function Slider1({
         spaceBetween={10}
         slidesPerView={1}
         onSwiper={(swiper) => (swiperRef.current = swiper)}
-        style={{ maxHeight: '531px' }}
+        style={{ 
+          aspectRatio: '2/3',
+          maxWidth: '400px',
+          margin: '0 auto'
+        }}
       >
         {items.map((slide, index) => (
           <SwiperSlide key={index} className="swiper-slide" data-color={slide.color || "gray"}>
             <div
               style={{ 
                 cursor: 'pointer', 
-                display: 'block',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: '100%',
+                aspectRatio: '2/3',
                 transition: 'transform 0.3s ease'
               }}
             >
@@ -274,11 +282,8 @@ export default function Slider1({
                 height={800}
                 style={{
                   width: '100%',
-                  height: 'auto',
-                  aspectRatio: '3/4',
+                  height: '100%',
                   objectFit: 'contain',
-                  margin: '0 auto',
-                  maxHeight: '531px',
                   borderRadius: '16px',
                   border: '1px solid #f0f0f0',
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
