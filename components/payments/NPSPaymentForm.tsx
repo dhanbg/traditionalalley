@@ -6,7 +6,7 @@ import type { NPSOrderData } from "../../types/nps";
 interface Product {
   id: string;
   name: string;
-  price: number;
+  price: number; // Price should always be in NPR for NPS payments
 }
 
 interface NPSPaymentFormProps {
@@ -106,7 +106,7 @@ const NPSPaymentForm = ({ product, orderData, formData }: NPSPaymentFormProps) =
       const merchantTxnId = `order-checkout-${Date.now()}`;
       
       const paymentRequest = {
-        amount: product.price, // Amount in NPR
+        amount: Math.round(product.price), // Amount in NPR (rounded to nearest integer)
         merchantTxnId: merchantTxnId,
         transactionRemarks: `Payment for ${product.name}`,
         customer_info: {
@@ -171,7 +171,7 @@ const NPSPaymentForm = ({ product, orderData, formData }: NPSPaymentFormProps) =
             Processing payment...
           </span>
         ) : (
-          `Pay with NPS (NPR ${product.price})`
+          `Pay with NPS (Rs. ${Math.round(product.price).toLocaleString('en-NP')})`
         )}
       </button>
 

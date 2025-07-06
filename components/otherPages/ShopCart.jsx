@@ -6,6 +6,7 @@ import CountdownTimer from "../common/Countdown";
 import { useContextElement } from "@/context/Context";
 import { fetchDataFromApi } from "@/utils/api";
 import { PRODUCT_BY_DOCUMENT_ID_API } from "@/utils/urls";
+import PriceDisplay from "@/components/common/PriceDisplay";
 
 const discounts = [
   {
@@ -346,51 +347,12 @@ export default function ShopCart() {
                             className="tf-cart-item_price text-center"
                           >
                             <div className="cart-price text-button price-on-sale">
-                              ${elm.price.toFixed(2)}
-                              {(() => {
-                                // ONLY use oldPrice from the API
-                                const fetchedProduct = productsWithOldPrice[elm.id];
-                                const oldPrice = fetchedProduct?.oldPrice;
-                                
-                                // Only proceed if we have a real oldPrice from the API
-                                if (!oldPrice) {
-                                  return null;
-                                }
-                                
-                                const parsedOldPrice = parseFloat(oldPrice);
-                                const currentPrice = parseFloat(elm.price);
-                                
-                                if (parsedOldPrice > currentPrice) {
-                                  const discount = ((parsedOldPrice - currentPrice) / parsedOldPrice * 100).toFixed(2);
-                                  
-                                  return (
-                                    <>
-                                      <div className="compare-at-price font-2" style={{ 
-                                        textDecoration: "line-through", 
-                                        fontSize: "16px", 
-                                        color: "#777",
-                                        margin: "5px 0",
-                                        fontWeight: "500",
-                                        display: "block"
-                                      }}>
-                                        ${parsedOldPrice.toFixed(2)}
-                                      </div>
-                                      <div className="badges-on-sale text-btn-uppercase" style={{ 
-                                        fontSize: "13px", 
-                                        color: "#ff5722", 
-                                        fontWeight: "bold",
-                                        backgroundColor: "#fff0eb",
-                                        padding: "2px 6px",
-                                        borderRadius: "4px",
-                                        display: "inline-block"
-                                      }}>
-                                        -{discount}%
-                                      </div>
-                                    </>
-                                  );
-                                }
-                                return null;
-                              })()}
+                              <PriceDisplay 
+                                price={elm.price}
+                                oldPrice={productsWithOldPrice[elm.id]?.oldPrice}
+                                className="text-button"
+                                size="normal"
+                              />
                             </div>
                           </td>
                           <td
@@ -428,7 +390,11 @@ export default function ShopCart() {
                             className="tf-cart-item_total text-center"
                           >
                             <div className="cart-total text-button total-price">
-                              ${(elm.price * elm.quantity).toFixed(2)}
+                              <PriceDisplay 
+                                price={elm.price * elm.quantity}
+                                className="text-button"
+                                size="normal"
+                              />
                             </div>
                           </td>
                           <td
@@ -499,7 +465,13 @@ export default function ShopCart() {
                   </div>
                   <div className="subtotal text-button d-flex justify-content-between align-items-center">
                     <span>Subtotal</span>
-                    <span className="total">${getSelectedItemsTotal().toFixed(2)}</span>
+                    <span className="total">
+                      <PriceDisplay 
+                        price={getSelectedItemsTotal()}
+                        className="text-button"
+                        size="normal"
+                      />
+                    </span>
                   </div>
                   <div className="discount text-button d-flex justify-content-between align-items-center">
                     <span>Total Discounts</span>
@@ -508,7 +480,11 @@ export default function ShopCart() {
                   <h5 className="total-order d-flex justify-content-between align-items-center">
                     <span>Total<br />(Without Shipping Charges)</span>
                     <span className="total">
-                      ${getSelectedItemsTotal().toFixed(2)}
+                      <PriceDisplay 
+                        price={getSelectedItemsTotal()}
+                        className="text-button"
+                        size="normal"
+                      />
                     </span>
                   </h5>
                   <div className="box-progress-checkout">

@@ -230,6 +230,11 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         const firstProduct = response.data.data.products[0];
         const billingPrice = firstProduct.totalPrice.find(p => p.currencyType === 'BILLC');
         if (billingPrice) {
+          console.log('🔍 DHL Rate Currency Debug:', {
+            currency: billingPrice.priceCurrency,
+            price: billingPrice.price,
+            currencyType: billingPrice.currencyType
+          });
           setSelectedRate({
             price: billingPrice.price,
             currency: billingPrice.priceCurrency

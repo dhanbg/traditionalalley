@@ -8,6 +8,7 @@ import { useClerk, useUser } from "@clerk/nextjs";
 import { fetchDataFromApi, getImageUrl } from "@/utils/api";
 import { PRODUCT_BY_DOCUMENT_ID_API, API_URL } from "@/utils/urls";
 import { useRouter } from "next/navigation";
+import PriceDisplay from "@/components/common/PriceDisplay";
 
 export default function CartModal() {
   const {
@@ -365,7 +366,11 @@ export default function CartModal() {
                       </div>
                       <div className="cart-item-bot">
                         <div className="text-button price">
-                          ${product.price.toFixed(2)}
+                          <PriceDisplay 
+                            price={product.price}
+                            className="text-button"
+                            size="small"
+                          />
                         </div>
                         <a
                           className="link text-button"
@@ -507,7 +512,11 @@ export default function CartModal() {
                               </div>
                               <div className="d-flex align-items-center justify-content-between flex-wrap gap-12">
                                 <div className="text-button">
-                                  {product.quantity} X ${product.price.toFixed(2)}
+                                  {product.quantity} X <PriceDisplay 
+                                    price={product.price}
+                                    className="text-button"
+                                    size="small"
+                                  />
                                 </div>
                               </div>
                             </div>
@@ -542,7 +551,13 @@ export default function CartModal() {
                     </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginLeft: 40, marginTop: 4 }}>
                         <h5 className="text-button">{selectedItemsCount}/{displayProducts.length}</h5>
-                        <h5 className="text-button">${selectedItemsTotal.toFixed(2)}</h5>
+                        <h5 className="text-button">
+                          <PriceDisplay 
+                            price={selectedItemsTotal}
+                            className="text-button"
+                            size="normal"
+                          />
+                        </h5>
                     </div>
                     </div>
                   </div>

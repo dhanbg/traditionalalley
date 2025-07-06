@@ -5,6 +5,7 @@ import Link from "next/link";
 import CountdownTimer from "../common/Countdown";
 
 import { useContextElement } from "@/context/Context";
+import PriceDisplay from "@/components/common/PriceDisplay";
 
 // Default placeholder image
 const DEFAULT_IMAGE = '/images/placeholder.jpg';
@@ -73,10 +74,12 @@ export default function ProductsCards6({ product }) {
           {safeProduct.title}
         </Link>
         <span className="price current-price">
-          {safeProduct.oldPrice && (
-            <span className="old-price">${safeProduct.oldPrice.toFixed(2)}</span>
-          )}{" "}
-          ${safeProduct.price?.toFixed(2)}
+          <PriceDisplay 
+            price={safeProduct.price}
+            oldPrice={safeProduct.oldPrice}
+            className="current-price"
+            size="normal"
+          />
         </span>
         {/* Sustainability information: Explains what "Committed" label means for eco-friendly products */}
         {/* <p className="description text-secondary text-line-clamp-2">

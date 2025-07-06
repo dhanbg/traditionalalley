@@ -8,15 +8,38 @@ export default function PriceDisplay({
   oldPrice = null, 
   className = "",
   showConversion = false,
-  size = "normal" // normal, small, large
+  size = "normal", // normal, small, large
+  isNPR = false // indicates if price is already in NPR (e.g., DHL shipping costs)
 }) {
   const { userCurrency, exchangeRate } = useContextElement();
   
   if (!price && price !== 0) return null;
 
   // Get price display information
-  const priceInfo = getDualPriceDisplay(price, userCurrency, exchangeRate);
-  const oldPriceInfo = oldPrice ? getDualPriceDisplay(oldPrice, userCurrency, exchangeRate) : null;
+  let priceInfo, oldPriceInfo;
+  
+  if (isNPR) {
+    // Price is already in NPR, so format accordingly
+    if (userCurrency === 'NPR') {
+      priceInfo = {
+        primary: { formatted: formatPrice(price, 'NPR') }
+      };
+    } else {
+      // User wants USD, so convert NPR to USD
+      const usdPrice = exchangeRate ? price / exchangeRate : price;
+      priceInfo = {
+        primary: { formatted: formatPrice(usdPrice, 'USD') }
+      };
+    }
+    oldPriceInfo = oldPrice ? (userCurrency === 'NPR' 
+      ? { primary: { formatted: formatPrice(oldPrice, 'NPR') } }
+      : { primary: { formatted: formatPrice(oldPrice / (exchangeRate || 1), 'USD') } }
+    ) : null;
+  } else {
+    // Normal price handling (assumes USD input)
+    priceInfo = getDualPriceDisplay(price, userCurrency, exchangeRate);
+    oldPriceInfo = oldPrice ? getDualPriceDisplay(oldPrice, userCurrency, exchangeRate) : null;
+  }
   
   // Calculate discount percentage
   const discountPercentage = oldPrice && price 
@@ -52,19 +75,7 @@ export default function PriceDisplay({
         )}
       </div>
       
-      {/* Conversion Info for NPR users */}
-      {showConversion && priceInfo.showConversion && priceInfo.secondary && (
-        <div className="price-conversion">
-          <small className="conversion-text">
-            ≈ {priceInfo.secondary.formatted}
-            {oldPriceInfo && oldPriceInfo.secondary && (
-              <span className="conversion-old">
-                {" "}(was {oldPriceInfo.secondary.formatted})
-              </span>
-            )}
-          </small>
-        </div>
-      )}
+
 
       <style jsx>{`
         .price-display {
@@ -101,19 +112,7 @@ export default function PriceDisplay({
           text-transform: uppercase;
         }
 
-        .price-conversion {
-          margin-top: 2px;
-        }
 
-        .conversion-text {
-          color: #666;
-          font-size: 12px;
-          font-style: italic;
-        }
-
-        .conversion-old {
-          color: #999;
-        }
 
         /* Size variations */
         .price-display-small .current-price {
@@ -126,10 +125,7 @@ export default function PriceDisplay({
           line-height: 1.4 !important;
         }
 
-        .price-display-small .conversion-text {
-          font-size: 10px !important;
-          line-height: 1.4 !important;
-        }
+
 
         .price-display-small .discount-badge {
           font-size: 9px !important;
@@ -157,10 +153,7 @@ export default function PriceDisplay({
           line-height: 1.4 !important;
         }
 
-        .price-display-large .conversion-text {
-          font-size: 14px !important;
-          line-height: 1.4 !important;
-        }
+
 
         .price-display-large .discount-badge {
           font-size: 12px !important;

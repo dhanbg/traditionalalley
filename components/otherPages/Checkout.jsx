@@ -3,12 +3,14 @@
 import { useContextElement } from "@/context/Context";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import NPSPaymentForm from "../payments/NPSPaymentForm";
 import DHLShippingForm from "../shipping/DHLShippingForm";
 import { fetchDataFromApi, updateData, updateUserBagWithPayment } from "@/utils/api";
 import { useUser } from "@clerk/nextjs";
+import PriceDisplay from "@/components/common/PriceDisplay";
+import { convertUsdToNpr, getExchangeRate } from "@/utils/currency";
 
 const discounts = [
   {
@@ -35,7 +37,8 @@ export default function Checkout() {
     getSelectedCartItems, 
     getSelectedItemsTotal,
     selectedCartItems,
-    clearPurchasedItemsFromCart
+    clearPurchasedItemsFromCart,
+    userCurrency
   } = useContextElement();
   
   const { user } = useUser();
@@ -60,6 +63,9 @@ export default function Checkout() {
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [isLoadingProductDetails, setIsLoadingProductDetails] = useState(false);
 
+  // Add state for NPR conversion
+  const [nprExchangeRate, setNprExchangeRate] = useState(null);
+
   // Add state for receiverDetails
   const [receiverDetails, setReceiverDetails] = useState({
     fullName: "",
@@ -79,6 +85,8 @@ export default function Checkout() {
   useEffect(() => {
     console.log('productsWithOldPrice updated:', productsWithOldPrice);
   }, [productsWithOldPrice]);
+
+
 
   // Function to get user's bag documentId
   const getUserBagDocumentId = async () => {
@@ -321,8 +329,51 @@ export default function Checkout() {
   // Calculate actual total: sum of price * quantity
   const actualTotal = selectedProducts.reduce((acc, product) => acc + parseFloat(product.price) * product.quantity, 0);
 
+  // Helper function to calculate NPR amount for NPS payments
+  const calculateNPRAmount = async (usdAmount) => {
+    try {
+      const rate = nprExchangeRate || await getExchangeRate();
+      if (!nprExchangeRate) {
+        setNprExchangeRate(rate);
+      }
+      return convertUsdToNpr(usdAmount, rate);
+    } catch (error) {
+      console.error('Failed to get exchange rate:', error);
+      const fallbackRate = 134.5;
+      return convertUsdToNpr(usdAmount, fallbackRate);
+    }
+  };
+
+  // Calculate NPR amount for display
+  const nprAmount = React.useMemo(() => {
+    if (nprExchangeRate) {
+      // Product total needs conversion from USD to NPR
+      const productTotalNPR = convertUsdToNpr(actualTotal, nprExchangeRate);
+      // Shipping cost is already in NPR, so add directly
+      return productTotalNPR + shippingCost;
+    }
+    return actualTotal + shippingCost; // Fallback to USD if no rate available
+  }, [actualTotal, shippingCost, nprExchangeRate]);
+
+  // Effect to fetch exchange rate
+  React.useEffect(() => {
+    const fetchRate = async () => {
+      try {
+        const rate = await getExchangeRate();
+        setNprExchangeRate(rate);
+      } catch (error) {
+        console.error('Failed to fetch exchange rate:', error);
+        setNprExchangeRate(134.5); // Fallback rate
+      }
+    };
+    
+    if (!nprExchangeRate) {
+      fetchRate();
+    }
+  }, []);
+
   // Calculate total discounts: subtotal - actualTotal (if positive)
-  const totalDiscounts = subtotal > actualTotal ? subtotal - actualTotal : 0;
+  const totalDiscounts = subtotal > actualTotal ? Math.round((subtotal - actualTotal) * 100) / 100 : 0;
 
   // Check if cart is empty
   if (selectedProducts.length === 0) {
@@ -510,26 +561,70 @@ export default function Checkout() {
                   <div className="top">
                         <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
                           <span>Subtotal</span>
-                          <span>${subtotal.toFixed(2)}</span>
+                          <span>
+                            <PriceDisplay 
+                              price={subtotal}
+                              className="text-button"
+                              size="normal"
+                            />
+                          </span>
                         </div>
-                        <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
-                          <span>Total Discounts</span>
-                          <span>-${totalDiscounts.toFixed(2)}</span>
-                        </div>
+                        {totalDiscounts > 0.01 && (
+                          <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
+                            <span>Total Discounts</span>
+                            <span style={{ color: '#28a745' }}>
+                              <PriceDisplay 
+                                price={-totalDiscounts}
+                                className="text-button"
+                                size="normal"
+                              />
+                            </span>
+                          </div>
+                        )}
                         <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
                           <span>Total (Without Shipping Charges)</span>
-                          <span>${actualTotal.toFixed(2)}</span>
+                          <span>
+                            <PriceDisplay 
+                              price={actualTotal}
+                              className="text-button"
+                              size="normal"
+                            />
+                          </span>
                         </div>
                         <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
                       <span>Shipping</span>
-                      <span>{shippingCost > 0 ? `$${shippingCost.toFixed(2)}` : 'Get Shipping Rates'}</span>
+                      <span>
+                        {shippingCost > 0 ? (
+                          <PriceDisplay 
+                            price={shippingCost}
+                            className="text-button"
+                            size="normal"
+                            isNPR={true}
+                          />
+                        ) : (
+                          'Get Shipping Rates'
+                        )}
+                      </span>
                     </div>
                   </div>
                   <div className="bottom">
                     <h5 className="d-flex justify-content-between">
                           <span>Grand Total</span>
                       <span className="total-price-checkout">
-                            ${(actualTotal + shippingCost).toFixed(2)}
+                        {userCurrency === 'NPR' ? (
+                          <PriceDisplay 
+                            price={nprAmount}
+                            className="text-button"
+                            size="large"
+                            isNPR={true}
+                          />
+                        ) : (
+                          <PriceDisplay 
+                            price={actualTotal + (shippingCost / (nprExchangeRate || 134.5))}
+                            className="text-button"
+                            size="large"
+                          />
+                        )}
                       </span>
                     </h5>
                   </div>
@@ -584,7 +679,7 @@ export default function Checkout() {
                           checked={selectedPaymentMethod === 'nps'}
                           onChange={() => setSelectedPaymentMethod('nps')}
                         />
-                        <span className="text-title">Pay with NPS</span>
+                        <span className="text-title">Pay with NPS (NPR)</span>
                       </label>
                     </div>
                   </div>
@@ -592,44 +687,50 @@ export default function Checkout() {
                   {/* Payment button container with fixed height to prevent jumping */}
                   <div style={{ marginTop: '20px', minHeight: '45px' }}>
                     {selectedPaymentMethod === 'nps' && (
-                      <NPSPaymentForm 
-                        product={{ id: "checkout", name: "Checkout Order", price: actualTotal + shippingCost }} 
-                        orderData={{
-                          products: selectedProducts.map(product => {
-                            const fetchedProduct = productsWithOldPrice[product.id];
-                            const unitPrice = parseFloat(product.price);
-                            const oldPrice = fetchedProduct?.oldPrice ? parseFloat(fetchedProduct.oldPrice) : unitPrice;
-                            const subtotal = oldPrice * product.quantity;
-                            const discount = oldPrice > unitPrice ? ((oldPrice - unitPrice) / oldPrice) * 100 : 0;
-                            const finalPrice = unitPrice * product.quantity;
-                            const availableSize = product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M";
-                            const availableColor = product.colors && product.colors.length > 0 
-                              ? (typeof product.colors[0] === 'string' ? product.colors[0] : product.colors[0].name || "default")
-                              : "default";
-                            return {
-                              size: availableSize,
-                              color: availableColor,
-                              discount: Math.round(discount),
-                              quantity: product.quantity,
-                              subtotal: subtotal,
-                              unitPrice: unitPrice,
-                              documentId: product.documentId,
-                              finalPrice: finalPrice,
-                              // DHL package fields
-                              weight: fetchedProduct?.weight || 1, // Default weight 1kg
-                              length: fetchedProduct?.dimensions?.length || 10, // Default dimensions
-                              width: fetchedProduct?.dimensions?.width || 10,
-                              height: fetchedProduct?.dimensions?.height || 10,
-                              description: product.title || product.name || "Product",
-                              declaredValue: unitPrice,
-                              commodityCode: fetchedProduct?.hsCode || "",
-                              manufacturingCountryCode: "NP" // Nepal
-                            };
-                          }),
-                          shippingPrice: shippingCost,
-                          receiver_details: receiverDetails
-                        }}
-                      />
+                      nprExchangeRate ? (
+                        <NPSPaymentForm 
+                          product={{ id: "checkout", name: "Checkout Order", price: nprAmount }} 
+                          orderData={{
+                            products: selectedProducts.map(product => {
+                              const fetchedProduct = productsWithOldPrice[product.id];
+                              const unitPrice = parseFloat(product.price);
+                              const oldPrice = fetchedProduct?.oldPrice ? parseFloat(fetchedProduct.oldPrice) : unitPrice;
+                              const subtotal = oldPrice * product.quantity;
+                              const discount = oldPrice > unitPrice ? ((oldPrice - unitPrice) / oldPrice) * 100 : 0;
+                              const finalPrice = unitPrice * product.quantity;
+                              const availableSize = product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M";
+                              const availableColor = product.colors && product.colors.length > 0 
+                                ? (typeof product.colors[0] === 'string' ? product.colors[0] : product.colors[0].name || "default")
+                                : "default";
+                              return {
+                                size: availableSize,
+                                color: availableColor,
+                                discount: Math.round(discount),
+                                quantity: product.quantity,
+                                subtotal: subtotal,
+                                unitPrice: unitPrice,
+                                documentId: product.documentId,
+                                finalPrice: finalPrice,
+                                // DHL package fields
+                                weight: fetchedProduct?.weight || 1, // Default weight 1kg
+                                length: fetchedProduct?.dimensions?.length || 10, // Default dimensions
+                                width: fetchedProduct?.dimensions?.width || 10,
+                                height: fetchedProduct?.dimensions?.height || 10,
+                                description: product.title || product.name || "Product",
+                                declaredValue: unitPrice,
+                                commodityCode: fetchedProduct?.hsCode || "",
+                                manufacturingCountryCode: "NP" // Nepal
+                              };
+                            }),
+                            shippingPrice: shippingCost,
+                            receiver_details: receiverDetails
+                          }}
+                        />
+                      ) : (
+                        <div style={{ textAlign: 'center', padding: '20px' }}>
+                          <p>Loading payment information...</p>
+                        </div>
+                      )
                     )}
                     {selectedPaymentMethod === 'cod' && (
                       <button 
@@ -698,7 +799,13 @@ export default function Checkout() {
                         </div>
                         <div className="total-price text-button">
                           <span className="count">{elm.quantity}</span>X
-                          <span className="price">${elm.price.toFixed(2)}</span>
+                          <span className="price">
+                            <PriceDisplay 
+                              price={elm.price}
+                              className="text-button"
+                              size="small"
+                            />
+                          </span>
                         </div>
                       </div>
                     </div>

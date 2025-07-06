@@ -12,6 +12,7 @@ import CustomOrderForm from "../CustomOrderForm";
 import SizeGuideModal from "../SizeGuideModal";
 import { PRODUCT_REVIEWS_API } from "../../../utils/urls";
 import { fetchDataFromApi } from "../../../utils/api";
+import PriceDisplay from "@/components/common/PriceDisplay";
 
 export default function Details1({ product }) {
   // Set default values for missing properties to prevent errors
@@ -180,23 +181,12 @@ export default function Details1({ product }) {
                     </div>
                     <div className="tf-product-info-desc">
                       <div className="tf-product-info-price">
-                        <h5 className="price-on-sale font-2">
-                          {" "}
-                          ${safeProduct.price.toFixed(2)}
-                        </h5>
-                        {safeProduct.oldPrice ? (
-                          <>
-                            <div className="compare-at-price font-2">
-                              {" "}
-                              ${safeProduct.oldPrice.toFixed(2)}
-                            </div>
-                            <div className="badges-on-sale text-btn-uppercase">
-                              -{((safeProduct.oldPrice - safeProduct.price) / safeProduct.oldPrice * 100).toFixed(2)}%
-                            </div>
-                          </>
-                        ) : (
-                          ""
-                        )}
+                        <PriceDisplay 
+                          price={safeProduct.price}
+                          oldPrice={safeProduct.oldPrice}
+                          className="price-on-sale font-2"
+                          size="large"
+                        />
                       </div>
                       {/* Sustainability information: Explains what "Committed" label means for eco-friendly products */}
                       {/* <p>
