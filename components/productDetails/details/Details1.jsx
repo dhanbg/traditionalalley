@@ -10,7 +10,7 @@ import { useClerk } from "@clerk/nextjs";
 import Link from "next/link";
 import CustomOrderForm from "../CustomOrderForm";
 import SizeGuideModal from "../SizeGuideModal";
-import { PRODUCT_REVIEWS_API } from "../../../utils/urls";
+import { PRODUCT_REVIEWS_API, API_URL } from "../../../utils/urls";
 import { fetchDataFromApi } from "../../../utils/api";
 
 export default function Details1({ product }) {
@@ -21,22 +21,7 @@ export default function Details1({ product }) {
     sizes: product.sizes || [],
     price: product.price || 0,
     oldPrice: product.oldPrice || null,
-    imgSrc:
-      product.imgSrc && product.imgSrc.formats && product.imgSrc.formats.medium && product.imgSrc.formats.medium.url
-        ? (product.imgSrc.formats.medium.url.startsWith('http')
-            ? product.imgSrc.formats.medium.url
-            : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337'}${product.imgSrc.formats.medium.url}`)
-        : product.imgSrc && product.imgSrc.formats && product.imgSrc.formats.small && product.imgSrc.formats.small.url
-        ? (product.imgSrc.formats.small.url.startsWith('http')
-            ? product.imgSrc.formats.small.url
-            : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337'}${product.imgSrc.formats.small.url}`)
-        : product.imgSrc && product.imgSrc.url
-        ? (product.imgSrc.url.startsWith('http')
-            ? product.imgSrc.url
-            : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337'}${product.imgSrc.url}`)
-        : typeof product.imgSrc === 'string'
-        ? product.imgSrc
-        : '/images/placeholder.jpg',
+    imgSrc: product.imgSrc || '/images/placeholder.jpg', // Now expects a processed URL string
     imgHover: product.imgHover || product.imgSrc || '/images/placeholder.jpg',
     gallery: product.gallery || []
   };
