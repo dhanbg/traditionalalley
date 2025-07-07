@@ -7,12 +7,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import CartLength from "../common/CartLength";
 import CurrencySwitcher from "../common/CurrencySwitcher";
-import { UserButton, useClerk } from "@clerk/nextjs";
+import { useSession, signIn, signOut } from "next-auth/react";
 import { useContextElement } from "@/context/Context";
+
 export default function Header1({ fullWidth = false }) {
   const router = useRouter();
-  const { user } = useContextElement();
-  const { openSignIn } = useClerk();
+  const { data: session } = useSession();
+  const user = session?.user;
+  
   return (
     <header
       id="header"
@@ -85,33 +87,91 @@ export default function Header1({ fullWidth = false }) {
               </li>
               {user ? (
                 <>
-                  <UserButton>
-                    <UserButton.MenuItems>
-                      <UserButton.Action
-                        label="Cart"
-                        labelIcon={
+                  <li className="nav-account">
+                    <div className="dropdown">
+                      <a
+                        href="#"
+                        className="nav-icon-item dropdown-toggle"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                      >
+                        {user.image ? (
+                          <img
+                            src={user.image}
+                            alt={user.name}
+                            className="rounded-circle nav-avatar-img align-middle"
+                            width={30}
+                            height={30}
+                            style={{ objectFit: 'cover', verticalAlign: 'middle' }}
+                          />
+                        ) : (
                           <svg
-                            className="icon"
-                            width={15}
-                            height={15}
+                            className="icon align-middle"
+                            width={30}
+                            height={30}
                             viewBox="0 0 24 24"
                             fill="none"
                             xmlns="http://www.w3.org/2000/svg"
-                            style={{ transform: "translateY(-3px)" }}
                           >
                             <path
-                              d="M16.5078 10.8734V6.36686C16.5078 5.17166 16.033 4.02541 15.1879 3.18028C14.3428 2.33514 13.1965 1.86035 12.0013 1.86035C10.8061 1.86035 9.65985 2.33514 8.81472 3.18028C7.96958 4.02541 7.49479 5.17166 7.49479 6.36686V10.8734M4.11491 8.62012H19.8877L21.0143 22.1396H2.98828L4.11491 8.62012Z"
+                              d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"
+                              stroke="#181818"
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"
                               stroke="#181818"
                               strokeWidth={2}
                               strokeLinecap="round"
                               strokeLinejoin="round"
                             />
                           </svg>
-                        }
-                        onClick={() => router.push("/shopping-cart")}
-                      />
-                    </UserButton.MenuItems>
-                  </UserButton>
+                        )}
+                      </a>
+                      <ul className="dropdown-menu">
+                        <li>
+                          <a className="dropdown-item" href="/my-account">
+                            My Account
+                          </a>
+                        </li>
+                        <li>
+                          <a className="dropdown-item" href="/shopping-cart">
+                            <svg
+                              className="icon me-2"
+                              width={15}
+                              height={15}
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M16.5078 10.8734V6.36686C16.5078 5.17166 16.033 4.02541 15.1879 3.18028C14.3428 2.33514 13.1965 1.86035 12.0013 1.86035C10.8061 1.86035 9.65985 2.33514 8.81472 3.18028C7.96958 4.02541 7.49479 5.17166 7.49479 6.36686V10.8734M4.11491 8.62012H19.8877L21.0143 22.1396H2.98828L4.11491 8.62012Z"
+                                stroke="#181818"
+                                strokeWidth={2}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                            Cart
+                          </a>
+                        </li>
+                        <li>
+                          <hr className="dropdown-divider" />
+                        </li>
+                        <li>
+                          <a 
+                            className="dropdown-item" 
+                            href="#" 
+                            onClick={() => signOut()}
+                          >
+                            Sign Out
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
+                  </li>
                   <li className="nav-wishlist">
                     <Link href={`/wish-list`} className="nav-icon-item">
                       <svg
@@ -161,7 +221,7 @@ export default function Header1({ fullWidth = false }) {
                   </li>
                 </>
               ) : (
-                <li onClick={openSignIn} className="nav-account">
+                <li onClick={() => signIn()} className="nav-account">
                   <a href="#" className="nav-icon-item">
                     <svg
                       className="icon"
@@ -187,20 +247,6 @@ export default function Header1({ fullWidth = false }) {
                       />
                     </svg>
                   </a>
-                  {/* <div className="dropdown-account dropdown-login">
-                    <div className="sub-top">
-                      <Link href={`/login`} className="tf-btn btn-reset">
-                        Login
-                      </Link>
-                      <p className="text-center text-secondary-2">
-                        Don't have an account?{" "}
-                        <Link href={`/register`}>Register</Link>
-                      </p>
-                    </div>
-                    <div className="sub-bot">
-                      <span className="body-text-">Support</span>
-                    </div>
-                  </div> */}
                 </li>
               )}
             </ul>

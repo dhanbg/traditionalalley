@@ -6,9 +6,11 @@ import ColorSelect from "../productDetails/ColorSelect";
 import Grid5 from "../productDetails/grids/Grid5";
 import { useContextElement } from "@/context/Context";
 import QuantitySelect from "../productDetails/QuantitySelect";
-import { useClerk } from "@clerk/nextjs";
+import { useSession, signIn } from "next-auth/react";
 import { PRODUCT_REVIEWS_API } from "../../utils/urls";
 import { fetchDataFromApi } from "../../utils/api";
+import { allProducts } from "@/data/productsWomen";
+import Link from "next/link";
 
 export default function QuickView() {
   const [activeColor, setActiveColor] = useState("gray");
@@ -27,21 +29,67 @@ export default function QuickView() {
     updateQuantity,
     user,
   } = useContextElement();
-  const { openSignIn } = useClerk();
-  const [reviewCount, setReviewCount] = useState(0);
+  const { data: session } = useSession();
+  const [item, setItem] = useState(allProducts[0]);
+  const [reviews, setReviews] = useState([]);
+  const [averageRating, setAverageRating] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
 
   useEffect(() => {
-    async function getReviewCount() {
-      if (!quickViewItem?.documentId) return;
-      try {
-        const res = await fetchDataFromApi(PRODUCT_REVIEWS_API(quickViewItem.documentId));
-        setReviewCount(res?.data?.length || 0);
-      } catch {
-        setReviewCount(0);
-      }
+    const filtered = allProducts.filter((el) => el.id == quickViewItem);
+    if (filtered.length) {
+      setItem(filtered[0]);
     }
-    getReviewCount();
-  }, [quickViewItem?.documentId]);
+  }, [quickViewItem]);
+
+  useEffect(() => {
+    if (item?.documentId) {
+      fetchReviews(item.documentId);
+    }
+  }, [item]);
+
+  const fetchReviews = async (productDocumentId) => {
+    try {
+      const response = await fetchDataFromApi(
+        PRODUCT_REVIEWS_API(productDocumentId)
+      );
+      if (response?.data) {
+        setReviews(response.data);
+        setTotalReviews(response.data.length);
+        
+        // Calculate average rating
+        if (response.data.length > 0) {
+          const totalRating = response.data.reduce((sum, review) => sum + review.rating, 0);
+          setAverageRating(totalRating / response.data.length);
+        } else {
+          setAverageRating(0);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    }
+  };
+
+  const renderStars = (rating) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 !== 0;
+
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(<i key={i} className="icon-star" />);
+    }
+
+    if (hasHalfStar) {
+      stars.push(<i key="half" className="icon-star-half" />);
+    }
+
+    const remainingStars = 5 - Math.ceil(rating);
+    for (let i = 0; i < remainingStars; i++) {
+      stars.push(<i key={`empty-${i}`} className="icon-star-o" />);
+    }
+
+    return stars;
+  };
 
   // Update activeColor when quickViewItem changes
   useEffect(() => {
@@ -94,17 +142,17 @@ export default function QuickView() {
 
   const handleAddToCart = () => {
     if (!user) {
-      openSignIn();
+      signIn();
     } else {
-      addProductToCart(quickViewItem.id, quantity);
+      addProductToCart(item.id, quantity);
     }
   };
 
   const handleWishlistClick = () => {
     if (!user) {
-      openSignIn();
+      signIn();
     } else {
-      addToWishlist(quickViewItem.id);
+      addToWishlist(item.id);
     }
   };
 
@@ -133,34 +181,34 @@ export default function QuickView() {
     const imageGallery = [];
     
     // 1. Add main image first
-    const mainImageUrl = getImageUrlString(quickViewItem.imgSrc);
+    const mainImageUrl = getImageUrlString(item.imgSrc);
     if (mainImageUrl) {
       imageGallery.push({
         id: 1,
         url: mainImageUrl,
-        alt: quickViewItem.title || 'Product main image'
+        alt: item.title || 'Product main image'
       });
     }
     
     // 2. Add hover image second (if different from main)
-    const hoverImageUrl = getImageUrlString(quickViewItem.imgHover);
+    const hoverImageUrl = getImageUrlString(item.imgHover);
     if (hoverImageUrl && hoverImageUrl !== mainImageUrl) {
       imageGallery.push({
         id: 2,
         url: hoverImageUrl,
-        alt: quickViewItem.title || 'Product hover image'
+        alt: item.title || 'Product hover image'
       });
     }
     
     // 3. Add gallery images if available
-    if (quickViewItem.gallery && quickViewItem.gallery.length > 0) {
-      quickViewItem.gallery.forEach((img, index) => {
+    if (item.gallery && item.gallery.length > 0) {
+      item.gallery.forEach((img, index) => {
         const galleryImageUrl = getImageUrlString(img);
         if (galleryImageUrl && !imageGallery.some(existing => existing.url === galleryImageUrl)) {
           imageGallery.push({
             id: index + 10,
             url: galleryImageUrl,
-            alt: img.alt || `${quickViewItem.title} - Gallery image ${index + 1}`
+            alt: img.alt || `${item.title} - Gallery image ${index + 1}`
           });
         }
       });
@@ -174,7 +222,7 @@ export default function QuickView() {
       <div className="modal-dialog">
         <div className="modal-content">
           <Grid5
-            firstItem={quickViewItem.imgSrc}
+            firstItem={item.imgSrc}
             activeColor={activeColor}
             setActiveColor={setActiveColor}
             productImages={getProductImages()}
@@ -191,18 +239,14 @@ export default function QuickView() {
               <div className="tf-product-info-heading">
                 <div className="tf-product-info-name">
                   <div className="text text-btn-uppercase">Clothing</div>
-                  <h3 className="name">{quickViewItem.title}</h3>
+                  <h3 className="name">{item.title}</h3>
                   <div className="sub">
                     <div className="tf-product-info-rate">
                       <div className="list-star">
-                        <i className="icon icon-star" />
-                        <i className="icon icon-star" />
-                        <i className="icon icon-star" />
-                        <i className="icon icon-star" />
-                        <i className="icon icon-star" />
+                        {renderStars(averageRating)}
                       </div>
                       <div className="text text-caption-1">
-                        ({reviewCount} reviews)
+                        ({totalReviews} reviews)
                       </div>
                     </div>
                     <div className="tf-product-info-sold">
@@ -216,16 +260,16 @@ export default function QuickView() {
                 <div className="tf-product-info-desc">
                   <div className="tf-product-info-price">
                     <h5 className="price-on-sale font-2">
-                      ${quickViewItem.price.toFixed(2)}
+                      ${item.price.toFixed(2)}
                     </h5>
-                    {quickViewItem.oldPrice ? (
+                    {item.oldPrice ? (
                       <>
                         <div className="compare-at-price font-2">
                           {" "}
-                          ${quickViewItem.oldPrice.toFixed(2)}
+                          ${item.oldPrice.toFixed(2)}
                         </div>
                         <div className="badges-on-sale text-btn-uppercase">
-                          -{((quickViewItem.oldPrice - quickViewItem.price) / quickViewItem.oldPrice * 100).toFixed(2)}%
+                          -{((item.oldPrice - item.price) / item.oldPrice * 100).toFixed(2)}%
                         </div>
                       </>
                     ) : (
@@ -241,7 +285,7 @@ export default function QuickView() {
                   <div className="tf-product-info-liveview">
                     <i className="icon icon-eye" />
                     <p className="text-caption-1">
-                      <span className="liveview-count">28</span> people are
+                      <span className="liveview-count">{totalReviews}</span> people are
                       viewing this right now
                     </p>
                   </div>
@@ -249,14 +293,14 @@ export default function QuickView() {
               </div>
               <div className="tf-product-info-choose-option">
                 {/* Sizes section */}
-                {quickViewItem.sizes && quickViewItem.sizes.length > 0 && (
+                {item.sizes && item.sizes.length > 0 && (
                   <div className="tf-product-info-size">
                     <SizeSelect 
                       sizes={
-                        quickViewItem.sizes.map((size, index) => ({
+                        item.sizes.map((size, index) => ({
                           id: `values-${typeof size === 'string' ? size.toLowerCase() : size}-${index}`,
                           value: typeof size === 'string' ? size : size,
-                          price: quickViewItem.price,
+                          price: item.price,
                           disabled: false
                         }))
                       }
@@ -265,13 +309,13 @@ export default function QuickView() {
                 )}
 
                 {/* Colors section */}
-                {quickViewItem.colors && quickViewItem.colors.length > 0 && (
+                {item.colors && item.colors.length > 0 && (
                   <div className="tf-product-info-color" style={{ position: 'relative', left: '-8px', width: '100%' }}>
                     <ColorSelect
                       activeColor={activeColor}
                       setActiveColor={setActiveColor}
                       colorOptions={
-                        quickViewItem.colors.map((color, index) => {
+                        item.colors.map((color, index) => {
                           // Handle different color formats
                           if (typeof color === 'string') {
                             return {
@@ -317,7 +361,7 @@ export default function QuickView() {
                         }}
                       >
                         <span>
-                          {user && isAddedToCartProducts(quickViewItem.id)
+                          {user && isAddedToCartProducts(item.id)
                             ? "Added"
                             : "Add to cart"}
                         </span>

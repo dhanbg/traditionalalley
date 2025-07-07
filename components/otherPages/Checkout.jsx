@@ -8,7 +8,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import NPSPaymentForm from "../payments/NPSPaymentForm";
 import DHLShippingForm from "../shipping/DHLShippingForm";
 import { fetchDataFromApi, updateData, updateUserBagWithPayment } from "@/utils/api";
-import { useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import PriceDisplay from "@/components/common/PriceDisplay";
 import { convertUsdToNpr, getExchangeRate } from "@/utils/currency";
 
@@ -41,7 +41,8 @@ export default function Checkout() {
     userCurrency
   } = useContextElement();
   
-  const { user } = useUser();
+  const { data: session } = useSession();
+  const user = session?.user;
   
   // Memoize selected products to prevent infinite re-renders
   const selectedProducts = useMemo(() => {
@@ -94,7 +95,7 @@ export default function Checkout() {
     
     try {
       const currentUserData = await fetchDataFromApi(
-        `/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=user_bag`
+        `/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=user_bag`
       );
 
       if (!currentUserData?.data || currentUserData.data.length === 0) {

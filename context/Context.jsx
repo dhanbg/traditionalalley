@@ -2,7 +2,7 @@
 import { allProducts } from "@/data/productsWomen";
 import { openCartModal } from "@/utils/openCartModal";
 import { openWistlistModal } from "@/utils/openWishlist";
-import { useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { API_URL, STRAPI_API_TOKEN, CARTS_API, USER_CARTS_API, PRODUCT_BY_DOCUMENT_ID_API } from "@/utils/urls";
 import { fetchDataFromApi, createData, updateData, deleteData, getImageUrl } from "@/utils/api";
 import { 
@@ -20,7 +20,8 @@ export const useContextElement = () => {
 };
 
 export default function Context({ children }) {
-  const { user } = useUser();
+  const { data: session } = useSession();
+  const user = session?.user;
   const [cartProducts, setCartProducts] = useState([]);
   const [wishList, setWishList] = useState([]);
   const [compareItem, setCompareItem] = useState([]);
@@ -41,6 +42,9 @@ export default function Context({ children }) {
   const [userCurrency, setUserCurrency] = useState('USD');
   const [exchangeRate, setExchangeRate] = useState(null);
   const [isLoadingCurrency, setIsLoadingCurrency] = useState(true);
+  
+  // Add this flag
+  const [userCreationAttempted, setUserCreationAttempted] = useState(false);
   
   // Function to toggle selection of cart items
   const toggleCartItemSelection = (id) => {
@@ -157,17 +161,57 @@ export default function Context({ children }) {
     initializeCurrency();
   }, []);
 
-  // Initialize cart loading state based on user presence
+  // Initialize cart loading state based on user presence and ensure user exists in backend
   useEffect(() => {
-    // If no user, we don't need to load cart from backend
-    if (!user) {
+    if (user) {
+      // Check if we've already attempted user creation for this specific user in this session
+      const userCreationKey = `userCreated_${user.id}`;
+      const hasAttemptedCreation = sessionStorage.getItem(userCreationKey) === 'true';
+      
+      if (!hasAttemptedCreation) {
+        console.log("User signed in:", user.email);
+        
+        if (!cartLoadedOnce) {
+          setIsCartLoading(true);
+        }
+        
+        // Ensure user exists in backend when they sign in (only once per session per user)
+        const ensureUserExists = async () => {
+          try {
+            // Mark as attempted before API call to prevent race conditions
+            sessionStorage.setItem(userCreationKey, 'true');
+            setUserCreationAttempted(true);
+            
+            console.log(`🔍 Attempting user creation check for: ${user.email}`);
+            const response = await fetch('/api/user-management', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+            
+            const result = await response.json();
+            console.log(`✅ User management result:`, result);
+            
+          } catch (error) {
+            console.error('Error ensuring user exists:', error);
+            // Reset the flag if there was an error so it can be retried
+            sessionStorage.removeItem(userCreationKey);
+            setUserCreationAttempted(false);
+          }
+        };
+        
+        ensureUserExists();
+      } else {
+        console.log(`✅ User creation already attempted for ${user.email} in this session`);
+        setUserCreationAttempted(true);
+      }
+    } else {
+      // If no user, we don't need to load cart from backend
       setIsCartLoading(false);
       setCartLoadedOnce(true);
-    } else {
-      // User exists but cart hasn't been loaded yet, ensure loading state is true
-      if (!cartLoadedOnce) {
-        setIsCartLoading(true);
-      }
+      // Note: We don't reset userCreationAttempted here because we want to keep 
+      // the sessionStorage flag intact until the browser session ends
     }
   }, [user, cartLoadedOnce]);
 
@@ -448,87 +492,21 @@ export default function Context({ children }) {
     if (user) {
       try {
         // Get the current logged-in user data
-        const currentUserData = await fetchDataFromApi(`/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=user_bag`);
+        const currentUserData = await fetchDataFromApi(`/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=user_bag`);
         
-        // If the user doesn't exist in our system, we need to handle this case
+        // If the user doesn't exist in our system, they should be created by the user-management API first
         if (!currentUserData?.data || currentUserData.data.length === 0) {
-          console.log(`No user data found for current user ${user.id}. Creating new user data.`);
+          console.warn(`⚠️ User data not found for ${user.email} (ID: ${user.id}). User should be created by user-management API first.`);
           
-          // Create a new user_data entry for this user
-          try {
-            const newUserPayload = {
-              data: {
-                firstName: user.firstName || user.username || "User",
-                lastName: user.lastName || "",
-                clerkUserId: user.id,
-                avatar: user.imageUrl || "",
-                email: user.emailAddresses?.[0]?.emailAddress || ""
-              }
-            };
-            
-            const newUserResponse = await createData("/api/user-datas", newUserPayload);
-            console.log("Created new user data:", newUserResponse);
-            
-            if (newUserResponse?.data?.id) {
-              // Now let's create a user bag for this new user
-              const userBagPayload = {
-                data: {
-                  Name: `${newUserPayload.data.firstName} ${newUserPayload.data.lastName}`,
-                  user_datum: newUserResponse.data.id
-                }
-              };
-              
-              const userBagResponse = await createData("/api/user-bags", userBagPayload);
-              console.log("Created new user bag:", userBagResponse);
-              
-              // Now add product to cart
-              if (userBagResponse?.data?.id) {
-                const cartPayload = {
-                  data: {
-                    quantity: qty || 1,
-                    user_datum: newUserResponse.data.id,
-                    user_bag: userBagResponse.data.id
-                  }
-                };
-                
-                // Add product to payload if we have a valid ID
-                if (!isNaN(parseInt(productToAdd.id))) {
-                  cartPayload.data.product = parseInt(productToAdd.id);
-                } else if (productToAdd.documentId) {
-                  // Find product by documentId
-                  try {
-                    const productResponse = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${productToAdd.documentId}&populate=*`);
-                    if (productResponse?.data && productResponse.data.length > 0) {
-                      cartPayload.data.product = productResponse.data[0].id;
-                    }
-                  } catch (error) {
-                    console.error("Error finding product by documentId:", error);
-                  }
-                }
-                
-                const cartResponse = await createData("/api/carts", cartPayload);
-                console.log("Added product to cart for new user:", cartResponse);
-                
-                // Add cartId and cartDocumentId to the product object
-                if (cartResponse?.data) {
-                  productToAdd.cartId = cartResponse.data.id;
-                  productToAdd.cartDocumentId = cartResponse.data.attributes?.documentId;
-                }
-                
-                // Add to local state
-                setCartProducts((pre) => [...pre, productToAdd]);
-                
-                if (isModal) {
-                  setCartRefreshKey(prev => prev + 1);
-                  openCartModal().catch(console.error);
-                }
-                
-                return;
-              }
-            }
-          } catch (createUserError) {
-            console.error("Error creating new user data:", createUserError);
+          // Add to local cart only and let the user-management API create the user
+          setCartProducts((pre) => [...pre, productToAdd]);
+          
+          if (isModal) {
+            setCartRefreshKey(prev => prev + 1);
+            openCartModal().catch(console.error);
           }
+          
+          return;
         }
         
         // Extract the current user data
@@ -578,13 +556,13 @@ export default function Context({ children }) {
           }
         }
         
-        // Create a user-bag if none exists
+        // Create a user-bag if none exists (this should be rare since user-management API creates bags)
         if (!userBag) {
           console.log("No user bag found, creating a new one");
           
           // Get user name from current user data
-          const firstName = currentUserAttrs.firstName || user.firstName || "User";
-          const lastName = currentUserAttrs.lastName || user.lastName || "";
+          const firstName = currentUserAttrs.firstName || user.name?.split(' ')[0] || "User";
+          const lastName = currentUserAttrs.lastName || user.name?.split(' ').slice(1).join(' ') || "";
           
           try {
             const userBagPayload = {
@@ -810,7 +788,7 @@ export default function Context({ children }) {
             // Add user_datum if available
             if (user) {
               // Get user data for the current user
-              const userDataResponse = await fetchDataFromApi(`/api/user-datas?filters[clerkUserId][$eq]=${user.id}`);
+              const userDataResponse = await fetchDataFromApi(`/api/user-datas?filters[authUserId][$eq]=${user.id}`);
               
               if (userDataResponse?.data && userDataResponse.data.length > 0) {
                 const userData = userDataResponse.data[0];
@@ -1048,7 +1026,7 @@ export default function Context({ children }) {
           
           // First, get the user's data to find their user_datum ID
           const currentUserData = await fetchDataFromApi(
-            `/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=*`
+            `/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=*`
           );
 
           if (!currentUserData?.data || currentUserData.data.length === 0) {
@@ -1285,7 +1263,7 @@ export default function Context({ children }) {
       // If all direct approaches failed, get user-specific carts and find the one with matching product
       // First, get the user's data to find their user_datum ID
       const currentUserData = await fetchDataFromApi(
-        `/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=*`
+        `/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=*`
       );
 
       if (!currentUserData?.data || currentUserData.data.length === 0) {
@@ -1388,7 +1366,7 @@ export default function Context({ children }) {
       // First, get the user's data to find their user_datum ID
       console.log("🔍 Fetching user data to find user_datum ID...");
       const currentUserData = await fetchDataFromApi(
-        `/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=*`
+        `/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=*`
       );
 
       if (!currentUserData?.data || currentUserData.data.length === 0) {
@@ -1525,7 +1503,7 @@ export default function Context({ children }) {
       // First, get the user's data to find their user_datum ID
       console.log("🔍 Fetching user data to find user_datum ID...");
       const currentUserData = await fetchDataFromApi(
-        `/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=*`
+        `/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=*`
       );
 
       if (!currentUserData?.data || currentUserData.data.length === 0) {
@@ -1690,6 +1668,35 @@ export default function Context({ children }) {
     return defaultPlaceholder;
   }
 
+  // Cleanup effect for when component unmounts (browser closes)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Clear user creation flags when browser is closing
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('userCreated_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.addEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
+  // Function to manually clear user creation attempts (for debugging)
+  const clearUserCreationFlags = () => {
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.startsWith('userCreated_')) {
+        sessionStorage.removeItem(key);
+        console.log(`🧹 Cleared user creation flag: ${key}`);
+      }
+    });
+    setUserCreationAttempted(false);
+  };
+
   const contextElement = {
     user,
     cartProducts,
@@ -1734,6 +1741,7 @@ export default function Context({ children }) {
     isLoadingCurrency,
     setCurrency,
     refreshExchangeRate,
+    clearUserCreationFlags,
   };
   return (
     <dataContext.Provider value={contextElement}>

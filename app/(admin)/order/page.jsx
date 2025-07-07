@@ -1,21 +1,15 @@
-import { auth, clerkClient } from '@clerk/nextjs/server'
+import { auth } from '@/auth'
 
 export default async function AdminPage() {
-  const { userId } = await auth()
+  const session = await auth()
 
-  if (!userId) {
+  if (!session) {
     return <div>Sign in to view this page</div>
   }
 
-  // Initialize the Backend SDK
-  const client = await clerkClient()
-
-  // Get the user's full Backend User object
-  const user = await client.users.getUser(userId)
-
   return (
     <div>
-      <h1>Welcome, {user.firstName}!</h1>
+      <h1>Welcome, {session.user.name}!</h1>
     </div>
   )
 }

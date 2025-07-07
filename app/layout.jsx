@@ -20,7 +20,7 @@ import Wishlist from "@/components/modals/Wishlist";
 import DemoModal from "@/components/modals/DemoModal";
 import Categories from "@/components/modals/Categories";
 import ScrollTop from "@/components/common/ScrollTop";
-import { ClerkProvider } from "@clerk/nextjs";
+import { SessionProvider } from "next-auth/react";
 
 export default function RootLayout({ children }) {
   const pathname = usePathname();
@@ -157,7 +157,7 @@ export default function RootLayout({ children }) {
   }, [pathname]);
 
   return (
-    <ClerkProvider>
+    <SessionProvider>
     <html lang="en">
       <body className="preload-wrapper popup-loader" suppressHydrationWarning={true}>
         <Context>
@@ -207,6 +207,6 @@ export default function RootLayout({ children }) {
         </Context>
       </body>
     </html>
-    </ClerkProvider>
+    </SessionProvider>
   );
 }

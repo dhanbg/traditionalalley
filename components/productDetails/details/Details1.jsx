@@ -1,12 +1,12 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Slider1 from "../sliders/Slider1";
-import ColorSelect from "../ColorSelect";
-import SizeSelect from "../SizeSelect";
-import QuantitySelect from "../QuantitySelect";
+import ColorSelect from "@/components/productDetails/ColorSelect";
+import SizeSelect from "@/components/productDetails/SizeSelect";
+import QuantitySelect from "@/components/productDetails/QuantitySelect";
 import Image from "next/image";
 import { useContextElement } from "@/context/Context";
-import { useClerk } from "@clerk/nextjs";
+import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
 import CustomOrderForm from "../CustomOrderForm";
 import SizeGuideModal from "../SizeGuideModal";
@@ -64,7 +64,7 @@ export default function Details1({ product }) {
     updateQuantity,
     user,
   } = useContextElement();
-  const { openSignIn } = useClerk();
+  const { data: session } = useSession();
 
   useEffect(() => {
     async function getReviewCount() {
@@ -78,6 +78,18 @@ export default function Details1({ product }) {
     }
     getReviewCount();
   }, [product?.documentId]);
+
+  useEffect(() => {
+    if (safeProduct.colors && safeProduct.colors.length > 0) {
+      setActiveColor(safeProduct.colors[0]);
+    }
+  }, [safeProduct.colors]);
+
+  useEffect(() => {
+    if (safeProduct.sizes && safeProduct.sizes.length > 0) {
+      setQuantity(1);
+    }
+  }, [safeProduct.sizes]);
 
   // Pre-initialize the zoom container to avoid delay on first hover
   useEffect(() => {
@@ -100,7 +112,7 @@ export default function Details1({ product }) {
 
   const handleWishlistClick = () => {
     if (!user) {
-      openSignIn();
+      signIn();
     } else {
       addToWishlist(safeProduct.id);
     }
@@ -108,9 +120,17 @@ export default function Details1({ product }) {
 
   const handleCartClick = () => {
     if (!user) {
-      openSignIn();
+      signIn();
     } else {
       addProductToCart(safeProduct.id, quantity);
+    }
+  };
+
+  const handleCompareClick = () => {
+    if (!user) {
+      signIn();
+    } else {
+      addToCompareItem(safeProduct.id);
     }
   };
 
@@ -330,12 +350,12 @@ export default function Details1({ product }) {
                           href="#compare"
                           data-bs-toggle="offcanvas"
                           aria-controls="compare"
-                          onClick={() => addToCompareItem(safeProduct.documentId || safeProduct.id)}
+                          onClick={handleCompareClick}
                           className="box-icon hover-tooltip compare btn-icon-action"
                         >
                           <span className="icon icon-gitDiff" />
                           <span className="tooltip text-caption-2">
-                            {isAddedtoCompareItem(safeProduct.documentId || safeProduct.id)
+                            {isAddedtoCompareItem(safeProduct.id)
                               ? "Already Compared"
                               : "Compare"}
                           </span>

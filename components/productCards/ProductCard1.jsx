@@ -5,7 +5,7 @@ import Link from "next/link";
 import CountdownTimer from "../common/Countdown";
 import PriceDisplay from "../common/PriceDisplay";
 import { useContextElement } from "@/context/Context";
-import { useClerk } from "@clerk/nextjs";
+import { useSession, signIn } from "next-auth/react";
 import { getImageUrl } from "@/utils/api";
 
 // Default placeholder image
@@ -82,7 +82,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
     removeFromWishlist,
     user
   } = useContextElement();
-  const { openSignIn } = useClerk();
+  const { data: session } = useSession();
 
   useEffect(() => {
     // Ensure we never set an empty string as the currentImage
@@ -108,19 +108,27 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
     };
   }, []);
 
-  const handleWishlistClick = () => {
+  const handleWishlistClick = (id) => {
     if (!user) {
-      openSignIn();
+      signIn();
     } else {
-      addToWishlist(safeProduct.id);
+      addToWishlist(id);
     }
   };
 
   const handleCartClick = () => {
     if (!user) {
-      openSignIn();
+      signIn();
     } else {
       addProductToCart(safeProduct.id);
+    }
+  };
+
+  const handleCompareClick = (id) => {
+    if (!user) {
+      signIn();
+    } else {
+      addToCompareItem(id);
     }
   };
 
@@ -283,37 +291,54 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
         )}
         <div className="list-product-btn">
           <a
-            onClick={handleWishlistClick}
-            className="box-icon wishlist btn-icon-action"
+            href="#quick_add"
+            data-bs-toggle="modal"
+            className="box-icon bg_white quick-add tf-btn-loading"
+            onClick={() => setQuickAddItem(safeProduct.id)}
           >
-            <span className="icon icon-heart" />
+            <span className="icon icon-bag" />
+            <span className="tooltip">Quick Add</span>
+          </a>
+          <a
+            onClick={() => handleWishlistClick(safeProduct.id)}
+            className="box-icon bg_white wishlist btn-icon-action"
+          >
+            <span
+              className={`icon icon-heart ${
+                isAddedtoWishlist(safeProduct.id) ? "added" : ""
+              }`}
+            />
             <span className="tooltip">
-              {user && isAddedtoWishlist(safeProduct.id)
+              {isAddedtoWishlist(safeProduct.id)
                 ? "Already Wishlisted"
-                : "Wishlist"}
+                : "Add to Wishlist"}
             </span>
           </a>
           <a
             href="#compare"
             data-bs-toggle="offcanvas"
             aria-controls="compare"
-            onClick={() => addToCompareItem(safeProduct.documentId || safeProduct.id)}
-            className="box-icon compare btn-icon-action"
+            onClick={() => handleCompareClick(safeProduct.id)}
+            className="box-icon bg_white compare btn-icon-action"
           >
-            <span className="icon icon-gitDiff" />
+            <span
+              className={`icon icon-gitDiff ${
+                isAddedtoCompareItem(safeProduct.id) ? "added" : ""
+              }`}
+            />
             <span className="tooltip">
-              {isAddedtoCompareItem(safeProduct.documentId || safeProduct.id)
-                ? "Already compared"
-                : "Compare"}
+              {isAddedtoCompareItem(safeProduct.id)
+                ? "Already Compared"
+                : "Add to Compare"}
             </span>
           </a>
           <a
-            href="#quickView"
+            href="#quick_view"
             onClick={() => setQuickViewItem(safeProduct)}
             data-bs-toggle="modal"
-            className="box-icon quickview tf-btn-loading"
+            className="box-icon bg_white quickview tf-btn-loading"
           >
-            <span className="icon icon-eye" />
+            <span className="icon icon-view" />
             <span className="tooltip">Quick View</span>
           </a>
         </div>

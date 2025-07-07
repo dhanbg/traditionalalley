@@ -1,32 +1,57 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { NextResponse } from "next/server"
+import { auth } from "@/auth"
 
-const isProtectedRoute = createRouteMatcher(["/order(.*)", "/forum(.*)", "/wish-list(.*)", "/shopping-cart(.*)"]);
-const isAdminRoute = createRouteMatcher(["/dashboard(.*)"]);
+export default auth((req) => {
+  const { nextUrl } = req
+  const isLoggedIn = !!req.auth
 
-export default clerkMiddleware(async (auth, req) => {
-  // Skip middleware for NPS webhook
-  if (req.nextUrl.pathname === '/api/nps-webhook') {
-    return NextResponse.next();
+  // Skip middleware for NPS webhook (both old and new paths)
+  if (nextUrl.pathname === '/api/nps-webhook' || nextUrl.pathname === '/api/webhooks/nps') {
+    return NextResponse.next()
   }
 
-  if (isProtectedRoute(req)) await auth.protect();
+  // Protected routes that require authentication
+  const protectedRoutes = ["/order", "/forum", "/wish-list", "/shopping-cart"]
+  const isProtectedRoute = protectedRoutes.some(route => 
+    nextUrl.pathname.startsWith(route)
+  )
 
-  // Protect all routes starting with `/admin`
-  if (
-    isAdminRoute(req) &&
-    (await auth()).sessionClaims?.metadata?.role !== "admin"
-  ) {
-    const url = new URL("/", req.url);
-    return NextResponse.redirect(url);
+  // Admin routes
+  const adminRoutes = ["/dashboard"]
+  const isAdminRoute = adminRoutes.some(route => 
+    nextUrl.pathname.startsWith(route)
+  )
+
+  // Redirect to login if trying to access protected route without auth
+  if (isProtectedRoute && !isLoggedIn) {
+    return NextResponse.redirect(new URL("/login", nextUrl))
   }
-});
+
+  // Check admin access
+  if (isAdminRoute) {
+    if (!isLoggedIn) {
+      return NextResponse.redirect(new URL("/login", nextUrl))
+    }
+    
+    // Check if user has admin role
+    const userRole = req.auth?.user?.role
+    if (userRole !== "admin") {
+      return NextResponse.redirect(new URL("/", nextUrl))
+    }
+  }
+
+  return NextResponse.next()
+})
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for API routes
-    "/(api|trpc)(.*)",
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
   ],
-};
+}

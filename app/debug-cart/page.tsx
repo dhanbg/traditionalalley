@@ -1,10 +1,11 @@
 "use client";
 import { useContextElement } from "@/context/Context";
-import { useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 
 export default function DebugCartPage() {
   const { cartProducts, clearCart, clearPurchasedItemsFromCart, totalPrice } = useContextElement();
-  const { user } = useUser();
+  const { data: session } = useSession();
+  const user = session?.user;
 
   const handleClearCart = async () => {
     console.log("=== MANUAL CART CLEAR TEST ===");

@@ -1318,6 +1318,20 @@ header {
     }
 }
 
+.nav-account .nav-icon-item::after {
+  display: none !important;
+}
+
+.nav-avatar-img {
+  width: 30px !important;
+  height: 30px !important;
+  object-fit: cover;
+  vertical-align: middle;
+  margin-top: 6px !important;
+  margin-bottom: 0 !important;
+  box-shadow: none !important;
+}
+
 .modalDemo{
     .demo-item.active{
         .demo-name{

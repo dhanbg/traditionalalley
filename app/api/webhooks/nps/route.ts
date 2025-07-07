@@ -1,47 +1,80 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { npsClient, npsConfig } from '../../utils/npsConfig';
-import { fetchDataFromApi, updateUserBagWithPayment } from '../../utils/api';
-const { generateLocalTimestamp } = require('../../utils/timezone');
-import type { 
-  NPSWebhookPayload, 
-  NPSPaymentData,
-  CheckTransactionStatusRequest,
-  CheckTransactionStatusResponse
-} from '../../types/nps';
+import { NextRequest, NextResponse } from "next/server";
+import { npsClient, npsConfig } from '@/utils/npsConfig';
+import { fetchDataFromApi, updateUserBagWithPayment } from '@/utils/api';
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  // NPS sends GET requests with query parameters for webhook notifications
-  if (req.method !== 'GET') {
-    console.error('Invalid method:', req.method);
-    res.writeHead(405, { 'Content-Type': 'text/plain' });
-    res.end('Method not allowed');
-    return;
-  }
+interface NPSWebhookPayload {
+  MerchantTxnId: string;
+  GatewayTxnId: string;
+}
 
+interface CheckTransactionStatusRequest {
+  MerchantId: string;
+  MerchantName: string;
+  MerchantTxnId: string;
+  Signature: string;
+}
+
+interface CheckTransactionStatusResponse {
+  code: string;
+  message: string;
+  data: {
+    ProcessId: string;
+    MerchantTxnId: string;
+    GatewayReferenceNo: string;
+    Amount: string;
+    Status: string;
+    Institution: string;
+    Instrument: string;
+    ServiceCharge: string;
+    CbsMessage: string;
+  };
+}
+
+interface NPSPaymentData {
+  provider: string;
+  processId: string;
+  merchantTxnId: string;
+  gatewayReferenceNo?: string;
+  amount: number;
+  status: string;
+  institution?: string;
+  instrument?: string;
+  serviceCharge?: string;
+  cbsMessage?: string;
+  timestamp: string;
+  webhook_processed: boolean;
+  authUserId?: string;
+}
+
+function generateLocalTimestamp(): string {
+  return new Date().toISOString();
+}
+
+export async function GET(request: NextRequest) {
   try {
     console.log('=== NPS WEBHOOK RECEIVED ===');
-    console.log('Query params:', req.query);
-    console.log('Headers:', req.headers);
+    
+    const { searchParams } = new URL(request.url);
+    const MerchantTxnId = searchParams.get('MerchantTxnId');
+    const GatewayTxnId = searchParams.get('GatewayTxnId');
 
-    const { MerchantTxnId, GatewayTxnId } = req.query;
+    console.log('Query params:', { MerchantTxnId, GatewayTxnId });
 
     // Validate required parameters
     if (!MerchantTxnId || !GatewayTxnId) {
       console.error('Missing required webhook parameters');
-      res.writeHead(400, { 'Content-Type': 'text/plain' });
-      res.end('Missing required parameters');
-      return;
+      return new Response('Missing required parameters', { 
+        status: 400,
+        headers: { 'Content-Type': 'text/plain' }
+      });
     }
 
-    const merchantTxnId = MerchantTxnId as string;
-    const gatewayTxnId = GatewayTxnId as string;
+    const merchantTxnId = MerchantTxnId;
+    const gatewayTxnId = GatewayTxnId;
 
     console.log(`Processing webhook for merchant transaction: ${merchantTxnId}, gateway transaction: ${gatewayTxnId}`);
 
-    // STEP 1: Verify transaction status with NPS (as per documentation)
+    // STEP 1: Verify transaction status with NPS
     console.log('=== VERIFYING TRANSACTION WITH NPS ===');
     const statusRequest: CheckTransactionStatusRequest = {
       MerchantId: npsConfig.merchantId,
@@ -59,9 +92,10 @@ export default async function handler(
 
     if (statusResponse.data.code !== "0") {
       console.error('Transaction verification failed with NPS:', statusResponse.data);
-      res.writeHead(400, { 'Content-Type': 'text/plain' });
-      res.end('Transaction verification failed');
-      return;
+      return new Response('Transaction verification failed', { 
+        status: 400,
+        headers: { 'Content-Type': 'text/plain' }
+      });
     }
 
     const transactionData = statusResponse.data.data;
@@ -86,9 +120,10 @@ export default async function handler(
         console.log('✅ Transaction verified with NPS but no user bags found');
         console.log('Acknowledging webhook to prevent retries');
         
-        res.writeHead(200, { 'Content-Type': 'text/plain' });
-        res.end('received');
-        return;
+        return new Response('received', { 
+          status: 200,
+          headers: { 'Content-Type': 'text/plain' }
+        });
       }
 
       // Find the user bag that contains this payment
@@ -112,9 +147,10 @@ export default async function handler(
         console.log('✅ Transaction verified with NPS but payment not found in user bags');
         console.log('Acknowledging webhook to prevent retries');
         
-        res.writeHead(200, { 'Content-Type': 'text/plain' });
-        res.end('received');
-        return;
+        return new Response('received', { 
+          status: 200,
+          headers: { 'Content-Type': 'text/plain' }
+        });
       }
 
       // STEP 3: Check if this transaction has already been processed
@@ -125,11 +161,11 @@ export default async function handler(
 
       if (existingPayment) {
         console.log('✅ Transaction already processed by webhook:', merchantTxnId);
-        console.log('Response details: status=200, content-type=text/plain, body="already received"');
         
-        res.writeHead(200, { 'Content-Type': 'text/plain' });
-        res.end('already received');
-        return;
+        return new Response('already received', { 
+          status: 200,
+          headers: { 'Content-Type': 'text/plain' }
+        });
       }
 
       // STEP 4: Save payment data to user-bag
@@ -146,7 +182,8 @@ export default async function handler(
         serviceCharge: transactionData.ServiceCharge,
         cbsMessage: transactionData.CbsMessage,
         timestamp: generateLocalTimestamp(),
-        webhook_processed: true, // Flag to indicate this came from webhook
+        webhook_processed: true,
+        // Note: authUserId will be preserved from the original payment data
       };
 
       await updateUserBagWithPayment(targetUserBag.documentId, paymentData);
@@ -160,14 +197,12 @@ export default async function handler(
     }
 
     // STEP 5: Always acknowledge the webhook to NPS
-    // NPS expects plain text response "received" for first time
     console.log('✅ Sending acknowledgment to NPS');
-    console.log('Response details: status=200, content-type=text/plain, body="received"');
     
-    // Ensure we're sending plain text response exactly as NPS expects
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('received');
-    return;
+    return new Response('received', { 
+      status: 200,
+      headers: { 'Content-Type': 'text/plain' }
+    });
 
   } catch (error: any) {
     console.error('❌ Webhook processing error:', error);
@@ -177,14 +212,16 @@ export default async function handler(
     // unless it's a critical NPS verification error
     if (error.response?.status === 401 || error.response?.status === 403) {
       console.error('❌ NPS authentication error - not acknowledging');
-      res.writeHead(500, { 'Content-Type': 'text/plain' });
-      res.end('Authentication error');
-      return;
+      return new Response('Authentication error', { 
+        status: 500,
+        headers: { 'Content-Type': 'text/plain' }
+      });
     }
     
     console.log('⚠️ Error occurred but acknowledging webhook to prevent retries');
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('received');
-    return;
+    return new Response('received', { 
+      status: 200,
+      headers: { 'Content-Type': 'text/plain' }
+    });
   }
 } 

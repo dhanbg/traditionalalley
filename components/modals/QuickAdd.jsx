@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import ColorSelect from "../productDetails/ColorSelect";
 import SizeSelect from "../productDetails/SizeSelect";
 import QuantitySelect from "../productDetails/QuantitySelect";
-import { useClerk } from "@clerk/nextjs";
+import { useSession, signIn } from "next-auth/react";
 
 export default function QuickAdd() {
   const [quantity, setQuantity] = useState(1);
@@ -24,7 +24,7 @@ export default function QuickAdd() {
     updateQuantity,
     user,
   } = useContextElement();
-  const { openSignIn } = useClerk();
+  const { data: session } = useSession();
   const [item, setItem] = useState(allProducts[0]);
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export default function QuickAdd() {
 
   const handleAddToCart = () => {
     if (!user) {
-      openSignIn();
+      signIn();
     } else {
       addProductToCart(quickAddItem.id, quantity);
     }
@@ -44,7 +44,7 @@ export default function QuickAdd() {
 
   const handleWishlistClick = () => {
     if (!user) {
-      openSignIn();
+      signIn();
     } else {
       addToWishlist(quickAddItem.id);
     }

@@ -1,6 +1,6 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { useEffect, Suspense, useState } from "react";
 import { fetchDataFromApi, updateUserBagWithPayment } from "@/utils/api";
 const { generateLocalTimestamp } = require("@/utils/timezone");
@@ -10,7 +10,8 @@ import { useContextElement } from "@/context/Context";
 // Wrapper component that uses searchParams
 const NPSCallbackContent = () => {
   const searchParams = useSearchParams();
-  const { user } = useUser();
+  const { data: session } = useSession();
+  const user = session?.user;
   const { clearPurchasedItemsFromCart } = useContextElement();
   const [isProcessing, setIsProcessing] = useState(true);
   const [processingStatus, setProcessingStatus] = useState("Processing your payment...");
@@ -66,7 +67,7 @@ const NPSCallbackContent = () => {
 
         // Find the user's bag
         const currentUserData = await fetchDataFromApi(
-          `/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=user_bag`
+          `/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=user_bag`
         );
 
         if (!currentUserData?.data || currentUserData.data.length === 0) {

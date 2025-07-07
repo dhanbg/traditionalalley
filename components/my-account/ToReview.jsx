@@ -1,12 +1,13 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { fetchDataFromApi, createData, getOptimizedImageUrl } from "@/utils/api";
 import { API_URL, STRAPI_API_TOKEN } from "@/utils/urls";
 
 export default function ToReview() {
-  const { user } = useUser();
+  const { data: session } = useSession();
+  const user = session?.user;
   const [purchasedProducts, setPurchasedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reviewingProduct, setReviewingProduct] = useState(null);
@@ -28,7 +29,7 @@ export default function ToReview() {
       try {
         // Fetch user data with user_bag populated
         const userDataResponse = await fetchDataFromApi(
-          `/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=user_bag`
+          `/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=user_bag`
         );
 
         if (userDataResponse?.data && userDataResponse.data.length > 0) {
@@ -73,7 +74,7 @@ export default function ToReview() {
 
                   // Fetch existing reviews for this product by this user
                   const reviewsResponse = await fetchDataFromApi(
-                    `/api/customer-reviews?filters[product][documentId][$eq]=${product.documentId}&filters[user_data][clerkUserId][$eq]=${user.id}&populate=*`
+                    `/api/customer-reviews?filters[product][documentId][$eq]=${product.documentId}&filters[user_data][authUserId][$eq]=${user.id}&populate=*`
                   );
 
                   const hasReviewed = reviewsResponse?.data && reviewsResponse.data.length > 0;
@@ -195,7 +196,7 @@ export default function ToReview() {
     try {
       // Get current user data
       const userDataResponse = await fetchDataFromApi(
-        `/api/user-datas?filters[clerkUserId][$eq]=${user.id}`
+        `/api/user-datas?filters[authUserId][$eq]=${user.id}`
       );
 
       if (userDataResponse?.data && userDataResponse.data.length > 0) {

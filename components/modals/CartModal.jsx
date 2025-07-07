@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useContextElement } from "@/context/Context";
 import { products41 } from "@/data/productsWomen";
-import { useClerk, useUser } from "@clerk/nextjs";
+import { useSession, signIn } from "next-auth/react";
 import { fetchDataFromApi, getImageUrl } from "@/utils/api";
 import { PRODUCT_BY_DOCUMENT_ID_API, API_URL } from "@/utils/urls";
 import { useRouter } from "next/navigation";
@@ -23,7 +23,7 @@ export default function CartModal() {
     isCartClearing,
     cartClearedTimestamp,
   } = useContextElement();
-  const { openSignIn } = useClerk();
+  const { data: session } = useSession();
   const [userCarts, setUserCarts] = useState([]);
   const [serverCartProducts, setServerCartProducts] = useState([]);
   const [serverCartLoading, setServerCartLoading] = useState(true);
@@ -104,9 +104,9 @@ export default function CartModal() {
           // Fetch carts data from the API
           const response = await fetchDataFromApi(`/api/carts?populate=*`);
           
-          // Filter carts based on the current user's clerkUserId
+          // Filter carts based on the current user's authUserId
           const currentUserCarts = response.data.filter(
-            cart => cart.user_datum && cart.user_datum.clerkUserId === user.id
+            cart => cart.user_datum && cart.user_datum.authUserId === user.id
           );
           
           // Update state with user's carts
@@ -422,7 +422,7 @@ export default function CartModal() {
                   <p className="mb-4">Please sign in to view your shopping cart.</p>
                   <button 
                     className="btn-style-2 w-100 radius-4"
-                    onClick={openSignIn}
+                                          onClick={() => signIn()}
                   >
                     <span className="text-btn-uppercase">Sign In</span>
                   </button>

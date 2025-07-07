@@ -1,43 +1,61 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { npsClient, npsConfig, createAPISignature, createGatewaySignature } from '../../utils/npsConfig';
-import { updateUserBagWithPayment } from '../../utils/api';
-import type { 
-  NPSPaymentRequest, 
-  GetProcessIdRequest,
-  GetProcessIdResponse,
-  GatewayRedirectForm,
-  NPSPaymentData,
-  NPSOrderData
-} from '../../types/nps';
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { npsClient, npsConfig, createAPISignature, createGatewaySignature } from '@/utils/npsConfig';
+import { updateUserBagWithPayment, fetchDataFromApi } from '@/utils/api';
 
-interface RequestBody extends NPSPaymentRequest {
-  userBagDocumentId?: string;
-  orderData?: NPSOrderData;
-}
-
-interface ApiResponse {
-  success: boolean;
-  message: string;
-  data?: {
-    redirectForm?: GatewayRedirectForm;
-    redirectUrl?: string;
+interface NPSPaymentRequest {
+  amount: number;
+  merchantTxnId: string;
+  transactionRemarks?: string;
+  instrumentCode?: string;
+  customer_info?: {
+    name: string;
+    email: string;
+    phone: string;
   };
-  error?: string;
-  details?: any; // For debugging purposes
+  userBagDocumentId?: string;
+  orderData?: any;
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<ApiResponse>
-) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ 
-      success: false, 
-      message: 'Method not allowed' 
-    });
-  }
+interface GetProcessIdRequest {
+  MerchantId: string;
+  MerchantName: string;
+  Amount: string;
+  MerchantTxnId: string;
+  Signature: string;
+}
 
+interface GetProcessIdResponse {
+  code: string;
+  message: string;
+  data: {
+    ProcessId: string;
+  };
+}
+
+interface GatewayRedirectForm {
+  MerchantId: string;
+  MerchantName: string;
+  Amount: string;
+  MerchantTxnId: string;
+  TransactionRemarks: string;
+  InstrumentCode?: string;
+  ProcessId: string;
+}
+
+export async function POST(request: NextRequest) {
   try {
+    // Authenticate user
+    const session = await auth();
+    
+    if (!session?.user) {
+      return NextResponse.json({
+        success: false,
+        message: 'Authentication required'
+      }, { status: 401 });
+    }
+
+    const body: NPSPaymentRequest = await request.json();
     const { 
       amount, 
       merchantTxnId, 
@@ -46,25 +64,44 @@ export default async function handler(
       customer_info,
       userBagDocumentId,
       orderData
-    }: RequestBody = req.body;
+    } = body;
 
     // Validate required fields
     if (!amount || amount <= 0) {
-      return res.status(400).json({
+      return NextResponse.json({
         success: false,
         message: 'Valid amount is required'
-      });
+      }, { status: 400 });
     }
 
     if (!merchantTxnId) {
-      return res.status(400).json({
+      return NextResponse.json({
         success: false,
         message: 'Merchant transaction ID is required'
-      });
+      }, { status: 400 });
     }
 
     console.log('=== NPS PAYMENT INITIATION ===');
-    console.log('Request body:', req.body);
+    console.log('User:', session.user.email);
+    console.log('Request body:', body);
+
+    // Get user data from Strapi using Auth.js user ID
+    let userBagId = userBagDocumentId;
+    
+    if (!userBagId) {
+      try {
+        const userDataResponse = await fetchDataFromApi(
+          `/api/user-datas?filters[authUserId][$eq]=${session.user.id}&populate=user_bag`
+        );
+        
+        if (userDataResponse?.data && userDataResponse.data.length > 0) {
+          const userData = userDataResponse.data[0];
+          userBagId = userData.user_bag?.documentId;
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    }
 
     // Shorten the merchant transaction ID to avoid potential length issues
     const shortMerchantTxnId = merchantTxnId.length > 50 
@@ -78,12 +115,11 @@ export default async function handler(
     const processIdRequest: GetProcessIdRequest = {
       MerchantId: npsConfig.merchantId,
       MerchantName: npsConfig.merchantName,
-      Amount: parseFloat(amount.toString()).toFixed(2), // Format with 2 decimal places
+      Amount: parseFloat(amount.toString()).toFixed(2),
       MerchantTxnId: shortMerchantTxnId,
-      Signature: "" // Will be generated manually for debugging
+      Signature: ""
     };
 
-    // Manually generate signature for debugging
     const signature = createAPISignature(processIdRequest);
     processIdRequest.Signature = signature;
 
@@ -97,39 +133,39 @@ export default async function handler(
     console.log('Process ID response:', processIdResponse.data);
 
     if (processIdResponse.data.code !== "0") {
-      return res.status(400).json({
+      return NextResponse.json({
         success: false,
         message: processIdResponse.data.message || 'Failed to get process ID',
         error: `Code: ${processIdResponse.data.code}`
-      });
+      }, { status: 400 });
     }
 
     const processId = processIdResponse.data.data.ProcessId;
     console.log('Got Process ID:', processId);
 
-    // Save payment data to user bag if provided
-    if (userBagDocumentId) {
+    // Save payment data to user bag if available
+    if (userBagId) {
       try {
-        const paymentData: NPSPaymentData = {
+        const paymentData = {
           provider: "nps",
           processId: processId,
           merchantTxnId: shortMerchantTxnId,
           amount: amount,
           status: "Pending",
           timestamp: new Date().toISOString(),
-          orderData: orderData, // Store order data for later use
+          authUserId: session.user.id,
+          orderData: orderData,
         };
 
-        await updateUserBagWithPayment(userBagDocumentId, paymentData);
+        await updateUserBagWithPayment(userBagId, paymentData);
         console.log('Payment data saved to user bag');
       } catch (error) {
         console.error('Error saving payment data to user bag:', error);
-        // Don't fail the payment initiation if bag update fails
       }
     }
 
     // Step 2: Prepare gateway redirect form
-    const host = req.headers.host;
+    const host = request.headers.get('host');
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
     const responseUrl = `${protocol}://${host}/nps-callback`;
 
@@ -161,12 +197,12 @@ export default async function handler(
 
     console.log('Gateway redirect form:', redirectForm);
 
-    return res.status(200).json({
+    return NextResponse.json({
       success: true,
       message: 'Payment initiation successful',
       data: {
         redirectForm: redirectForm,
-        redirectUrl: npsConfig.gatewayURL // Use the correct gateway URL from config
+        redirectUrl: npsConfig.gatewayURL
       }
     });
 
@@ -176,20 +212,17 @@ export default async function handler(
       message: error.message,
       response: error.response?.data,
       status: error.response?.status,
-      stack: error.stack
     });
 
     const errorMessage = error.response?.data?.message || 
                         error.message || 
                         'Internal server error';
 
-    const statusCode = error.response?.status || 500;
-
-    return res.status(statusCode).json({
+    return NextResponse.json({
       success: false,
       message: 'Failed to initiate payment',
       error: errorMessage,
       details: error.response?.data || error.message
-    });
+    }, { status: 500 });
   }
 } 
