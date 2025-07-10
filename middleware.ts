@@ -30,14 +30,21 @@ export default auth((req) => {
   // Check admin access
   if (isAdminRoute) {
     if (!isLoggedIn) {
+      console.log("🚫 Admin route access denied: User not logged in")
       return NextResponse.redirect(new URL("/login", nextUrl))
     }
     
     // Check if user has admin role
     const userRole = req.auth?.user?.role
+    const userEmail = req.auth?.user?.email
+    console.log("🔍 Admin route check:", { userEmail, userRole, path: nextUrl.pathname })
+    
     if (userRole !== "admin") {
+      console.log("⛔ Admin access denied for:", userEmail, "- Role:", userRole)
       return NextResponse.redirect(new URL("/", nextUrl))
     }
+    
+    console.log("✅ Admin access granted for:", userEmail)
   }
 
   return NextResponse.next()

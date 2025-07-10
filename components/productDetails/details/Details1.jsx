@@ -81,7 +81,8 @@ export default function Details1({ product }) {
 
   useEffect(() => {
     if (safeProduct.colors && safeProduct.colors.length > 0) {
-      setActiveColor(safeProduct.colors[0]);
+      const firstColor = safeProduct.colors[0];
+      setActiveColor(typeof firstColor === 'string' ? firstColor : firstColor.name || "Gray");
     }
   }, [safeProduct.colors]);
 

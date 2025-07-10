@@ -211,7 +211,7 @@ export default function CartModal() {
             
             // First, get the user's data to find their user_datum ID
             const currentUserData = await fetchDataFromApi(
-              `/api/user-datas?filters[clerkUserId][$eq]=${user.id}&populate=*`
+              `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`
             );
 
             if (!currentUserData?.data || currentUserData.data.length === 0) {

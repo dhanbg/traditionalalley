@@ -492,7 +492,7 @@ export default function Context({ children }) {
     if (user) {
       try {
         // Get the current logged-in user data
-        const currentUserData = await fetchDataFromApi(`/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=user_bag`);
+        const currentUserData = await fetchDataFromApi(`/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag`);
         
         // If the user doesn't exist in our system, they should be created by the user-management API first
         if (!currentUserData?.data || currentUserData.data.length === 0) {
@@ -788,7 +788,7 @@ export default function Context({ children }) {
             // Add user_datum if available
             if (user) {
               // Get user data for the current user
-              const userDataResponse = await fetchDataFromApi(`/api/user-datas?filters[authUserId][$eq]=${user.id}`);
+              const userDataResponse = await fetchDataFromApi(`/api/user-data?filters[authUserId][$eq]=${user.id}`);
               
               if (userDataResponse?.data && userDataResponse.data.length > 0) {
                 const userData = userDataResponse.data[0];
@@ -1026,7 +1026,7 @@ export default function Context({ children }) {
           
           // First, get the user's data to find their user_datum ID
           const currentUserData = await fetchDataFromApi(
-            `/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=*`
+            `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`
           );
 
           if (!currentUserData?.data || currentUserData.data.length === 0) {
@@ -1263,7 +1263,7 @@ export default function Context({ children }) {
       // If all direct approaches failed, get user-specific carts and find the one with matching product
       // First, get the user's data to find their user_datum ID
       const currentUserData = await fetchDataFromApi(
-        `/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=*`
+        `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`
       );
 
       if (!currentUserData?.data || currentUserData.data.length === 0) {
@@ -1366,7 +1366,7 @@ export default function Context({ children }) {
       // First, get the user's data to find their user_datum ID
       console.log("🔍 Fetching user data to find user_datum ID...");
       const currentUserData = await fetchDataFromApi(
-        `/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=*`
+        `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`
       );
 
       if (!currentUserData?.data || currentUserData.data.length === 0) {
@@ -1503,7 +1503,7 @@ export default function Context({ children }) {
       // First, get the user's data to find their user_datum ID
       console.log("🔍 Fetching user data to find user_datum ID...");
       const currentUserData = await fetchDataFromApi(
-        `/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=*`
+        `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`
       );
 
       if (!currentUserData?.data || currentUserData.data.length === 0) {

@@ -36,7 +36,7 @@ export const useNPS = (options: UseNPSOptions = {}) => {
       
       // Use the correct API endpoint pattern that matches the existing codebase
       const response = await fetchDataFromApi(
-        `/api/user-datas?filters[clerkUserId][$eq]=${userId}&populate=user_bag`
+        `/api/user-data?filters[authUserId][$eq]=${userId}&populate=user_bag`
       );
       
       console.log('User data response:', response);

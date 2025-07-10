@@ -70,13 +70,13 @@ export default function ColorSelect({
         <div className="variant-picker-label">
           Color:
           <span className="text-title variant-picker-label-value">
-            {currentActiveColor}
+            {typeof currentActiveColor === 'string' ? currentActiveColor : currentActiveColor?.name || 'Unknown'}
           </span>
         </div>
       </div>
       <div className="variant-picker-values" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginLeft: '10px' }}>
         {colorOptions.map(({ id, value, color }) => {
-          const isActive = (activeColor && activeColor.toLowerCase() === color.toLowerCase()) || 
+          const isActive = (activeColor && typeof activeColor === 'string' && activeColor.toLowerCase() === color.toLowerCase()) || 
                            (!activeColor && activeColorDefault.toLowerCase() === color.toLowerCase());
           
           return (
