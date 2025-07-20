@@ -3,7 +3,7 @@ import Header1 from "@/components/headers/Header1";
 import Topbar6 from "@/components/headers/Topbar6";
 import ResetPassword from "@/components/otherPages/ResetPassword";
 import Link from "next/link";
-import React from "react";
+import React, { Suspense } from "react";
 
 export const metadata = {
   title: "Reset Password || Traditional Alley",
@@ -47,7 +47,9 @@ export default function page() {
         </div>
       </div>
 
-      <ResetPassword />
+      <Suspense fallback={<div className="container" style={{ padding: "50px 0", textAlign: "center" }}>Loading...</div>}>
+        <ResetPassword />
+      </Suspense>
       <Footer1 />
     </>
   );
