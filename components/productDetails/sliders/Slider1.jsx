@@ -26,31 +26,87 @@ export default function Slider1({
   const imageRefs = useRef([]);
 
   useEffect(() => {
+    // Helper function to generate thumbnail URL from main URL
+    const generateThumbnailUrl = (mainUrl) => {
+      if (!mainUrl) return mainUrl;
+      
+      // Convert: /uploads/DSC_05252_570f97c504.jpg
+      // To: /uploads/thumbnail_DSC_05252_570f97c504.jpg
+      const urlParts = mainUrl.split('/');
+      const filename = urlParts[urlParts.length - 1];
+      if (filename && !filename.startsWith('thumbnail_')) {
+        const thumbnailFilename = `thumbnail_${filename}`;
+        urlParts[urlParts.length - 1] = thumbnailFilename;
+        return urlParts.join('/');
+      }
+      return mainUrl;
+    };
+
     let newItems;
     if (useGallery) {
-      newItems = gallery.map((item, idx) => ({
-        id: idx + 2, // Start from 2 to leave room for main image and hover image
-        src: item.url,
-        alt: `Gallery image ${idx + 1}`,
-        color: activeColor,
-        width: 600,
-        height: 800
-      }));
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
+      
+      newItems = gallery
+        .filter(item => item && (item.url || (item.formats && Object.keys(item.formats).length > 0))) // Filter valid items
+        .map((item, idx) => {
+          // Extract main image URL
+          let mainUrl = item.url;
+          if (!mainUrl && item.formats) {
+            // Try to get URL from formats if direct url doesn't exist
+            if (item.formats.large?.url) {
+              mainUrl = item.formats.large.url;
+            } else if (item.formats.medium?.url) {
+              mainUrl = item.formats.medium.url;
+            } else if (item.formats.small?.url) {
+              mainUrl = item.formats.small.url;
+            }
+          }
+          
+          // Ensure main URL has API prefix
+          if (mainUrl && !mainUrl.startsWith('http')) {
+            mainUrl = `${API_URL}${mainUrl}`;
+          }
+          
+          // Extract thumbnail URL - create from main URL since formats are missing
+          let thumbnailUrl = mainUrl; // fallback to main url
+          
+          // If formats are available, use them
+          if (item.formats && item.formats.thumbnail && item.formats.thumbnail.url) {
+            thumbnailUrl = item.formats.thumbnail.url.startsWith('http') 
+              ? item.formats.thumbnail.url 
+              : `${API_URL}${item.formats.thumbnail.url}`;
+          } else if (mainUrl) {
+            thumbnailUrl = generateThumbnailUrl(mainUrl);
+          }
+          
+          return {
+            id: idx + 2, // Start from 2 to leave room for main image and hover image
+            src: mainUrl, // Full size for main slider
+            thumbnailSrc: thumbnailUrl, // Thumbnail for thumbnail slider
+            alt: `Gallery image ${idx + 1}`,
+            color: activeColor,
+            width: 600,
+            height: 800
+          };
+        });
+      
       // Add the main product image and hover image at the beginning
-      if (firstItem) {
+      if (firstItem && typeof firstItem === 'string' && firstItem.trim() !== '') {
         newItems.unshift({
           id: 0,
           src: firstItem,
+          thumbnailSrc: generateThumbnailUrl(firstItem), // Generate thumbnail for main product
           alt: "Main product image",
           color: activeColor,
           width: 600,
           height: 800
         });
       }
-      if (imgHover && imgHover !== firstItem) {
+      if (imgHover && typeof imgHover === 'string' && imgHover.trim() !== '' && imgHover !== firstItem) {
         newItems.splice(1, 0, {
           id: 1,
           src: imgHover,
+          thumbnailSrc: generateThumbnailUrl(imgHover), // Generate thumbnail for hover image
           alt: "Product hover image",
           color: activeColor,
           width: 600,
@@ -58,11 +114,19 @@ export default function Slider1({
         });
       }
     } else {
-      newItems = [...slideItems];
-      newItems[0].src = firstItem ?? newItems[0].src;
+      newItems = [...slideItems].filter(item => item.src && typeof item.src === 'string' && item.src.trim() !== ''); // Filter out empty URLs
+      if (firstItem && typeof firstItem === 'string' && firstItem.trim() !== '' && newItems[0]) {
+        newItems[0].src = firstItem;
+        newItems[0].thumbnailSrc = generateThumbnailUrl(firstItem); // Generate thumbnail for main product
+      }
+      // Add thumbnailSrc to existing items if not present
+      newItems = newItems.map(item => ({
+        ...item,
+        thumbnailSrc: item.thumbnailSrc || generateThumbnailUrl(item.src) || item.src
+      }));
     }
     setItems(newItems);
-  }, [useGallery, gallery, slideItems, firstItem, imgHover, activeColor]);
+  }, [useGallery, gallery, slideItems, firstItem, imgHover]);
   
   // --- NEW: Reset Swiper to first slide on items/color change (mobile fix) ---
   useEffect(() => {
@@ -72,19 +136,19 @@ export default function Slider1({
         swiperRef.current.update && swiperRef.current.update();
       }, 100);
     }
-  }, [items, activeColor]);
+  }, [items]);
   
+  // Handle activeColor changes separately to avoid circular dependency
   useEffect(() => {
-    setTimeout(() => {
-      if (swiperRef.current && !useGallery) {
-        swiperRef.current.slideTo(1);
+    if (swiperRef.current && !useGallery && items.length > 0) {
+      setTimeout(() => {
         const slideIndex = items.filter((elm) => elm.color == activeColor)[0]?.id - 1;
-        if (slideIndex !== undefined) {
+        if (slideIndex !== undefined && slideIndex >= 0) {
           swiperRef.current.slideTo(slideIndex);
         }
-      }
-    });
-  }, []);
+      }, 100);
+    }
+  }, [activeColor, useGallery]);
 
   // Initialize Drift zoom on images after render and when active slide changes
   useEffect(() => {
@@ -230,9 +294,9 @@ export default function Slider1({
             >
               <Image
                 className="lazyload"
-                data-src={slide.src}
+                data-src={slide.thumbnailSrc || '/images/placeholder.jpg'}
                 alt={slide.alt}
-                src={slide.src}
+                src={slide.thumbnailSrc || '/images/placeholder.jpg'}
                 width={slide.width * 0.6}
                 height={slide.height * 0.6}
                 style={{ 
@@ -275,9 +339,9 @@ export default function Slider1({
             >
               <Image
                 className="lazyload drift-zoom-target"
-                data-src={slide.src}
+                data-src={slide.src || '/images/placeholder.jpg'}
                 alt={slide.alt || ""}
-                src={slide.src}
+                src={slide.src || '/images/placeholder.jpg'}
                 width={600}
                 height={800}
                 style={{

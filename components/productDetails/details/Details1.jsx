@@ -1,8 +1,9 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Slider1 from "../sliders/Slider1";
 import ColorSelect from "@/components/productDetails/ColorSelect";
-import SizeSelect from "@/components/productDetails/SizeSelect";
+import ColorVariantSelect from "@/components/productDetails/ColorVariantSelect";
+import SizeSelect, { getStockIndicatorForSize } from "@/components/productDetails/SizeSelect";
 import QuantitySelect from "@/components/productDetails/QuantitySelect";
 import Image from "next/image";
 import { useContextElement } from "@/context/Context";
@@ -14,7 +15,61 @@ import { PRODUCT_REVIEWS_API } from "../../../utils/urls";
 import { fetchDataFromApi } from "../../../utils/api";
 import PriceDisplay from "@/components/common/PriceDisplay";
 
-export default function Details1({ product }) {
+export default function Details1({ product, variants = [] }) {
+  // Helper function to process image URLs consistently
+  const processImageUrl = (imgData) => {
+    if (!imgData) return '/images/placeholder.jpg';
+    
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
+    
+    // If it's already a string URL, return it
+    if (typeof imgData === 'string') {
+      return imgData.startsWith('http') ? imgData : `${API_URL}${imgData}`;
+    }
+    
+    // If it's a Strapi media object, extract the URL
+    if (imgData.url) {
+      return imgData.url.startsWith('http') ? imgData.url : `${API_URL}${imgData.url}`;
+    }
+    
+    // Try formats if available
+    if (imgData.formats) {
+      if (imgData.formats.medium?.url) {
+        const url = imgData.formats.medium.url;
+        return url.startsWith('http') ? url : `${API_URL}${url}`;
+      }
+      if (imgData.formats.small?.url) {
+        const url = imgData.formats.small.url;
+        return url.startsWith('http') ? url : `${API_URL}${url}`;
+      }
+    }
+    
+    return '/images/placeholder.jpg';
+  };
+
+  // Helper function to process gallery items with thumbnails
+  const processGalleryItems = (galleryArray) => {
+    if (!galleryArray || !Array.isArray(galleryArray)) return [];
+    
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
+    
+    return galleryArray.map(item => {
+      // Keep the original item structure completely intact
+      const processedItem = {
+        ...item, // Preserve ALL original Strapi data including formats, documentId, etc.
+      };
+      
+      // Only add/update the main URL if needed
+      if (!processedItem.url) {
+        processedItem.url = processImageUrl(item);
+      } else if (!processedItem.url.startsWith('http')) {
+        processedItem.url = `${API_URL}${processedItem.url}`;
+      }
+      
+      return processedItem;
+    });
+  };
+
   // Set default values for missing properties to prevent errors
   const safeProduct = {
     ...product,
@@ -39,7 +94,7 @@ export default function Details1({ product }) {
         ? product.imgSrc
         : '/images/placeholder.jpg',
     imgHover: product.imgHover || product.imgSrc || '/images/placeholder.jpg',
-    gallery: product.gallery || []
+    gallery: processGalleryItems(product.gallery || [])
   };
 
   const [activeColor, setActiveColor] = useState(
@@ -53,9 +108,130 @@ export default function Details1({ product }) {
   const [showCustomOrderForm, setShowCustomOrderForm] = useState(false);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [reviewCount, setReviewCount] = useState(0);
+  const [selectedSize, setSelectedSize] = useState("");
+  const [sizeOptions, setSizeOptions] = useState([]);
+  const [sizeSelectionError, setSizeSelectionError] = useState("");
+
+  // Memoized callback to prevent infinite re-renders
+  const handleSizeChange = useCallback((val, arr) => {
+    setSizeOptions(arr);
+    // Clear error message when size is selected
+    if (sizeSelectionError) {
+      setSizeSelectionError("");
+    }
+  }, [sizeSelectionError]);
+
+  // Clear size selection error after 3 seconds
+  useEffect(() => {
+    if (sizeSelectionError) {
+      const timer = setTimeout(() => {
+        setSizeSelectionError("");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [sizeSelectionError]);
+
+  // Combine main product and variants for selection
+  let allOptions = [];
+  let initialActive = null;
+  
+  if (variants && variants.length > 0) {
+    // If there are variants, use them and mark one as current if it matches the main product
+    allOptions = variants.map(variant => ({
+      ...variant,
+      isCurrentProduct: variant.id === safeProduct.id || 
+                       variant.documentId === safeProduct.documentId ||
+                       variant.id === `current-${safeProduct.id}` || 
+                       variant.id === `current-${safeProduct.documentId}`
+    }));
+    initialActive = allOptions.find(v => v.isCurrentProduct) || allOptions[0];
+  } else if (safeProduct.color) {
+    // If no variants but main product has a color, create a single option
+    allOptions = [{ 
+      ...safeProduct, 
+      isCurrentProduct: true,
+      id: safeProduct.documentId || `product-${safeProduct.id}` 
+    }];
+    initialActive = allOptions[0];
+  }
+
+  const [activeVariant, setActiveVariant] = useState(initialActive);
+  const [currentProduct, setCurrentProduct] = useState(safeProduct);
+  
+  // Helper function to extract design name from variant
+  const extractDesignFromVariant = (variant) => {
+    if (!variant) return 'Unknown';
+    
+    // First, check if there's a design field in the variant
+    if (variant.design && typeof variant.design === 'string' && variant.design.trim() !== '') {
+      return variant.design;
+    }
+    
+    // For main product, show product name if available
+    if (variant.isCurrentProduct && variant.title) {
+      return variant.title;
+    }
+    
+    // Try to extract from color image name
+    if (variant.color?.name) {
+      const filename = variant.color.name.toLowerCase();
+      const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'brown', 'black', 'white', 'gray', 'grey', 'beige'];
+      for (const color of colors) {
+        if (filename.includes(color)) {
+          return color.charAt(0).toUpperCase() + color.slice(1);
+        }
+      }
+    }
+    
+    // Try to extract from main image name
+    if (variant.imgSrc) {
+      const imgSrcName = typeof variant.imgSrc === 'string' ? variant.imgSrc : variant.imgSrc.name || '';
+      const filename = imgSrcName.toLowerCase();
+      const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'brown', 'black', 'white', 'gray', 'grey', 'beige'];
+      for (const color of colors) {
+        if (filename.includes(color)) {
+          return color.charAt(0).toUpperCase() + color.slice(1);
+        }
+      }
+    }
+    
+    // Last resort: use a generic design name
+    return 'Design';
+  };
+  
+  // Memoize slideItems to prevent infinite re-renders
+  const slideItems = useMemo(() => {
+    // Map variants to slideItems format if they have imgSrc
+    if (variants && variants.length > 0) {
+      return variants.map((variant, index) => ({
+        id: index + 1,
+        src: processImageUrl(variant.imgSrc),
+        alt: extractDesignFromVariant(variant),
+        color: extractDesignFromVariant(variant),
+        width: 600,
+        height: 800,
+        imgSrc: processImageUrl(variant.imgSrc)
+      }));
+    }
+    // Fallback to original color mapping
+    if (safeProduct.colors && safeProduct.colors.length > 0 && safeProduct.colors[0].imgSrc) {
+      return safeProduct.colors.map((color, index) => ({
+        id: index + 1,
+        src: processImageUrl(color.imgSrc),
+        alt: color.name,
+        color: color.name,
+        width: 600,
+        height: 800,
+        imgSrc: processImageUrl(color.imgSrc)
+      }));
+    }
+    return undefined;
+  }, [variants, safeProduct.colors]);
+  
   const {
     addProductToCart,
     isAddedToCartProducts,
+    isProductSizeInCart, // Add the new function
     addToWishlist,
     isAddedtoWishlist,
     isAddedtoCompareItem,
@@ -115,7 +291,15 @@ export default function Details1({ product }) {
     if (!user) {
       signIn();
     } else {
-      addToWishlist(safeProduct.id);
+      // Use the same unique ID logic as cart for consistency
+      let uniqueId;
+      if (activeVariant && !activeVariant.isCurrentProduct) {
+        const baseVariantId = `${safeProduct.documentId || safeProduct.id}-variant-${activeVariant.id}`;
+        uniqueId = selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
+      } else {
+        uniqueId = selectedSize ? `${safeProduct.documentId || safeProduct.id}-size-${selectedSize}` : safeProduct.documentId || safeProduct.id;
+      }
+      addToWishlist(uniqueId);
     }
   };
 
@@ -123,7 +307,41 @@ export default function Details1({ product }) {
     if (!user) {
       signIn();
     } else {
-      addProductToCart(safeProduct.id, quantity);
+      // Check if sizes are available and no size is selected
+      const hasAvailableSizes = (currentProduct.size_stocks) || 
+                                (activeVariant && activeVariant.size_stocks) || 
+                                (safeProduct.sizes && safeProduct.sizes.length > 0);
+      
+      if (hasAvailableSizes && !selectedSize) {
+        // Show an alert or notification that size selection is required
+        setSizeSelectionError("Please select a size before adding to cart.");
+        return;
+      }
+      
+      // Create unique ID that includes size information
+      let uniqueCartId;
+      let variantInfo = null;
+      
+      const baseId = safeProduct.documentId || safeProduct.id;
+
+      if (activeVariant && !activeVariant.isCurrentProduct) {
+        // For variants: include variant ID and size
+        const baseVariantId = `${baseId}-variant-${activeVariant.id}`;
+        uniqueCartId = selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
+        
+        variantInfo = {
+          isVariant: true,
+          variantId: activeVariant.id,
+          title: activeVariant.title || extractDesignFromVariant(activeVariant),
+          imgSrc: processImageUrl(activeVariant.imgSrc),
+          imgSrcObject: activeVariant.imgSrc // Preserve original image object for thumbnail extraction
+        };
+      } else {
+        // For main products: use documentId for consistency and include size in ID
+        uniqueCartId = selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
+      }
+      
+      addProductToCart(uniqueCartId, quantity, true, variantInfo, selectedSize);
     }
   };
 
@@ -131,7 +349,82 @@ export default function Details1({ product }) {
     if (!user) {
       signIn();
     } else {
-      addToCompareItem(safeProduct.id);
+      // Use the same unique ID logic as cart for consistency
+      let uniqueId;
+      const baseId = safeProduct.documentId || safeProduct.id;
+
+      if (activeVariant && !activeVariant.isCurrentProduct) {
+        const baseVariantId = `${baseId}-variant-${activeVariant.id}`;
+        uniqueId = selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
+      } else {
+        uniqueId = selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
+      }
+      addToCompareItem(uniqueId);
+    }
+  };
+
+
+
+  // Function to get the current display title
+  const getCurrentDisplayTitle = () => {
+    if (activeVariant) {
+      return extractDesignFromVariant(activeVariant);
+    }
+    return safeProduct.title;
+  };
+
+  const handleVariantChange = (variant) => {
+    setActiveVariant(variant);
+
+    // Update current product with variant data
+    if (variant) {
+      setCurrentProduct({
+        ...safeProduct,
+        imgSrc: processImageUrl(variant.imgSrc),
+        imgHover: processImageUrl(variant.imgHover) || processImageUrl(variant.imgSrc),
+        gallery: processGalleryItems(variant.gallery && variant.gallery.length > 0 ? variant.gallery : safeProduct.gallery),
+        inStock: variant.inStock,
+        quantity: variant.quantity
+      });
+      // Update active color (extract from color image or variant info)
+      const colorName = variant.color?.alternativeText || 
+                       variant.color?.name ||
+                       extractDesignFromVariant(variant);
+      setActiveColor(colorName);
+    }
+
+    // Reset size selection
+    setSelectedSize("");
+    setSizeOptions([]);
+
+    // Safely handle size_stocks
+    let parsedSizeStocks = [];
+    if (variant && variant.size_stocks) {
+      if (typeof variant.size_stocks === "string") {
+        try {
+          parsedSizeStocks = JSON.parse(variant.size_stocks);
+        } catch (error) {
+          console.error("Error parsing variant size_stocks:", error, variant.size_stocks);
+          parsedSizeStocks = [];
+        }
+      } else if (Array.isArray(variant.size_stocks) || typeof variant.size_stocks === "object") {
+        parsedSizeStocks = variant.size_stocks;
+      }
+    }
+    // Ensure parsedSizeStocks is always an array
+    if (!Array.isArray(parsedSizeStocks)) {
+      parsedSizeStocks = [];
+    }
+
+    // Only update if different
+    if (JSON.stringify(sizeOptions) !== JSON.stringify(parsedSizeStocks)) {
+      setSizeOptions(parsedSizeStocks);
+    }
+
+    // Auto-select first available size if present
+    const firstAvailableSize = parsedSizeStocks.find((s) => !s.disabled && s.quantity > 0);
+    if (firstAvailableSize && selectedSize !== firstAvailableSize.size) {
+      setSelectedSize(firstAvailableSize.size);
     }
   };
 
@@ -146,24 +439,10 @@ export default function Details1({ product }) {
                 <Slider1
                   setActiveColor={setActiveColor}
                   activeColor={activeColor}
-                  firstItem={safeProduct.imgSrc}
-                  imgHover={safeProduct.imgHover}
-                  gallery={safeProduct.gallery}
-                  slideItems={
-                    // Map colors to slideItems format if they have imgSrc
-                    safeProduct.colors && safeProduct.colors.length > 0 && 
-                    safeProduct.colors[0].imgSrc
-                      ? safeProduct.colors.map((color, index) => ({
-                          id: index + 1,
-                          src: color.imgSrc,
-                          alt: color.name,
-                          color: color.name,
-                          width: 600,
-                          height: 800,
-                          imgSrc: color.imgSrc
-                        }))
-                      : undefined
-                  }
+                  firstItem={currentProduct.imgSrc}
+                  imgHover={currentProduct.imgHover}
+                  gallery={currentProduct.gallery}
+                  slideItems={slideItems}
                 />
               </div>
             </div>
@@ -178,7 +457,7 @@ export default function Details1({ product }) {
                       <div className="text text-btn-uppercase">
                         {safeProduct.category?.title || "Product"}
                       </div>
-                      <h3 className="name">{safeProduct.title}</h3>
+                      <h3 className="name">{getCurrentDisplayTitle()}</h3>
                       <div className="sub">
                         <div className="tf-product-info-rate">
                           <div className="list-star">
@@ -225,8 +504,18 @@ export default function Details1({ product }) {
                     </div>
                   </div>
                   <div className="tf-product-info-choose-option">
-                    {/* Colors section */}
-                    {safeProduct.colors && safeProduct.colors.length > 0 && (
+                    {/* Designs section */}
+                    {allOptions.length > 0 ? (
+                      <div className="tf-product-info-color">
+                        <ColorVariantSelect 
+                          variants={allOptions}
+                          activeVariant={activeVariant}
+                          onVariantChange={handleVariantChange}
+                          showColorNames={true}
+                          currentProductId={safeProduct.id}
+                        />
+                      </div>
+                    ) : safeProduct.colors && safeProduct.colors.length > 0 && (
                       <div className="tf-product-info-color">
                         <ColorSelect 
                           activeColor={activeColor}
@@ -259,10 +548,18 @@ export default function Details1({ product }) {
                     )}
                   
                     {/* Sizes section */}
-                    {safeProduct.sizes && safeProduct.sizes.length > 0 && (
+                    {((currentProduct.size_stocks) || (activeVariant && activeVariant.size_stocks) || (safeProduct.sizes && safeProduct.sizes.length > 0)) && (
                       <div className="tf-product-info-size">
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                          <div className="title" style={{ fontWeight: "500" }}>Size:</div>
+                          <div className="title" style={{ fontWeight: "500", display: "flex", alignItems: "center" }}>
+                            Size:
+                            {selectedSize && sizeOptions.length > 0 && (() => {
+                              const { text, color } = getStockIndicatorForSize(sizeOptions, selectedSize);
+                              return text ? (
+                                <span style={{ marginLeft: 12, fontSize: 13, color, fontWeight: 500 }}>{text}</span>
+                              ) : null;
+                            })()}
+                          </div>
                           <button 
                             onClick={() => setShowSizeGuide(true)}
                             style={{
@@ -287,14 +584,24 @@ export default function Details1({ product }) {
                           </button>
                         </div>
                         <SizeSelect 
+                          sizeStocks={
+                            (activeVariant && activeVariant.size_stocks) || 
+                            currentProduct.size_stocks || 
+                            safeProduct.size_stocks
+                          }
                           sizes={
-                            safeProduct.sizes.map((size, index) => ({
+                            safeProduct.sizes ? safeProduct.sizes.map((size, index) => ({
                               id: `values-${typeof size === 'string' ? size.toLowerCase() : size}-${index}`,
                               value: typeof size === 'string' ? size : size,
                               price: safeProduct.price,
-                              disabled: false
-                            }))
+                              disabled: false,
+                              quantity: 0
+                            })) : []
                           }
+                          productPrice={safeProduct.price}
+                          selectedSize={selectedSize}
+                          setSelectedSize={setSelectedSize}
+                          onSelectedSizeChange={handleSizeChange}
                         />
                       </div>
                     )}
@@ -327,6 +634,21 @@ export default function Details1({ product }) {
                       />
                     </div> */}
                     
+                    {/* Size selection error message */}
+                    {sizeSelectionError && (
+                      <div className="alert alert-warning" role="alert" style={{ 
+                        marginBottom: "16px", 
+                        padding: "10px 15px", 
+                        backgroundColor: "#fff3cd", 
+                        color: "#856404", 
+                        border: "1px solid #ffeaa7", 
+                        borderRadius: "4px",
+                        fontSize: "14px"
+                      }}>
+                        {sizeSelectionError}
+                      </div>
+                    )}
+                    
                     <div className="tf-product-action-btns" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                       <div className="tf-product-info-by-btn mb_10" style={{ display: "flex", alignItems: "center" }}>
                         <a
@@ -342,9 +664,20 @@ export default function Details1({ product }) {
                           }}
                         >
                           <span>
-                            {user && isAddedToCartProducts(safeProduct.id)
-                              ? "Added"
-                              : "Add to cart"}
+                            {user && (() => {
+                              // Check if current product+size combination is in cart
+                              if (!selectedSize) {
+                                // If no size is selected, don't show as added
+                                return "Add to cart";
+                              }
+                              
+                              // Use the new cart checking function
+                              const productDocumentId = safeProduct.documentId;
+                              const variantId = (activeVariant && !activeVariant.isCurrentProduct) ? activeVariant.id : null;
+                              const isInCart = isProductSizeInCart(productDocumentId, selectedSize, variantId);
+                              
+                              return isInCart ? "Added" : "Add to cart";
+                            })()}
                           </span>
                         </a>
                         <a
@@ -356,9 +689,27 @@ export default function Details1({ product }) {
                         >
                           <span className="icon icon-gitDiff" />
                           <span className="tooltip text-caption-2">
-                            {isAddedtoCompareItem(safeProduct.id)
-                              ? "Already Compared"
-                              : "Compare"}
+                            {(() => {
+                              // Check compare status - use same logic as cart
+                              if (!selectedSize) {
+                                return "Compare";
+                              }
+                              
+                              const productDocumentId = safeProduct.documentId;
+                              const variantId = (activeVariant && !activeVariant.isCurrentProduct) ? activeVariant.id : null;
+                              
+                              // For compare, we still use the old ID-based logic since compare doesn't store size info
+                              let checkId;
+                              const baseId = safeProduct.documentId || safeProduct.id;
+                              if (activeVariant && !activeVariant.isCurrentProduct) {
+                                const baseVariantId = `${baseId}-variant-${activeVariant.id}`;
+                                checkId = selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
+                              } else {
+                                checkId = selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
+                              }
+                              
+                              return isAddedtoCompareItem(checkId) ? "Already Compared" : "Compare";
+                            })()}
                           </span>
                         </a>
                         <a
@@ -368,9 +719,27 @@ export default function Details1({ product }) {
                         >
                           <span className="icon icon-heart" />
                           <span className="tooltip text-caption-2">
-                            {user && isAddedtoWishlist(safeProduct.id)
-                              ? "Already Wishlisted"
-                              : "Wishlist"}
+                            {user && (() => {
+                              // Check wishlist status - use same logic as cart
+                              if (!selectedSize) {
+                                return "Wishlist";
+                              }
+                              
+                              const productDocumentId = safeProduct.documentId;
+                              const variantId = (activeVariant && !activeVariant.isCurrentProduct) ? activeVariant.id : null;
+                              
+                              // For wishlist, we still use the old ID-based logic since wishlist doesn't store size info
+                              let checkId;
+                              const baseId = safeProduct.documentId || safeProduct.id;
+                              if (activeVariant && !activeVariant.isCurrentProduct) {
+                                const baseVariantId = `${baseId}-variant-${activeVariant.id}`;
+                                checkId = selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
+                              } else {
+                                checkId = selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
+                              }
+                              
+                              return isAddedtoWishlist(checkId) ? "Already Wishlisted" : "Wishlist";
+                            })()}
                           </span>
                         </a>
                         <button 

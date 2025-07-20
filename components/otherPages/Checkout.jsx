@@ -12,6 +12,46 @@ import { useSession } from "next-auth/react";
 import PriceDisplay from "@/components/common/PriceDisplay";
 import { convertUsdToNpr, getExchangeRate } from "@/utils/currency";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
+
+// Function to get thumbnail image URL from product image object
+const getThumbnailImageUrl = (imgSrc) => {
+  // If it's already a string URL, return as is
+  if (typeof imgSrc === 'string') {
+    return imgSrc;
+  }
+  
+  // If it's an object with formats, try to get thumbnail
+  if (imgSrc && typeof imgSrc === 'object') {
+    if (imgSrc.formats && imgSrc.formats.thumbnail && imgSrc.formats.thumbnail.url) {
+      return imgSrc.formats.thumbnail.url.startsWith('http') 
+        ? imgSrc.formats.thumbnail.url 
+        : `${API_URL}${imgSrc.formats.thumbnail.url}`;
+    }
+    // Fallback to small if thumbnail not available
+    else if (imgSrc.formats && imgSrc.formats.small && imgSrc.formats.small.url) {
+      return imgSrc.formats.small.url.startsWith('http') 
+        ? imgSrc.formats.small.url 
+        : `${API_URL}${imgSrc.formats.small.url}`;
+    }
+    // Fallback to medium if small not available
+    else if (imgSrc.formats && imgSrc.formats.medium && imgSrc.formats.medium.url) {
+      return imgSrc.formats.medium.url.startsWith('http') 
+        ? imgSrc.formats.medium.url 
+        : `${API_URL}${imgSrc.formats.medium.url}`;
+    }
+    // Fallback to original URL
+    else if (imgSrc.url) {
+      return imgSrc.url.startsWith('http') 
+        ? imgSrc.url 
+        : `${API_URL}${imgSrc.url}`;
+    }
+  }
+  
+  // Return fallback image if nothing works
+  return '/images/products/default-product.jpg';
+};
+
 const discounts = [
   {
     discount: "10% OFF",
@@ -780,7 +820,7 @@ export default function Checkout() {
                       >
                         <Image
                           alt="img-product"
-                          src={elm.imgSrc}
+                          src={getThumbnailImageUrl(elm.imgSrc)}
                           width={600}
                           height={800}
                         />
@@ -794,8 +834,15 @@ export default function Checkout() {
                             {elm.title}
                           </Link>
                           <div className="variant text-caption-1 text-secondary">
-                            <span className="size">XL</span>/
-                            <span className="color">Blue</span>
+                            {elm.selectedSize && (
+                              <span className="size">{elm.selectedSize}</span>
+                            )}
+                            {elm.selectedSize && elm.variantInfo && elm.variantInfo.isVariant && (
+                              <span>/</span>
+                            )}
+                            {elm.variantInfo && elm.variantInfo.isVariant && (
+                              <span className="color">{elm.variantInfo.title}</span>
+                            )}
                           </div>
                         </div>
                         <div className="total-price text-button">

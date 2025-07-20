@@ -8,6 +8,8 @@ import { fetchDataFromApi } from "@/utils/api";
 import { PRODUCT_BY_DOCUMENT_ID_API } from "@/utils/urls";
 import PriceDisplay from "@/components/common/PriceDisplay";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
+
 const discounts = [
   {
     discount: "10% OFF",
@@ -34,6 +36,44 @@ const shippingOptions = [
     price: 0.0,
   }
 ];
+
+// Function to get thumbnail image URL from product image object
+const getThumbnailImageUrl = (imgSrc) => {
+  // If it's already a string URL, return as is
+  if (typeof imgSrc === 'string') {
+    return imgSrc;
+  }
+  
+  // If it's an object with formats, try to get thumbnail
+  if (imgSrc && typeof imgSrc === 'object') {
+    if (imgSrc.formats && imgSrc.formats.thumbnail && imgSrc.formats.thumbnail.url) {
+      return imgSrc.formats.thumbnail.url.startsWith('http') 
+        ? imgSrc.formats.thumbnail.url 
+        : `${API_URL}${imgSrc.formats.thumbnail.url}`;
+    }
+    // Fallback to small if thumbnail not available
+    else if (imgSrc.formats && imgSrc.formats.small && imgSrc.formats.small.url) {
+      return imgSrc.formats.small.url.startsWith('http') 
+        ? imgSrc.formats.small.url 
+        : `${API_URL}${imgSrc.formats.small.url}`;
+    }
+    // Fallback to medium if small not available
+    else if (imgSrc.formats && imgSrc.formats.medium && imgSrc.formats.medium.url) {
+      return imgSrc.formats.medium.url.startsWith('http') 
+        ? imgSrc.formats.medium.url 
+        : `${API_URL}${imgSrc.formats.medium.url}`;
+    }
+    // Fallback to original URL
+    else if (imgSrc.url) {
+      return imgSrc.url.startsWith('http') 
+        ? imgSrc.url 
+        : `${API_URL}${imgSrc.url}`;
+    }
+  }
+  
+  // Return fallback image if nothing works
+  return '/images/products/default-product.jpg';
+};
 
 export default function ShopCart() {
   const [activeDiscountIndex, setActiveDiscountIndex] = useState(1);
@@ -287,59 +327,33 @@ export default function ShopCart() {
                           </td>
                           <td className="tf-cart-item_product">
                             <Link
-                              href={`/product-detail/${elm.documentId}`}
+                              href={`/product-detail/${elm.documentId || elm.baseProductId}`}
                               className="img-box"
                             >
                               <Image
                                 alt="product"
-                                src={elm.imgSrc}
+                                src={getThumbnailImageUrl(elm.imgSrc)}
                                 width={600}
                                 height={800}
                               />
                             </Link>
                             <div className="cart-info">
                               <Link
-                                href={`/product-detail/${elm.documentId}`}
+                                href={`/product-detail/${elm.documentId || elm.baseProductId}`}
                                 className="cart-title link"
                               >
                                 {elm.title}
                               </Link>
-                              <div className="variant-box">
-                                {elm.colors && elm.colors.length > 0 && (
-                                  <div className="tf-select">
-                                    <select
-                                      value={selectedColors[elm.id] || ''}
-                                      onChange={(e) => handleColorChange(elm.id, e.target.value)}
-                                    >
-                                      {elm.colors.map((color, index) => {
-                                        const colorName = typeof color === 'string' 
-                                          ? color 
-                                          : (color.name || '');
-                                        return (
-                                          <option key={index} value={colorName}>
-                                            {colorName}
-                                          </option>
-                                        );
-                                      })}
-                                    </select>
-                                  </div>
-                                )}
-                                
-                                {elm.sizes && elm.sizes.length > 0 && (
-                                  <div className="tf-select">
-                                    <select
-                                      value={selectedSizes[elm.id] || ''}
-                                      onChange={(e) => handleSizeChange(elm.id, e.target.value)}
-                                    >
-                                      {elm.sizes.map((size, index) => (
-                                        <option key={index} value={size}>
-                                          {size}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
-                                )}
-                              </div>
+                              {elm.variantInfo && elm.variantInfo.isVariant && (
+                                <div className="text-caption-2 text-secondary mb-2">
+                                  Title: {elm.variantInfo.title}
+                                </div>
+                              )}
+                              {elm.selectedSize && (
+                                <div className="text-caption-2 text-secondary mb-2">
+                                  Size: {elm.selectedSize}
+                                </div>
+                              )}
                             </div>
                           </td>
                           <td

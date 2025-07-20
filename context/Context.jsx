@@ -314,27 +314,41 @@ export default function Context({ children }) {
     }
   }, [cartProducts]);
 
-  const isAddedToCartProducts = (id) => {
-    // First check by direct ID match
-    if (cartProducts.filter((elm) => elm.id == id)[0]) {
-      return true;
-    }
+  // Check if a specific product size is already in the cart
+  const isProductSizeInCart = (productDocumentId, selectedSize, variantId = null) => {
+    if (!productDocumentId || !selectedSize) return false;
     
-    // Also check by documentId
-    if (typeof id === 'string' && id.length > 0) {
-      // Check if the id itself is a documentId
-      if (cartProducts.some(product => product.documentId === id)) {
-        return true;
+    return cartProducts.some(cartItem => {
+      // Check if the base product matches
+      const productMatches = cartItem.documentId === productDocumentId || 
+                           cartItem.baseProductId === productDocumentId;
+      
+      // Check if the size matches
+      const sizeMatches = cartItem.selectedSize === selectedSize;
+      
+      // Check if variant matches (if looking for a variant)
+      let variantMatches = true;
+      if (variantId) {
+        // For variant products, check if the variant info matches
+        if (cartItem.variantInfo && cartItem.variantInfo.variantId) {
+          variantMatches = cartItem.variantInfo.variantId === variantId;
+        } else {
+          variantMatches = false;
+        }
+      } else {
+        // For non-variant products, make sure the cart item is also not a variant
+        variantMatches = !cartItem.variantInfo || !cartItem.variantInfo.isVariant;
       }
       
-      // Check if product exists in allProducts and has a matching documentId
-      const productInfo = allProducts.find(product => product.id === id);
-      if (productInfo && productInfo.documentId) {
-        return cartProducts.some(product => product.documentId === productInfo.documentId);
-      }
-    }
-    
-    return false;
+      return productMatches && sizeMatches && variantMatches;
+    });
+  };
+
+  const isAddedToCartProducts = (id) => {
+    if (!id) return false;
+    // Since we now generate a consistent unique ID (including variant and size),
+    // we can simply check for its existence in the cart.
+    return cartProducts.some((item) => item.id === id);
   };
   
   // Check if a product with a specific documentId already exists in the cart
@@ -351,7 +365,7 @@ export default function Context({ children }) {
     return false;
   };
   
-  const addProductToCart = async (id, qty, isModal = true) => {
+  const addProductToCart = async (id, qty, isModal = true, variantInfo = null, selectedSize = null) => {
     // Log the product ID that was clicked
     const productIdClicked = id;
     
@@ -365,27 +379,65 @@ export default function Context({ children }) {
     }
     
     // Try to find the product in allProducts to get complete information
-    const productInfo = allProducts.find(product => product.id === id || (product.documentId && product.documentId === id));
+    // For unique cart IDs, extract the base product documentId
+    let baseProductId = id;
+    if (typeof id === 'string') {
+      // Handle size-specific IDs: "productId-size-M" or "productId-variant-X-size-M"
+      if (id.includes('-size-')) {
+        baseProductId = id.split('-size-')[0];
+      }
+      // Handle variant IDs after size extraction
+      if (baseProductId.includes('-variant-')) {
+        baseProductId = baseProductId.split('-variant-')[0];
+      }
+    }
+    
+    const productInfo = allProducts.find(product => 
+      product.documentId === baseProductId || 
+      product.id === baseProductId || 
+      (product.documentId && product.documentId === baseProductId)
+    );
     let productToAdd = null;
     
     if (productInfo) {
       let imgSrc = '/images/placeholder.png';
-      if (productInfo.imgSrc && productInfo.imgSrc.formats && productInfo.imgSrc.formats.small && productInfo.imgSrc.formats.small.url) {
-        imgSrc = `${API_URL}${productInfo.imgSrc.formats.small.url}`;
+      let title = productInfo.title;
+      
+      // Use variant info if provided
+      if (variantInfo) {
+        if (variantInfo.imgSrcObject) {
+          // Use the original image object to get thumbnail
+          imgSrc = getOptimizedImageUrl(variantInfo.imgSrcObject);
+        } else if (variantInfo.imgSrc) {
+          imgSrc = variantInfo.imgSrc;
+        }
+        if (variantInfo.title && variantInfo.isVariant) {
+          title = `${productInfo.title} - ${variantInfo.title}`;
+        }
       } else {
-        imgSrc = getImageUrl(productInfo.imgSrc);
+        // Use original logic for non-variant products
+        if (productInfo.imgSrc && productInfo.imgSrc.formats && productInfo.imgSrc.formats.small && productInfo.imgSrc.formats.small.url) {
+          imgSrc = `${API_URL}${productInfo.imgSrc.formats.small.url}`;
+        } else {
+          imgSrc = getImageUrl(productInfo.imgSrc);
+        }
       }
+      
       productToAdd = {
-        id: productInfo.id,
+        id: id, // Use the full variant ID
+        baseProductId: baseProductId, // Keep reference to base product
         documentId: productInfo.documentId,
-        title: productInfo.title,
+        title: title,
         price: productInfo.price,
         oldPrice: productInfo.oldPrice || null,
         quantity: qty || 1,
         colors: productInfo.colors || [],
         sizes: productInfo.sizes || [],
+        selectedSize: selectedSize, // Add selected size
         imgSrc: imgSrc,
-        weight: productInfo.weight || null
+        weight: productInfo.weight || null,
+        // Add variant information
+        variantInfo: variantInfo
       };
       
       console.log("Product data from allProducts:", productInfo);
@@ -404,10 +456,10 @@ export default function Context({ children }) {
         let productResponse = null;
         
         // Try both approaches - by numeric ID or by documentId
-        if (!isNaN(parseInt(id))) {
-          productResponse = await fetchDataFromApi(`/api/products/${parseInt(id)}?populate=*`);
+        if (!isNaN(parseInt(baseProductId))) {
+          productResponse = await fetchDataFromApi(`/api/products/${parseInt(baseProductId)}?populate=*`);
         } else {
-          productResponse = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*`);
+          productResponse = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${baseProductId}&populate=*`);
         }
         
         // Log the full response to debug
@@ -430,31 +482,57 @@ export default function Context({ children }) {
           
           // Check if imgSrc is a relation or direct field
           let imgUrl = '/images/placeholder.png';
-          if (productData.imgSrc && productData.imgSrc.formats && productData.imgSrc.formats.small && productData.imgSrc.formats.small.url) {
-            imgUrl = `${API_URL}${productData.imgSrc.formats.small.url}`;
-          } else if (productData.imgSrc?.data?.attributes?.url) {
-            imgUrl = `${API_URL}${productData.imgSrc.data.attributes.url}`;
-          } else if (productData.imgSrc?.url) {
-            imgUrl = `${API_URL}${productData.imgSrc.url}`;
-          } else if (typeof productData.imgSrc === 'string') {
-            imgUrl = productData.imgSrc;
-          } else if (productData.gallery && productData.gallery.length > 0) {
-            // Try to use first gallery image if no main image
-            const galleryImg = productData.gallery[0];
-            imgUrl = `${API_URL}${galleryImg.url || galleryImg.formats?.thumbnail?.url || ''}`;
+          let title = productData.title || 'Product Item';
+          
+          // Use variant info if provided
+          if (variantInfo) {
+            if (variantInfo.imgSrcObject) {
+              // Use the original image object to get thumbnail
+              imgUrl = getOptimizedImageUrl(variantInfo.imgSrcObject);
+            } else if (variantInfo.imgSrc) {
+              // Check if variantInfo.imgSrc is already a full URL
+              if (typeof variantInfo.imgSrc === 'string' && variantInfo.imgSrc.startsWith('http')) {
+                imgUrl = variantInfo.imgSrc;
+              } else {
+                // If it's an object, use getOptimizedImageUrl
+                imgUrl = getOptimizedImageUrl(variantInfo.imgSrc);
+              }
+            }
+            if (variantInfo.title && variantInfo.isVariant) {
+              title = `${productData.title || 'Product Item'} - ${variantInfo.title}`;
+            }
+          } else {
+            // Use original logic for non-variant products
+            if (productData.imgSrc && productData.imgSrc.formats && productData.imgSrc.formats.small && productData.imgSrc.formats.small.url) {
+              imgUrl = `${API_URL}${productData.imgSrc.formats.small.url}`;
+            } else if (productData.imgSrc?.data?.attributes?.url) {
+              imgUrl = `${API_URL}${productData.imgSrc.data.attributes.url}`;
+            } else if (productData.imgSrc?.url) {
+              imgUrl = `${API_URL}${productData.imgSrc.url}`;
+            } else if (typeof productData.imgSrc === 'string') {
+              imgUrl = productData.imgSrc;
+            } else if (productData.gallery && productData.gallery.length > 0) {
+              // Try to use first gallery image if no main image
+              const galleryImg = productData.gallery[0];
+              imgUrl = `${API_URL}${galleryImg.url || galleryImg.formats?.thumbnail?.url || ''}`;
+            }
           }
           
           productToAdd = {
-            id: fetchedProduct.id,
+            id: id, // Use the full variant ID
+            baseProductId: baseProductId, // Keep reference to base product
             documentId: productData.documentId,
-            title: productData.title || 'Product Item',
+            title: title,
             price: parseFloat(productData.price) || 0,
             oldPrice: productData.oldPrice ? parseFloat(productData.oldPrice) : null,
             quantity: qty || 1,
             colors: productData.colors || [],
             sizes: productData.sizes || [],
+            selectedSize: selectedSize, // Add selected size
             imgSrc: imgUrl,
-            weight: productData.weight || null
+            weight: productData.weight || null,
+            // Add variant information
+            variantInfo: variantInfo
           };
           
           console.log("Created productToAdd:", productToAdd);
@@ -475,17 +553,33 @@ export default function Context({ children }) {
     
     // If we still don't have complete product info, create a basic dummy product
     if (!productToAdd) {
+      let title = "Product Item";
+      let imgSrc = '/images/placeholder.png';
+      
+      // Use variant info if provided
+      if (variantInfo) {
+        if (variantInfo.imgSrc) {
+          imgSrc = variantInfo.imgSrc;
+        }
+        if (variantInfo.title) {
+          title = variantInfo.isVariant ? `Product Item - ${variantInfo.title}` : variantInfo.title;
+        }
+      }
+      
       productToAdd = {
         id: id,
-        documentId: typeof id === 'string' && id.length > 20 ? id : null,
-        title: "Product Item",
+        baseProductId: baseProductId,
+        documentId: typeof baseProductId === 'string' && baseProductId.length > 20 ? baseProductId : null,
+        title: title,
         price: 0,
         oldPrice: null,
         quantity: qty || 1,
         colors: [],
         sizes: [],
-        imgSrc: '/images/placeholder.png',
-        weight: null
+        selectedSize: selectedSize, // Add selected size
+        imgSrc: imgSrc,
+        weight: null,
+        variantInfo: variantInfo
       };
     }
     
@@ -606,19 +700,40 @@ export default function Context({ children }) {
             }
           }
           
-          // Add product to payload
-          if (!isNaN(parseInt(productToAdd.id))) {
-            completeCartPayload.data.product = parseInt(productToAdd.id);
-          } else if (productToAdd.documentId) {
-            // Find product by documentId
-            try {
-              const productResponse = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${productToAdd.documentId}&populate=*`);
-              if (productResponse?.data && productResponse.data.length > 0) {
-                completeCartPayload.data.product = productResponse.data[0].id;
-              }
-            } catch (error) {
-              console.error("Error finding product by documentId:", error);
+          // Add product to payload - use base product documentId for backend
+          const productDocumentIdForBackend = productToAdd.baseProductId || productToAdd.documentId || productToAdd.id;
+          
+          // Find product by documentId to get the numeric ID for backend
+          try {
+            const productResponse = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${productDocumentIdForBackend}&populate=*`);
+            if (productResponse?.data && productResponse.data.length > 0) {
+              completeCartPayload.data.product = productResponse.data[0].id;
+            } else if (!isNaN(parseInt(productDocumentIdForBackend))) {
+              // Fallback to numeric ID if documentId lookup fails
+              completeCartPayload.data.product = parseInt(productDocumentIdForBackend);
             }
+          } catch (error) {
+            console.error("Error finding product by documentId:", error);
+            if (!isNaN(parseInt(productDocumentIdForBackend))) {
+              completeCartPayload.data.product = parseInt(productDocumentIdForBackend);
+            }
+          }
+          
+          // Add variant information to the cart payload if available
+          if (productToAdd.variantInfo) {
+            if (typeof productToAdd.variantInfo === 'object') {
+              // If it's an object, stringify it
+              completeCartPayload.data.variantInfo = JSON.stringify(productToAdd.variantInfo);
+            } else {
+              // If it's already a string, use it as is
+              completeCartPayload.data.variantInfo = productToAdd.variantInfo;
+            }
+          }
+          
+          // Add selected size to the cart payload if available
+          if (productToAdd.selectedSize) {
+            completeCartPayload.data.size = productToAdd.selectedSize;
+            console.log("Adding size to cart payload:", productToAdd.selectedSize);
           }
           
           // Create cart entry
@@ -673,7 +788,7 @@ export default function Context({ children }) {
 
   const updateQuantity = (id, amount, isIncrement = false) => {
     const updatedProducts = cartProducts.map((item) => {
-      // Try to match either by ID or documentId
+      // Try to match either by ID (including variant IDs) or documentId
       const itemMatches = item.id == id || (item.documentId && item.documentId === id);
       
       if (itemMatches) {
@@ -778,12 +893,37 @@ export default function Context({ children }) {
           // Create a new cart item since we couldn't find an existing one
           try {
             // Create cart item in the backend
+            const productDocumentIdForBackend = matchingItem.baseProductId || matchingItem.documentId || matchingItem.id;
             const createPayload = {
               data: {
-                quantity: finalQuantity,
-                product: matchingItem.id
+                quantity: finalQuantity
               }
             };
+            
+            // Find product by documentId to get numeric ID for backend
+            try {
+              const productResponse = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${productDocumentIdForBackend}&populate=*`);
+              if (productResponse?.data && productResponse.data.length > 0) {
+                createPayload.data.product = productResponse.data[0].id;
+              } else if (!isNaN(parseInt(productDocumentIdForBackend))) {
+                createPayload.data.product = parseInt(productDocumentIdForBackend);
+              }
+            } catch (error) {
+              console.error("Error finding product by documentId:", error);
+              if (!isNaN(parseInt(productDocumentIdForBackend))) {
+                createPayload.data.product = parseInt(productDocumentIdForBackend);
+              }
+            }
+            
+            // Add variant information if available
+            if (matchingItem.variantInfo && typeof matchingItem.variantInfo === 'object') {
+              createPayload.data.variantInfo = JSON.stringify(matchingItem.variantInfo);
+            }
+            
+            // Add selected size if available
+            if (matchingItem.selectedSize) {
+              createPayload.data.size = matchingItem.selectedSize;
+            }
             
             // Add user_datum if available
             if (user) {
@@ -1051,46 +1191,97 @@ export default function Context({ children }) {
           
           if (cartResponse?.data?.length > 0) {
             // Transform backend cart items into the format expected by the UI
-            const backendCarts = cartResponse.data.map(cartItem => {
-              if (!cartItem || !cartItem.attributes) {
-                return null; // Skip this item
+            const backendCarts = cartResponse.data.map((cartItem, index) => {
+              try {
+                if (!cartItem) {
+                  return null; // Skip this item
+                }
+                
+                // The cart item data is directly on the object, not nested under attributes
+                const productRelation = cartItem.product || {};
+                const productData = productRelation; // Direct access, no .data property
+                const productAttrs = productData; // Direct access, no .attributes property
+                const productId = productData.id;
+                
+                // Processing cart item silently
+                
+                // Skip items without product data
+                if (!productId) {
+                  return null;
               }
               
-              // Safely access product data with null checks at each level
-              const attributes = cartItem.attributes || {};
-              const productRelation = attributes.product || {};
-              const productData = productRelation.data || {};
-              const productAttrs = productData.attributes || {};
-              const productId = productData.id;
+              // Parse variant information if available
+              let variantInfo = null;
+              let cartItemId = productAttrs.documentId || productId;
+              let title = productAttrs.title || "Product Item";
+              let imgSrc = getOptimizedImageUrl(productAttrs.imgSrc) || '/images/placeholder.jpg';
               
-              console.log("Processing cart item:", {
-                cartId: cartItem.id,
-                productId,
-                title: productAttrs.title,
-                price: productAttrs.price,
-                oldPrice: productAttrs.oldPrice
-              });
-              
-              // Skip items without product data
-              if (!productId) {
-                return null;
+              if (cartItem.variantInfo) {
+                try {
+                  // Check if variantInfo is already an object (not a string)
+                  if (typeof cartItem.variantInfo === 'object' && cartItem.variantInfo !== null) {
+                    variantInfo = cartItem.variantInfo;
+                  } else if (typeof cartItem.variantInfo === 'string') {
+                    // Only try to parse if it's a string and not "[object Object]"
+                    if (cartItem.variantInfo !== "[object Object]" && cartItem.variantInfo.trim() !== "") {
+                      variantInfo = JSON.parse(cartItem.variantInfo);
+                    } else {
+                      console.warn("Skipping invalid variantInfo string:", cartItem.variantInfo);
+                      variantInfo = null;
+                    }
+                  }
+                  
+                  if (variantInfo) {
+                    // Reconstruct the variant-specific cart item ID using documentId
+                    if (variantInfo.isVariant && variantInfo.variantId) {
+                      cartItemId = `${productAttrs.documentId || productId}-variant-${variantInfo.variantId}`;
+                    }
+                    
+                    // Use variant-specific title and image
+                    if (variantInfo.title && variantInfo.isVariant) {
+                      title = `${productAttrs.title || "Product Item"} - ${variantInfo.title}`;
+                    }
+                    
+                    if (variantInfo.imgSrcObject) {
+                      // Use the original image object to get thumbnail
+                      imgSrc = getOptimizedImageUrl(variantInfo.imgSrcObject);
+                    } else if (variantInfo.imgSrc) {
+                      // Check if variantInfo.imgSrc is already a full URL
+                      if (typeof variantInfo.imgSrc === 'string' && variantInfo.imgSrc.startsWith('http')) {
+                        imgSrc = variantInfo.imgSrc;
+                      } else {
+                        // If it's an object, use getOptimizedImageUrl
+                        imgSrc = getOptimizedImageUrl(variantInfo.imgSrc);
+                      }
+                    }
+                  }
+                } catch (parseError) {
+                  console.error("Error parsing variant info:", parseError, "Raw value:", cartItem.variantInfo);
+                  variantInfo = null;
+                }
               }
+
+              // Keep the cart item ID simple - don't modify it with size
+              // The size checking logic will handle product+size combinations
               
               const productCart = {
-                id: productId,
+                id: cartItemId, // Use variant-specific ID
+                baseProductId: productAttrs.documentId || productId, // Keep reference to base product documentId
                 cartId: cartItem.id,
-                cartDocumentId: attributes.documentId,
+                cartDocumentId: cartItem.documentId,
                 documentId: productAttrs.documentId,
-                title: productAttrs.title || "Product Item",
+                title: title,
                 price: parseFloat(productAttrs.price || 0),
                 oldPrice: productAttrs.oldPrice ? parseFloat(productAttrs.oldPrice) : null,
-                quantity: attributes.quantity || 1,
+                quantity: cartItem.quantity || 1,
                 colors: productAttrs.colors || [],
                 sizes: productAttrs.sizes || [],
-                imgSrc: getOptimizedImageUrl(productAttrs.imgSrc) || '/images/placeholder.jpg'
+                selectedSize: cartItem.size || null, // Include selected size from backend
+                imgSrc: imgSrc,
+                variantInfo: variantInfo // Include variant info
               };
               
-              console.log("Processed cart item:", productCart);
+              // Cart item processed successfully
               
               // Special handling for Redezyyyy Shorts
               if (productCart.title && productCart.title.includes("Redezyyyy")) {
@@ -1102,6 +1293,10 @@ export default function Context({ children }) {
               }
               
               return productCart;
+              } catch (error) {
+                console.error("Error processing cart item:", error, cartItem);
+                return null; // Skip this item if there's an error
+              }
             })
             // Filter out null entries (invalid items)
             .filter(item => item !== null);
@@ -1202,7 +1397,7 @@ export default function Context({ children }) {
     try {
       // First update the local state to remove the item
       const updatedCart = cartProducts.filter(item => {
-        // Filter out the item with matching id
+        // Filter out the item with matching id (including variant IDs)
         return item.id != id && 
                // Also check document ID if available
                (item.documentId !== id) && 
@@ -1632,25 +1827,25 @@ export default function Context({ children }) {
     
     // Check for formats in the data structure used by Strapi v4
     if (imageObj.data?.attributes?.formats) {
-      // Try small format first
-      if (imageObj.data.attributes.formats.small?.url) {
-        return `${API_URL}${imageObj.data.attributes.formats.small.url}`;
-      }
-      // Try thumbnail next
+      // Try thumbnail first for cart items
       if (imageObj.data.attributes.formats.thumbnail?.url) {
         return `${API_URL}${imageObj.data.attributes.formats.thumbnail.url}`;
+      }
+      // Try small format as fallback
+      if (imageObj.data.attributes.formats.small?.url) {
+        return `${API_URL}${imageObj.data.attributes.formats.small.url}`;
       }
     }
     
     // Check for formats in the flattened structure
     if (imageObj.formats) {
-      // Try small format first
-      if (imageObj.formats.small?.url) {
-        return `${API_URL}${imageObj.formats.small.url}`;
-      }
-      // Try thumbnail next
+      // Try thumbnail first for cart items
       if (imageObj.formats.thumbnail?.url) {
         return `${API_URL}${imageObj.formats.thumbnail.url}`;
+      }
+      // Try small format as fallback
+      if (imageObj.formats.small?.url) {
+        return `${API_URL}${imageObj.formats.small.url}`;
       }
     }
     
@@ -1704,6 +1899,7 @@ export default function Context({ children }) {
     totalPrice,
     addProductToCart,
     isAddedToCartProducts,
+    isProductSizeInCart, // Add the new function
     removeFromWishlist,
     addToWishlist,
     isAddedtoWishlist,
