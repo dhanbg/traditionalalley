@@ -13,17 +13,28 @@ const DEFAULT_IMAGE = '/images/placeholder.jpg';
 
 function getStrapiSmallImage(imageObj) {
   if (!imageObj) return DEFAULT_IMAGE;
-  if (imageObj.formats && imageObj.formats.small && imageObj.formats.small.url) {
-    // If the URL is already absolute, use it; otherwise, prepend API_URL
-    if (imageObj.formats.small.url.startsWith('http')) {
-      return imageObj.formats.small.url;
-    } else {
-      // Import API_URL from utils/urls
-      return getImageUrl(imageObj.formats.small.url);
-    }
+  
+  // Handle string URLs directly
+  if (typeof imageObj === 'string') {
+    return getImageUrl(imageObj) || DEFAULT_IMAGE;
   }
-  // fallback to getImageUrl utility
-  return getImageUrl(imageObj) || DEFAULT_IMAGE;
+  
+  // Handle Strapi image objects with formats
+  if (imageObj.formats && imageObj.formats.small && imageObj.formats.small.url) {
+    return getImageUrl(imageObj.formats.small.url);
+  }
+  
+  // Handle objects with direct url property
+  if (imageObj.url) {
+    return getImageUrl(imageObj.url);
+  }
+  
+  // Handle Strapi data structure with data.attributes
+  if (imageObj.data && imageObj.data.attributes && imageObj.data.attributes.url) {
+    return getImageUrl(imageObj.data.attributes.url);
+  }
+  
+  return DEFAULT_IMAGE;
 }
 
 export default function ProductCard1({ product, gridClass = "", index = 0 }) {

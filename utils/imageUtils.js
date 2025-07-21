@@ -8,13 +8,16 @@ import { API_URL } from "./urls";
 export const getImageUrl = (imageUrl) => {
   if (!imageUrl) return "";
   
+  // Convert to string if it's not already
+  const urlString = typeof imageUrl === 'string' ? imageUrl : String(imageUrl);
+  
   // If the URL already starts with http/https, return as is
-  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-    return imageUrl;
+  if (urlString.startsWith('http://') || urlString.startsWith('https://')) {
+    return urlString;
   }
   
   // Otherwise, prepend the API_URL
-  return `${API_URL}${imageUrl}`;
+  return `${API_URL}${urlString}`;
 };
 
 /**
