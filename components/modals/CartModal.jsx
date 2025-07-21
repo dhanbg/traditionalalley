@@ -345,10 +345,10 @@ export default function CartModal() {
             }
 
             const userData = currentUserData.data[0];
-            const userDataId = userData.id;
+            const userDocumentId = userData.documentId || userData.attributes?.documentId;
             
             const cartResponse = await fetchDataFromApi(
-              `/api/carts?filters[user_datum][id][$eq]=${userDataId}&populate=*`
+              `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
             );
             
             if (cartResponse?.data?.length > 0) {
@@ -508,7 +508,7 @@ export default function CartModal() {
       modal.removeEventListener('show.bs.modal', handleModalShow);
       modal.removeEventListener('hidden.bs.modal', handleModalHide);
     };
-  }, [user, cartProducts, isCartClearing, cartClearedTimestamp]);
+  }, [user?.id, cartProducts, isCartClearing, cartClearedTimestamp]); // Use user?.id to prevent refresh on session changes
 
   // For a more consistent experience, prefer serverCartProducts when available
   const displayProducts = user 

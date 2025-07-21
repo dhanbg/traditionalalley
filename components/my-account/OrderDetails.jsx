@@ -28,7 +28,7 @@ export default function OrderDetails({ orderId }) {
     };
 
     fetchOrderDetails();
-  }, [session?.user, orderId]);
+  }, [session?.user?.id, orderId]); // Only depend on user ID, not entire user object
 
   if (loading) {
     return <div className="loading">Loading order details...</div>;

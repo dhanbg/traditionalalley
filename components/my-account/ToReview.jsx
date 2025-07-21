@@ -105,7 +105,7 @@ export default function ToReview() {
     };
 
     fetchPurchasedProducts();
-  }, [user]);
+  }, [user?.id]); // Only depend on user ID, not entire user object
 
   const handleStartReview = (product) => {
     setReviewingProduct(product);

@@ -213,7 +213,7 @@ export default function Context({ children }) {
       // Note: We don't reset userCreationAttempted here because we want to keep 
       // the sessionStorage flag intact until the browser session ends
     }
-  }, [user, cartLoadedOnce]);
+  }, [user?.id, cartLoadedOnce]); // Use user?.id to prevent re-execution on session refresh
 
   // Refresh exchange rate periodically (every hour)
   useEffect(() => {
@@ -606,6 +606,7 @@ export default function Context({ children }) {
         // Extract the current user data
         const currentUser = currentUserData?.data?.[0];
         const currentUserId = currentUser?.id;
+        const currentUserDocumentId = currentUser?.attributes?.documentId || currentUser?.documentId;
         const currentUserAttrs = currentUser?.attributes || {};
         
         if (!currentUserId) {
@@ -639,7 +640,7 @@ export default function Context({ children }) {
         // Double-check for existing user-bag by querying directly
         if (!userBag) {
           try {
-            const existingBags = await fetchDataFromApi(`/api/user-bags?filters[user_datum][id][$eq]=${currentUserId}&populate=*`);
+            const existingBags = await fetchDataFromApi(`/api/user-bags?filters[user_datum][documentId][$eq]=${currentUserDocumentId}&populate=*`);
             
             if (existingBags.data && existingBags.data.length > 0) {
               userBag = existingBags.data[0];
@@ -662,7 +663,7 @@ export default function Context({ children }) {
             const userBagPayload = {
               data: {
                 Name: `${firstName} ${lastName}`.trim(),
-                user_datum: currentUserId
+                user_datum: currentUserDocumentId // Use documentId instead of numeric ID
               }
             };
             
@@ -680,7 +681,7 @@ export default function Context({ children }) {
           const completeCartPayload = {
             data: {
               quantity: qty || 1,
-              user_datum: currentUserId
+              user_datum: currentUserDocumentId // Use documentId instead of numeric ID
             }
           };
           
@@ -932,10 +933,11 @@ export default function Context({ children }) {
               
               if (userDataResponse?.data && userDataResponse.data.length > 0) {
                 const userData = userDataResponse.data[0];
-                createPayload.data.user_datum = userData.id;
+                const userDocumentId = userData.attributes?.documentId || userData.documentId;
+                createPayload.data.user_datum = userDocumentId; // Use documentId instead of numeric ID
                 
                 // Also check if the user has a bag
-                const userBagResponse = await fetchDataFromApi(`/api/user-bags?filters[user_datum][id][$eq]=${userData.id}`);
+                const userBagResponse = await fetchDataFromApi(`/api/user-bags?filters[user_datum][documentId][$eq]=${userDocumentId}`);
                 
                 if (userBagResponse?.data && userBagResponse.data.length > 0) {
                   const userBag = userBagResponse.data[0];
@@ -1179,15 +1181,74 @@ export default function Context({ children }) {
 
           const userData = currentUserData.data[0];
           const userDataId = userData.id;
+          const userDocumentId = userData.documentId || userData.attributes?.documentId;
           
-          console.log("Loading cart for user data ID:", userDataId);
+          console.log("🔍 Loading cart for user:", {
+            userDataId,
+            userDocumentId,
+            email: userData.email || userData.attributes?.email,
+            authUserId: userData.authUserId || userData.attributes?.authUserId
+          });
           
-          // Fetch user-specific carts from backend
+          // First, let's check what cart items exist in total
+          const allCartsResponse = await fetchDataFromApi(`/api/carts?populate=*`);
+          console.log("📦 All cart items in backend:", allCartsResponse?.data?.map(item => ({
+            cartId: item.id,
+            cartDocumentId: item.documentId,
+            userDatumId: item.user_datum?.id || 'NULL',
+            userDatumDocumentId: item.user_datum?.documentId || 'NULL',
+            productTitle: item.product?.title || 'Unknown',
+            quantity: item.quantity
+          })));
+          
+          // Fetch user-specific carts from backend using documentId (more reliable than numeric ID)
           const cartResponse = await fetchDataFromApi(
-            `/api/carts?filters[user_datum][id][$eq]=${userDataId}&populate=*`
+            `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
           );
           
-          console.log("Cart response from backend:", cartResponse);
+          console.log(`🛒 Cart response for user ${userDataId}:`, cartResponse);
+          console.log("📊 Cart items found:", cartResponse?.data?.length || 0);
+          
+          // AUTO-FIX: If no cart items found for user, check for orphaned items and link them
+          if (cartResponse?.data?.length === 0 && allCartsResponse?.data?.length > 0) {
+            console.log("🔧 No cart items found for user, checking for orphaned items...");
+            const orphanedCarts = allCartsResponse.data.filter(cart => !cart.user_datum?.id);
+            
+            if (orphanedCarts.length > 0) {
+              console.log(`🔗 Found ${orphanedCarts.length} orphaned cart items, attempting to link to user ${userDataId}`);
+              
+              // Try to link orphaned carts to current user using documentIds
+              for (const orphanedCart of orphanedCarts) {
+                try {
+                  const linkPayload = {
+                    data: {
+                      user_datum: userDocumentId // Use documentId instead of numeric ID
+                    }
+                  };
+                  
+                  console.log(`🔗 Linking cart ${orphanedCart.documentId} to user ${userDocumentId}`);
+                  const linkResult = await updateData(`/api/carts/${orphanedCart.documentId}`, linkPayload);
+                  console.log(`✅ Successfully linked cart ${orphanedCart.documentId}`);
+                } catch (linkError) {
+                  console.error(`❌ Failed to link cart ${orphanedCart.documentId}:`, linkError);
+                }
+              }
+              
+              // Re-fetch cart data after linking
+              console.log("🔄 Re-fetching cart data after linking...");
+              const updatedCartResponse = await fetchDataFromApi(
+                `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
+              );
+              
+              console.log("🔄 Updated cart response:", updatedCartResponse);
+              
+              if (updatedCartResponse?.data?.length > 0) {
+                // Use the updated response
+                cartResponse.data = updatedCartResponse.data;
+                console.log(`✅ Successfully linked and loaded ${updatedCartResponse.data.length} cart items`);
+              }
+            }
+          }
           
           if (cartResponse?.data?.length > 0) {
             // Transform backend cart items into the format expected by the UI
@@ -1336,23 +1397,23 @@ export default function Context({ children }) {
       setIsCartLoading(false);
       setCartLoadedOnce(true);
     }
-  }, [user, isCartClearing, cartClearedTimestamp]);
+  }, [user?.id, isCartClearing, cartClearedTimestamp]); // Only trigger when user ID changes, not entire user object
 
   // Remove localStorage saving for cart data
   useEffect(() => {
     // We're no longer saving cart data to localStorage
     // All data will be stored only in the backend
-  }, [cartProducts, user]);
+  }, [cartProducts, user?.id]); // Only depend on user ID, not entire user object
   
   // Remove localStorage loading for wishlist
   useEffect(() => {
     // We're no longer loading wishlist data from localStorage
-  }, [user]);
+  }, [user?.id]); // Only depend on user ID, not entire user object
 
   // Remove localStorage saving for wishlist
   useEffect(() => {
     // We're no longer saving wishlist to localStorage
-  }, [wishList, user]);
+  }, [wishList, user?.id]); // Only depend on user ID, not entire user object
 
   // Add debug logging when cart items are added or updated
   useEffect(() => {
@@ -1467,10 +1528,10 @@ export default function Context({ children }) {
       }
 
       const userData = currentUserData.data[0];
-      const userDataId = userData.id;
+      const userDocumentId = userData.documentId || userData.attributes?.documentId;
       
       const cartResponse = await fetchDataFromApi(
-        `/api/carts?filters[user_datum][id][$eq]=${userDataId}&populate=*`
+        `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
       );
       
       if (cartResponse?.data?.length > 0) {
@@ -1576,13 +1637,13 @@ export default function Context({ children }) {
       }
 
       const userData = currentUserData.data[0];
-      const userDataId = userData.id;
+      const userDocumentId = userData.documentId || userData.attributes?.documentId;
       
-      console.log("Found user data ID:", userDataId);
+      console.log("Found user document ID:", userDocumentId);
       
       // Get cart items for this specific user
       const cartResponse = await fetchDataFromApi(
-        `/api/carts?filters[user_datum][id][$eq]=${userDataId}&populate=*`
+        `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
       );
       
       if (cartResponse?.data?.length > 0) {
@@ -1626,7 +1687,7 @@ export default function Context({ children }) {
         // Verify deletion by checking remaining cart items
         console.log("🔍 Verifying purchased items deletion...");
         const verificationResponse = await fetchDataFromApi(
-          `/api/carts?filters[user_datum][id][$eq]=${userDataId}&populate=*`
+          `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
         );
         
         const remainingItems = verificationResponse?.data?.length || 0;
@@ -1707,14 +1768,14 @@ export default function Context({ children }) {
       }
 
       const userData = currentUserData.data[0];
-      const userDataId = userData.id;
+      const userDocumentId = userData.documentId || userData.attributes?.documentId;
       
-      console.log("✅ Found user data ID:", userDataId);
+      console.log("✅ Found user document ID:", userDocumentId);
       console.log("🔍 Fetching cart items for deletion...");
       
       // Get cart items for this specific user
       const cartResponse = await fetchDataFromApi(
-        `/api/carts?filters[user_datum][id][$eq]=${userDataId}&populate=*`
+        `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
       );
       
       console.log("Cart response:", cartResponse);
@@ -1763,7 +1824,7 @@ export default function Context({ children }) {
         // Verify deletion by checking if any items remain
         console.log("🔍 Verifying cart is empty...");
         const verificationResponse = await fetchDataFromApi(
-          `/api/carts?filters[user_datum][id][$eq]=${userDataId}&populate=*`
+          `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
         );
         
         if (verificationResponse?.data?.length > 0) {

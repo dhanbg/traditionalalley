@@ -3,7 +3,7 @@
 import { useContextElement } from "@/context/Context";
 import Image from "next/image";
 import Link from "next/link";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import NPSPaymentForm from "../payments/NPSPaymentForm";
 import DHLShippingForm from "../shipping/DHLShippingForm";
@@ -85,9 +85,13 @@ export default function Checkout() {
   const user = session?.user;
   
   // Memoize selected products to prevent infinite re-renders
+  // Use stable comparison based on product IDs and selection state
   const selectedProducts = useMemo(() => {
     return cartProducts.filter(product => selectedCartItems[product.id]);
-  }, [cartProducts, selectedCartItems]);
+  }, [
+    JSON.stringify(cartProducts.map(p => ({ id: p.id, documentId: p.documentId, quantity: p.quantity, price: p.price }))), 
+    JSON.stringify(selectedCartItems)
+  ]);
 
   // Add state to store products with updated oldPrice values
   const [productsWithOldPrice, setProductsWithOldPrice] = useState({});
@@ -121,6 +125,9 @@ export default function Checkout() {
       postalCode: ""
     }
   });
+
+  // Ref to track previous selected products for stable comparison
+  const prevSelectedProductsRef = useRef(null);
 
   // Debug: Log when productsWithOldPrice changes
   useEffect(() => {
@@ -278,7 +285,18 @@ export default function Checkout() {
 
   // Fetch product details when selectedProducts change
   useEffect(() => {
-    if (selectedProducts.length === 0 || isLoadingProductDetails) return;
+    // Create a stable representation of selected products for comparison
+    const currentProductsKey = selectedProducts.map(p => `${p.id}-${p.documentId}`).sort().join(',');
+    
+    // Only proceed if products have actually changed or it's the first load
+    if (selectedProducts.length === 0 || 
+        isLoadingProductDetails || 
+        (prevSelectedProductsRef.current === currentProductsKey)) {
+      return;
+    }
+    
+    // Update the ref with current products
+    prevSelectedProductsRef.current = currentProductsKey;
     
     setIsLoadingProductDetails(true);
     
@@ -358,7 +376,7 @@ export default function Checkout() {
     }
     
     fetchProductDetails();
-  }, [selectedProducts.length, selectedProducts.map(p => p.documentId).join(',')]); // Simpler, more stable dependency
+  }, [selectedProducts, isLoadingProductDetails]); // Depend on selectedProducts but with internal stability check
 
   // Calculate subtotal: sum of oldPrice (if available) or price, times quantity
   const subtotal = selectedProducts.reduce((acc, product) => {
@@ -730,7 +748,37 @@ export default function Checkout() {
                     {selectedPaymentMethod === 'nps' && (
                       nprExchangeRate ? (
                         <NPSPaymentForm 
-                          product={{ id: "checkout", name: "Checkout Order", price: nprAmount }} 
+                          amount={nprAmount}
+                          onSuccess={(response) => {
+                            console.log('NPS Payment Success:', response);
+                            // Handle successful payment
+                            if (response.success) {
+                              // You can redirect to payment gateway or handle the response
+                              if (response.data?.redirectUrl && response.data?.redirectForm) {
+                                // Create and submit form to redirect to NPS gateway
+                                const form = document.createElement('form');
+                                form.method = 'POST';
+                                form.action = response.data.redirectUrl;
+                                
+                                Object.entries(response.data.redirectForm).forEach(([key, value]) => {
+                                  if (value) {
+                                    const input = document.createElement('input');
+                                    input.type = 'hidden';
+                                    input.name = key;
+                                    input.value = value;
+                                    form.appendChild(input);
+                                  }
+                                });
+                                
+                                document.body.appendChild(form);
+                                form.submit();
+                              }
+                            }
+                          }}
+                          onError={(error) => {
+                            console.error('NPS Payment Error:', error);
+                            alert(`Payment failed: ${error.message || 'Unknown error'}`);
+                          }}
                           orderData={{
                             products: selectedProducts.map(product => {
                               const fetchedProduct = productsWithOldPrice[product.id];
@@ -766,6 +814,7 @@ export default function Checkout() {
                             shippingPrice: shippingCost,
                             receiver_details: receiverDetails
                           }}
+                          transactionRemarks={`Checkout Order - ${selectedProducts.length} items`}
                         />
                       ) : (
                         <div style={{ textAlign: 'center', padding: '20px' }}>

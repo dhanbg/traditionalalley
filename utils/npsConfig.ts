@@ -3,35 +3,37 @@ import crypto from "crypto";
 
 // NPS API Configuration
 export const npsConfig = {
-  // Production URLs - Nepal Payment Solution
-  baseURL: process.env.NPS_BASE_URL || 'https://apigateway.nepalpayment.com',
-  gatewayURL: process.env.NPS_GATEWAY_URL || 'https://gateway.nepalpayment.com/payment/index',
+  // Use sandbox for local development, production for deployed app
+  baseURL: process.env.NODE_ENV === 'production' 
+    ? (process.env.NPS_BASE_URL || 'https://apigateway.nepalpayment.com')
+    : (process.env.NPS_BASE_URL || 'https://apisandbox.nepalpayment.com'),
+    
+  gatewayURL: process.env.NODE_ENV === 'production'
+    ? (process.env.NPS_GATEWAY_URL || 'https://gateway.nepalpayment.com/payment/index')
+    : (process.env.NPS_GATEWAY_URL || 'https://gatewaysandbox.nepalpayment.com/Payment/Index'),
   
-  // Sandbox URLs (Test Environment) - Commented for reference
-  // baseURL: process.env.NPS_BASE_URL || 'https://apisandbox.nepalpayment.com',
-  // gatewayURL: process.env.NPS_GATEWAY_URL || 'https://gatewaysandbox.nepalpayment.com/Payment/Index',
+  // Use production credentials for production, test credentials for development
+  merchantId: process.env.NODE_ENV === 'production'
+    ? (process.env.NPS_MERCHANT_ID || '530')
+    : (process.env.NPS_MERCHANT_ID || '7536'),
+    
+  merchantName: process.env.NODE_ENV === 'production'
+    ? (process.env.NPS_MERCHANT_NAME || 'traditionalapiuser')
+    : (process.env.NPS_MERCHANT_NAME || 'Alley'),
   
-  // Production merchant credentials
-  merchantId: process.env.NPS_MERCHANT_ID || '530',
-  merchantName: process.env.NPS_MERCHANT_NAME || 'traditionalapiuser',
+  // API credentials based on environment
+  apiUsername: process.env.NODE_ENV === 'production'
+    ? (process.env.NPS_API_USERNAME || 'traditionalapiuser')
+    : (process.env.NPS_API_USERNAME || 'Alley'),
+    
+  apiPassword: process.env.NODE_ENV === 'production'
+    ? (process.env.NPS_API_PASSWORD || 'D9v@eX#2LmZ!q')
+    : (process.env.NPS_API_PASSWORD || 'Alley@111'),
   
-  // Test merchant credentials (Commented for reference)
-  // merchantId: process.env.NPS_MERCHANT_ID || '7536',
-  // merchantName: process.env.NPS_MERCHANT_NAME || 'Alley',
-  
-  // Production API credentials for Basic Auth
-  apiUsername: process.env.NPS_API_USERNAME || 'traditionalapiuser',
-  apiPassword: process.env.NPS_API_PASSWORD || 'D9v@eX#2LmZ!q',
-  
-  // Test API credentials (Commented for reference)
-  // apiUsername: process.env.NPS_API_USERNAME || 'Alley',
-  // apiPassword: process.env.NPS_API_PASSWORD || 'Alley@111',
-  
-  // Production Gateway API Secret Key for signature generation
-  secretKey: process.env.NPS_SECRET_KEY || 'T$5nLz#o1Xp@',
-  
-  // Test secret key (Commented for reference)
-  // secretKey: process.env.NPS_SECRET_KEY || 'Key@123',
+  // Secret key based on environment
+  secretKey: process.env.NODE_ENV === 'production'
+    ? (process.env.NPS_SECRET_KEY || 'T$5nLz#o1Xp@')
+    : (process.env.NPS_SECRET_KEY || 'Key@123'),
   
   // Test bank credentials (for testing purposes only)
   testBank: {

@@ -82,8 +82,15 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('=== NPS PAYMENT INITIATION ===');
+    console.log('Environment:', process.env.NODE_ENV);
     console.log('User:', session.user.email);
     console.log('Request body:', body);
+    console.log('NPS Config:', {
+      baseURL: npsConfig.baseURL,
+      merchantId: npsConfig.merchantId,
+      merchantName: npsConfig.merchantName,
+      apiUsername: npsConfig.apiUsername
+    });
 
     // Get user data from Strapi using Auth.js user ID
     let userBagId = userBagDocumentId;
@@ -133,10 +140,17 @@ export async function POST(request: NextRequest) {
     console.log('Process ID response:', processIdResponse.data);
 
     if (processIdResponse.data.code !== "0") {
+      console.error('❌ NPS API Error Details:', {
+        code: processIdResponse.data.code,
+        message: processIdResponse.data.message,
+        fullResponse: processIdResponse.data
+      });
+      
       return NextResponse.json({
         success: false,
         message: processIdResponse.data.message || 'Failed to get process ID',
-        error: `Code: ${processIdResponse.data.code}`
+        error: `Code: ${processIdResponse.data.code}`,
+        details: processIdResponse.data
       }, { status: 400 });
     }
 
