@@ -1276,7 +1276,7 @@ export default function Context({ children }) {
               let variantInfo = null;
               let cartItemId = productAttrs.documentId || productId;
               let title = productAttrs.title || "Product Item";
-              let imgSrc = getOptimizedImageUrl(productAttrs.imgSrc) || '/images/placeholder.jpg';
+              let imgSrc = getOptimizedImageUrl(productAttrs.imgSrc) || '/logo.png';
               
               if (cartItem.variantInfo) {
                 try {

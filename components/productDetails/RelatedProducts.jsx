@@ -9,7 +9,7 @@ import { fetchDataFromApi } from "@/utils/api";
 import { getBestImageUrl } from "@/utils/imageUtils";
 
 // Default placeholder image
-const DEFAULT_IMAGE = '/images/placeholder.jpg';
+const DEFAULT_IMAGE = '/logo.png';
 
 // Helper function to transform product data to ensure valid image URLs and required fields
 const transformProduct = (rawProduct) => {

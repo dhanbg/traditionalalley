@@ -60,7 +60,10 @@ export default async function page({ params }) {
       variants.unshift(currentProductVariant);
       
     } catch (error) {
-      console.error('Error fetching variants:', error);
+      // Silently handle variants not found - this is expected for products without variants
+      if (error.status !== 404) {
+        console.error('Error fetching variants:', error);
+      }
     }
     
     // Also check for products with the same productGroup (for existing setup)
@@ -71,7 +74,10 @@ export default async function page({ params }) {
           variants = groupResponse.data.map(p => transformProductAsVariant(p));
         }
       } catch (error) {
-        console.error('Error fetching product group:', error);
+        // Silently handle product group not found
+        if (error.status !== 404) {
+          console.error('Error fetching product group:', error);
+        }
       }
     }
     
@@ -214,7 +220,7 @@ function transformVariant(rawVariant) {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
   
   // Handle variant images
-  let imgSrc = '/images/placeholder.jpg';
+  let imgSrc = '/logo.png';
   if (rawVariant.imgSrc) {
     if (rawVariant.imgSrc.url && rawVariant.imgSrc.url.startsWith('http')) {
       imgSrc = rawVariant.imgSrc.url;
@@ -245,8 +251,8 @@ function transformVariant(rawVariant) {
   
   const gallery = Array.isArray(rawVariant.gallery) 
     ? rawVariant.gallery.map(img => {
-        if (!img) return { id: 0, url: '/images/placeholder.jpg' };
-        let imageUrl = '/images/placeholder.jpg';
+        if (!img) return { id: 0, url: '/logo.png' };
+        let imageUrl = '/logo.png';
         if (img.url && img.url.startsWith('http')) {
           imageUrl = img.url;
         } else if (img.url) {
@@ -280,7 +286,7 @@ function transformProductAsVariant(rawProduct) {
   // Extract color from title or use a default
   const colorName = extractColorFromTitle(rawProduct.title) || 'Default';
   
-  let imgSrc = '/images/placeholder.jpg';
+  let imgSrc = '/logo.png';
   if (rawProduct.imgSrc) {
     if (rawProduct.imgSrc.url && rawProduct.imgSrc.url.startsWith('http')) {
       imgSrc = rawProduct.imgSrc.url;

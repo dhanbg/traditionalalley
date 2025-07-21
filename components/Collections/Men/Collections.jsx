@@ -48,7 +48,7 @@ export default function Collections() {
         return imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`;
       }
       
-      return "/placeholder.jpg";
+      return "/logo.png";
     };
 
     fetchCollections();

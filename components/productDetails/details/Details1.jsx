@@ -19,7 +19,7 @@ import PriceDisplay from "@/components/common/PriceDisplay";
 export default function Details1({ product, variants = [] }) {
   // Helper function to process image URLs consistently
   const processImageUrl = (imgData) => {
-    if (!imgData) return '/images/placeholder.jpg';
+    if (!imgData) return '/logo.png';
     
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
     
@@ -45,7 +45,7 @@ export default function Details1({ product, variants = [] }) {
       }
     }
     
-    return '/images/placeholder.jpg';
+    return '/logo.png';
   };
 
   // Helper function to process gallery items with thumbnails
@@ -87,8 +87,8 @@ export default function Details1({ product, variants = [] }) {
     sizes: product.sizes || [],
     price: product.price || 0,
     oldPrice: product.oldPrice || null,
-    imgSrc: getBestImageUrl(product.imgSrc, 'medium') || '/images/placeholder.jpg',
-    imgHover: product.imgHover || product.imgSrc || '/images/placeholder.jpg',
+    imgSrc: getBestImageUrl(product.imgSrc, 'medium') || '/logo.png',
+    imgHover: product.imgHover || product.imgSrc || '/logo.png',
     gallery: processGalleryItems(product.gallery || [])
   };
 

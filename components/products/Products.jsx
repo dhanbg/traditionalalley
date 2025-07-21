@@ -16,7 +16,7 @@ import { useSearchParams } from 'next/navigation';
 import { getBestImageUrl } from "@/utils/imageUtils";
 
 // Default placeholder image
-const DEFAULT_IMAGE = '/images/placeholder.jpg';
+const DEFAULT_IMAGE = '/logo.png';
 
 export default function Products({ parentClass = "flat-spacing", collection, categoryId, categoryTitle }) {
   const searchParams = useSearchParams();

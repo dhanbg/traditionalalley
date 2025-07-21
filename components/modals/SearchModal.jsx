@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 // Helper function to transform product data (copied from RelatedProducts.jsx)
-const DEFAULT_IMAGE = '/images/placeholder.jpg';
+const DEFAULT_IMAGE = '/logo.png';
 const transformProduct = (rawProduct) => {
   if (!rawProduct) return null;
   // Do NOT convert imgSrc/imgHover to string URL here; pass the object

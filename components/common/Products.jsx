@@ -7,7 +7,7 @@ import { PRODUCTS_API } from "@/utils/urls";
 import { getBestImageUrl } from "@/utils/imageUtils";
 
 const tabItems = ["Boss Lady", "Juvenile", "Events", "Gown", "Kurtha"];
-const DEFAULT_IMAGE = '/images/placeholder.jpg';
+const DEFAULT_IMAGE = '/logo.png';
 
 export default function Products({ parentClass = "flat-spacing-3 pt-0" }) {
   const [activeItem, setActiveItem] = useState(tabItems[0]); // Default the first item as active

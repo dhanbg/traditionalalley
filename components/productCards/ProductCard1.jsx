@@ -9,7 +9,7 @@ import { useSession, signIn } from "next-auth/react";
 import { getImageUrl } from "@/utils/imageUtils";
 
 // Default placeholder image
-const DEFAULT_IMAGE = '/images/placeholder.jpg';
+const DEFAULT_IMAGE = '/logo.png';
 
 function getStrapiSmallImage(imageObj) {
   if (!imageObj) return DEFAULT_IMAGE;

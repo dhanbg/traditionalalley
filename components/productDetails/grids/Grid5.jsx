@@ -16,7 +16,7 @@ export default function Grid5({
 }) {
   // Helper function to construct proper image URLs
   const getImageUrl = (imageObj) => {
-    if (!imageObj) return firstItem || '/images/placeholder.jpg';
+    if (!imageObj) return firstItem || '/logo.png';
     
     // If it's already a full URL, return as is
     if (typeof imageObj === 'string') {
@@ -37,7 +37,7 @@ export default function Grid5({
       return getImageUrl(imageObj.src);
     }
     
-    return firstItem || '/images/placeholder.jpg';
+    return firstItem || '/logo.png';
   };
 
   // Create items from product images if available, otherwise use static items

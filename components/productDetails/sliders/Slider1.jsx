@@ -296,9 +296,9 @@ export default function Slider1({
             >
               <Image
                 className="lazyload"
-                data-src={slide.thumbnailSrc || '/images/placeholder.jpg'}
+                data-src={slide.thumbnailSrc || '/logo.png'}
                 alt={slide.alt}
-                src={slide.thumbnailSrc || '/images/placeholder.jpg'}
+                src={slide.thumbnailSrc || '/logo.png'}
                 width={slide.width * 0.6}
                 height={slide.height * 0.6}
                 style={{ 
@@ -341,9 +341,9 @@ export default function Slider1({
             >
               <Image
                 className="lazyload drift-zoom-target"
-                data-src={slide.src || '/images/placeholder.jpg'}
+                data-src={slide.src || '/logo.png'}
                 alt={slide.alt || ""}
-                src={slide.src || '/images/placeholder.jpg'}
+                src={slide.src || '/logo.png'}
                 width={600}
                 height={800}
                 style={{
