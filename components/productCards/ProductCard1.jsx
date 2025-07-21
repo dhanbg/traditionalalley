@@ -6,7 +6,7 @@ import CountdownTimer from "../common/Countdown";
 import PriceDisplay from "../common/PriceDisplay";
 import { useContextElement } from "@/context/Context";
 import { useSession, signIn } from "next-auth/react";
-import { getImageUrl } from "@/utils/api";
+import { getImageUrl } from "@/utils/imageUtils";
 
 // Default placeholder image
 const DEFAULT_IMAGE = '/images/placeholder.jpg';
@@ -19,14 +19,7 @@ function getStrapiSmallImage(imageObj) {
       return imageObj.formats.small.url;
     } else {
       // Import API_URL from utils/urls
-      try {
-        // Dynamically import to avoid circular dependency
-        // eslint-disable-next-line global-require
-        const { API_URL } = require("@/utils/urls");
-        return `${API_URL}${imageObj.formats.small.url}`;
-      } catch {
-        return imageObj.formats.small.url;
-      }
+      return getImageUrl(imageObj.formats.small.url);
     }
   }
   // fallback to getImageUrl utility

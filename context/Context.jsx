@@ -4,7 +4,8 @@ import { openCartModal } from "@/utils/openCartModal";
 import { openWistlistModal } from "@/utils/openWishlist";
 import { useSession } from "next-auth/react";
 import { API_URL, STRAPI_API_TOKEN, CARTS_API, USER_CARTS_API, PRODUCT_BY_DOCUMENT_ID_API } from "@/utils/urls";
-import { fetchDataFromApi, createData, updateData, deleteData, getImageUrl } from "@/utils/api";
+import { fetchDataFromApi, createData, updateData, deleteData } from "@/utils/api";
+import { getImageUrl } from "@/utils/imageUtils";
 import { 
   detectUserCountry, 
   getExchangeRate, 
@@ -417,7 +418,7 @@ export default function Context({ children }) {
       } else {
         // Use original logic for non-variant products
         if (productInfo.imgSrc && productInfo.imgSrc.formats && productInfo.imgSrc.formats.small && productInfo.imgSrc.formats.small.url) {
-          imgSrc = `${API_URL}${productInfo.imgSrc.formats.small.url}`;
+          imgSrc = getImageUrl(productInfo.imgSrc.formats.small.url);
         } else {
           imgSrc = getImageUrl(productInfo.imgSrc);
         }
@@ -504,17 +505,17 @@ export default function Context({ children }) {
           } else {
             // Use original logic for non-variant products
             if (productData.imgSrc && productData.imgSrc.formats && productData.imgSrc.formats.small && productData.imgSrc.formats.small.url) {
-              imgUrl = `${API_URL}${productData.imgSrc.formats.small.url}`;
+              imgUrl = getImageUrl(productData.imgSrc.formats.small.url);
             } else if (productData.imgSrc?.data?.attributes?.url) {
-              imgUrl = `${API_URL}${productData.imgSrc.data.attributes.url}`;
+              imgUrl = getImageUrl(productData.imgSrc.data.attributes.url);
             } else if (productData.imgSrc?.url) {
-              imgUrl = `${API_URL}${productData.imgSrc.url}`;
+              imgUrl = getImageUrl(productData.imgSrc.url);
             } else if (typeof productData.imgSrc === 'string') {
               imgUrl = productData.imgSrc;
             } else if (productData.gallery && productData.gallery.length > 0) {
               // Try to use first gallery image if no main image
               const galleryImg = productData.gallery[0];
-              imgUrl = `${API_URL}${galleryImg.url || galleryImg.formats?.thumbnail?.url || ''}`;
+              imgUrl = getImageUrl(galleryImg.url || galleryImg.formats?.thumbnail?.url || '');
             }
           }
           

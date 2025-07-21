@@ -6,6 +6,7 @@ import { items } from "@/data/singleProductSliders";
 import Image from "next/image";
 import { products } from "@/data/productsWomen";
 import { API_URL } from "@/utils/urls";
+import { getImageUrl } from "@/utils/imageUtils";
 
 export default function Grid5({
   activeColor = "gray",
@@ -20,20 +21,20 @@ export default function Grid5({
     // If it's already a full URL, return as is
     if (typeof imageObj === 'string') {
       if (imageObj.startsWith('http')) return imageObj;
-      if (imageObj.startsWith('/uploads/')) return `${API_URL}${imageObj}`;
+      if (imageObj.startsWith('/uploads/')) return getImageUrl(imageObj);
       return imageObj;
     }
     
     // Handle object with url property
     if (imageObj.url) {
       if (imageObj.url.startsWith('http')) return imageObj.url;
-      return `${API_URL}${imageObj.url}`;
+      return getImageUrl(imageObj.url);
     }
     
     // Handle object with src property
     if (imageObj.src) {
       if (imageObj.src.startsWith('http')) return imageObj.src;
-      return `${API_URL}${imageObj.src}`;
+      return getImageUrl(imageObj.src);
     }
     
     return firstItem || '/images/placeholder.jpg';

@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useContextElement } from "@/context/Context";
 import { products41 } from "@/data/productsWomen";
 import { useSession, signIn } from "next-auth/react";
-import { fetchDataFromApi, getImageUrl } from "@/utils/api";
+import { fetchDataFromApi } from "@/utils/api";
 import { PRODUCT_BY_DOCUMENT_ID_API, API_URL } from "@/utils/urls";
+import { getImageUrl } from "@/utils/imageUtils";
 import { useRouter } from "next/navigation";
 import PriceDisplay from "@/components/common/PriceDisplay";
 
@@ -180,17 +181,17 @@ export default function CartModal() {
                 // Prioritize small format for cart display for better performance
                 let imgSrcUrl = null;
                 if (productData.imgSrc && productData.imgSrc.formats && productData.imgSrc.formats.small && productData.imgSrc.formats.small.url) {
-                  imgSrcUrl = `${API_URL}${productData.imgSrc.formats.small.url}`;
+                  imgSrcUrl = getImageUrl(productData.imgSrc.formats.small.url);
                 } else if (productData.imgSrc && productData.imgSrc.formats && productData.imgSrc.formats.thumbnail && productData.imgSrc.formats.thumbnail.url) {
-                  imgSrcUrl = `${API_URL}${productData.imgSrc.formats.thumbnail.url}`;
+                  imgSrcUrl = getImageUrl(productData.imgSrc.formats.thumbnail.url);
                 } else {
                   imgSrcUrl = getImageUrl(productData.imgSrc);
                 }
                 let imgHoverUrl = null;
                 if (productData.imgHover && productData.imgHover.formats && productData.imgHover.formats.small && productData.imgHover.formats.small.url) {
-                  imgHoverUrl = `${API_URL}${productData.imgHover.formats.small.url}`;
+                  imgHoverUrl = getImageUrl(productData.imgHover.formats.small.url);
                 } else if (productData.imgHover && productData.imgHover.formats && productData.imgHover.formats.thumbnail && productData.imgHover.formats.thumbnail.url) {
-                  imgHoverUrl = `${API_URL}${productData.imgHover.formats.thumbnail.url}`;
+                  imgHoverUrl = getImageUrl(productData.imgHover.formats.thumbnail.url);
                 } else {
                   imgHoverUrl = getImageUrl(productData.imgHover);
                 }

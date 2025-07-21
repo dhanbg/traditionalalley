@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/utils/urls";
+import { getImageUrl } from "@/utils/imageUtils";
 import { slides } from "@/data/singleProductSliders";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { Thumbs } from "swiper/modules";
@@ -64,7 +66,7 @@ export default function Slider1({
           
           // Ensure main URL has API prefix
           if (mainUrl && !mainUrl.startsWith('http')) {
-            mainUrl = `${API_URL}${mainUrl}`;
+            mainUrl = getImageUrl(mainUrl);
           }
           
           // Extract thumbnail URL - create from main URL since formats are missing
@@ -74,7 +76,7 @@ export default function Slider1({
           if (item.formats && item.formats.thumbnail && item.formats.thumbnail.url) {
             thumbnailUrl = item.formats.thumbnail.url.startsWith('http') 
               ? item.formats.thumbnail.url 
-              : `${API_URL}${item.formats.thumbnail.url}`;
+              : getImageUrl(item.formats.thumbnail.url);
           } else if (mainUrl) {
             thumbnailUrl = generateThumbnailUrl(mainUrl);
           }

@@ -11,6 +11,7 @@ import { productWomen } from "@/data/productsWomen";
 import FilterMeta from "./FilterMeta";
 import { fetchDataFromApi, fetchFilterOptions } from "@/utils/api";
 import { COLLECTIONS_API, COLLECTION_BY_SLUG_API, PRODUCTS_API, PRODUCT_BY_DOCUMENT_ID_API } from "@/utils/urls";
+import { getImageUrl } from "@/utils/imageUtils";
 import { useSearchParams } from 'next/navigation';
 import { getBestImageUrl } from "@/utils/imageUtils";
 
@@ -229,9 +230,9 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
               
               let imageUrl = DEFAULT_IMAGE;
               if (img.formats && img.formats.medium) {
-                imageUrl = `${API_URL}${img.formats.medium.url}`;
+                imageUrl = getImageUrl(img.formats.medium.url);
               } else if (img.url) {
-                imageUrl = `${API_URL}${img.url}`;
+                imageUrl = getImageUrl(img.url);
               }
               
               // Ensure gallery image URL is never an empty string
