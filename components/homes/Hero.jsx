@@ -5,7 +5,7 @@ import { Autoplay, EffectFade, Pagination } from "swiper/modules";
 import Image from "next/image";
 import Link from "next/link";
 import { fetchDataFromApi } from "@/utils/api";
-import { API_URL } from "@/utils/urls"; 
+import { getImageUrl } from "@/utils/imageUtils"; 
 
 export default function Hero() {
   const [slides, setSlides] = useState([]);
@@ -16,13 +16,17 @@ export default function Hero() {
     const fetchSlides = async () => {
       try {
         const data = await fetchDataFromApi("/api/hero-slides?populate=*");
-        const transformedSlides = data.data.map((item) => ({
-          imgSrc: `${API_URL}${item.imgSrc?.url || item.imgSrc?.formats?.large?.url || ""}`,
-          alt: item.alt || "fashion-slideshow",
-          subheading: item.subheading || "",
-          heading: item.heading?.replace("<br/>", "\n") || "",
-          btnText: item.btnText || "Shop Now",
-        }));
+        const transformedSlides = data.data.map((item) => {
+          const imageUrl = item.imgSrc?.url || item.imgSrc?.formats?.large?.url || "";
+          
+          return {
+            imgSrc: getImageUrl(imageUrl),
+            alt: item.alt || "fashion-slideshow",
+            subheading: item.subheading || "",
+            heading: item.heading?.replace("<br/>", "\n") || "",
+            btnText: item.btnText || "Shop Now",
+          };
+        });
         setSlides(transformedSlides);
       } catch (error) {
         // Silently handle error

@@ -5,6 +5,7 @@ import ColorSelect from "@/components/productDetails/ColorSelect";
 import ColorVariantSelect from "@/components/productDetails/ColorVariantSelect";
 import SizeSelect, { getStockIndicatorForSize } from "@/components/productDetails/SizeSelect";
 import QuantitySelect from "@/components/productDetails/QuantitySelect";
+import { getBestImageUrl } from "@/utils/imageUtils";
 import Image from "next/image";
 import { useContextElement } from "@/context/Context";
 import { useSession, signIn } from "next-auth/react";
@@ -51,18 +52,27 @@ export default function Details1({ product, variants = [] }) {
   const processGalleryItems = (galleryArray) => {
     if (!galleryArray || !Array.isArray(galleryArray)) return [];
     
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
-    
     return galleryArray.map(item => {
-      // Keep the original item structure completely intact
-      const processedItem = {
-        ...item, // Preserve ALL original Strapi data including formats, documentId, etc.
-      };
+      if (!item) return null;
       
-      // Only add/update the main URL if needed
-      if (!processedItem.url) {
-        processedItem.url = processImageUrl(item);
-      } else if (!processedItem.url.startsWith('http')) {
+      // If it's already a string URL, return it directly
+      if (typeof item === 'string') return item;
+      
+      // Create a copy of the item to avoid mutating the original
+      const processedItem = { ...item };
+      
+      // Get the best available image URL (prefer large, fall back to medium, then small, then original)
+      const bestImageUrl = getBestImageUrl(item, 'large') || 
+                         getBestImageUrl(item, 'medium') || 
+                         getBestImageUrl(item, 'small') || 
+                         getBestImageUrl(item);
+      
+      // Update the URL if we found a valid one
+      if (bestImageUrl) {
+        processedItem.url = bestImageUrl;
+      } else if (processedItem.url && !processedItem.url.startsWith('http')) {
+        // Fallback to the old behavior if no URL was found
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
         processedItem.url = `${API_URL}${processedItem.url}`;
       }
       
@@ -77,22 +87,7 @@ export default function Details1({ product, variants = [] }) {
     sizes: product.sizes || [],
     price: product.price || 0,
     oldPrice: product.oldPrice || null,
-    imgSrc:
-      product.imgSrc && product.imgSrc.url
-        ? (product.imgSrc.url.startsWith('http')
-            ? product.imgSrc.url
-            : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337'}${product.imgSrc.url}`)
-        : product.imgSrc && product.imgSrc.formats && product.imgSrc.formats.medium && product.imgSrc.formats.medium.url
-        ? (product.imgSrc.formats.medium.url.startsWith('http')
-            ? product.imgSrc.formats.medium.url
-            : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337'}${product.imgSrc.formats.medium.url}`)
-        : product.imgSrc && product.imgSrc.formats && product.imgSrc.formats.small && product.imgSrc.formats.small.url
-        ? (product.imgSrc.formats.small.url.startsWith('http')
-            ? product.imgSrc.formats.small.url
-            : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337'}${product.imgSrc.formats.small.url}`)
-        : typeof product.imgSrc === 'string'
-        ? product.imgSrc
-        : '/images/placeholder.jpg',
+    imgSrc: getBestImageUrl(product.imgSrc, 'medium') || '/images/placeholder.jpg',
     imgHover: product.imgHover || product.imgSrc || '/images/placeholder.jpg',
     gallery: processGalleryItems(product.gallery || [])
   };

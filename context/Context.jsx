@@ -5,6 +5,7 @@ import { openWistlistModal } from "@/utils/openWishlist";
 import { useSession } from "next-auth/react";
 import { API_URL, STRAPI_API_TOKEN, CARTS_API, USER_CARTS_API, PRODUCT_BY_DOCUMENT_ID_API } from "@/utils/urls";
 import { fetchDataFromApi, createData, updateData, deleteData, getImageUrl } from "@/utils/api";
+import { getBestImageUrl } from "@/utils/imageUtils";
 import { 
   detectUserCountry, 
   getExchangeRate, 
@@ -416,11 +417,7 @@ export default function Context({ children }) {
         }
       } else {
         // Use original logic for non-variant products
-        if (productInfo.imgSrc && productInfo.imgSrc.formats && productInfo.imgSrc.formats.small && productInfo.imgSrc.formats.small.url) {
-          imgSrc = `${API_URL}${productInfo.imgSrc.formats.small.url}`;
-        } else {
-          imgSrc = getImageUrl(productInfo.imgSrc);
-        }
+        imgSrc = getBestImageUrl(productInfo.imgSrc, 'small') || '/images/placeholder.png';
       }
       
       productToAdd = {
@@ -503,19 +500,22 @@ export default function Context({ children }) {
             }
           } else {
             // Use original logic for non-variant products
-            if (productData.imgSrc && productData.imgSrc.formats && productData.imgSrc.formats.small && productData.imgSrc.formats.small.url) {
-              imgUrl = `${API_URL}${productData.imgSrc.formats.small.url}`;
-            } else if (productData.imgSrc?.data?.attributes?.url) {
-              imgUrl = `${API_URL}${productData.imgSrc.data.attributes.url}`;
-            } else if (productData.imgSrc?.url) {
-              imgUrl = `${API_URL}${productData.imgSrc.url}`;
+            if (productData.imgSrc?.data?.attributes) {
+              imgUrl = getBestImageUrl(productData.imgSrc.data.attributes, 'small');
             } else if (typeof productData.imgSrc === 'string') {
               imgUrl = productData.imgSrc;
-            } else if (productData.gallery && productData.gallery.length > 0) {
-              // Try to use first gallery image if no main image
-              const galleryImg = productData.gallery[0];
-              imgUrl = `${API_URL}${galleryImg.url || galleryImg.formats?.thumbnail?.url || ''}`;
+            } else {
+              imgUrl = getBestImageUrl(productData.imgSrc, 'small');
             }
+            
+            // Fallback to gallery if no main image
+            if (!imgUrl && productData.gallery && productData.gallery.length > 0) {
+              const galleryImg = productData.gallery[0];
+              imgUrl = getBestImageUrl(galleryImg, 'thumbnail');
+            }
+            
+            // Final fallback
+            imgUrl = imgUrl || '/images/placeholder.png';
           }
           
           productToAdd = {

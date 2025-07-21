@@ -6,6 +6,7 @@ import CountdownTimer from "../common/Countdown";
 import { useContextElement } from "@/context/Context";
 import { fetchDataFromApi } from "@/utils/api";
 import { PRODUCT_BY_DOCUMENT_ID_API } from "@/utils/urls";
+import { getBestImageUrl } from "@/utils/imageUtils";
 import PriceDisplay from "@/components/common/PriceDisplay";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
@@ -44,35 +45,8 @@ const getThumbnailImageUrl = (imgSrc) => {
     return imgSrc;
   }
   
-  // If it's an object with formats, try to get thumbnail
-  if (imgSrc && typeof imgSrc === 'object') {
-    if (imgSrc.formats && imgSrc.formats.thumbnail && imgSrc.formats.thumbnail.url) {
-      return imgSrc.formats.thumbnail.url.startsWith('http') 
-        ? imgSrc.formats.thumbnail.url 
-        : `${API_URL}${imgSrc.formats.thumbnail.url}`;
-    }
-    // Fallback to small if thumbnail not available
-    else if (imgSrc.formats && imgSrc.formats.small && imgSrc.formats.small.url) {
-      return imgSrc.formats.small.url.startsWith('http') 
-        ? imgSrc.formats.small.url 
-        : `${API_URL}${imgSrc.formats.small.url}`;
-    }
-    // Fallback to medium if small not available
-    else if (imgSrc.formats && imgSrc.formats.medium && imgSrc.formats.medium.url) {
-      return imgSrc.formats.medium.url.startsWith('http') 
-        ? imgSrc.formats.medium.url 
-        : `${API_URL}${imgSrc.formats.medium.url}`;
-    }
-    // Fallback to original URL
-    else if (imgSrc.url) {
-      return imgSrc.url.startsWith('http') 
-        ? imgSrc.url 
-        : `${API_URL}${imgSrc.url}`;
-    }
-  }
-  
-  // Return fallback image if nothing works
-  return '/images/products/default-product.jpg';
+  // Use utility function to get best image URL
+  return getBestImageUrl(imgSrc, 'thumbnail') || '/images/products/default-product.jpg';
 };
 
 export default function ShopCart() {

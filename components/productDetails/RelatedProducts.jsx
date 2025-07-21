@@ -6,7 +6,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper/modules";
 import ProductCard1 from "../productCards/ProductCard1";
 import { fetchDataFromApi } from "@/utils/api";
-import { API_URL } from "@/utils/urls";
+import { getBestImageUrl } from "@/utils/imageUtils";
 
 // Default placeholder image
 const DEFAULT_IMAGE = '/images/placeholder.jpg';
@@ -18,30 +18,14 @@ const transformProduct = (rawProduct) => {
   // Extract image URLs with proper formatting
   let imgSrc = DEFAULT_IMAGE;
    
-  // Prioritize medium format for better performance
+  // Use utility function to get the best image URL
   if (rawProduct.attributes?.imgSrc?.data?.attributes) {
-    const imageData = rawProduct.attributes.imgSrc.data.attributes;
-    // Prioritize medium format if available
-    imgSrc = imageData.formats?.medium?.url || imageData.formats?.small?.url || imageData.url;
-    imgSrc = imgSrc.startsWith('http') ? imgSrc : `${API_URL}${imgSrc}`;
+    imgSrc = getBestImageUrl(rawProduct.attributes.imgSrc.data.attributes, 'medium') || DEFAULT_IMAGE;
   } else if (rawProduct.imgSrc) {
     if (typeof rawProduct.imgSrc === 'string') {
       imgSrc = rawProduct.imgSrc;
-    } else if (rawProduct.imgSrc.formats?.medium?.url) {
-      // Prioritize medium format
-      imgSrc = rawProduct.imgSrc.formats.medium.url.startsWith('http') ? 
-        rawProduct.imgSrc.formats.medium.url : 
-        `${API_URL}${rawProduct.imgSrc.formats.medium.url}`;
-    } else if (rawProduct.imgSrc.formats?.small?.url) {
-      // Fall back to small format
-      imgSrc = rawProduct.imgSrc.formats.small.url.startsWith('http') ? 
-        rawProduct.imgSrc.formats.small.url : 
-        `${API_URL}${rawProduct.imgSrc.formats.small.url}`;
-    } else if (rawProduct.imgSrc.url) {
-      // Fall back to original url
-      imgSrc = rawProduct.imgSrc.url.startsWith('http') ? 
-        rawProduct.imgSrc.url : 
-        `${API_URL}${rawProduct.imgSrc.url}`;
+    } else {
+      imgSrc = getBestImageUrl(rawProduct.imgSrc, 'medium') || DEFAULT_IMAGE;
     }
   }
   
@@ -49,28 +33,12 @@ const transformProduct = (rawProduct) => {
   let imgHover = imgSrc; // Default to main image
   
   if (rawProduct.attributes?.imgHover?.data?.attributes) {
-    const imageData = rawProduct.attributes.imgHover.data.attributes;
-    // Prioritize medium format if available
-    imgHover = imageData.formats?.medium?.url || imageData.formats?.small?.url || imageData.url;
-    imgHover = imgHover.startsWith('http') ? imgHover : `${API_URL}${imgHover}`;
+    imgHover = getBestImageUrl(rawProduct.attributes.imgHover.data.attributes, 'medium') || imgSrc;
   } else if (rawProduct.imgHover) {
     if (typeof rawProduct.imgHover === 'string') {
       imgHover = rawProduct.imgHover;
-    } else if (rawProduct.imgHover.formats?.medium?.url) {
-      // Prioritize medium format
-      imgHover = rawProduct.imgHover.formats.medium.url.startsWith('http') ? 
-        rawProduct.imgHover.formats.medium.url : 
-        `${API_URL}${rawProduct.imgHover.formats.medium.url}`;
-    } else if (rawProduct.imgHover.formats?.small?.url) {
-      // Fall back to small format
-      imgHover = rawProduct.imgHover.formats.small.url.startsWith('http') ? 
-        rawProduct.imgHover.formats.small.url : 
-        `${API_URL}${rawProduct.imgHover.formats.small.url}`;
-    } else if (rawProduct.imgHover.url) {
-      // Fall back to original url
-      imgHover = rawProduct.imgHover.url.startsWith('http') ? 
-        rawProduct.imgHover.url : 
-        `${API_URL}${rawProduct.imgHover.url}`;
+    } else {
+      imgHover = getBestImageUrl(rawProduct.imgHover, 'medium') || imgSrc;
     }
   }
   

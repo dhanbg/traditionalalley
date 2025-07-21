@@ -8,6 +8,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import NPSPaymentForm from "../payments/NPSPaymentForm";
 import DHLShippingForm from "../shipping/DHLShippingForm";
 import { fetchDataFromApi, updateData, updateUserBagWithPayment } from "@/utils/api";
+import { getBestImageUrl } from "@/utils/imageUtils";
 import { useSession } from "next-auth/react";
 import PriceDisplay from "@/components/common/PriceDisplay";
 import { convertUsdToNpr, getExchangeRate } from "@/utils/currency";
@@ -21,35 +22,8 @@ const getThumbnailImageUrl = (imgSrc) => {
     return imgSrc;
   }
   
-  // If it's an object with formats, try to get thumbnail
-  if (imgSrc && typeof imgSrc === 'object') {
-    if (imgSrc.formats && imgSrc.formats.thumbnail && imgSrc.formats.thumbnail.url) {
-      return imgSrc.formats.thumbnail.url.startsWith('http') 
-        ? imgSrc.formats.thumbnail.url 
-        : `${API_URL}${imgSrc.formats.thumbnail.url}`;
-    }
-    // Fallback to small if thumbnail not available
-    else if (imgSrc.formats && imgSrc.formats.small && imgSrc.formats.small.url) {
-      return imgSrc.formats.small.url.startsWith('http') 
-        ? imgSrc.formats.small.url 
-        : `${API_URL}${imgSrc.formats.small.url}`;
-    }
-    // Fallback to medium if small not available
-    else if (imgSrc.formats && imgSrc.formats.medium && imgSrc.formats.medium.url) {
-      return imgSrc.formats.medium.url.startsWith('http') 
-        ? imgSrc.formats.medium.url 
-        : `${API_URL}${imgSrc.formats.medium.url}`;
-    }
-    // Fallback to original URL
-    else if (imgSrc.url) {
-      return imgSrc.url.startsWith('http') 
-        ? imgSrc.url 
-        : `${API_URL}${imgSrc.url}`;
-    }
-  }
-  
-  // Return fallback image if nothing works
-  return '/images/products/default-product.jpg';
+  // Use utility function to get best image URL
+  return getBestImageUrl(imgSrc, 'thumbnail') || '/images/products/default-product.jpg';
 };
 
 const discounts = [

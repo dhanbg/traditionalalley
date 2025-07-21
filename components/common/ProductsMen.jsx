@@ -3,7 +3,8 @@ import ProductCard1 from "@/components/productCards/ProductCard1";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { fetchDataFromApi } from "@/utils/api";
-import { PRODUCTS_API, API_URL } from "@/utils/urls";
+import { PRODUCTS_API } from "@/utils/urls";
+import { getBestImageUrl } from "@/utils/imageUtils";
 
 const tabItems = ["Formal Wear", "Casual Wear", "Accessories", "Activewear", "Footwear"];
 const DEFAULT_IMAGE = '/images/placeholder.jpg';
@@ -31,43 +32,20 @@ export default function ProductsMen({ parentClass = "flat-spacing-3 pt-0" }) {
             // Skip processing if product is undefined or null
             if (!product) return null;
             
-            // Extract image URLs with proper formatting
-            let imgSrc = DEFAULT_IMAGE;
-            if (product.imgSrc) {
-              if (product.imgSrc.formats && product.imgSrc.formats.medium) {
-                imgSrc = `${API_URL}${product.imgSrc.formats.medium.url}`;
-              } else if (product.imgSrc.url) {
-                imgSrc = `${API_URL}${product.imgSrc.url}`;
-              }
-            }
+            // Get main image URL with fallback
+            const imgSrc = getBestImageUrl(product.imgSrc, 'medium') || DEFAULT_IMAGE;
             
-            // Handle hover image similarly
-            let imgHover = imgSrc; // Default to main image
-            if (product.imgHover) {
-              if (product.imgHover.formats && product.imgHover.formats.medium) {
-                imgHover = `${API_URL}${product.imgHover.formats.medium.url}`;
-              } else if (product.imgHover.url) {
-                imgHover = `${API_URL}${product.imgHover.url}`;
-              }
-            }
+            // Get hover image URL with fallback to main image
+            const imgHover = getBestImageUrl(product.imgHover, 'medium') || imgSrc;
             
             // Process gallery images if available
             const gallery = Array.isArray(product.gallery) 
-              ? product.gallery.map(img => {
-                  if (!img) return { id: 0, url: DEFAULT_IMAGE };
-                  
-                  let imageUrl = DEFAULT_IMAGE;
-                  if (img.formats && img.formats.medium) {
-                    imageUrl = `${API_URL}${img.formats.medium.url}`;
-                  } else if (img.url) {
-                    imageUrl = `${API_URL}${img.url}`;
-                  }
-                  
-                  return {
+              ? product.gallery
+                  .filter(img => img != null) // Filter out null/undefined
+                  .map(img => ({
                     id: img.id || 0,
-                    url: imageUrl
-                  };
-                }) 
+                    url: getBestImageUrl(img, 'medium') || DEFAULT_IMAGE
+                  }))
               : [];
             
             // Process colors to ensure they're in the correct format

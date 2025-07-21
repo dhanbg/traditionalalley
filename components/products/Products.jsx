@@ -10,8 +10,9 @@ import { initialState, reducer } from "@/reducer/filterReducer";
 import { productWomen } from "@/data/productsWomen";
 import FilterMeta from "./FilterMeta";
 import { fetchDataFromApi, fetchFilterOptions } from "@/utils/api";
-import { COLLECTIONS_API, COLLECTION_BY_SLUG_API, PRODUCTS_API, PRODUCT_BY_DOCUMENT_ID_API, API_URL } from "@/utils/urls";
+import { COLLECTIONS_API, COLLECTION_BY_SLUG_API, PRODUCTS_API, PRODUCT_BY_DOCUMENT_ID_API } from "@/utils/urls";
 import { useSearchParams } from 'next/navigation';
+import { getBestImageUrl } from "@/utils/imageUtils";
 
 // Default placeholder image
 const DEFAULT_IMAGE = '/images/placeholder.jpg';
@@ -55,32 +56,10 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
             }
             
             // Extract image URLs with proper formatting
-            let imgSrc = DEFAULT_IMAGE;
-            if (product.imgSrc) {
-              // Check if formats are available
-              if (product.imgSrc.formats && product.imgSrc.formats.medium) {
-                imgSrc = `${API_URL}${product.imgSrc.formats.medium.url}`;
-              } else if (product.imgSrc.url) {
-                imgSrc = `${API_URL}${product.imgSrc.url}`;
-              }
-            }
-            
-            // Ensure imgSrc is never an empty string
-            imgSrc = imgSrc || DEFAULT_IMAGE;
+            let imgSrc = getBestImageUrl(product.imgSrc, 'medium') || DEFAULT_IMAGE;
             
             // Handle hover image similarly
-            let imgHover = imgSrc; // Default to main image
-            if (product.imgHover) {
-              // Check if formats are available
-              if (product.imgHover.formats && product.imgHover.formats.medium) {
-                imgHover = `${API_URL}${product.imgHover.formats.medium.url}`;
-              } else if (product.imgHover.url) {
-                imgHover = `${API_URL}${product.imgHover.url}`;
-              }
-            }
-            
-            // Ensure imgHover is never an empty string
-            imgHover = imgHover || imgSrc || DEFAULT_IMAGE;
+            let imgHover = getBestImageUrl(product.imgHover, 'medium') || imgSrc;
             
             // Process colors to ensure they're in the correct format
             let processedColors = null;
@@ -229,32 +208,10 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
         }
         
         // Extract image URLs with proper formatting based on the API response structure
-        let imgSrc = DEFAULT_IMAGE;
-        if (product.imgSrc) {
-          // Check if formats are available
-          if (product.imgSrc.formats && product.imgSrc.formats.medium) {
-            imgSrc = `${API_URL}${product.imgSrc.formats.medium.url}`;
-          } else if (product.imgSrc.url) {
-            imgSrc = `${API_URL}${product.imgSrc.url}`;
-          }
-        }
-        
-        // Ensure imgSrc is never an empty string
-        imgSrc = imgSrc || DEFAULT_IMAGE;
+        let imgSrc = getBestImageUrl(product.imgSrc, 'medium') || DEFAULT_IMAGE;
         
         // Handle hover image similarly
-        let imgHover = imgSrc; // Default to main image
-        if (product.imgHover) {
-          // Check if formats are available
-          if (product.imgHover.formats && product.imgHover.formats.medium) {
-            imgHover = `${API_URL}${product.imgHover.formats.medium.url}`;
-          } else if (product.imgHover.url) {
-            imgHover = `${API_URL}${product.imgHover.url}`;
-          }
-        }
-        
-        // Ensure imgHover is never an empty string
-        imgHover = imgHover || imgSrc || DEFAULT_IMAGE;
+        let imgHover = getBestImageUrl(product.imgHover, 'medium') || imgSrc;
         
         // Process colors to ensure they're in the correct format - convert string arrays to objects
         let processedColors = null;

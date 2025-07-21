@@ -5,7 +5,7 @@ import { Pagination } from "swiper/modules";
 import Image from "next/image";
 import Link from "next/link";
 import { fetchDataFromApi } from "@/utils/api";
-import { API_URL } from "@/utils/urls";
+import { getImageUrl } from "@/utils/imageUtils";
 import { useRouter } from "next/navigation";
 
 export default function Collections() {
@@ -39,7 +39,7 @@ export default function Collections() {
       try {
         const data = await fetchDataFromApi("/api/categories?populate=*");
         const transformedCategories = data.data.map((item) => ({
-          imgSrc: `${API_URL}${item.imgSrc[0]?.formats?.medium?.url || item.imgSrc[0]?.url || ""}`,
+          imgSrc: getImageUrl(item.imgSrc[0]?.formats?.medium?.url || item.imgSrc[0]?.url || ""),
           alt: item.alt || "category-image",
           title: item.title || "",
           delay: item.delay || 0,
