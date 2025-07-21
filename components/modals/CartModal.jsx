@@ -7,7 +7,6 @@ import { products41 } from "@/data/productsWomen";
 import { useSession, signIn } from "next-auth/react";
 import { fetchDataFromApi, getImageUrl } from "@/utils/api";
 import { PRODUCT_BY_DOCUMENT_ID_API, API_URL } from "@/utils/urls";
-import { getBestImageUrl } from "@/utils/imageUtils";
 import { useRouter } from "next/navigation";
 import PriceDisplay from "@/components/common/PriceDisplay";
 
@@ -177,9 +176,24 @@ export default function CartModal() {
                   continue;
                 }
                 
-                // Determine the appropriate image URL using utility function
-                let imgSrcUrl = getBestImageUrl(productData.imgSrc, 'small') || getImageUrl(productData.imgSrc);
-                let imgHoverUrl = getBestImageUrl(productData.imgHover, 'small') || getImageUrl(productData.imgHover);
+                // Determine the appropriate image URL based on available formats
+                // Prioritize small format for cart display for better performance
+                let imgSrcUrl = null;
+                if (productData.imgSrc && productData.imgSrc.formats && productData.imgSrc.formats.small && productData.imgSrc.formats.small.url) {
+                  imgSrcUrl = `${API_URL}${productData.imgSrc.formats.small.url}`;
+                } else if (productData.imgSrc && productData.imgSrc.formats && productData.imgSrc.formats.thumbnail && productData.imgSrc.formats.thumbnail.url) {
+                  imgSrcUrl = `${API_URL}${productData.imgSrc.formats.thumbnail.url}`;
+                } else {
+                  imgSrcUrl = getImageUrl(productData.imgSrc);
+                }
+                let imgHoverUrl = null;
+                if (productData.imgHover && productData.imgHover.formats && productData.imgHover.formats.small && productData.imgHover.formats.small.url) {
+                  imgHoverUrl = `${API_URL}${productData.imgHover.formats.small.url}`;
+                } else if (productData.imgHover && productData.imgHover.formats && productData.imgHover.formats.thumbnail && productData.imgHover.formats.thumbnail.url) {
+                  imgHoverUrl = `${API_URL}${productData.imgHover.formats.thumbnail.url}`;
+                } else {
+                  imgHoverUrl = getImageUrl(productData.imgHover);
+                }
                 
                 // Parse variant information if available
                 let variantInfo = null;
@@ -231,13 +245,20 @@ export default function CartModal() {
                         title = `${cart.product.title} - ${variantInfo.title}`;
                       }
                       
-                      // Handle variant-specific image using utility function
+                      // Handle variant-specific image with proper format selection
                       if (variantInfo.imgSrc) {
-                        if (typeof variantInfo.imgSrc === 'string') {
+                        // Apply same small format logic to variant images
+                        if (variantInfo.imgSrc.formats && variantInfo.imgSrc.formats.small && variantInfo.imgSrc.formats.small.url) {
+                          imgSrcUrl = `${API_URL}${variantInfo.imgSrc.formats.small.url}`;
+                        } else if (variantInfo.imgSrc.formats && variantInfo.imgSrc.formats.thumbnail && variantInfo.imgSrc.formats.thumbnail.url) {
+                          imgSrcUrl = `${API_URL}${variantInfo.imgSrc.formats.thumbnail.url}`;
+                        } else if (variantInfo.imgSrc.url) {
+                          imgSrcUrl = `${API_URL}${variantInfo.imgSrc.url}`;
+                        } else if (typeof variantInfo.imgSrc === 'string') {
                           // If it's already a string URL, use it as is
                           imgSrcUrl = variantInfo.imgSrc;
                         } else {
-                          imgSrcUrl = getBestImageUrl(variantInfo.imgSrc, 'small') || getImageUrl(variantInfo.imgSrc);
+                          imgSrcUrl = getImageUrl(variantInfo.imgSrc);
                         }
                       }
 
@@ -487,7 +508,7 @@ export default function CartModal() {
       modal.removeEventListener('show.bs.modal', handleModalShow);
       modal.removeEventListener('hidden.bs.modal', handleModalHide);
     };
-  }, [user?.id, cartProducts, isCartClearing, cartClearedTimestamp]); // Use user?.id to prevent refresh on session changes
+  }, [user, cartProducts, isCartClearing, cartClearedTimestamp]);
 
   // For a more consistent experience, prefer serverCartProducts when available
   const displayProducts = user 

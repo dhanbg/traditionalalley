@@ -3,12 +3,11 @@
 import { useContextElement } from "@/context/Context";
 import Image from "next/image";
 import Link from "next/link";
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import NPSPaymentForm from "../payments/NPSPaymentForm";
 import DHLShippingForm from "../shipping/DHLShippingForm";
 import { fetchDataFromApi, updateData, updateUserBagWithPayment } from "@/utils/api";
-import { getBestImageUrl } from "@/utils/imageUtils";
 import { useSession } from "next-auth/react";
 import PriceDisplay from "@/components/common/PriceDisplay";
 import { convertUsdToNpr, getExchangeRate } from "@/utils/currency";
@@ -22,8 +21,35 @@ const getThumbnailImageUrl = (imgSrc) => {
     return imgSrc;
   }
   
-  // Use utility function to get best image URL
-  return getBestImageUrl(imgSrc, 'thumbnail') || '/images/products/default-product.jpg';
+  // If it's an object with formats, try to get thumbnail
+  if (imgSrc && typeof imgSrc === 'object') {
+    if (imgSrc.formats && imgSrc.formats.thumbnail && imgSrc.formats.thumbnail.url) {
+      return imgSrc.formats.thumbnail.url.startsWith('http') 
+        ? imgSrc.formats.thumbnail.url 
+        : `${API_URL}${imgSrc.formats.thumbnail.url}`;
+    }
+    // Fallback to small if thumbnail not available
+    else if (imgSrc.formats && imgSrc.formats.small && imgSrc.formats.small.url) {
+      return imgSrc.formats.small.url.startsWith('http') 
+        ? imgSrc.formats.small.url 
+        : `${API_URL}${imgSrc.formats.small.url}`;
+    }
+    // Fallback to medium if small not available
+    else if (imgSrc.formats && imgSrc.formats.medium && imgSrc.formats.medium.url) {
+      return imgSrc.formats.medium.url.startsWith('http') 
+        ? imgSrc.formats.medium.url 
+        : `${API_URL}${imgSrc.formats.medium.url}`;
+    }
+    // Fallback to original URL
+    else if (imgSrc.url) {
+      return imgSrc.url.startsWith('http') 
+        ? imgSrc.url 
+        : `${API_URL}${imgSrc.url}`;
+    }
+  }
+  
+  // Return fallback image if nothing works
+  return '/images/products/default-product.jpg';
 };
 
 const discounts = [
@@ -59,13 +85,9 @@ export default function Checkout() {
   const user = session?.user;
   
   // Memoize selected products to prevent infinite re-renders
-  // Use stable comparison based on product IDs and selection state
   const selectedProducts = useMemo(() => {
     return cartProducts.filter(product => selectedCartItems[product.id]);
-  }, [
-    JSON.stringify(cartProducts.map(p => ({ id: p.id, documentId: p.documentId, quantity: p.quantity, price: p.price }))), 
-    JSON.stringify(selectedCartItems)
-  ]);
+  }, [cartProducts, selectedCartItems]);
 
   // Add state to store products with updated oldPrice values
   const [productsWithOldPrice, setProductsWithOldPrice] = useState({});
@@ -99,9 +121,6 @@ export default function Checkout() {
       postalCode: ""
     }
   });
-
-  // Ref to track previous selected products for stable comparison
-  const prevSelectedProductsRef = useRef(null);
 
   // Debug: Log when productsWithOldPrice changes
   useEffect(() => {
@@ -259,18 +278,7 @@ export default function Checkout() {
 
   // Fetch product details when selectedProducts change
   useEffect(() => {
-    // Create a stable representation of selected products for comparison
-    const currentProductsKey = selectedProducts.map(p => `${p.id}-${p.documentId}`).sort().join(',');
-    
-    // Only proceed if products have actually changed or it's the first load
-    if (selectedProducts.length === 0 || 
-        isLoadingProductDetails || 
-        (prevSelectedProductsRef.current === currentProductsKey)) {
-      return;
-    }
-    
-    // Update the ref with current products
-    prevSelectedProductsRef.current = currentProductsKey;
+    if (selectedProducts.length === 0 || isLoadingProductDetails) return;
     
     setIsLoadingProductDetails(true);
     
@@ -350,7 +358,7 @@ export default function Checkout() {
     }
     
     fetchProductDetails();
-  }, [selectedProducts, isLoadingProductDetails]); // Depend on selectedProducts but with internal stability check
+  }, [selectedProducts.length, selectedProducts.map(p => p.documentId).join(',')]); // Simpler, more stable dependency
 
   // Calculate subtotal: sum of oldPrice (if available) or price, times quantity
   const subtotal = selectedProducts.reduce((acc, product) => {

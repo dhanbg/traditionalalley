@@ -44,16 +44,14 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
       try {
         setLoading(true);
         
-        // Fetch all products for this category
-        const response = await fetchDataFromApi(`${PRODUCTS_API}&filters[collection][category][title][$eq]=${categoryTitle}`);
+        const apiUrl = `/api/products?populate=*&filters[collection][category][title][$eq]=${categoryTitle}`;
+        const response = await fetchDataFromApi(apiUrl);
         
         if (response.data && response.data.length > 0) {
           // Transform the products to match the expected structure for ProductCard components
           const transformedProducts = response.data.map(product => {
             // Skip processing if product is undefined or null
-            if (!product) {
-              return null;
-            }
+            if (!product) return null;
             
             // Extract image URLs with proper formatting
             let imgSrc = getBestImageUrl(product.imgSrc, 'medium') || DEFAULT_IMAGE;
@@ -77,29 +75,23 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
                 // If colors is already an array of objects, use as is
                 processedColors = product.colors;
               }
+            } else if (product.colors && typeof product.colors === 'object') {
+              // If colors is a single object, wrap it in an array
+              processedColors = [product.colors];
             }
             
-            // Extract gallery images if available
-            const gallery = Array.isArray(product.gallery) 
-              ? product.gallery.map(img => {
-                  if (!img) return { id: 0, url: DEFAULT_IMAGE };
-                  
-                  let imageUrl = DEFAULT_IMAGE;
-                  if (img.formats && img.formats.medium) {
-                    imageUrl = `${API_URL}${img.formats.medium.url}`;
-                  } else if (img.url) {
-                    imageUrl = `${API_URL}${img.url}`;
-                  }
-                  
-                  // Ensure gallery image URL is never an empty string
-                  imageUrl = imageUrl || DEFAULT_IMAGE;
-                  
-                  return {
-                    id: img.id || img.documentId || 0,
-                    url: imageUrl
-                  };
-                }) 
-              : [];
+            // Process gallery images
+            let gallery = [];
+            if (Array.isArray(product.gallery)) {
+              gallery = product.gallery.map(img => getBestImageUrl(img, 'medium') || DEFAULT_IMAGE);
+            } else if (product.gallery && typeof product.gallery === 'object') {
+              gallery = [getBestImageUrl(product.gallery, 'medium') || DEFAULT_IMAGE];
+            }
+            
+            // If gallery is empty, add the main image
+            if (gallery.length === 0) {
+              gallery = [imgSrc];
+            }
             
             // Make sure filterSizes is converted to sizes if sizes is null
             const sizes = product.sizes || product.filterSizes || [];
@@ -130,7 +122,6 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
         
         setLoading(false);
       } catch (error) {
-        // Silently handle error
         setLoading(false);
       }
     };

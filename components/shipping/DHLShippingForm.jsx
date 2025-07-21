@@ -131,19 +131,13 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
   // Update packages when initialPackages changes (when product data loads)
   useEffect(() => {
     if (initialPackages && initialPackages.length > 0) {
-      // Only update if packages have actually changed
-      const currentPackagesKey = JSON.stringify(initialPackages.map(p => ({ weight: p.weight, dimensions: p.dimensions })));
-      const existingPackagesKey = JSON.stringify(formData.packages.map(p => ({ weight: p.weight, dimensions: p.dimensions })));
-      
-      if (currentPackagesKey !== existingPackagesKey) {
-        console.log('Updating packages with new data:', initialPackages);
-        setFormData(prev => ({
-          ...prev,
-          packages: initialPackages
-        }));
-      }
+      console.log('Updating packages with new data:', initialPackages);
+      setFormData(prev => ({
+        ...prev,
+        packages: initialPackages
+      }));
     }
-  }, [initialPackages, formData.packages]);
+  }, [initialPackages]);
 
   const loadCountries = async () => {
     try {

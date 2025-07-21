@@ -1,9 +1,9 @@
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import Topbar6 from "@/components/headers/Topbar6";
-// import Products14 from "@/components/products/Productskids";
+import Products from "@/components/products/Products";
 import Link from "next/link";
-import React from "react";
+import React, { Suspense } from "react";
 
 export default function page() {
   return (
@@ -17,7 +17,7 @@ export default function page() {
         <div className="container-full">
           <div className="row">
             <div className="col-12">
-              <h3 className="heading text-center">Women</h3>
+              <h3 className="heading text-center">Kids</h3>
               <ul className="breadcrumbs d-flex align-items-center justify-content-center">
                 <li>
                   <Link className="link" href={`/`}>
@@ -27,13 +27,15 @@ export default function page() {
                 <li>
                   <i className="icon-arrRight" />
                 </li>
-                <li>Women</li>
+                <li>Kids</li>
               </ul>
             </div>
           </div>
         </div>
       </div>
-      {/* <Products14 /> */}
+      <Suspense fallback={<div>Loading products...</div>}>
+        <Products categoryId={3} categoryTitle="Kids" />
+      </Suspense>
       <Footer1 />
     </>
   );
