@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
@@ -14,7 +14,7 @@ import ShopGram from "@/components/common/ShopGram";
 import Testimonials3 from "@/components/common/Testimonials3";
 import MarqueeSection from "@/components/common/MarqueeSection";
 
-export default function Home() {
+function PaymentMessageHandler() {
   const searchParams = useSearchParams();
   const [paymentMessage, setPaymentMessage] = useState(null);
 
@@ -66,53 +66,61 @@ export default function Home() {
   }, [searchParams]);
 
   return (
+    paymentMessage && (
+      <div style={{
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        zIndex: 9999,
+        backgroundColor: paymentMessage.type === 'success' ? '#d4edda' : 
+                        paymentMessage.type === 'warning' ? '#fff3cd' : '#f8d7da',
+        color: paymentMessage.type === 'success' ? '#155724' : 
+               paymentMessage.type === 'warning' ? '#856404' : '#721c24',
+        border: `1px solid ${paymentMessage.type === 'success' ? '#c3e6cb' : 
+                             paymentMessage.type === 'warning' ? '#ffeaa7' : '#f5c6cb'}`,
+        borderRadius: '8px',
+        padding: '15px 20px',
+        maxWidth: '400px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        animation: 'slideInRight 0.5s ease-out'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 'bold' }}>
+              {paymentMessage.title}
+            </h4>
+            <p style={{ margin: '0', fontSize: '14px', lineHeight: '1.4' }}>
+              {paymentMessage.message}
+            </p>
+          </div>
+          <button
+            onClick={() => setPaymentMessage(null)}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '18px',
+              cursor: 'pointer',
+              padding: '0',
+              marginLeft: '15px',
+              color: 'inherit',
+              opacity: 0.7
+            }}
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    )
+  );
+}
+
+export default function Home() {
+  return (
     <>
       {/* Payment Status Message */}
-      {paymentMessage && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          zIndex: 9999,
-          backgroundColor: paymentMessage.type === 'success' ? '#d4edda' : 
-                          paymentMessage.type === 'warning' ? '#fff3cd' : '#f8d7da',
-          color: paymentMessage.type === 'success' ? '#155724' : 
-                 paymentMessage.type === 'warning' ? '#856404' : '#721c24',
-          border: `1px solid ${paymentMessage.type === 'success' ? '#c3e6cb' : 
-                               paymentMessage.type === 'warning' ? '#ffeaa7' : '#f5c6cb'}`,
-          borderRadius: '8px',
-          padding: '15px 20px',
-          maxWidth: '400px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          animation: 'slideInRight 0.5s ease-out'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 'bold' }}>
-                {paymentMessage.title}
-              </h4>
-              <p style={{ margin: '0', fontSize: '14px', lineHeight: '1.4' }}>
-                {paymentMessage.message}
-              </p>
-            </div>
-            <button
-              onClick={() => setPaymentMessage(null)}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '18px',
-                cursor: 'pointer',
-                padding: '0',
-                marginLeft: '15px',
-                color: 'inherit',
-                opacity: 0.7
-              }}
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
+      <Suspense fallback={<div>Loading payment status...</div>}>
+        <PaymentMessageHandler />
+      </Suspense>
       
       {/* <Topbar /> */}
       <Header1 />
