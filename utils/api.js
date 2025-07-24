@@ -131,8 +131,6 @@ export const fetchDataFromApi = async (endpoint) => {
       processedEndpoint = `${basePath}?${queryParams.join('&')}`;
     }
 
-    console.log(`🌐 Fetching from: ${API_URL}${processedEndpoint}`);
-
     const res = await fetch(`${API_URL}${processedEndpoint}`, options);
     
     if (!res.ok) {
@@ -825,3 +823,4 @@ export const updateProductStock = async (purchasedProducts) => {
     results: updateResults
   };
 };
+
