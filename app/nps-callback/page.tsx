@@ -490,6 +490,27 @@ const NPSCallbackContent = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, merchantTxnId, gatewayTxnId, amount, status, message]);
 
+  // Memory cleanup effect to prevent leaks
+  useEffect(() => {
+    return () => {
+      // Clear payment processing data from memory
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('nps_payment_data');
+        sessionStorage.removeItem('paymentProcessing');
+        
+        // Clear performance timings to free memory
+        if (window.performance && window.performance.clearResourceTimings) {
+          window.performance.clearResourceTimings();
+        }
+        
+        // Clear any cached payment references
+        if ((window as any).paymentCache) {
+          delete (window as any).paymentCache;
+        }
+      }
+    };
+  }, []);
+
   // Show clean processing interface
   return (
     <div style={{ 
