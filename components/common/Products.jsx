@@ -17,9 +17,10 @@ export default function Products({ parentClass = "flat-spacing-3 pt-0" }) {
   // Fetch products with variants from the backend
   useEffect(() => {
     const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        setLoading(true);
-        
+        console.log("NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL);
         // Use the new utility to fetch products with their variants as separate items
         const productsWithVariants = await fetchProductsWithVariantsForTabs("Women");
         
