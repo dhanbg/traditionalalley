@@ -302,6 +302,12 @@ export default function Details1({ product, variants = [] }) {
     if (!user) {
       signIn();
     } else {
+      // Check if the entire product is inactive
+      if (safeProduct.isActive === false) {
+        setSizeSelectionError("This product is currently unavailable and cannot be added to cart.");
+        return;
+      }
+      
       // Check if sizes are available and no size is selected
       const hasAvailableSizes = (currentProduct.size_stocks) || 
                                 (activeVariant && activeVariant.size_stocks) || 
@@ -313,6 +319,15 @@ export default function Details1({ product, variants = [] }) {
         return;
       }
       
+      // Check if the selected size is out of stock
+      if (selectedSize && sizeOptions.length > 0) {
+        const selectedSizeOption = sizeOptions.find(s => s.value === selectedSize);
+        if (selectedSizeOption && selectedSizeOption.quantity === 0) {
+          setSizeSelectionError(`Size ${selectedSize} is currently out of stock. Please select a different size.`);
+          return;
+        }
+      }
+      
       // Create unique ID that includes size information
       let uniqueCartId;
       let variantInfo = null;
@@ -320,22 +335,35 @@ export default function Details1({ product, variants = [] }) {
       const baseId = safeProduct.documentId || safeProduct.id;
 
       if (activeVariant && !activeVariant.isCurrentProduct) {
-        // For variants: include variant ID and size
-        const baseVariantId = `${baseId}-variant-${activeVariant.id}`;
+        // For variants: include variant documentId and size for consistency
+        const variantIdentifier = activeVariant.documentId || activeVariant.id;
+        const baseVariantId = `${baseId}-variant-${variantIdentifier}`;
         uniqueCartId = selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
+        
+        // Debug the activeVariant structure
+        console.log('🔍 ActiveVariant structure for cart:', {
+          id: activeVariant.id,
+          documentId: activeVariant.documentId,
+          hasDocumentId: !!activeVariant.documentId,
+          title: activeVariant.title,
+          fullObject: activeVariant
+        });
         
         variantInfo = {
           isVariant: true,
-          variantId: activeVariant.id,
+          documentId: activeVariant.documentId || activeVariant.id, // Use documentId as primary identifier
           title: activeVariant.title || extractDesignFromVariant(activeVariant),
           imgSrc: processImageUrl(activeVariant.imgSrc),
           imgSrcObject: activeVariant.imgSrc // Preserve original image object for thumbnail extraction
         };
+        
+        console.log('🛒 Created variantInfo for cart:', variantInfo);
       } else {
         // For main products: use documentId for consistency and include size in ID
         uniqueCartId = selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
       }
       
+      console.log('🎯 Generated uniqueCartId for cart:', uniqueCartId);
       addProductToCart(uniqueCartId, quantity, true, variantInfo, selectedSize);
     }
   };
@@ -647,15 +675,18 @@ export default function Details1({ product, variants = [] }) {
                     <div className="tf-product-action-btns" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                       <div className="tf-product-info-by-btn mb_10" style={{ display: "flex", alignItems: "center" }}>
                         <a
-                          onClick={handleCartClick}
-                          className="btn-style-2 fw-6 btn-add-to-cart"
+                          onClick={safeProduct.isActive === false ? null : handleCartClick}
+                          className={`btn-style-2 fw-6 btn-add-to-cart ${safeProduct.isActive === false ? 'disabled' : ''}`}
                           style={{ 
                             height: "46px", 
                             display: "flex", 
                             alignItems: "center",
                             justifyContent: "center",
                             padding: "0 15px",
-                            minWidth: "120px"
+                            minWidth: "120px",
+                            opacity: safeProduct.isActive === false ? 0.6 : 1,
+                            cursor: safeProduct.isActive === false ? 'not-allowed' : 'pointer',
+                            backgroundColor: safeProduct.isActive === false ? '#6c757d' : ''
                           }}
                         >
                           <span>
@@ -672,7 +703,7 @@ export default function Details1({ product, variants = [] }) {
                               const isInCart = isProductSizeInCart(productDocumentId, selectedSize, variantId);
                               
                               return isInCart ? "Added" : "Add to cart";
-                            })()}
+                            })() || "Add to cart"}
                           </span>
                         </a>
                         <a
@@ -755,20 +786,6 @@ export default function Details1({ product, variants = [] }) {
                           Custom Order
                         </button>
                       </div>
-                      {/* <a 
-                        href="#" 
-                        className="btn-style-3 text-btn-uppercase"
-                        style={{ 
-                          height: "46px", 
-                          display: "flex", 
-                          alignItems: "center", 
-                          justifyContent: "center",
-                          flex: "0.7",
-                          padding: "0 15px"
-                        }}
-                      >
-                        Buy it now
-                      </a> */}
                     </div>
                     
                     <div className="tf-product-info-help">
@@ -867,7 +884,11 @@ export default function Details1({ product, variants = [] }) {
                       </li>
                       <li>
                         <p className="text-caption-1">Available:</p>
-                        <p className="text-caption-1 text-1">Instock</p>
+                        <p className="text-caption-1 text-1" style={{
+                          color: safeProduct.isActive === false ? '#dc3545' : '#28a745'
+                        }}>
+                          {safeProduct.isActive === false ? 'Inactive' : 'Active'}
+                        </p>
                       </li>
                       <li>
                         <p className="text-caption-1">Categories:</p>

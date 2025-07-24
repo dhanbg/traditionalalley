@@ -236,9 +236,21 @@ export default function CartModal() {
                         }
                       }
                       
-                      // Reconstruct the variant-specific cart item ID using documentId
-                      if (variantInfo.isVariant && variantInfo.variantId) {
-                        cartItemId = `${productDocId || cart.product.id}-variant-${variantInfo.variantId}`;
+                      // Reconstruct the variant-specific cart item ID using documentId (same as when adding to cart)
+                      if (variantInfo.isVariant && (variantInfo.documentId || variantInfo.variantId)) {
+                        // Use documentId first (preferred), then fall back to variantId for backward compatibility
+                        const variantIdentifier = variantInfo.documentId || variantInfo.variantId;
+                        cartItemId = `${productDocId || cart.product.id}-variant-${variantIdentifier}`;
+                        console.log('🔧 Reconstructed cart item ID for variant:', {
+                          cartItemId,
+                          productDocId,
+                          variantIdentifier,
+                          variantInfo: {
+                            documentId: variantInfo.documentId,
+                            variantId: variantInfo.variantId,
+                            isVariant: variantInfo.isVariant
+                          }
+                        });
                       }
                       
                       // Use variant-specific title and image
@@ -268,6 +280,11 @@ export default function CartModal() {
                     console.error("Error parsing variant info:", parseError, "Raw value:", cart.variantInfo);
                     variantInfo = null;
                   }
+                }
+                
+                // Add size to cart item ID if available (for unique identification)
+                if (cart.size) {
+                  cartItemId = `${cartItemId}-size-${cart.size}`;
                 }
                 
                 // Create a cart product object with all needed details
@@ -511,13 +528,6 @@ export default function CartModal() {
     };
   }, [user, cartProducts, isCartClearing, cartClearedTimestamp]);
 
-  // For a more consistent experience, prefer serverCartProducts when available
-  const displayProducts = user 
-    ? serverCartProducts.length > 0 
-      ? serverCartProducts 
-      : cartProducts // Only fall back to context cart products if server cart is empty
-    : cartProducts; // Use local cart for guest users
-  
   // Get selected cart items functionality
   const {
     selectedCartItems,
@@ -526,14 +536,24 @@ export default function CartModal() {
     getSelectedItemsTotal
   } = useContextElement();
   
-  // Calculate total price from the actual displayed products
+  // Get all cart products first
+  const allCartProducts = user 
+    ? serverCartProducts.length > 0 
+      ? serverCartProducts 
+      : cartProducts // Only fall back to context cart products if server cart is empty
+    : cartProducts; // Use local cart for guest users
+  
+  // Filter to show only selected items in the modal
+  const displayProducts = allCartProducts.filter(product => selectedCartItems[product.id]);
+  
+  // Calculate total price from only the selected displayed products
   const displayTotalPrice = displayProducts.reduce((total, product) => {
     return total + (product.price * product.quantity);
   }, 0);
   
   // Calculate selected items
-  const selectedItemsCount = getSelectedCartItems().length;
-  const selectedItemsTotal = getSelectedItemsTotal();
+  const selectedItemsCount = displayProducts.length;
+  const selectedItemsTotal = displayTotalPrice;
 
   return (
     <div 
@@ -547,8 +567,8 @@ export default function CartModal() {
           <div className="wrap d-flex flex-column h-100">
             <div className="header">
               <h5 className="title">
-                Shopping Cart
-                <span className="cart-count">({displayProducts.length})</span>
+                Selected Items
+                <span className="cart-count">({displayProducts.length} of {allCartProducts.length})</span>
               </h5>
               <button 
                 type="button" 
@@ -577,13 +597,15 @@ export default function CartModal() {
                       <div className="empty-cart-icon">
                         <i className="icon-bag2"></i>
                           </div>
-                      <h6>Your cart is empty</h6>
-                      <p>Looks like you haven't added any items to your cart yet.</p>
+                      <h6>{allCartProducts.length > 0 ? 'No items selected' : 'Your cart is empty'}</h6>
+                      <p>{allCartProducts.length > 0 
+                        ? 'Select items from your cart to view them here and proceed to checkout.' 
+                        : 'Looks like you haven\'t added any items to your cart yet.'}</p>
                       <button 
                         className="tf-button-2 style-1"
-                        onClick={handleContinueShopping}
+                        onClick={allCartProducts.length > 0 ? handleViewCart : handleContinueShopping}
                       >
-                        Start Shopping
+                        {allCartProducts.length > 0 ? 'View Full Cart' : 'Start Shopping'}
                       </button>
                             </div>
                   ) : (
@@ -597,7 +619,7 @@ export default function CartModal() {
                               <img
                                 className="lazyload"
                                 alt={elm.title}
-                                src={elm.imgSrc}
+                                src={elm.variantInfo?.imgSrc || elm.imgSrc}
                               />
                             </Link>
                             </div>

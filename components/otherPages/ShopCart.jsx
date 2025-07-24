@@ -306,7 +306,7 @@ export default function ShopCart() {
                             >
                               <Image
                                 alt="product"
-                                src={getThumbnailImageUrl(elm.imgSrc)}
+                                src={getThumbnailImageUrl(elm.variantInfo?.imgSrc || elm.imgSrc)}
                                 width={600}
                                 height={800}
                               />

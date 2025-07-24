@@ -24,25 +24,44 @@ export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, 
       // Generate a unique merchant transaction ID
       const merchantTxnId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-      const response = await fetch("/api/nps-initiate", {
+      const paymentData = {
+        amount,
+        merchantTxnId,
+        transactionRemarks: transactionRemarks || `Payment for order ${merchantTxnId}`,
+        customer_info: {
+          name: session.user.name || '',
+          email: session.user.email || '',
+          phone: '' // You might want to get this from user profile
+        },
+        orderData
+      };
+
+      // Try main NPS endpoint first
+      let response = await fetch("/api/nps-initiate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          amount,
-          merchantTxnId,
-          transactionRemarks: transactionRemarks || `Payment for order ${merchantTxnId}`,
-          customer_info: {
-            name: session.user.name || '',
-            email: session.user.email || '',
-            phone: '' // You might want to get this from user profile
-          },
-          orderData
-        }),
+        body: JSON.stringify(paymentData),
       });
 
-      const data = await response.json();
+      let data = await response.json();
+      
+      // If NPS sandbox fails in development, fallback to mock
+      if (!response.ok && process.env.NODE_ENV !== 'production' && 
+          (data.message?.includes('NPS API server error') || data.message?.includes('sandbox'))) {
+        console.log('🔄 NPS sandbox failed, trying mock endpoint...');
+        
+        response = await fetch("/api/nps-mock", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(paymentData),
+        });
+        
+        data = await response.json();
+      }
       
       if (response.ok) {
         onSuccess(data);

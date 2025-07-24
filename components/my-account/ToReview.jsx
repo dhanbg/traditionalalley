@@ -29,7 +29,7 @@ export default function ToReview() {
       try {
         // Fetch user data with user_bag populated
         const userDataResponse = await fetchDataFromApi(
-          `/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=user_bag`
+          `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag`
         );
 
         if (userDataResponse?.data && userDataResponse.data.length > 0) {
@@ -196,7 +196,7 @@ export default function ToReview() {
     try {
       // Get current user data
       const userDataResponse = await fetchDataFromApi(
-        `/api/user-datas?filters[authUserId][$eq]=${user.id}`
+        `/api/user-data?filters[authUserId][$eq]=${user.id}`
       );
 
       if (userDataResponse?.data && userDataResponse.data.length > 0) {

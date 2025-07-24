@@ -11,9 +11,11 @@ import { productWomen } from "@/data/productsWomen";
 import FilterMeta from "./FilterMeta";
 import { fetchDataFromApi, fetchFilterOptions } from "@/utils/api";
 import { COLLECTIONS_API, COLLECTION_BY_SLUG_API, PRODUCTS_API, PRODUCT_BY_DOCUMENT_ID_API } from "@/utils/urls";
+import { calculateInStock } from "@/utils/stockUtils";
 import { getImageUrl } from "@/utils/imageUtils";
 import { useSearchParams } from 'next/navigation';
 import { getBestImageUrl } from "@/utils/imageUtils";
+import { fetchProductsWithVariantsByCategory } from "@/utils/productVariantUtils";
 
 // Default placeholder image
 const DEFAULT_IMAGE = '/logo.png';
@@ -39,90 +41,37 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
     priceRange: [20, 300]
   });
 
-  // Fetch all products for a category
+  // Fetch all products with variants for a category
   useEffect(() => {
     const fetchProductsByCategory = async () => {
       try {
         setLoading(true);
         
-        const apiUrl = `/api/products?populate=*&filters[collection][category][title][$eq]=${categoryTitle}`;
-        const response = await fetchDataFromApi(apiUrl);
+        // Use the new utility to fetch products with their variants as separate items
+        const productsWithVariants = await fetchProductsWithVariantsByCategory(categoryTitle);
         
-        if (response.data && response.data.length > 0) {
-          // Transform the products to match the expected structure for ProductCard components
-          const transformedProducts = response.data.map(product => {
-            // Skip processing if product is undefined or null
-            if (!product) return null;
-            
-            // Extract image URLs with proper formatting
-            let imgSrc = getBestImageUrl(product.imgSrc, 'medium') || DEFAULT_IMAGE;
-            
-            // Handle hover image similarly
-            let imgHover = getBestImageUrl(product.imgHover, 'medium') || imgSrc;
-            
-            // Process colors to ensure they're in the correct format
-            let processedColors = null;
-            
-            if (Array.isArray(product.colors)) {
-              // If colors is a simple array of strings, convert to objects with color names
-              if (typeof product.colors[0] === 'string') {
-                processedColors = product.colors.map(color => ({
-                  name: color,
-                  bgColor: `bg-${color.toLowerCase().replace(/\s+/g, '-')}`,
-                  // We don't have actual color images, so use the main product image
-                  imgSrc: imgSrc
-                }));
-              } else {
-                // If colors is already an array of objects, use as is
-                processedColors = product.colors;
-              }
-            } else if (product.colors && typeof product.colors === 'object') {
-              // If colors is a single object, wrap it in an array
-              processedColors = [product.colors];
-            }
-            
-            // Process gallery images
-            let gallery = [];
-            if (Array.isArray(product.gallery)) {
-              gallery = product.gallery.map(img => getBestImageUrl(img, 'medium') || DEFAULT_IMAGE);
-            } else if (product.gallery && typeof product.gallery === 'object') {
-              gallery = [getBestImageUrl(product.gallery, 'medium') || DEFAULT_IMAGE];
-            }
-            
-            // If gallery is empty, add the main image
-            if (gallery.length === 0) {
-              gallery = [imgSrc];
-            }
-            
-            // Make sure filterSizes is converted to sizes if sizes is null
-            const sizes = product.sizes || product.filterSizes || [];
-            
-            return {
-              ...product,
-              id: product.id || product.documentId || Math.random().toString(36).substring(7),
-              imgSrc,
-              imgHover,
-              gallery,
-              colors: processedColors,
-              sizes,
-              // Make sure other required fields are present
-              title: product.title || "Untitled Product",
-              price: product.price || 0,
-              oldPrice: product.oldPrice || null,
-              isOnSale: !!product.oldPrice,
-              salePercentage: product.salePercentage || "25%"
-            };
-          }).filter(Boolean); // Remove any null values from the array
+        if (productsWithVariants && productsWithVariants.length > 0) {
+          // Filter out inactive products and variants
+          const activeItems = productsWithVariants.filter(item => item.isActive !== false);
           
-          setProductDetails(transformedProducts);
+          setProductDetails(activeItems);
           
-          // Update the filtered and sorted state with the transformed products
-          dispatch({ type: "SET_FILTERED", payload: transformedProducts });
-          dispatch({ type: "SET_SORTED", payload: transformedProducts });
+          // Update the filtered and sorted state with the products and variants
+          dispatch({ type: "SET_FILTERED", payload: activeItems });
+          dispatch({ type: "SET_SORTED", payload: activeItems });
+        } else {
+          // No products found
+          setProductDetails([]);
+          dispatch({ type: "SET_FILTERED", payload: [] });
+          dispatch({ type: "SET_SORTED", payload: [] });
         }
         
         setLoading(false);
       } catch (error) {
+        console.error('Error fetching products with variants:', error);
+        setProductDetails([]);
+        dispatch({ type: "SET_FILTERED", payload: [] });
+        dispatch({ type: "SET_SORTED", payload: [] });
         setLoading(false);
       }
     };
@@ -248,7 +197,7 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
         // Make sure filterSizes is converted to sizes if sizes is null
         const sizes = product.sizes || product.filterSizes || [];
         
-        return {
+        const transformedProduct = {
           ...product,
           id: product.id || product.documentId || Math.random().toString(36).substring(7),
           imgSrc,
@@ -263,6 +212,11 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
           isOnSale: !!product.oldPrice,
           salePercentage: product.salePercentage || "25%"
         };
+        
+        // Calculate inStock based on size_stocks
+        transformedProduct.inStock = calculateInStock(transformedProduct);
+        
+        return transformedProduct;
       }).filter(Boolean); // Remove any null values from the array
       
       setProductDetails(transformedProducts);
@@ -388,13 +342,8 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
           return false;
         }
     
-        // Filter by availability
-        if (
-          state.availability && 
-          state.availability.id !== "all" &&
-          state.availability.value !== null &&
-          product.inStock !== state.availability.value
-        ) {
+        // Hide products that are inactive (isActive = false)
+        if (product.isActive !== true) {
           return false;
         }
     

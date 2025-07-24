@@ -145,5 +145,7 @@ export const createAPISignature = (params: Record<string, any>): string => {
   const concatenatedValues = sortedKeys.map(key => cleanParams[key]).join('');
   
   console.log('API signature string:', concatenatedValues);
-  return generateNPSSignature(concatenatedValues);
+  const signature = generateNPSSignature(concatenatedValues);
+  console.log('Generated signature:', signature);
+  return signature;
 };

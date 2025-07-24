@@ -139,9 +139,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
   return (
     <div
       ref={cardRef}
-      className={`card-product product-fade-in${inView ? ' in-view' : ''} wow fadeInUp ${gridClass} ${
-        safeProduct.isOnSale ? "on-sale" : ""
-      } ${safeProduct.sizes ? "card-product-size" : ""}`}
+      className={`card-product ${gridClass} ${inView ? "animate-in" : ""} ${!safeProduct.inStock ? "out-of-stock" : ""}`}
       style={{ animationDelay: `${index * 0.12 + 0.1}s` }}
     >
       <div className="card-product-wrapper">
@@ -293,15 +291,20 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
         ) : (
           ""
         )}
+        {!safeProduct.inStock && (
+          <div className="out-of-stock-wrap">
+            <span className="out-of-stock-badge">OUT OF STOCK</span>
+          </div>
+        )}
         <div className="list-product-btn">
           <a
-            href="#quick_add"
-            data-bs-toggle="modal"
-            className="box-icon bg_white quick-add tf-btn-loading"
-            onClick={() => setQuickAddItem(safeProduct.id)}
+            href={safeProduct.inStock ? "#quick_add" : "#"}
+            data-bs-toggle={safeProduct.inStock ? "modal" : ""}
+            className={`box-icon bg_white quick-add tf-btn-loading ${!safeProduct.inStock ? 'disabled' : ''}`}
+            onClick={safeProduct.inStock ? () => setQuickAddItem(safeProduct.id) : (e) => e.preventDefault()}
           >
             <span className="icon icon-bag" />
-            <span className="tooltip">Quick Add</span>
+            <span className="tooltip">{safeProduct.inStock ? 'Quick Add' : 'Out of Stock'}</span>
           </a>
           <a
             onClick={() => handleWishlistClick(safeProduct.id)}
@@ -348,10 +351,12 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
         </div>
         <div className="list-btn-main">
           <a
-            className="btn-main-product"
-            onClick={handleCartClick}
+            className={`btn-main-product ${!safeProduct.inStock ? 'disabled out-of-stock-btn' : ''}`}
+            onClick={safeProduct.inStock ? handleCartClick : (e) => e.preventDefault()}
           >
-            {user && isAddedToCartProducts(safeProduct.id)
+            {!safeProduct.inStock 
+              ? "OUT OF STOCK"
+              : user && isAddedToCartProducts(safeProduct.id)
               ? "Already Added"
               : "ADD TO CART"}
           </a>

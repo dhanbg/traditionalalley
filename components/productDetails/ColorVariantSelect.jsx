@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { calculateInStock } from "@/utils/stockUtils";
 
 // Basic color map for fallback colors
 const colorMap = {
@@ -331,7 +332,7 @@ export default function ColorVariantSelect({
                     </span>
                   </span>
                 )}
-                {!variant.inStock && (
+                {!calculateInStock(variant) && (
                   <div
                     style={{
                       position: 'absolute',
@@ -347,10 +348,10 @@ export default function ColorVariantSelect({
                   />
                 )}
               </label>
-              {!variant.inStock && (
+              {!calculateInStock(variant) && (
                 <div className="out-of-stock-indicator" style={{
                   position: 'absolute',
-                  bottom: '-20px',
+                  bottom: '-25px',
                   left: '50%',
                   transform: 'translateX(-50%)',
                   fontSize: '10px',

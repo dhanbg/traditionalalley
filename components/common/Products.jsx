@@ -2,9 +2,7 @@
 import ProductCard1 from "@/components/productCards/ProductCard1";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { fetchDataFromApi } from "@/utils/api";
-import { PRODUCTS_API } from "@/utils/urls";
-import { getBestImageUrl } from "@/utils/imageUtils";
+import { fetchProductsWithVariantsForTabs } from "@/utils/productVariantUtils";
 
 const tabItems = ["Boss Lady", "Juvenile", "Events", "Gown", "Kurtha"];
 const DEFAULT_IMAGE = '/logo.png';
@@ -16,66 +14,20 @@ export default function Products({ parentClass = "flat-spacing-3 pt-0" }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch products from the backend
+  // Fetch products with variants from the backend
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        // Add a random parameter to prevent caching
-        const timestamp = new Date().getTime();
-        // Filter to get only women's products
-        const response = await fetchDataFromApi(`${PRODUCTS_API}&filters[collection][category][title][$eq]=Women&timestamp=${timestamp}`);
         
-        if (response && response.data && response.data.length > 0) {
-          // Transform the products to the format expected by ProductCard1
-          const transformedProducts = response.data.map(product => {
-            // Skip processing if product is undefined or null
-            if (!product) return null;
-            
-            // Get main image URL with fallback
-            const imgSrc = getBestImageUrl(product.imgSrc, 'medium') || DEFAULT_IMAGE;
-            
-            // Get hover image URL with fallback to main image
-            const imgHover = getBestImageUrl(product.imgHover, 'medium') || imgSrc;
-            
-            // Process gallery images if available
-            const gallery = Array.isArray(product.gallery) 
-              ? product.gallery
-                  .filter(img => img != null) // Filter out null/undefined
-                  .map(img => ({
-                    id: img.id || 0,
-                    url: getBestImageUrl(img, 'medium') || DEFAULT_IMAGE
-                  }))
-              : [];
-            
-            // Process colors to ensure they're in the correct format
-            let processedColors = null;
-            
-            if (Array.isArray(product.colors)) {
-              processedColors = product.colors;
-            }
-
-            // Get tabFilterOptions directly from the product
-            const tabFilterOptions = product.tabFilterOptions || [];
-            
-            return {
-              id: product.id,
-              documentId: product.documentId,
-              title: product.title || "Untitled Product",
-              price: product.price || 0,
-              oldPrice: product.oldPrice || null,
-              imgSrc,
-              imgHover,
-              gallery,
-              colors: processedColors,
-              sizes: product.sizes || [],
-              tabFilterOptions,
-              isOnSale: !!product.oldPrice,
-              salePercentage: product.salePercentage || "25%"
-            };
-          }).filter(Boolean); // Remove any null values
+        // Use the new utility to fetch products with their variants as separate items
+        const productsWithVariants = await fetchProductsWithVariantsForTabs("Women");
+        
+        if (productsWithVariants && productsWithVariants.length > 0) {
+          // Filter out inactive products and variants
+          const activeItems = productsWithVariants.filter(item => item.isActive !== false);
           
-          setAllProducts(transformedProducts);
+          setAllProducts(activeItems);
           setError(null);
         } else {
           // Set an error if no products were found
@@ -85,7 +37,7 @@ export default function Products({ parentClass = "flat-spacing-3 pt-0" }) {
         
         setLoading(false);
       } catch (error) {
-        setError(`Error fetching products: ${error.message || "Unknown error"}`);
+        setError(`Error fetching products with variants: ${error.message || "Unknown error"}`);
         setAllProducts([]);
         setLoading(false);
       }
@@ -101,7 +53,8 @@ export default function Products({ parentClass = "flat-spacing-3 pt-0" }) {
       
       setTimeout(() => {
         const filtered = allProducts.filter(product => 
-          product.tabFilterOptions && product.tabFilterOptions.includes(activeItem)
+          product.tabFilterOptions && product.tabFilterOptions.includes(activeItem) &&
+          product.isActive === true // Hide products that are inactive
         );
         setSelectedItems(filtered);
         newArrivalsElement.classList.add("filtered");

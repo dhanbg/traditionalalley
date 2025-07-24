@@ -6,6 +6,8 @@ import { useSession } from "next-auth/react";
 import { API_URL, STRAPI_API_TOKEN, CARTS_API, USER_CARTS_API, PRODUCT_BY_DOCUMENT_ID_API } from "@/utils/urls";
 import { fetchDataFromApi, createData, updateData, deleteData } from "@/utils/api";
 import { getImageUrl } from "@/utils/imageUtils";
+import { validateCartStock } from "@/utils/stockValidation";
+import { useStockNotifications } from "@/components/common/StockNotification";
 import { 
   detectUserCountry, 
   getExchangeRate, 
@@ -23,6 +25,10 @@ export const useContextElement = () => {
 export default function Context({ children }) {
   const { data: session } = useSession();
   const user = session?.user;
+  const { showStockError, showAddToCartSuccess, showQuantityUpdateSuccess } = useStockNotifications();
+  
+  // Debug: Log if toast functions are available
+  console.log('Toast functions available:', { showStockError: !!showStockError, showAddToCartSuccess: !!showAddToCartSuccess });
   const [cartProducts, setCartProducts] = useState([]);
   const [wishList, setWishList] = useState([]);
   const [compareItem, setCompareItem] = useState([]);
@@ -30,7 +36,20 @@ export default function Context({ children }) {
   const [quickAddItem, setQuickAddItem] = useState(1);
   const [totalPrice, setTotalPrice] = useState(0);
   const [cartRefreshKey, setCartRefreshKey] = useState(0);
-  const [selectedCartItems, setSelectedCartItems] = useState({});
+  // Initialize selectedCartItems from sessionStorage for session persistence
+  const [selectedCartItems, setSelectedCartItems] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = sessionStorage.getItem('selectedCartItems');
+        console.log('🚀 Initial load - reading from sessionStorage:', saved);
+        return saved ? JSON.parse(saved) : {};
+      } catch (error) {
+        console.error('Error loading cart selections from sessionStorage:', error);
+        return {};
+      }
+    }
+    return {};
+  });
   const [isCartClearing, setIsCartClearing] = useState(false);
   const [cartClearedTimestamp, setCartClearedTimestamp] = useState(null);
   
@@ -305,15 +324,128 @@ export default function Context({ children }) {
     }, 0);
     setTotalPrice(subtotal);
     
-    // Select all cart items by default when cart changes
-    if (cartProducts.length > 0) {
-      const initialSelection = {};
-      cartProducts.forEach(product => {
-        initialSelection[product.id] = true;
+    // Clean up selection state for items that no longer exist in cart
+    if (cartProducts.length === 0) {
+      // Only clear selections if cart has actually loaded and is truly empty
+      // Don't clear during initial load when cart products haven't loaded yet
+      if (!isCartLoading && user) {
+        console.log('🧹 Cart is empty after loading, clearing selections');
+        setSelectedCartItems({});
+      } else {
+        console.log('🔄 Cart appears empty but still loading or no user, keeping selections');
+      }
+    } else {
+      // Remove selections for items that are no longer in the cart
+      setSelectedCartItems(prev => {
+        const newSelection = {};
+        Object.keys(prev).forEach(itemId => {
+          // Only keep selections for items that still exist in cart
+          if (cartProducts.some(product => product.id === itemId)) {
+            newSelection[itemId] = prev[itemId];
+          }
+        });
+        return newSelection;
       });
-      setSelectedCartItems(initialSelection);
     }
   }, [cartProducts]);
+  
+  // Separate useEffect to restore selections after cart products are loaded
+  useEffect(() => {
+    // Only restore selections if we have cart products and haven't restored yet
+    if (cartProducts.length > 0 && !isCartLoading) {
+      console.log('🔄 Attempting to restore cart selections after cart load...');
+      
+      // Get saved selections from sessionStorage
+      let savedSelections = {};
+      try {
+        const saved = typeof window !== 'undefined' ? sessionStorage.getItem('selectedCartItems') : null;
+        savedSelections = saved ? JSON.parse(saved) : {};
+        console.log('📦 Saved selections from sessionStorage:', savedSelections);
+      } catch (error) {
+        console.error('Error loading cart selections from sessionStorage:', error);
+        return;
+      }
+      
+      // Filter out selections for items that are no longer in the cart
+      const validSelections = {};
+      const currentCartIds = cartProducts.map(p => p.id);
+      console.log('🛒 Current cart product IDs:', currentCartIds);
+      
+      Object.keys(savedSelections).forEach(itemId => {
+        if (cartProducts.some(product => product.id === itemId)) {
+          validSelections[itemId] = savedSelections[itemId];
+        }
+      });
+      
+      console.log('✅ Valid selections to restore:', validSelections);
+      
+      // Merge valid selections with current selections (preserve auto-selections)
+      setSelectedCartItems(prev => {
+        const merged = { ...prev, ...validSelections };
+        console.log('🔄 Merging cart selections - Previous:', prev, 'Valid:', validSelections, 'Merged:', merged);
+        return merged;
+      });
+    }
+  }, [cartProducts, isCartLoading]);
+
+  // Persist cart selections to sessionStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        console.log('💾 Saving cart selections to sessionStorage:', selectedCartItems);
+        sessionStorage.setItem('selectedCartItems', JSON.stringify(selectedCartItems));
+      } catch (error) {
+        console.error('Error saving cart selections to sessionStorage:', error);
+      }
+    }
+  }, [selectedCartItems]);
+
+  // Clear selections when user logs in for the first time (new session)
+  // This should only run once when the user first logs in, not on every page reload
+  useEffect(() => {
+    console.log('🔍 User session effect running, user:', user ? user.email : 'null');
+    if (user) {
+      const userSessionKey = `cartSelections_${user.id}`;
+      const hasExistingSession = sessionStorage.getItem(userSessionKey) === 'true';
+      
+      console.log('🔍 Checking user session:', {
+        userId: user.id,
+        email: user.email,
+        userSessionKey,
+        hasExistingSession,
+        currentSelections: selectedCartItems
+      });
+      
+      // TEMPORARILY DISABLED: Only clear selections if this is truly a new login AND we don't have any saved selections
+      if (!hasExistingSession) {
+        // Check if there are any saved selections in sessionStorage
+        let hasSavedSelections = false;
+        try {
+          const saved = sessionStorage.getItem('selectedCartItems');
+          const savedSelections = saved ? JSON.parse(saved) : {};
+          hasSavedSelections = Object.keys(savedSelections).length > 0;
+          console.log('🔄 Session check - saved selections:', savedSelections, 'has selections:', hasSavedSelections);
+        } catch (error) {
+          console.error('Error checking saved selections:', error);
+        }
+        
+        // TEMPORARILY DISABLED: Don't clear selections to test if this is the issue
+        console.log('🔄 New user session detected, but NOT clearing selections (temporarily disabled for debugging)');
+        
+        // Set the session flag regardless
+        sessionStorage.setItem(userSessionKey, 'true');
+      } else {
+        console.log('✅ Existing user session found, keeping selections:', selectedCartItems);
+      }
+    } else {
+      // User logged out - clear session flags
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('cartSelections_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    }
+  }, [user]);
 
   // Check if a specific product size is already in the cart
   const isProductSizeInCart = (productDocumentId, selectedSize, variantId = null) => {
@@ -442,6 +574,31 @@ export default function Context({ children }) {
       };
       
       console.log("Product data from allProducts:", productInfo);
+      
+      // Validate stock before adding to cart
+      if (selectedSize) {
+        try {
+          const stockValidation = await validateCartStock(
+            baseProductId,
+            variantInfo?.variantId || null,
+            selectedSize,
+            qty || 1,
+            0 // Current cart quantity is 0 since we're adding new item
+          );
+          
+          if (!stockValidation.success) {
+            console.warn('Stock validation failed:', stockValidation.error);
+            // Show error message to user
+            showStockError(stockValidation.error, stockValidation.availableStock, productToAdd.title);
+            return; // Exit function early
+          }
+          
+          console.log('Stock validation passed:', stockValidation.message);
+        } catch (stockError) {
+          console.error('Stock validation error:', stockError);
+          // Allow adding to cart if validation fails (fallback behavior)
+        }
+      }
       
       // Special case for Redezyyyy Shorts
       if (productToAdd.title && productToAdd.title.includes("Redezyyyy")) {
@@ -751,6 +908,16 @@ export default function Context({ children }) {
           // Add to local state
           setCartProducts((pre) => [...pre, productToAdd]);
           
+          // Auto-select the newly added product
+          setSelectedCartItems(prev => ({
+            ...prev,
+            [productToAdd.id]: true
+          }));
+          console.log('🛒 Auto-selected newly added product:', productToAdd.title);
+          
+          // Show success notification
+          showAddToCartSuccess(productToAdd.title, qty || 1, selectedSize);
+          
           if (isModal) {
             setCartRefreshKey(prev => prev + 1);
             openCartModal().catch(console.error);
@@ -760,6 +927,13 @@ export default function Context({ children }) {
           
           // Add to local cart even if server operation fails
           setCartProducts((pre) => [...pre, productToAdd]);
+          
+          // Auto-select the newly added product
+          setSelectedCartItems(prev => ({
+            ...prev,
+            [productToAdd.id]: true
+          }));
+          console.log('🛒 Auto-selected newly added product (server error):', productToAdd.title);
           
           if (isModal) {
             setCartRefreshKey(prev => prev + 1);
@@ -772,6 +946,13 @@ export default function Context({ children }) {
         // Add to local cart even if an error occurs
         setCartProducts((pre) => [...pre, productToAdd]);
         
+        // Auto-select the newly added product
+        setSelectedCartItems(prev => ({
+          ...prev,
+          [productToAdd.id]: true
+        }));
+        console.log('🛒 Auto-selected newly added product (general error):', productToAdd.title);
+        
         if (isModal) {
           setCartRefreshKey(prev => prev + 1);
           openCartModal().catch(console.error);
@@ -781,6 +962,13 @@ export default function Context({ children }) {
       // No user logged in, add to local cart only
       setCartProducts((pre) => [...pre, productToAdd]);
       
+      // Auto-select the newly added product
+      setSelectedCartItems(prev => ({
+        ...prev,
+        [productToAdd.id]: true
+      }));
+      console.log('🛒 Auto-selected newly added product (local cart):', productToAdd.title);
+      
       if (isModal) {
         setCartRefreshKey(prev => prev + 1);
         openCartModal().catch(console.error);
@@ -788,7 +976,54 @@ export default function Context({ children }) {
     }
   };
 
-  const updateQuantity = (id, amount, isIncrement = false) => {
+  const updateQuantity = async (id, amount, isIncrement = false) => {
+    // First, find the item to validate stock before updating
+    const itemToUpdate = cartProducts.find(item => item.id == id || (item.documentId && item.documentId === id));
+    
+    if (!itemToUpdate) {
+      console.warn('Item not found in cart for quantity update:', id);
+      return;
+    }
+    
+    // Calculate the new quantity
+    const newQuantity = isIncrement ? itemToUpdate.quantity + amount : amount;
+    
+    // Only validate stock if quantity is increasing and we have size information
+    if (newQuantity > itemToUpdate.quantity && itemToUpdate.selectedSize) {
+      try {
+        const quantityIncrease = newQuantity - itemToUpdate.quantity;
+        
+        // Debug what's being passed to stock validation
+        console.log('🔍 Stock validation debug:', {
+          productId: itemToUpdate.baseProductId || itemToUpdate.documentId,
+          variantInfo: itemToUpdate.variantInfo,
+          variantDocumentId: itemToUpdate.variantInfo?.documentId,
+          isVariant: itemToUpdate.variantInfo?.isVariant,
+          selectedSize: itemToUpdate.selectedSize
+        });
+        
+        const stockValidation = await validateCartStock(
+          itemToUpdate.baseProductId || itemToUpdate.documentId,
+          itemToUpdate.variantInfo?.documentId || null,
+          itemToUpdate.selectedSize,
+          quantityIncrease,
+          itemToUpdate.quantity
+        );
+        
+        if (!stockValidation.success) {
+          console.warn('Stock validation failed for quantity update:', stockValidation.error);
+          console.log('Calling showStockError with:', { error: stockValidation.error, availableStock: stockValidation.availableStock, title: itemToUpdate.title });
+          showStockError(stockValidation.error, stockValidation.availableStock, itemToUpdate.title);
+          return; // Exit function early
+        }
+        
+        console.log('Stock validation passed for quantity update:', stockValidation.message);
+      } catch (stockError) {
+        console.error('Stock validation error during quantity update:', stockError);
+        // Continue with update if validation fails (fallback behavior)
+      }
+    }
+    
     const updatedProducts = cartProducts.map((item) => {
       // Try to match either by ID (including variant IDs) or documentId
       const itemMatches = item.id == id || (item.documentId && item.documentId === id);
@@ -796,10 +1031,10 @@ export default function Context({ children }) {
       if (itemMatches) {
         // For increment mode, add the amount to current quantity
         // For direct mode, set the quantity to the amount
-        const newQuantity = isIncrement ? item.quantity + amount : amount;
+        const calculatedQuantity = isIncrement ? item.quantity + amount : amount;
         
         // Optional: Enforce minimum quantity of 1
-        const finalQuantity = Math.max(1, newQuantity);
+        const finalQuantity = Math.max(1, calculatedQuantity);
         
         // Return updated item for frontend state
         return { ...item, quantity: finalQuantity };
@@ -1295,8 +1530,10 @@ export default function Context({ children }) {
                   
                   if (variantInfo) {
                     // Reconstruct the variant-specific cart item ID using documentId
-                    if (variantInfo.isVariant && variantInfo.variantId) {
-                      cartItemId = `${productAttrs.documentId || productId}-variant-${variantInfo.variantId}`;
+                    if (variantInfo.isVariant && (variantInfo.documentId || variantInfo.variantId)) {
+                      const variantIdentifier = variantInfo.documentId || variantInfo.variantId;
+                      cartItemId = `${productAttrs.documentId || productId}-variant-${variantIdentifier}`;
+                      console.log('🔧 Reconstructed variant cart item ID:', cartItemId, 'from variantInfo:', variantInfo);
                     }
                     
                     // Use variant-specific title and image
@@ -1323,11 +1560,15 @@ export default function Context({ children }) {
                 }
               }
 
-              // Keep the cart item ID simple - don't modify it with size
-              // The size checking logic will handle product+size combinations
+              // Add size information to cart item ID to match the format used when adding products
+              // This ensures that saved cart selections can be restored properly
+              if (cartItem.size) {
+                cartItemId = `${cartItemId}-size-${cartItem.size}`;
+                console.log('🔧 Added size to cart item ID:', cartItemId);
+              }
               
               const productCart = {
-                id: cartItemId, // Use variant-specific ID
+                id: cartItemId, // Use variant and size-specific ID
                 baseProductId: productAttrs.documentId || productId, // Keep reference to base product documentId
                 cartId: cartItem.id,
                 cartDocumentId: cartItem.documentId,
@@ -1589,15 +1830,229 @@ export default function Context({ children }) {
     }
   };
 
+  // Test function to debug cart deletion - can be called from browser console
+  const testCartDeletion = async () => {
+    try {
+      console.log('🧪 TESTING CART DELETION PROCESS');
+      
+      if (!user || !user.id) {
+        console.log('❌ No user found for testing');
+        return;
+      }
+      
+      // Get current user data
+      const currentUserData = await fetchDataFromApi(
+        `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`
+      );
+      
+      if (!currentUserData?.data || currentUserData.data.length === 0) {
+        console.log('❌ User data not found');
+        return;
+      }
+      
+      const userData = currentUserData.data[0];
+      const userDocumentId = userData.documentId || userData.attributes?.documentId;
+      console.log('👤 User documentId:', userDocumentId);
+      
+      // Get cart items for this user
+      const cartResponse = await fetchDataFromApi(
+        `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
+      );
+      
+      console.log('🛒 Cart response:', cartResponse);
+      console.log('🛒 Cart items count:', cartResponse?.data?.length || 0);
+      
+      if (cartResponse?.data?.length > 0) {
+        console.log('🛒 Cart items details:', JSON.stringify(cartResponse.data, null, 2));
+        
+        // Try to delete the first cart item as a test
+        const firstCartItem = cartResponse.data[0];
+        console.log('🧪 Testing deletion of first cart item:', {
+          id: firstCartItem.id,
+          documentId: firstCartItem.documentId,
+          productTitle: firstCartItem.product?.title
+        });
+        
+        try {
+          const deleteResponse = await deleteData(`/api/carts/${firstCartItem.documentId}`);
+          console.log('✅ Test deletion successful:', deleteResponse);
+          
+          // Verify deletion
+          const verifyResponse = await fetchDataFromApi(
+            `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
+          );
+          console.log('🔍 After deletion - remaining items:', verifyResponse?.data?.length || 0);
+        } catch (deleteError) {
+          console.error('❌ Test deletion failed:', deleteError);
+        }
+      } else {
+        console.log('ℹ️ No cart items found for testing');
+      }
+    } catch (error) {
+      console.error('❌ Test function error:', error);
+    }
+  };
+  
+  // Debug function to test cart deletion with detailed API logging
+  const debugCartDeletion = async () => {
+    try {
+      console.log('🔧 DEBUG: Starting detailed cart deletion test...');
+      
+      if (!user || !user.id) {
+        console.log('❌ DEBUG: No user found');
+        return { success: false, error: 'No user logged in' };
+      }
+      
+      console.log('👤 DEBUG: User info:', { id: user.id, email: user.email });
+      
+      // Test API connectivity first
+      console.log('🔗 DEBUG: Testing API connectivity...');
+      try {
+        const testResponse = await fetchDataFromApi('/api/user-data?pagination[limit]=1');
+        console.log('✅ DEBUG: API connectivity test passed:', testResponse);
+      } catch (apiError) {
+        console.error('❌ DEBUG: API connectivity test failed:', apiError);
+        return { success: false, error: 'API connectivity failed', details: apiError };
+      }
+      
+      // Get current user data
+      console.log('🔍 DEBUG: Fetching user data...');
+      const currentUserData = await fetchDataFromApi(
+        `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`
+      );
+      
+      console.log('📋 DEBUG: User data response:', currentUserData);
+      
+      if (!currentUserData?.data || currentUserData.data.length === 0) {
+        console.log('❌ DEBUG: User data not found');
+        return { success: false, error: 'User data not found' };
+      }
+      
+      const userData = currentUserData.data[0];
+      const userDocumentId = userData.documentId || userData.attributes?.documentId;
+      console.log('🆔 DEBUG: User documentId:', userDocumentId);
+      
+      // Get cart items for this user
+      console.log('🛒 DEBUG: Fetching cart items...');
+      const cartQuery = `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`;
+      console.log('🔗 DEBUG: Cart query URL:', cartQuery);
+      
+      const cartResponse = await fetchDataFromApi(cartQuery);
+      console.log('📦 DEBUG: Cart response:', cartResponse);
+      
+      const cartItems = cartResponse?.data || [];
+      console.log(`🛒 DEBUG: Found ${cartItems.length} cart items`);
+      
+      if (cartItems.length === 0) {
+        console.log('ℹ️ DEBUG: No cart items to test deletion with');
+        return { success: true, message: 'No cart items found' };
+      }
+      
+      // Test deletion on the first cart item
+      const testItem = cartItems[0];
+      console.log('🧪 DEBUG: Testing deletion on item:', {
+        id: testItem.id,
+        documentId: testItem.documentId,
+        productTitle: testItem.product?.title,
+        productId: testItem.product?.documentId
+      });
+      
+      // Test the delete API call
+      const deleteUrl = `/api/carts/${testItem.documentId}`;
+      console.log('🔥 DEBUG: DELETE URL:', deleteUrl);
+      
+      try {
+        console.log('🚀 DEBUG: Making DELETE request...');
+        console.log('🔗 DEBUG: Full DELETE URL:', `${API_URL}${deleteUrl}`);
+        console.log('🔑 DEBUG: Using API token:', STRAPI_API_TOKEN ? 'Token present' : 'No token');
+        console.log('🔑 DEBUG: API_URL:', API_URL);
+        console.log('🔑 DEBUG: Token length:', STRAPI_API_TOKEN ? STRAPI_API_TOKEN.length : 0);
+        
+        // Make a manual fetch to get more detailed response info
+        const fullUrl = `${API_URL}${deleteUrl}`;
+        const deleteOptions = {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${STRAPI_API_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+        };
+        
+        console.log('📦 DEBUG: Request options:', deleteOptions);
+        
+        const rawResponse = await fetch(fullUrl, deleteOptions);
+        console.log('📊 DEBUG: Response status:', rawResponse.status);
+        console.log('📊 DEBUG: Response statusText:', rawResponse.statusText);
+        console.log('📊 DEBUG: Response headers:', Object.fromEntries(rawResponse.headers.entries()));
+        
+        const responseText = await rawResponse.text();
+        console.log('📜 DEBUG: Raw response text:', responseText);
+        
+        let responseData;
+        try {
+          responseData = responseText ? JSON.parse(responseText) : null;
+          console.log('📊 DEBUG: Parsed response data:', responseData);
+        } catch (parseError) {
+          console.log('⚠️ DEBUG: Response is not JSON:', parseError.message);
+        }
+        
+        if (!rawResponse.ok) {
+          console.error('❌ DEBUG: DELETE failed with status:', rawResponse.status);
+          console.error('❌ DEBUG: Error response:', responseData || responseText);
+          return { success: false, error: `DELETE failed: ${rawResponse.statusText}`, details: responseData };
+        }
+        
+        console.log('✅ DEBUG: DELETE successful:', responseData || { success: true });
+        
+        // Verify deletion
+        console.log('🔍 DEBUG: Verifying deletion...');
+        const verifyResponse = await fetchDataFromApi(cartQuery);
+        const remainingItems = verifyResponse?.data?.length || 0;
+        console.log(`📊 DEBUG: Remaining items after deletion: ${remainingItems}`);
+        
+        if (remainingItems < cartItems.length) {
+          console.log('🎉 DEBUG: Cart deletion test PASSED!');
+          return { success: true, message: 'Cart deletion working correctly' };
+        } else {
+          console.log('⚠️ DEBUG: Cart deletion test FAILED - item still exists');
+          return { success: false, error: 'Item was not deleted' };
+        }
+        
+      } catch (deleteError) {
+        console.error('❌ DEBUG: DELETE request failed:', deleteError);
+        return { success: false, error: 'Delete request failed', details: deleteError };
+      }
+      
+    } catch (error) {
+      console.error('❌ DEBUG: Test function error:', error);
+      return { success: false, error: 'Test function failed', details: error };
+    }
+  };
+  
+  // Make test functions available globally for browser console testing
+  if (typeof window !== 'undefined') {
+    window.testCartDeletion = testCartDeletion;
+    window.debugCartDeletion = debugCartDeletion;
+  }
+
   // Function to clear specific purchased items from cart (both frontend and backend)
   const clearPurchasedItemsFromCart = async (purchasedProducts) => {
     try {
       console.log("🚨🚨🚨 CLEAR PURCHASED ITEMS FUNCTION CALLED 🚨🚨🚨");
-      console.log("=== STARTING PURCHASED ITEMS CLEAR PROCESS ===");
-      console.log("Purchased products to remove:", purchasedProducts?.length || 0);
-      console.log("Purchased products data:", JSON.stringify(purchasedProducts, null, 2));
-      console.log("Current cart products:", cartProducts.length);
-      console.log("User ID:", user?.id);
+    console.log("=== STARTING PURCHASED ITEMS CLEAR PROCESS ===");
+    console.log("Purchased products to remove:", purchasedProducts?.length || 0);
+    console.log("Purchased products data:", JSON.stringify(purchasedProducts, null, 2));
+    console.log("Current cart products:", cartProducts.length);
+    console.log("User ID:", user?.id);
+    
+    // Debug: Show purchased product documentIds
+    if (purchasedProducts && purchasedProducts.length > 0) {
+      console.log("📋 Purchased product documentIds:", purchasedProducts.map(p => ({
+        documentId: p.documentId,
+        title: p.title,
+        productId: p.productId
+      })));
+    }
       
       if (!purchasedProducts || purchasedProducts.length === 0) {
         console.log("No purchased products provided, nothing to clear");
@@ -1652,30 +2107,109 @@ export default function Context({ children }) {
         
         // Filter cart items to find only the purchased ones
         const cartItemsToDelete = cartResponse.data.filter(cartItem => {
-          const cartProductId = cartItem.attributes?.product?.data?.attributes?.documentId;
-          return purchasedProducts.some(purchasedProduct => 
-            purchasedProduct.documentId === cartProductId
-          );
+          // Get the product documentId from the cart item (actual Strapi structure)
+          const cartProductId = cartItem.product?.documentId;
+          
+          // Get cart item size and variant info (actual Strapi structure)
+          const cartItemSize = cartItem.size;
+          const cartItemVariantId = cartItem.variantInfo?.variantId;
+          
+          console.log(`🔍 Checking cart item:`, {
+            cartItemId: cartItem.id,
+            cartDocumentId: cartItem.documentId,
+            cartProductId: cartProductId,
+            cartItemSize: cartItemSize,
+            cartItemVariantId: cartItemVariantId,
+            cartProductTitle: cartItem.product?.title || 'Unknown',
+            variantInfo: cartItem.variantInfo
+          });
+          
+          const isMatch = purchasedProducts.some(purchasedProduct => {
+            // Match by product documentId first
+            const productMatch = purchasedProduct.documentId === cartProductId;
+            
+            if (!productMatch) {
+              return false;
+            }
+            
+            // If product matches, also check size and variant specificity
+            const purchasedSize = purchasedProduct.selectedVariant?.size || 
+                                purchasedProduct.selectedSize || 
+                                purchasedProduct.size;
+            const purchasedVariantId = purchasedProduct.variantId;
+            
+            // More specific matching: product + size + variant
+            let sizeMatch = true;
+            let variantMatch = true;
+            
+            // If both have size info, they must match
+            if (cartItemSize && purchasedSize) {
+              sizeMatch = cartItemSize === purchasedSize;
+            }
+            
+            // If both have variant info, they must match
+            if (cartItemVariantId && purchasedVariantId) {
+              variantMatch = cartItemVariantId === purchasedVariantId;
+            }
+            
+            const fullMatch = productMatch && sizeMatch && variantMatch;
+            
+            if (fullMatch) {
+              console.log(`✅ Found specific match:`, {
+                productId: purchasedProduct.documentId,
+                purchasedSize: purchasedSize,
+                cartSize: cartItemSize,
+                purchasedVariant: purchasedVariantId,
+                cartVariant: cartItemVariantId
+              });
+            } else if (productMatch) {
+              console.log(`⚠️ Product matches but size/variant differs:`, {
+                productId: purchasedProduct.documentId,
+                purchasedSize: purchasedSize,
+                cartSize: cartItemSize,
+                sizeMatch: sizeMatch,
+                variantMatch: variantMatch
+              });
+            }
+            
+            return fullMatch;
+          });
+          
+          return isMatch;
         });
         
         console.log(`Found ${cartItemsToDelete.length} purchased items to delete from backend`);
         
         if (cartItemsToDelete.length > 0) {
-          // Delete only the purchased cart items from backend
+          // Delete only the purchased cart items from backend using documentId
           const deletePromises = cartItemsToDelete.map(async (cartItem) => {
             try {
-              // Try to delete by documentId first if available
-              const cartDocumentId = cartItem.attributes?.documentId;
+              // Get the cart item documentId (actual Strapi structure)
+              const cartDocumentId = cartItem.documentId;
+              
+              console.log(`🗑️ Attempting to delete cart item:`, {
+                cartItemId: cartItem.id,
+                cartDocumentId: cartDocumentId,
+                productTitle: cartItem.product?.title || 'Unknown',
+                size: cartItem.size,
+                variantInfo: cartItem.variantInfo
+              });
+              
               if (cartDocumentId) {
-                await deleteData(`/api/carts/${cartDocumentId}`);
+                console.log(`🔥 Making DELETE request to: /api/carts/${cartDocumentId}`);
+                const deleteResponse = await deleteData(`/api/carts/${cartDocumentId}`);
+                console.log(`✅ DELETE response:`, deleteResponse);
                 console.log(`✅ Deleted purchased cart item with documentId: ${cartDocumentId}`);
               } else {
                 // Fallback to ID-based deletion
-                await deleteData(`/api/carts/${cartItem.id}`);
+                console.log(`🔥 Making DELETE request to: /api/carts/${cartItem.id}`);
+                const deleteResponse = await deleteData(`/api/carts/${cartItem.id}`);
+                console.log(`✅ DELETE response:`, deleteResponse);
                 console.log(`✅ Deleted purchased cart item with ID: ${cartItem.id}`);
               }
             } catch (error) {
               console.error(`❌ Error deleting cart item ${cartItem.id}:`, error);
+              console.error(`❌ Full error details:`, JSON.stringify(error, null, 2));
               // Continue with other deletions even if one fails
             }
           });
@@ -1697,20 +2231,100 @@ export default function Context({ children }) {
         console.log("No cart items found in backend for user:", user.id);
       }
       
-      // Update frontend state to remove only purchased products
+      // Update frontend state to remove only purchased products (with specific matching)
       const remainingProducts = cartProducts.filter(cartProduct => {
-        return !purchasedProducts.some(purchasedProduct => 
-          cartProduct.documentId === purchasedProduct.documentId
-        );
+        return !purchasedProducts.some(purchasedProduct => {
+          // Match by product documentId first
+          const productMatch = cartProduct.documentId === purchasedProduct.documentId;
+          
+          if (!productMatch) {
+            return false;
+          }
+          
+          // If product matches, also check size and variant specificity
+          const cartSize = cartProduct.size;
+          const purchasedSize = purchasedProduct.selectedVariant?.size || 
+                              purchasedProduct.selectedSize || 
+                              purchasedProduct.size;
+          const cartVariantId = cartProduct.variantInfo?.variantId;
+          const purchasedVariantId = purchasedProduct.variantId;
+          
+          // More specific matching: product + size + variant
+          let sizeMatch = true;
+          let variantMatch = true;
+          
+          // If both have size info, they must match
+          if (cartSize && purchasedSize) {
+            sizeMatch = cartSize === purchasedSize;
+          }
+          
+          // If both have variant info, they must match
+          if (cartVariantId && purchasedVariantId) {
+            variantMatch = cartVariantId === purchasedVariantId;
+          }
+          
+          const fullMatch = productMatch && sizeMatch && variantMatch;
+          
+          if (fullMatch) {
+            console.log(`🗑️ Frontend: Removing cart item:`, {
+              productId: cartProduct.documentId,
+              title: cartProduct.title,
+              size: cartSize,
+              variantId: cartVariantId
+            });
+          }
+          
+          return fullMatch;
+        });
       });
       
       setCartProducts(remainingProducts);
       
-      // Also update selected cart items to remove purchased ones
+      // Also update selected cart items to remove purchased ones (using proper cart item IDs)
       const updatedSelectedItems = { ...selectedCartItems };
-      purchasedProducts.forEach(purchasedProduct => {
-        delete updatedSelectedItems[purchasedProduct.documentId];
+      
+      // Find cart items that match purchased products and remove their selections
+      cartProducts.forEach(cartProduct => {
+        const isMatched = purchasedProducts.some(purchasedProduct => {
+          // Match by product documentId first
+          const productMatch = cartProduct.documentId === purchasedProduct.documentId;
+          
+          if (!productMatch) {
+            return false;
+          }
+          
+          // If product matches, also check size and variant specificity
+          const cartSize = cartProduct.size;
+          const purchasedSize = purchasedProduct.selectedVariant?.size || 
+                              purchasedProduct.selectedSize || 
+                              purchasedProduct.size;
+          const cartVariantId = cartProduct.variantInfo?.variantId;
+          const purchasedVariantId = purchasedProduct.variantId;
+          
+          // More specific matching: product + size + variant
+          let sizeMatch = true;
+          let variantMatch = true;
+          
+          // If both have size info, they must match
+          if (cartSize && purchasedSize) {
+            sizeMatch = cartSize === purchasedSize;
+          }
+          
+          // If both have variant info, they must match
+          if (cartVariantId && purchasedVariantId) {
+            variantMatch = cartVariantId === purchasedVariantId;
+          }
+          
+          return productMatch && sizeMatch && variantMatch;
+        });
+        
+        if (isMatched) {
+          // Remove selection using the proper cart item ID (with size info)
+          delete updatedSelectedItems[cartProduct.id];
+          console.log(`🗑️ Removed selection for cart item ID: ${cartProduct.id}`);
+        }
       });
+      
       setSelectedCartItems(updatedSelectedItems);
       
       console.log("✅ Frontend purchased items cleared");
@@ -1721,11 +2335,40 @@ export default function Context({ children }) {
       console.log("=== PURCHASED ITEMS CLEAR PROCESS COMPLETED ===");
     } catch (error) {
       console.error("❌ Error clearing purchased items from cart:", error);
-      // Even if backend clearing fails, try to clear frontend
+      // Even if backend clearing fails, try to clear frontend (with specific matching)
       const remainingProducts = cartProducts.filter(cartProduct => {
-        return !purchasedProducts.some(purchasedProduct => 
-          cartProduct.documentId === purchasedProduct.documentId
-        );
+        return !purchasedProducts.some(purchasedProduct => {
+          // Match by product documentId first
+          const productMatch = cartProduct.documentId === purchasedProduct.documentId;
+          
+          if (!productMatch) {
+            return false;
+          }
+          
+          // If product matches, also check size and variant specificity
+          const cartSize = cartProduct.size;
+          const purchasedSize = purchasedProduct.selectedVariant?.size || 
+                              purchasedProduct.selectedSize || 
+                              purchasedProduct.size;
+          const cartVariantId = cartProduct.variantInfo?.variantId;
+          const purchasedVariantId = purchasedProduct.variantId;
+          
+          // More specific matching: product + size + variant
+          let sizeMatch = true;
+          let variantMatch = true;
+          
+          // If both have size info, they must match
+          if (cartSize && purchasedSize) {
+            sizeMatch = cartSize === purchasedSize;
+          }
+          
+          // If both have variant info, they must match
+          if (cartVariantId && purchasedVariantId) {
+            variantMatch = cartVariantId === purchasedVariantId;
+          }
+          
+          return productMatch && sizeMatch && variantMatch;
+        });
       });
       setCartProducts(remainingProducts);
     } finally {

@@ -2,7 +2,8 @@
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, Suspense, useState } from "react";
-import { fetchDataFromApi, updateUserBagWithPayment } from "@/utils/api";
+import { fetchDataFromApi, updateUserBagWithPayment, createOrderRecord, updateProductStock } from "@/utils/api";
+import { processPostPaymentStockAndCart } from "@/utils/postPaymentProcessing";
 const { generateLocalTimestamp } = require("@/utils/timezone");
 import type { NPSPaymentData } from "@/types/nps";
 import { useContextElement } from "@/context/Context";
@@ -17,23 +18,26 @@ const NPSCallbackContent = () => {
   const [processingStatus, setProcessingStatus] = useState("Processing your payment...");
 
   // Extract payment data from URL parameters
-  const merchantTxnId = searchParams?.get("MerchantTxnId") || "";
-  const gatewayTxnId = searchParams?.get("GatewayTxnId") || "";
+  // Handle both real NPS callback and mock callback parameters
+  const merchantTxnId = searchParams?.get("MerchantTxnId") || searchParams?.get("merchantTxnId") || "";
+  const gatewayTxnId = searchParams?.get("GatewayTxnId") || searchParams?.get("processId") || "";
   const amount = searchParams?.get("Amount") || "";
-  const status = searchParams?.get("Status") || "";
+  const status = searchParams?.get("Status") || searchParams?.get("status") || "";
   const message = searchParams?.get("Message") || "";
+  const isMock = searchParams?.get("mock") === "true";
 
   useEffect(() => {
     console.log("=== NPS CALLBACK REACHED ===");
     console.log("Status:", status);
     console.log("MerchantTxnId:", merchantTxnId);
     console.log("GatewayTxnId:", gatewayTxnId);
+    console.log("Is Mock Payment:", isMock);
     console.log("User:", user?.id);
 
     const savePaymentData = async () => {
       try {
         // Show user-friendly status updates
-        if (status === "SUCCESS") {
+        if (status === "SUCCESS" || (isMock && status === "success")) {
           setProcessingStatus("✅ Payment successful! Saving your order...");
         } else if (status === "FAILED") {
           setProcessingStatus("❌ Payment failed");
@@ -47,16 +51,23 @@ const NPSCallbackContent = () => {
             window.location.href = "/?payment=cancelled";
           }, 2000);
           return;
+        } else if (!status && merchantTxnId && gatewayTxnId) {
+          // Real NPS payment with transaction IDs but no explicit status - assume success
+          console.log("Real NPS payment detected - no status but have transaction IDs, proceeding as success");
+          setProcessingStatus("✅ Payment successful! Processing your order...");
         } else {
           setProcessingStatus("⏳ Verifying payment status...");
         }
 
-        // Only require user and transaction IDs
-        if (!user || !merchantTxnId || !gatewayTxnId) {
+        // Validate required data (for mock payments, gatewayTxnId might be processId)
+        const hasRequiredData = user && merchantTxnId && (gatewayTxnId || isMock);
+        
+        if (!hasRequiredData) {
           console.log("Missing required data:", { 
             user: !!user, 
             merchantTxnId: !!merchantTxnId, 
-            gatewayTxnId: !!gatewayTxnId 
+            gatewayTxnId: !!gatewayTxnId,
+            isMock: isMock
           });
           setProcessingStatus("❌ Missing payment information");
           setTimeout(() => {
@@ -65,22 +76,80 @@ const NPSCallbackContent = () => {
           return;
         }
 
-        // Find the user's bag
-        const currentUserData = await fetchDataFromApi(
-          `/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=user_bag`
-        );
+        // Find the user's bag with enhanced error handling
+        let currentUserData, userData, userBag;
+        
+        try {
+          currentUserData = await fetchDataFromApi(
+            `/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=user_bag`
+          );
+          
+          if (!currentUserData?.data || currentUserData.data.length === 0) {
+            console.log("❌ User data not found, but payment was successful - will attempt basic processing");
+            
+            // For successful payments, don't fail completely - try to process what we can
+            if (merchantTxnId && gatewayTxnId) {
+              console.log("🔄 Payment successful but user data missing - attempting basic cart clearing");
+              setProcessingStatus("⚠️ Payment successful! Clearing your cart...");
+              
+              try {
+                // Clear cart even without full order data
+                if (clearPurchasedItemsFromCart) {
+                  await clearPurchasedItemsFromCart([]);
+                  console.log("✅ Cart cleared successfully");
+                }
+                
+                setProcessingStatus("✅ Payment processed successfully!");
+                setTimeout(() => {
+                  window.location.href = "/?payment=success";
+                }, 2000);
+                return;
+              } catch (error) {
+                console.error("Error in basic processing:", error);
+              }
+            }
+            
+            setProcessingStatus("❌ User account not found");
+            setTimeout(() => {
+              window.location.href = "/";
+            }, 3000);
+            return;
+          }
 
-        if (!currentUserData?.data || currentUserData.data.length === 0) {
-          console.log("User data not found");
-          setProcessingStatus("❌ User account not found");
+          userData = currentUserData.data[0];
+          userBag = userData.user_bag;
+          
+        } catch (fetchError) {
+          console.error("❌ Error fetching user data:", fetchError);
+          
+          // For successful payments, don't fail completely
+          if (merchantTxnId && gatewayTxnId) {
+            console.log("🔄 Payment successful but data fetch failed - attempting basic processing");
+            setProcessingStatus("⚠️ Payment successful! Processing...");
+            
+            try {
+              // Clear cart even without full order data
+              if (clearPurchasedItemsFromCart) {
+                await clearPurchasedItemsFromCart([]);
+                console.log("✅ Cart cleared successfully");
+              }
+              
+              setProcessingStatus("✅ Payment processed successfully!");
+              setTimeout(() => {
+                window.location.href = "/?payment=success";
+              }, 2000);
+              return;
+            } catch (error) {
+              console.error("Error in basic processing:", error);
+            }
+          }
+          
+          setProcessingStatus("❌ Error accessing user account");
           setTimeout(() => {
-            window.location.href = "/";
+            window.location.href = "/?payment=error";
           }, 3000);
           return;
         }
-
-        const userData = currentUserData.data[0];
-        const userBag = userData.user_bag;
 
         if (!userBag || !userBag.documentId) {
           console.log("User bag not found");
@@ -93,7 +162,7 @@ const NPSCallbackContent = () => {
 
         setProcessingStatus("🔍 Verifying payment with NPS...");
 
-        // If we don't have status/amount from URL, check with NPS API
+        // If we don't have status/amount from URL, check with NPS API (skip for mock payments)
         let finalAmount = parseFloat(amount) || 0;
         let finalStatus = status;
         let finalProcessId = "";
@@ -102,7 +171,8 @@ const NPSCallbackContent = () => {
         let finalServiceCharge = "";
         let finalCbsMessage = "";
 
-        if (!status || !amount) {
+        // Skip NPS API status check for mock payments since we have all data
+        if ((!status || !amount) && !isMock) {
           try {
             console.log("Checking transaction status with NPS API...");
             const statusResponse = await fetch('/api/nps-check-status', {
@@ -134,6 +204,29 @@ const NPSCallbackContent = () => {
             console.error("Error checking transaction status:", error);
             // Continue with callback data if API check fails
           }
+        } else if (isMock) {
+          console.log("✅ Using mock payment data - no NPS API check needed");
+          console.log("Mock payment details:", { amount: finalAmount, status: finalStatus, merchantTxnId, gatewayTxnId });
+        }
+
+        // Get orderData from existing payment record if available
+        let orderData = null;
+        
+        // First, try to find existing payment with orderData
+        const existingPayments = userBag.user_orders?.payments || [];
+        const existingPayment = existingPayments.find(
+          payment => payment.merchantTxnId === merchantTxnId && payment.provider === "nps"
+        );
+        
+        if (existingPayment && existingPayment.orderData) {
+          orderData = existingPayment.orderData;
+          console.log("📦 Found orderData in existing payment record:", orderData);
+        } else if (userBag.orderData) {
+          // Fallback to user bag orderData if available
+          orderData = userBag.orderData;
+          console.log("📦 Found orderData in user bag (fallback):", orderData);
+        } else {
+          console.log("⚠️ No orderData found in existing payment or user bag");
         }
 
         // Prepare payment data for storage
@@ -143,7 +236,7 @@ const NPSCallbackContent = () => {
           merchantTxnId: merchantTxnId,
           gatewayReferenceNo: gatewayTxnId,
           amount: finalAmount,
-          status: finalStatus === "Success" ? "Success" : finalStatus === "Fail" ? "Fail" : "Pending",
+          status: (finalStatus === "Success" || finalStatus === "success") ? "Success" : (finalStatus === "Fail" || finalStatus === "fail") ? "Fail" : "Pending",
           institution: finalInstitution,
           instrument: finalInstrument,
           serviceCharge: finalServiceCharge,
@@ -152,6 +245,11 @@ const NPSCallbackContent = () => {
           webhook_processed: false, // This came from callback, not webhook
         };
 
+        // Add orderData if available
+        if (orderData) {
+          (paymentData as any).orderData = orderData;
+        }
+
         setProcessingStatus("💾 Saving payment information...");
 
         // Save payment data to user-bag
@@ -159,7 +257,19 @@ const NPSCallbackContent = () => {
         console.log("Payment data saved successfully:", paymentData);
         
         // If payment is successful, create the order
-        if (finalStatus === "Success" || finalStatus === "SUCCESS") {
+        // Handle both explicit success status and real NPS payments with transaction IDs but no status
+        const isPaymentSuccessful = finalStatus === "Success" || finalStatus === "SUCCESS" || finalStatus === "success" || 
+                                   (!finalStatus && merchantTxnId && gatewayTxnId && !isMock);
+        
+        console.log("🔍 Payment success check:", {
+          finalStatus,
+          merchantTxnId: !!merchantTxnId,
+          gatewayTxnId: !!gatewayTxnId,
+          isMock,
+          isPaymentSuccessful
+        });
+        
+        if (isPaymentSuccessful) {
           setProcessingStatus("📦 Creating your order...");
           
           try {
@@ -201,38 +311,144 @@ const NPSCallbackContent = () => {
                 console.log("Order data available:", matchingPayment.orderData);
                 console.log("Payment data:", paymentData);
                 
-                // Clear only the purchased items from the cart after successful payment
-                setProcessingStatus("🛒 Removing purchased items from cart...");
-                console.log("=== ATTEMPTING TO CLEAR PURCHASED ITEMS FROM CART AFTER PAYMENT ===");
-                console.log("User ID:", user?.id);
-                console.log("ClearPurchasedItemsFromCart function available:", typeof clearPurchasedItemsFromCart);
-                console.log("Order data products:", matchingPayment.orderData?.products);
-                console.log("Full order data:", JSON.stringify(matchingPayment.orderData, null, 2));
+                // Process post-payment stock update and cart clearing (same as "Update Stock & Delete" button)
+                setProcessingStatus("🔄 Processing post-payment stock update and cart clearing...");
+                console.log("=== STARTING POST-PAYMENT PROCESSING (STOCK UPDATE & CART CLEARING) ===");
                 
                 try {
-                  // Extract the purchased products from the order data
                   const purchasedProducts = matchingPayment.orderData?.products || [];
-                  console.log("Purchased products to remove from cart:", purchasedProducts.length);
+                  console.log("🔍 DEBUGGING PURCHASED PRODUCTS:");
+                  console.log("Products to process:", purchasedProducts.length);
+                  console.log("Full purchased products data:", JSON.stringify(purchasedProducts, null, 2));
+                  
+                  // Debug each product structure
+                  purchasedProducts.forEach((product, index) => {
+                    console.log(`🔍 Product ${index + 1}:`, {
+                      id: product.id,
+                      productId: product.productId,
+                      documentId: product.documentId,
+                      title: product.title,
+                      selectedSize: product.selectedSize,
+                      quantity: product.quantity,
+                      variantInfo: product.variantInfo,
+                      pricing: product.pricing,
+                      hasVariantInfo: !!product.variantInfo,
+                      isVariant: product.variantInfo?.isVariant,
+                      variantDocumentId: product.variantInfo?.documentId
+                    });
+                  });
+                  
+                  console.log("🔍 User object:", {
+                    id: user?.id,
+                    email: user?.email,
+                    name: user?.name
+                  });
+                  
+                  console.log("🔍 clearPurchasedItemsFromCart function:", typeof clearPurchasedItemsFromCart);
                   
                   if (purchasedProducts.length > 0) {
-                    await clearPurchasedItemsFromCart(purchasedProducts);
-                    console.log("✅ Purchased items cleared successfully from cart after payment");
+                    console.log("🚀 Calling processPostPaymentStockAndCart...");
+                    
+                    // Use the same logic as the "Update Stock & Delete" button
+                    const processingResult = await processPostPaymentStockAndCart(
+                      purchasedProducts, 
+                      user, 
+                      clearPurchasedItemsFromCart
+                    );
+                    
+                    console.log("🔍 PROCESSING RESULT:", JSON.stringify(processingResult, null, 2));
+                    
+                    console.log("✅ Post-payment processing completed:", {
+                      totalProducts: processingResult.totalProducts,
+                      stockUpdate: {
+                        success: processingResult.stockUpdate.success,
+                        successCount: processingResult.stockUpdate.successCount,
+                        failureCount: processingResult.stockUpdate.failureCount
+                      },
+                      cartClear: {
+                        success: processingResult.cartClear.success
+                      }
+                    });
+                    
+                    // Update status based on results
+                    if (processingResult.stockUpdate.success && processingResult.cartClear.success) {
+                      setProcessingStatus(`✅ Stock updated for ${processingResult.stockUpdate.successCount} products and cart cleared`);
+                    } else if (processingResult.stockUpdate.success) {
+                      setProcessingStatus(`✅ Stock updated but cart clearing ${processingResult.cartClear.success ? 'succeeded' : 'failed'}`);
+                    } else if (processingResult.cartClear.success) {
+                      setProcessingStatus(`⚠️ Cart cleared but ${processingResult.stockUpdate.failureCount} stock updates failed`);
+                    } else {
+                      setProcessingStatus(`⚠️ Post-payment processing completed with issues`);
+                    }
+                    
                   } else {
-                    console.log("⚠️ No purchased products found in order data");
+                    console.log("⚠️ No products found in order data for post-payment processing");
+                    setProcessingStatus("⚠️ No products found for processing");
                   }
-                } catch (cartError) {
-                  console.error("❌ Error clearing purchased items from cart after payment:", cartError);
-                  // Don't fail the entire process if cart clearing fails
+                } catch (processingError) {
+                  console.error("❌ Error in post-payment processing:", processingError);
+                  setProcessingStatus("⚠️ Post-payment processing failed");
+                  // Don't fail the entire process if post-payment processing fails
+                }
+                
+                // Create individual order record in Strapi user_orders collection
+                setProcessingStatus("📝 Creating order record for admin...");
+                console.log("=== CREATING ORDER RECORD IN STRAPI USER_ORDERS COLLECTION ===");
+                
+                try {
+                  const orderRecord = await createOrderRecord(matchingPayment, user?.id);
+                  if (orderRecord) {
+                    console.log("✅ Order record created successfully:", orderRecord.data?.documentId);
+                    console.log("Order details:", {
+                      orderId: orderRecord.data?.orderId,
+                      totalAmount: orderRecord.data?.totalAmount,
+                      productCount: orderRecord.data?.productSummary?.totalProducts,
+                      customerName: orderRecord.data?.customerInfo?.fullName,
+                      shippingCarrier: orderRecord.data?.shippingCarrier
+                    });
+                    setProcessingStatus("✅ Order record created for admin!");
+                  } else {
+                    console.warn("⚠️ Order record creation returned null");
+                    setProcessingStatus("⚠️ Payment successful but order record creation failed");
+                  }
+                } catch (orderRecordError) {
+                  console.error("❌ Error creating order record:", orderRecordError);
+                  setProcessingStatus("⚠️ Payment successful but order record creation failed");
+                  // Don't fail the entire process if order record creation fails
                 }
                 
                 setProcessingStatus("✅ Payment successful!");
               } else if (matchingPayment && !matchingPayment.orderData) {
-                console.warn("Found matching payment but no order data");
-                setProcessingStatus("⚠️ Payment successful but order data missing from payment record");
+                console.warn("Found matching payment but no order data - attempting basic cart clearing");
+                setProcessingStatus("⚠️ Payment successful but order data missing - clearing cart...");
+                
+                // Even without orderData, clear the cart for successful payments
+                try {
+                  if (clearPurchasedItemsFromCart) {
+                    await clearPurchasedItemsFromCart([]);
+                    console.log("✅ Cart cleared successfully (no order data)");
+                    setProcessingStatus("✅ Payment successful and cart cleared!");
+                  }
+                } catch (cartError) {
+                  console.error("❌ Error clearing cart:", cartError);
+                  setProcessingStatus("⚠️ Payment successful but cart clearing failed");
+                }
               } else {
-                console.warn("No matching payment found");
+                console.warn("No matching payment found - attempting basic cart clearing for successful payment");
                 console.log("Available payments:", bagWithPayments.data.user_orders.payments);
-                setProcessingStatus("⚠️ Payment successful but matching payment record not found");
+                setProcessingStatus("⚠️ Payment successful but payment record not found - clearing cart...");
+                
+                // Even without matching payment, clear the cart for successful payments
+                try {
+                  if (clearPurchasedItemsFromCart) {
+                    await clearPurchasedItemsFromCart([]);
+                    console.log("✅ Cart cleared successfully (no matching payment)");
+                    setProcessingStatus("✅ Payment successful and cart cleared!");
+                  }
+                } catch (cartError) {
+                  console.error("❌ Error clearing cart:", cartError);
+                  setProcessingStatus("⚠️ Payment successful but cart clearing failed");
+                }
               }
             } else {
               console.warn("No payments found in user bag user_orders");
@@ -246,11 +462,11 @@ const NPSCallbackContent = () => {
         }
         
         // Show success and redirect based on payment status
-        if (finalStatus === "Success" || finalStatus === "SUCCESS") {
+        if (finalStatus === "Success" || finalStatus === "SUCCESS" || finalStatus === "success") {
           setTimeout(() => {
             window.location.href = "/?payment=success";
           }, 3000); // Give time to show order creation status
-        } else if (finalStatus === "Fail" || finalStatus === "FAILED") {
+        } else if (finalStatus === "Fail" || finalStatus === "FAILED" || finalStatus === "fail") {
           setTimeout(() => {
             window.location.href = "/?payment=failed";
           }, 3000);

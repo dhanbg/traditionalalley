@@ -7,6 +7,8 @@ import { Pagination } from "swiper/modules";
 import ProductCard1 from "../productCards/ProductCard1";
 import { fetchDataFromApi } from "@/utils/api";
 import { getBestImageUrl } from "@/utils/imageUtils";
+import { fetchProductsWithVariantsByCategory, fetchSingleProductWithVariants } from "@/utils/productVariantUtils";
+
 
 // Default placeholder image
 const DEFAULT_IMAGE = '/logo.png';
@@ -45,7 +47,8 @@ const transformProduct = (rawProduct) => {
   // Ensure we have a valid ID
   const id = rawProduct.documentId || rawProduct.id || rawProduct.attributes?.id || 0;
   
-  return {
+  // Create the product object first
+  const productObj = {
     ...rawProduct,
     id,
     documentId: id,
@@ -56,8 +59,14 @@ const transformProduct = (rawProduct) => {
     oldPrice: rawProduct.oldPrice || rawProduct.attributes?.oldPrice || null,
     isOnSale: !!rawProduct.oldPrice || !!rawProduct.attributes?.oldPrice,
     salePercentage: rawProduct.salePercentage || rawProduct.attributes?.salePercentage || "25%",
-    weight: rawProduct.weight || rawProduct.attributes?.weight || null
+    weight: rawProduct.weight || rawProduct.attributes?.weight || null,
+    size_stocks: rawProduct.size_stocks || rawProduct.attributes?.size_stocks
   };
+  
+  // Use isActive from the API - treat null or undefined as inactive
+  productObj.isActive = rawProduct.isActive === true;
+  
+  return productObj;
 };
 
 export default function RelatedProducts({ product }) {
@@ -73,32 +82,33 @@ export default function RelatedProducts({ product }) {
       try {
         setLoading(true);
         
-        // Get products from the same category or collection as the current product
-        let query = '';
+        let productsWithVariants = [];
         
-        if (product.category && product.category.id) {
-          // Filter by category id
-          query = `/api/products?filters[category][id][$eq]=${product.category.id}&filters[documentId][$ne]=${product.id}&populate=*`;
-        } else if (product.collection && product.collection.id) {
-          // Filter by collection id
-          query = `/api/products?filters[collection][id][$eq]=${product.collection.id}&filters[documentId][$ne]=${product.id}&populate=*`;
+        if (product.category && product.category.title) {
+          // Use category title to fetch products and variants
+          productsWithVariants = await fetchProductsWithVariantsByCategory(product.category.title);
         } else {
-          // Fallback to any products
-          query = `/api/products?pagination[limit]=4&populate=*`;
+          // Fallback to general products fetch (you may want to implement a general fetch in utils)
+          const response = await fetchDataFromApi(`/api/products?pagination[limit]=4&populate=*`);
+          if (response.data) {
+            productsWithVariants = response.data.map(transformProduct)
+              .filter(Boolean)
+              .filter(product => product.isActive === true);
+          }
         }
         
-        const response = await fetchDataFromApi(query);
+        // Filter out current product and its variants
+        const filteredProducts = productsWithVariants.filter(item => 
+          item.id !== product.id && item.parentProductId !== product.id
+        );
         
-        if (response.data) {
-          // Transform products to ensure valid image URLs
-          const transformedProducts = response.data.map(transformProduct)
-            .filter(Boolean); // Remove any nulls
-          
-          setRelatedProducts(transformedProducts);
-        }
+        // Filter active items only
+        const activeItems = filteredProducts.filter(item => item.isActive !== false);
         
+        setRelatedProducts(activeItems.slice(0, 8)); // Limit to 8 items
         setLoading(false);
       } catch (error) {
+        console.error('Error fetching related products:', error);
         setLoading(false);
       }
     };
@@ -120,20 +130,20 @@ export default function RelatedProducts({ product }) {
           // Save back to localStorage
           localStorage.setItem('recentlyViewed', JSON.stringify(updatedIds));
           
-          // Fetch product data for each ID (excluding current product)
+          // Fetch product data for each ID (excluding current product) using new utility
           const productPromises = updatedIds
             .filter(id => id !== product.id) // Exclude current product
-            .slice(0, 4) // Limit to 4 products
-            .map(id => fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*`));
+            .slice(0, 8) // Limit to 8 products (since we'll show products and variants)
+            .map(id => fetchSingleProductWithVariants(id));
           
           if (productPromises.length > 0) {
             const responses = await Promise.all(productPromises);
             
-            // Extract product data from responses and transform to ensure valid image URLs
+            // Flatten the responses (each response contains products and variants)
             const fetchedProducts = responses
-              .filter(response => response && response.data && response.data.length > 0)
-              .map(response => transformProduct(response.data[0]))
-              .filter(Boolean); // Remove any nulls
+              .filter(Boolean) // Remove any nulls
+              .flat() // Flatten array of arrays
+              .filter(item => item.isActive !== false); // Hide inactive items
             
             setRecentlyViewed(fetchedProducts);
           }

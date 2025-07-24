@@ -149,3 +149,6 @@ img {
 }
 
 /* Add to existing styles */
+
+/* Import out-of-stock product styles */
+@import '../styles/out-of-stock.css';

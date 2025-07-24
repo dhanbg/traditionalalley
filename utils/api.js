@@ -530,3 +530,297 @@ export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) =
   }
 };
 
+// Create individual order record in Strapi user_orders collection
+export const createOrderRecord = async (paymentData, userAuthId) => {
+  try {
+    console.log('Creating order record for payment:', paymentData.merchantTxnId || paymentData.provider);
+    
+    // Prepare order data for Strapi user_orders collection
+    const orderRecord = {
+      // Order identification
+      orderId: paymentData.merchantTxnId || `${paymentData.provider.toUpperCase()}-${Date.now()}`,
+      orderNumber: paymentData.merchantTxnId || `${paymentData.provider.toUpperCase()}-${Date.now()}`,
+      
+      // Payment information
+      paymentProvider: paymentData.provider,
+      paymentStatus: paymentData.status,
+      totalAmount: paymentData.amount,
+      currency: "NPR",
+      
+      // Timestamps
+      orderDate: paymentData.timestamp || new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      
+      // User reference
+      authUserId: userAuthId,
+      
+      // Complete order data with shipping and product details
+      orderData: paymentData.orderData || {},
+      
+      // Extract key information for easy admin access (prioritize receiver_details over legacy shipping.receiver)
+      customerInfo: (paymentData.orderData?.receiver_details ? {
+                     firstName: paymentData.orderData.receiver_details.firstName,
+                     lastName: paymentData.orderData.receiver_details.lastName,
+                     fullName: `${paymentData.orderData.receiver_details.firstName || ''} ${paymentData.orderData.receiver_details.lastName || ''}`.trim(),
+                     email: paymentData.orderData.receiver_details.email,
+                     phone: paymentData.orderData.receiver_details.phone,
+                     alternatePhone: paymentData.orderData.receiver_details.alternatePhone || ""
+                   } : {}) || 
+                   paymentData.orderData?.shipping?.receiver?.personalInfo || {},
+      
+      shippingAddress: (paymentData.orderData?.receiver_details?.address ? {
+                        street: paymentData.orderData.receiver_details.address.street,
+                        city: paymentData.orderData.receiver_details.address.city,
+                        state: paymentData.orderData.receiver_details.address.state || "",
+                        postalCode: paymentData.orderData.receiver_details.address.postalCode,
+                        country: paymentData.orderData.receiver_details.address.country,
+                        countryCode: paymentData.orderData.receiver_details.address.country === "Nepal" ? "NP" : 
+                                    paymentData.orderData.receiver_details.address.country === "India" ? "IN" : 
+                                    paymentData.orderData.receiver_details.address.country === "United States" ? "US" : 
+                                    paymentData.orderData.receiver_details.address.country === "Canada" ? "CA" : 
+                                    paymentData.orderData.receiver_details.address.country === "Australia" ? "AU" : 
+                                    paymentData.orderData.receiver_details.address.country === "United Kingdom" ? "GB" : "XX",
+                        fullAddress: `${paymentData.orderData.receiver_details.address.street}, ${paymentData.orderData.receiver_details.address.city}, ${paymentData.orderData.receiver_details.address.state ? paymentData.orderData.receiver_details.address.state + ', ' : ''}${paymentData.orderData.receiver_details.address.postalCode}, ${paymentData.orderData.receiver_details.address.country}`,
+                        addressType: paymentData.orderData.receiver_details.addressType || "Home",
+                        landmark: paymentData.orderData.receiver_details.landmark || ""
+                      } : {}) || 
+                      paymentData.orderData?.shipping?.receiver?.address || {},
+      
+      shippingMethod: paymentData.orderData?.shipping?.method || 
+                     (paymentData.provider === 'nps' ? {
+                       carrier: "NPS Payment",
+                       service: "NPS Standard",
+                       estimatedDays: paymentData.orderData?.receiver_details?.address?.country === "Nepal" ? "3-5" : "7-10",
+                       cost: paymentData.orderData?.shippingPrice || 0,
+                       currency: "NPR",
+                       trackingAvailable: true,
+                       insuranceIncluded: true,
+                       signatureRequired: true
+                     } : {}) || {},
+      
+      packageDetails: paymentData.orderData?.shipping?.package || 
+                     (paymentData.orderData?.products ? {
+                       totalWeight: paymentData.orderData.products.reduce((total, product) => {
+                         return total + ((product.packageInfo?.weight || 1) * (product.pricing?.quantity || product.quantity || 1));
+                       }, 0),
+                       packageType: "Box",
+                       packagingMaterial: "Cardboard Box with Bubble Wrap",
+                       specialInstructions: paymentData.orderData.receiver_details?.note || "",
+                       declaredValue: paymentData.amount || 0,
+                       contentDescription: `Traditional Alley Products - ${paymentData.orderData.products.length} items (${paymentData.provider.toUpperCase()})`,
+                       dangerousGoods: false,
+                       customsDeclaration: paymentData.orderData.receiver_details?.address?.country !== "Nepal"
+                     } : {}) || {},
+      
+      processingInfo: paymentData.orderData?.shipping?.processing || 
+                     (paymentData.provider === 'cod' ? {
+                       codAmount: paymentData.amount
+                     } : {
+                       warehouseLocation: "Kathmandu Main Warehouse",
+                       expectedPackingDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                       expectedShipDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                       priorityLevel: paymentData.amount > 20000 ? "High" : paymentData.amount > 10000 ? "Medium" : "Normal",
+                       packingInstructions: `Handle with care. Traditional items may be fragile. Payment via ${paymentData.provider.toUpperCase()}.`,
+                       qualityCheckRequired: paymentData.amount > 15000,
+                       photographRequired: paymentData.amount > 25000,
+                       adminAssigned: null,
+                       packingNotes: `${paymentData.provider.toUpperCase()} Payment Order`
+                     }) || {},
+      
+      // Product summary for quick reference
+      productSummary: {
+        totalItems: paymentData.orderData?.orderSummary?.totalItems || 0,
+        totalProducts: paymentData.orderData?.orderSummary?.totalProducts || 0,
+        products: paymentData.orderData?.products?.map(product => ({
+          productId: product.productId || product.documentId,
+          title: product.title,
+          sku: product.sku,
+          quantity: product.pricing?.quantity || product.quantity || 1,
+          unitPrice: product.pricing?.currentPrice || product.unitPrice,
+          totalPrice: product.pricing?.finalPrice || product.finalPrice,
+          variant: product.selectedVariant || { size: product.size, color: product.color }
+        })) || []
+      },
+      
+      // Admin workflow fields
+      adminStatus: "pending", // pending, processing, shipped, delivered, cancelled
+      adminAssigned: null,
+      adminNotes: "",
+      trackingNumber: null,
+      shippingCarrier: paymentData.orderData?.shipping?.method?.carrier || null,
+      
+      // Legacy compatibility
+      legacyPaymentData: paymentData
+    };
+    
+    console.log('Order record prepared:', {
+      orderId: orderRecord.orderId,
+      paymentProvider: orderRecord.paymentProvider,
+      totalAmount: orderRecord.totalAmount,
+      customerName: orderRecord.customerInfo?.fullName,
+      productCount: orderRecord.productSummary?.totalProducts
+    });
+    
+    // Create the order record in Strapi
+    const createResponse = await createData('/api/user-orders', {
+      data: orderRecord
+    });
+    
+    console.log('✅ Order record created successfully:', createResponse.data?.documentId);
+    return createResponse;
+    
+  } catch (error) {
+    console.error('❌ Error creating order record:', error);
+    // Don't throw error - order creation failure shouldn't break payment flow
+    return null;
+  }
+};
+
+// Function to update product stock after successful payment
+export const updateProductStock = async (purchasedProducts) => {
+  console.log('=== STARTING PRODUCT STOCK UPDATE ===');
+  console.log('Products to update:', purchasedProducts.length);
+  
+  const updateResults = [];
+  
+  for (const product of purchasedProducts) {
+    try {
+      console.log(`Updating stock for product: ${product.title} (${product.documentId})`);
+      console.log(`Size: ${product.selectedSize || product.size}, Quantity purchased: ${product.quantity}`);
+      
+      // Fetch current product data to get latest stock information
+      const currentProductResponse = await fetchDataFromApi(`/api/products/${product.documentId}?populate=*`);
+      
+      if (!currentProductResponse || !currentProductResponse.data) {
+        console.error(`❌ Failed to fetch current product data for ${product.documentId}`);
+        updateResults.push({ productId: product.documentId, success: false, error: 'Product not found' });
+        continue;
+      }
+      
+      const currentProduct = currentProductResponse.data;
+      console.log('Current product data fetched:', currentProduct.documentId);
+      
+      // Determine which stock to update (product or variant)
+      let stockToUpdate = null;
+      let updateEndpoint = null;
+      let sizeStocks = null;
+      
+      // Check if this is a variant product
+      if (product.variantId && currentProduct.variants && currentProduct.variants.length > 0) {
+        // Find the specific variant
+        const variant = currentProduct.variants.find(v => v.documentId === product.variantId);
+        if (variant && variant.size_stocks) {
+          console.log('Updating variant stock:', variant.documentId);
+          stockToUpdate = variant;
+          updateEndpoint = `/api/variants/${variant.documentId}`;
+          sizeStocks = variant.size_stocks;
+        }
+      }
+      
+      // If no variant or variant doesn't have size_stocks, use main product
+      if (!stockToUpdate && currentProduct.size_stocks) {
+        console.log('Updating main product stock:', currentProduct.documentId);
+        stockToUpdate = currentProduct;
+        updateEndpoint = `/api/products/${currentProduct.documentId}`;
+        sizeStocks = currentProduct.size_stocks;
+      }
+      
+      if (!stockToUpdate || !sizeStocks) {
+        console.warn(`⚠️ No size_stocks found for product ${product.documentId}`);
+        updateResults.push({ productId: product.documentId, success: false, error: 'No size_stocks available' });
+        continue;
+      }
+      
+      // Parse size_stocks if it's a string
+      let parsedSizeStocks = sizeStocks;
+      if (typeof sizeStocks === 'string') {
+        try {
+          parsedSizeStocks = JSON.parse(sizeStocks);
+        } catch (parseError) {
+          console.error(`❌ Error parsing size_stocks for ${product.documentId}:`, parseError);
+          updateResults.push({ productId: product.documentId, success: false, error: 'Invalid size_stocks format' });
+          continue;
+        }
+      }
+      
+      // Get the size to update
+      const sizeToUpdate = product.selectedSize || product.size;
+      if (!sizeToUpdate) {
+        console.warn(`⚠️ No size specified for product ${product.documentId}`);
+        updateResults.push({ productId: product.documentId, success: false, error: 'No size specified' });
+        continue;
+      }
+      
+      // Check if the size exists in stock
+      if (!(sizeToUpdate in parsedSizeStocks)) {
+        console.warn(`⚠️ Size ${sizeToUpdate} not found in stock for product ${product.documentId}`);
+        updateResults.push({ productId: product.documentId, success: false, error: `Size ${sizeToUpdate} not in stock` });
+        continue;
+      }
+      
+      // Calculate new stock
+      const currentStock = parseInt(parsedSizeStocks[sizeToUpdate]) || 0;
+      const quantityPurchased = parseInt(product.quantity) || 1;
+      const newStock = Math.max(0, currentStock - quantityPurchased); // Ensure stock doesn't go negative
+      
+      console.log(`Stock update: ${sizeToUpdate} - Current: ${currentStock}, Purchased: ${quantityPurchased}, New: ${newStock}`);
+      
+      // Update the size_stocks object
+      const updatedSizeStocks = {
+        ...parsedSizeStocks,
+        [sizeToUpdate]: newStock
+      };
+      
+      // Prepare the update data
+      const updateData = {
+        data: {
+          size_stocks: updatedSizeStocks
+        }
+      };
+      
+      // Update the product or variant
+      const updateResponse = await updateData(updateEndpoint, updateData);
+      
+      if (updateResponse && updateResponse.data) {
+        console.log(`✅ Stock updated successfully for ${product.documentId} - ${sizeToUpdate}: ${newStock}`);
+        updateResults.push({ 
+          productId: product.documentId, 
+          success: true, 
+          size: sizeToUpdate,
+          oldStock: currentStock,
+          newStock: newStock,
+          quantityPurchased: quantityPurchased
+        });
+      } else {
+        console.error(`❌ Failed to update stock for ${product.documentId}`);
+        updateResults.push({ productId: product.documentId, success: false, error: 'Update request failed' });
+      }
+      
+    } catch (error) {
+      console.error(`❌ Error updating stock for product ${product.documentId}:`, error);
+      updateResults.push({ productId: product.documentId, success: false, error: error.message });
+    }
+  }
+  
+  // Log summary
+  const successCount = updateResults.filter(r => r.success).length;
+  const failureCount = updateResults.filter(r => !r.success).length;
+  
+  console.log('=== STOCK UPDATE SUMMARY ===');
+  console.log(`Total products: ${purchasedProducts.length}`);
+  console.log(`Successfully updated: ${successCount}`);
+  console.log(`Failed to update: ${failureCount}`);
+  
+  if (failureCount > 0) {
+    console.log('Failed updates:', updateResults.filter(r => !r.success));
+  }
+  
+  return {
+    totalProducts: purchasedProducts.length,
+    successCount,
+    failureCount,
+    results: updateResults
+  };
+};
+

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { npsClient, npsConfig, createAPISignature, createGatewaySignature } from '@/utils/npsConfig';
+import { npsClient, npsConfig, createGatewaySignature } from '@/utils/npsConfig';
 import { updateUserBagWithPayment, fetchDataFromApi } from '@/utils/api';
 
 interface NPSPaymentRequest {
@@ -124,14 +124,23 @@ export async function POST(request: NextRequest) {
       MerchantName: npsConfig.merchantName,
       Amount: parseFloat(amount.toString()).toFixed(2),
       MerchantTxnId: shortMerchantTxnId,
-      Signature: ""
+      Signature: "" // Will be set by interceptor
     };
-
-    const signature = createAPISignature(processIdRequest);
-    processIdRequest.Signature = signature;
 
     console.log('Process ID request:', processIdRequest);
 
+    // Add detailed logging for NPS API call
+    console.log('NPS API Request: POST /GetProcessId');
+    console.log('Authorization Header: Basic ***PRESENT***');
+    console.log('Request Data:', JSON.stringify(processIdRequest, null, 2));
+    console.log('NPS Config Used:', {
+      baseURL: npsConfig.baseURL,
+      merchantId: npsConfig.merchantId,
+      merchantName: npsConfig.merchantName,
+      apiUsername: npsConfig.apiUsername,
+      secretKey: npsConfig.secretKey ? '***PRESENT***' : '***MISSING***'
+    });
+    
     const processIdResponse = await npsClient.post<GetProcessIdResponse>(
       '/GetProcessId',
       processIdRequest
@@ -226,17 +235,58 @@ export async function POST(request: NextRequest) {
       message: error.message,
       response: error.response?.data,
       status: error.response?.status,
+      config: error.config ? {
+        url: error.config.url,
+        method: error.config.method,
+        baseURL: error.config.baseURL
+      } : null
     });
 
-    const errorMessage = error.response?.data?.message || 
-                        error.message || 
-                        'Internal server error';
-
-    return NextResponse.json({
-      success: false,
-      message: 'Failed to initiate payment',
-      error: errorMessage,
-      details: error.response?.data || error.message
-    }, { status: 500 });
+    // Handle different types of errors
+    if (error.response) {
+      // Server responded with error status
+      const status = error.response.status;
+      const responseData = error.response.data;
+      
+      if (status === 401) {
+        return NextResponse.json({
+          success: false,
+          message: 'NPS API authentication failed',
+          error: 'Invalid API credentials',
+          details: responseData
+        }, { status: 401 });
+      } else if (status === 500) {
+        return NextResponse.json({
+          success: false,
+          message: 'NPS API server error',
+          error: responseData?.Message || 'NPS server returned an error',
+          details: responseData,
+          suggestion: 'This might be a temporary issue with the NPS sandbox environment. Please try again.'
+        }, { status: 502 });
+      } else {
+        return NextResponse.json({
+          success: false,
+          message: 'NPS API request failed',
+          error: responseData?.Message || error.message,
+          details: responseData
+        }, { status: 400 });
+      }
+    } else if (error.request) {
+      // Request was made but no response received
+      return NextResponse.json({
+        success: false,
+        message: 'Failed to connect to NPS API',
+        error: 'Network error or timeout',
+        details: 'Could not reach NPS payment gateway'
+      }, { status: 503 });
+    } else {
+      // Something else happened
+      return NextResponse.json({
+        success: false,
+        message: 'Failed to initiate payment',
+        error: error.message || 'Internal server error',
+        details: error.message
+      }, { status: 500 });
+    }
   }
 } 

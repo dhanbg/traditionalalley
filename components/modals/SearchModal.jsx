@@ -5,6 +5,8 @@ import { fetchDataFromApi } from "@/utils/api";
 import { SEARCH_PRODUCTS_API, API_URL } from "@/utils/urls";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { searchProductsWithVariants, fetchSingleProductWithVariants } from "@/utils/productVariantUtils";
+
 
 // Helper function to transform product data (copied from RelatedProducts.jsx)
 const DEFAULT_IMAGE = '/logo.png';
@@ -12,7 +14,7 @@ const transformProduct = (rawProduct) => {
   if (!rawProduct) return null;
   // Do NOT convert imgSrc/imgHover to string URL here; pass the object
   const id = rawProduct.documentId || rawProduct.id || rawProduct.attributes?.id || 0;
-  return {
+  const productObj = {
     ...rawProduct,
     id,
     documentId: id,
@@ -22,8 +24,12 @@ const transformProduct = (rawProduct) => {
     price: rawProduct.price || rawProduct.attributes?.price || 0,
     oldPrice: rawProduct.oldPrice || rawProduct.attributes?.oldPrice || null,
     isOnSale: !!rawProduct.oldPrice || !!rawProduct.attributes?.oldPrice,
-    salePercentage: rawProduct.salePercentage || rawProduct.attributes?.salePercentage || "25%"
+    salePercentage: rawProduct.salePercentage || rawProduct.attributes?.salePercentage || "25%",
+    size_stocks: rawProduct.size_stocks || rawProduct.attributes?.size_stocks
   };
+  // Use isActive from the API - treat null or undefined as inactive
+  productObj.isActive = rawProduct.isActive === true;
+  return productObj;
 };
 
 export default function SearchModal() {
@@ -43,15 +49,19 @@ export default function SearchModal() {
         return;
       }
       try {
-        // Fetch product data for each ID
-        const productPromises = ids.slice(0, 8).map(id => fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*`));
+        // Fetch product data with variants for each ID
+        const productPromises = ids.slice(0, 8).map(id => fetchSingleProductWithVariants(id));
         const responses = await Promise.all(productPromises);
+        
+        // Flatten the results and filter out inactive items
         const products = responses
-          .filter(res => res && res.data && res.data.length > 0)
-          .map(res => transformProduct(res.data[0]))
-          .filter(Boolean);
+          .flat()
+          .filter(Boolean)
+          .filter(product => product.isActive !== false);
+          
         setRecentlyViewed(products);
       } catch (error) {
+        console.error('Error fetching recently viewed products:', error);
         setRecentlyViewed([]);
       }
     }
@@ -70,10 +80,11 @@ export default function SearchModal() {
     setLoading(true);
     
     try {
-      const res = await fetchDataFromApi(SEARCH_PRODUCTS_API(searchQuery));
-      setSearchResults(res.data || []);
+      // Use the new search utility that includes both products and variants
+      const searchResults = await searchProductsWithVariants(searchQuery);
+      setSearchResults(searchResults);
     } catch (error) {
-      console.error("Error searching products:", error);
+      console.error("Error searching products with variants:", error);
       setSearchResults([]);
     } finally {
       setLoading(false);
@@ -121,7 +132,11 @@ export default function SearchModal() {
     try {
       const currentCount = searchResults.length;
       const res = await fetchDataFromApi(`${SEARCH_PRODUCTS_API(searchQuery)}&pagination[start]=${currentCount}&pagination[limit]=8`);
-      setSearchResults(prev => [...prev, ...(res.data || [])]);
+      // Filter out products that are inactive
+      const filteredResults = (res.data || [])
+        .map(product => transformProduct(product))
+        .filter(product => product && product.isActive === true);
+      setSearchResults(prev => [...prev, ...filteredResults]);
     } catch (error) {
       console.error("Error loading more products:", error);
     } finally {

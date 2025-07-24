@@ -58,6 +58,9 @@ export default function ProductsMen({ parentClass = "flat-spacing-3 pt-0" }) {
             // Get tabFilterOptions directly from the product
             const tabFilterOptions = product.tabFilterOptions || [];
             
+            // Use isActive from the API - treat null or undefined as inactive
+            const isActive = product.isActive === true;
+            
             return {
               id: product.id,
               documentId: product.documentId,
@@ -70,6 +73,7 @@ export default function ProductsMen({ parentClass = "flat-spacing-3 pt-0" }) {
               colors: processedColors,
               sizes: product.sizes || [],
               tabFilterOptions,
+              isActive,
               isOnSale: !!product.oldPrice,
               salePercentage: product.salePercentage || "25%"
             };
@@ -101,7 +105,8 @@ export default function ProductsMen({ parentClass = "flat-spacing-3 pt-0" }) {
       
       setTimeout(() => {
         const filtered = allProducts.filter(product => 
-          product.tabFilterOptions && product.tabFilterOptions.includes(activeItem)
+          product.tabFilterOptions && product.tabFilterOptions.includes(activeItem) &&
+          product.isActive === true // Hide products that are inactive
         );
         setSelectedItems(filtered);
         newArrivalsElement.classList.add("filtered");

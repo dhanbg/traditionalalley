@@ -8,7 +8,9 @@ import Details1 from "@/components/productDetails/details/Details1";
 import RelatedProducts from "@/components/productDetails/RelatedProducts";
 import { fetchDataFromApi } from "@/utils/api";
 import { API_URL } from "@/utils/urls";
+import { calculateInStock } from "@/utils/stockUtils";
 import React from "react";
+import Link from "next/link";
 
 export const metadata = {
   title: "Product Detail || Traditional Alley",
@@ -19,7 +21,8 @@ export default async function page({ params }) {
   const { id } = await params;
   
   // Fetch product by documentId with variants
-  const response = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*`);
+  const timestamp = Date.now();
+  const response = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*&timestamp=${timestamp}`);
   let product = null;
   let variants = [];
   
@@ -28,6 +31,46 @@ export default async function page({ params }) {
     
     // Transform API response to match the expected format
     product = transformProduct(rawProduct);
+    
+    // Debug: Log the isActive values and size_stocks
+    console.log('🔍 Raw product data:', {
+      isActive: rawProduct.isActive,
+      size_stocks: rawProduct.size_stocks,
+      title: rawProduct.title
+    });
+    console.log('🔍 Transformed product isActive:', product.isActive);
+    
+    // Block access to inactive products (isActive: false)
+    if (product.isActive === false) {
+      return (
+        <>
+          <Header1 />
+          <div className="tf-page-title">
+            <div className="container-full">
+              <div className="heading text-center">Product Unavailable</div>
+            </div>
+          </div>
+          <section className="flat-spacing-2">
+            <div className="container">
+              <div className="row justify-content-center">
+                <div className="col-xl-4 col-lg-6 col-md-8">
+                  <div className="tf-page-not-found text-center">
+                    <div className="tf-page-not-found-content">
+                      <h5 className="fw-5 text-1">Product Currently Unavailable</h5>
+                      <p className="text_black-2">This product is currently not available for viewing or purchase.</p>
+                      <Link href="/" className="tf-btn btn-fill animate-hover-btn radius-3">
+                        <span>Browse Products</span>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <Footer1 />
+        </>
+      );
+    }
     
     // Fetch variants for this product
     try {
@@ -45,7 +88,7 @@ export default async function page({ params }) {
         imgHover: product.imgHover,
         gallery: product.gallery,
         isDefault: true,
-        inStock: product.inStock,
+        isActive: product.isActive,
         quantity: product.quantity,
         size_stocks: product.size_stocks, // Include size_stocks from main product
         isCurrentProduct: true,
@@ -194,7 +237,7 @@ function transformProduct(rawProduct) {
     ? rawProduct.sizes 
     : (rawProduct.filterSizes || []);
   
-  return {
+  const transformedProduct = {
     ...rawProduct,
     id: rawProduct.documentId, // Use documentId as the id for consistent reference
     imgSrc, // Now the full object, not a string
@@ -211,11 +254,24 @@ function transformProduct(rawProduct) {
     salePercentage: rawProduct.salePercentage || "25%",
     weight: rawProduct.weight || null
   };
+  
+  // Use isActive from the API - treat null or undefined as inactive
+  transformedProduct.isActive = rawProduct.isActive === true;
+  
+  return transformedProduct;
 }
 
 // Helper function to transform API variant to the expected format
 function transformVariant(rawVariant) {
   if (!rawVariant) return null;
+  
+  // Debug: Log the raw variant structure
+  console.log('🔍 Raw variant from API:', {
+    id: rawVariant.id,
+    documentId: rawVariant.documentId,
+    design: rawVariant.design,
+    title: rawVariant.title || 'No title'
+  });
   
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
   
@@ -264,13 +320,14 @@ function transformVariant(rawVariant) {
   
   return {
     id: rawVariant.id || rawVariant.documentId,
+    documentId: rawVariant.documentId, // Preserve documentId for stock operations
     design: rawVariant.design || null, // Include the design field
     color, // New color image field
     imgSrc,
     imgHover,
     gallery,
     isDefault: rawVariant.isDefault || false,
-    inStock: rawVariant.inStock !== false,
+    isActive: rawVariant.isActive !== false,
     quantity: rawVariant.quantity || 0,
     size_stocks: rawVariant.size_stocks, // Include size_stocks data from variant
     product: rawVariant.product
@@ -303,7 +360,7 @@ function transformProductAsVariant(rawProduct) {
     imgHover: imgSrc,
     gallery: [],
     isDefault: false,
-    inStock: rawProduct.inStock !== false,
+    isActive: rawProduct.isActive !== false,
     quantity: rawProduct.quantity || 0,
     product: {
       documentId: rawProduct.documentId,

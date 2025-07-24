@@ -8,6 +8,7 @@ import "../public/css/custom.css"; // Custom CSS for compare products
 import "../public/css/drift-basic.min.css"; // Drift zoom CSS
 import { useEffect, useState } from "react";
 import Context from "@/context/Context";
+import { ToastProvider } from "@/context/ToastContext";
 import CartModal from "@/components/modals/CartModal";
 import QuickView from "@/components/modals/QuickView";
 import QuickAdd from "@/components/modals/QuickAdd";
@@ -160,8 +161,9 @@ export default function RootLayout({ children }) {
     <SessionProvider>
     <html lang="en">
       <body className="preload-wrapper popup-loader" suppressHydrationWarning={true}>
-        <Context>
-          <div id="wrapper">{children}</div>
+        <ToastProvider>
+          <Context>
+            <div id="wrapper">{children}</div>
           <CartModal />
           <QuickView />
           <QuickAdd />
@@ -204,7 +206,8 @@ export default function RootLayout({ children }) {
               style={{ width: '38px', height: '38px', display: 'block' }}
             />
           </a>
-        </Context>
+          </Context>
+        </ToastProvider>
       </body>
     </html>
     </SessionProvider>

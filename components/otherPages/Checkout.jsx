@@ -7,7 +7,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import NPSPaymentForm from "../payments/NPSPaymentForm";
 import DHLShippingForm from "../shipping/DHLShippingForm";
-import { fetchDataFromApi, updateData, updateUserBagWithPayment } from "@/utils/api";
+import { fetchDataFromApi, updateData, updateUserBagWithPayment, createOrderRecord, updateProductStock, deleteData } from "@/utils/api";
+import { processPostPaymentStockAndCart } from "@/utils/postPaymentProcessing";
 import { useSession } from "next-auth/react";
 import PriceDisplay from "@/components/common/PriceDisplay";
 import { convertUsdToNpr, getExchangeRate } from "@/utils/currency";
@@ -107,6 +108,508 @@ export default function Checkout() {
   // Add state for NPR conversion
   const [nprExchangeRate, setNprExchangeRate] = useState(null);
 
+
+  
+  // Add state for combined update and delete operation
+  const [isProcessingUpdateAndDelete, setIsProcessingUpdateAndDelete] = useState(false);
+
+  // Function to handle both stock update and cart deletion
+  const handleUpdateStockAndDelete = async () => {
+    if (!user?.id) {
+      alert('Please log in to perform this operation.');
+      return;
+    }
+
+    if (selectedProducts.length === 0) {
+      alert('No products selected.');
+      return;
+    }
+
+    // Calculate total quantity to be decreased
+    const totalQuantity = selectedProducts.reduce((sum, product) => sum + (product.quantity || 1), 0);
+    
+    setIsProcessingUpdateAndDelete(true);
+
+    try {
+      console.log('🔄 Starting combined update stock and delete operation for:', selectedProducts.length, 'products');
+      
+      // Step 1: Update stock first
+      console.log('📦 Step 1: Updating stock...');
+      
+      // Separate products and variants for different processing
+      const mainProducts = [];
+      const variantProducts = [];
+      
+      selectedProducts.forEach(product => {
+        // Check if product is a variant by looking for variantInfo with documentId or isVariant flag
+        if (product.variantInfo && (product.variantInfo.documentId || product.variantInfo.isVariant)) {
+          console.log('📦 Variant product detected:', {
+            productId: product.id,
+            title: product.title,
+            variantInfo: product.variantInfo,
+            hasDocumentId: !!product.variantInfo.documentId,
+            documentIdValue: product.variantInfo.documentId,
+            isVariant: product.variantInfo.isVariant
+          });
+          variantProducts.push(product);
+        } else {
+          mainProducts.push(product);
+        }
+      });
+      
+      console.log('📦 Separated products:', {
+        mainProducts: mainProducts.length,
+        variantProducts: variantProducts.length
+      });
+      
+      const allUpdateResults = [];
+      
+      // Process main products
+      if (mainProducts.length > 0) {
+        console.log('📦 Processing main products...');
+        
+        // Group main products by documentId
+        const productGroups = mainProducts.reduce((groups, product) => {
+          const documentId = product.documentId;
+          if (!groups[documentId]) {
+            groups[documentId] = [];
+          }
+          groups[documentId].push(product);
+          return groups;
+        }, {});
+
+        // Process each main product group
+        const mainProductPromises = Object.entries(productGroups).map(async ([documentId, products]) => {
+          try {
+            console.log('📦 Processing main product group:', {
+              documentId,
+              products: products.map(p => ({ id: p.id, size: p.selectedSize, quantity: p.quantity, title: p.title }))
+            });
+
+            // Fetch current product data
+            const productResponse = await fetchDataFromApi(
+              `/api/products?filters[documentId][$eq]=${documentId}&populate=*`
+            );
+
+            if (!productResponse?.data || productResponse.data.length === 0) {
+              throw new Error(`Product not found: ${documentId}`);
+            }
+
+            const currentProduct = productResponse.data[0];
+            console.log('📦 Current main product data:', {
+              documentId: currentProduct.documentId,
+              title: currentProduct.title,
+              size_stocks: currentProduct.size_stocks
+            });
+
+            if (!currentProduct.size_stocks) {
+              console.warn('📦 Main product has no size_stocks field:', currentProduct.title);
+              return products.map(product => ({
+                success: false,
+                productTitle: product.title,
+                size: product.selectedSize,
+                error: 'No size_stocks field found',
+                type: 'main_product'
+              }));
+            }
+
+            // Parse size_stocks
+            let sizeStocks;
+            if (typeof currentProduct.size_stocks === 'string') {
+              try {
+                sizeStocks = JSON.parse(currentProduct.size_stocks);
+              } catch (parseError) {
+                console.error('📦 Failed to parse main product size_stocks:', parseError);
+                return products.map(product => ({
+                  success: false,
+                  productTitle: product.title,
+                  size: product.selectedSize,
+                  error: 'Invalid size_stocks format',
+                  type: 'main_product'
+                }));
+              }
+            } else {
+              sizeStocks = { ...currentProduct.size_stocks };
+            }
+
+            console.log('📦 Original main product size_stocks:', sizeStocks);
+
+            // Update stock for all sizes
+            const updateResults = [];
+            const updatedSizeStocks = { ...sizeStocks };
+
+            for (const product of products) {
+              const selectedSize = product.selectedSize;
+              
+              if (!updatedSizeStocks.hasOwnProperty(selectedSize)) {
+                console.warn('📦 Size not found in main product stock:', selectedSize);
+                updateResults.push({
+                  success: false,
+                  productTitle: product.title,
+                  size: selectedSize,
+                  error: `Size ${selectedSize} not found in stock`,
+                  type: 'main_product'
+                });
+                continue;
+              }
+
+              const currentStock = parseInt(updatedSizeStocks[selectedSize]) || 0;
+              const quantityToDecrease = product.quantity || 1;
+              console.log('📦 Processing main product size', selectedSize, '- Current stock:', currentStock, ', quantity to decrease:', quantityToDecrease);
+
+              const newStock = Math.max(0, currentStock - quantityToDecrease);
+              updatedSizeStocks[selectedSize] = newStock;
+
+              updateResults.push({
+                success: true,
+                productTitle: product.title,
+                size: selectedSize,
+                oldStock: currentStock,
+                newStock: newStock,
+                quantityDecreased: quantityToDecrease,
+                type: 'main_product'
+              });
+            }
+
+            console.log('📦 Final updated main product size_stocks:', updatedSizeStocks);
+
+            // Update the main product
+            const updateResponse = await updateData(
+              `/api/products/${currentProduct.documentId}`,
+              {
+                data: {
+                  size_stocks: updatedSizeStocks
+                }
+              }
+            );
+
+            console.log('📦 Main product stock update response:', updateResponse);
+            return updateResults;
+            
+          } catch (error) {
+            console.error('📦 Error updating main product stock:', documentId, error);
+            return products.map(product => ({
+              success: false,
+              productTitle: product.title,
+              size: product.selectedSize,
+              error: error.message,
+              type: 'main_product'
+            }));
+          }
+        });
+        
+        const mainProductResults = await Promise.all(mainProductPromises);
+        allUpdateResults.push(...mainProductResults.flat());
+      }
+      
+      // Process variant products
+      if (variantProducts.length > 0) {
+        console.log('📦 Processing variant products...');
+        
+        // Group variants by documentId (use documentId as the unique identifier)
+        const variantGroups = variantProducts.reduce((groups, product) => {
+          // Use documentId from variantInfo as the unique identifier for the variant
+          const variantDocumentId = product.variantInfo.documentId;
+          
+          console.log('📦 Processing variant with ID:', {
+            documentId: product.variantInfo.documentId,
+            finalId: variantDocumentId,
+            productTitle: product.title,
+            isNumericId: !isNaN(parseInt(variantDocumentId))
+          });
+          console.log('📦 Grouping variant by documentId:', {
+            variantDocumentId,
+            variantInfo: product.variantInfo
+          });
+          if (!groups[variantDocumentId]) {
+            groups[variantDocumentId] = [];
+          }
+          groups[variantDocumentId].push(product);
+          return groups;
+        }, {});
+
+        // Process each variant group
+        const variantPromises = Object.entries(variantGroups).map(async ([variantDocumentId, products]) => {
+          try {
+            console.log('📦 Processing variant group:', {
+              variantDocumentId,
+              products: products.map(p => ({ id: p.id, size: p.selectedSize, quantity: p.quantity, title: p.title }))
+            });
+            
+            // Fetch current variant data
+            console.log('📦 Fetching variant data for:', variantDocumentId);
+            
+            // If variantDocumentId is numeric, we need to fetch by ID first to get documentId
+            let variantResponse;
+            if (!isNaN(parseInt(variantDocumentId))) {
+              console.log('📦 Using numeric ID to fetch variant:', variantDocumentId);
+              variantResponse = await fetchDataFromApi(
+                `/api/product-variants/${variantDocumentId}?populate=*`
+              );
+              // Convert single object response to array format for consistency
+              if (variantResponse?.data && !Array.isArray(variantResponse.data)) {
+                variantResponse.data = [variantResponse.data];
+              }
+            } else {
+              console.log('📦 Using documentId to fetch variant:', variantDocumentId);
+              variantResponse = await fetchDataFromApi(
+                `/api/product-variants?filters[documentId][$eq]=${variantDocumentId}&populate=*`
+              );
+            }
+
+            if (!variantResponse?.data || variantResponse.data.length === 0) {
+              throw new Error(`Variant not found: ${variantDocumentId}`);
+            }
+
+            const currentVariant = variantResponse.data[0];
+            console.log('📦 Current variant data:', {
+              documentId: currentVariant.documentId,
+              title: currentVariant.title || 'Variant',
+              size_stocks: currentVariant.size_stocks
+            });
+
+            if (!currentVariant.size_stocks) {
+              console.warn('📦 Variant has no size_stocks field:', variantDocumentId);
+              return products.map(product => ({
+                success: false,
+                productTitle: product.title,
+                size: product.selectedSize,
+                error: 'No size_stocks field found in variant',
+                type: 'variant'
+              }));
+            }
+
+            // Parse variant size_stocks
+            let variantSizeStocks;
+            if (typeof currentVariant.size_stocks === 'string') {
+              try {
+                variantSizeStocks = JSON.parse(currentVariant.size_stocks);
+              } catch (parseError) {
+                console.error('📦 Failed to parse variant size_stocks:', parseError);
+                return products.map(product => ({
+                  success: false,
+                  productTitle: product.title,
+                  size: product.selectedSize,
+                  error: 'Invalid variant size_stocks format',
+                  type: 'variant'
+                }));
+              }
+            } else {
+              variantSizeStocks = { ...currentVariant.size_stocks };
+            }
+
+            console.log('📦 Original variant size_stocks:', variantSizeStocks);
+
+            // Update variant stock for all sizes
+            const updateResults = [];
+            const updatedVariantSizeStocks = { ...variantSizeStocks };
+
+            for (const product of products) {
+              const selectedSize = product.selectedSize;
+              
+              if (!updatedVariantSizeStocks.hasOwnProperty(selectedSize)) {
+                console.warn('📦 Size not found in variant stock:', selectedSize);
+                updateResults.push({
+                  success: false,
+                  productTitle: product.title,
+                  size: selectedSize,
+                  error: `Size ${selectedSize} not found in variant stock`,
+                  type: 'variant'
+                });
+                continue;
+              }
+
+              const currentStock = parseInt(updatedVariantSizeStocks[selectedSize]) || 0;
+              const quantityToDecrease = product.quantity || 1;
+              console.log('📦 Processing variant size', selectedSize, '- Current stock:', currentStock, ', quantity to decrease:', quantityToDecrease);
+
+              const newStock = Math.max(0, currentStock - quantityToDecrease);
+              updatedVariantSizeStocks[selectedSize] = newStock;
+
+              updateResults.push({
+                success: true,
+                productTitle: product.title,
+                size: selectedSize,
+                oldStock: currentStock,
+                newStock: newStock,
+                quantityDecreased: quantityToDecrease,
+                type: 'variant',
+                variantId: variantDocumentId
+              });
+            }
+
+            console.log('📦 Final updated variant size_stocks:', updatedVariantSizeStocks);
+
+            // Update the variant
+            const updateResponse = await updateData(
+              `/api/product-variants/${currentVariant.documentId}`,
+              {
+                data: {
+                  size_stocks: updatedVariantSizeStocks
+                }
+              }
+            );
+
+            console.log('📦 Variant stock update response:', updateResponse);
+            return updateResults;
+            
+          } catch (error) {
+            console.error('📦 Error updating variant stock:', variantDocumentId, error);
+            return products.map(product => ({
+              success: false,
+              productTitle: product.title,
+              size: product.selectedSize,
+              error: error.message,
+              type: 'variant'
+            }));
+          }
+        });
+        
+        const variantResults = await Promise.all(variantPromises);
+        allUpdateResults.push(...variantResults.flat());
+      }
+      
+      console.log('📦 All stock updates completed. Results:', allUpdateResults);
+      
+      const successfulStockUpdates = allUpdateResults.filter(result => result.success);
+      const failedStockUpdates = allUpdateResults.filter(result => !result.success);
+      
+      console.log('📦 Stock update summary:', {
+        total: allUpdateResults.length,
+        successful: successfulStockUpdates.length,
+        failed: failedStockUpdates.length,
+        mainProducts: allUpdateResults.filter(r => r.type === 'main_product').length,
+        variants: allUpdateResults.filter(r => r.type === 'variant').length
+      });
+
+      // Step 2: Delete cart items
+      console.log('🗑️ Step 2: Deleting cart items...');
+      
+      // Get user bag documentId
+      const userBagDocumentId = await getUserBagDocumentId();
+      
+      if (!userBagDocumentId) {
+        throw new Error('User bag not found');
+      }
+
+      console.log('🗑️ User bag documentId:', userBagDocumentId);
+
+      // Get current user data with cart items
+      const currentUserData = await fetchDataFromApi(
+        `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag.carts`
+      );
+      
+      if (!currentUserData?.data || currentUserData.data.length === 0) {
+        throw new Error('User data not found');
+      }
+
+      const userData = currentUserData.data[0];
+      const cartItems = userData.user_bag?.carts || [];
+      
+      console.log('🗑️ Current cart items from backend:', cartItems.length);
+      
+      // Find cart items to delete
+      const itemsToDelete = [];
+      
+      for (const selectedProduct of selectedProducts) {
+        const frontendCartProduct = cartProducts.find(cp => cp.id === selectedProduct.id);
+        
+        if (!frontendCartProduct) {
+          console.warn('⚠️ No frontend cart product found for selected product:', selectedProduct.id);
+          continue;
+        }
+        
+        // Find the backend cart item that matches this frontend product
+        const matchingCartItem = cartItems.find(cartItem => {
+          const sizeMatch = cartItem.size === frontendCartProduct.selectedSize;
+          return sizeMatch;
+        });
+
+        if (matchingCartItem) {
+          itemsToDelete.push({
+            cartItemDocumentId: matchingCartItem.documentId,
+            selectedProduct: selectedProduct,
+            frontendProduct: frontendCartProduct
+          });
+          console.log('✅ Found cart item to delete:', {
+            cartItemDocumentId: matchingCartItem.documentId,
+            size: matchingCartItem.size
+          });
+        } else {
+          console.warn('⚠️ No matching backend cart item found for:', {
+            selectedProductId: selectedProduct.id,
+            frontendProductSize: frontendCartProduct.selectedSize
+          });
+        }
+      }
+
+      console.log('🗑️ Items to delete:', itemsToDelete.length, itemsToDelete);
+
+      if (itemsToDelete.length === 0) {
+        console.warn('🗑️ No cart items found to delete');
+      } else {
+        // Delete cart items from backend
+        const deletePromises = itemsToDelete.map(async (item) => {
+          try {
+            console.log('🗑️ Deleting cart item:', item.cartItemDocumentId);
+            const deleteResponse = await deleteData(`/api/carts/${item.cartItemDocumentId}`);
+            console.log('🗑️ Delete response for', item.cartItemDocumentId, ':', deleteResponse);
+            return { success: true, cartItemDocumentId: item.cartItemDocumentId };
+          } catch (error) {
+            console.error('🗑️ Error deleting cart item:', item.cartItemDocumentId, error);
+            return { success: false, cartItemDocumentId: item.cartItemDocumentId, error: error.message };
+          }
+        });
+
+        const deleteResults = await Promise.all(deletePromises);
+        console.log('🗑️ Delete results:', deleteResults);
+
+        const successfulDeletes = deleteResults.filter(result => result.success);
+        const failedDeletes = deleteResults.filter(result => !result.success);
+
+        console.log('🗑️ Delete summary:', {
+          total: deleteResults.length,
+          successful: successfulDeletes.length,
+          failed: failedDeletes.length
+        });
+      }
+
+      // Step 3: Clear purchased items from cart context
+      console.log('🔄 Step 3: Clearing items from cart context...');
+      
+      const purchasedProducts = selectedProducts.map(product => ({
+        documentId: product.documentId,
+        variantId: product.variantInfo?.documentId,
+        selectedSize: product.selectedSize,
+        quantity: product.quantity,
+        title: product.title
+      }));
+      
+      await clearPurchasedItemsFromCart(purchasedProducts);
+      
+      // Show success message
+      const stockSuccessCount = successfulStockUpdates.length;
+      const stockFailCount = failedStockUpdates.length;
+      
+      let message = `Operation completed!\n`;
+      message += `✅ Stock updated for ${stockSuccessCount} item(s)\n`;
+      if (stockFailCount > 0) {
+        message += `❌ Stock update failed for ${stockFailCount} item(s)\n`;
+      }
+      message += `✅ Items removed from cart`;
+      
+      alert(message);
+      
+      console.log('🔄 Combined operation completed successfully');
+      
+    } catch (error) {
+      console.error('🔄 Error in combined update and delete operation:', error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setIsProcessingUpdateAndDelete(false);
+    }
+  };
+
   // Add state for receiverDetails
   const [receiverDetails, setReceiverDetails] = useState({
     fullName: "",
@@ -135,7 +638,7 @@ export default function Checkout() {
     
     try {
       const currentUserData = await fetchDataFromApi(
-        `/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=user_bag`
+        `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag`
       );
 
       if (!currentUserData?.data || currentUserData.data.length === 0) {
@@ -184,7 +687,7 @@ export default function Checkout() {
         throw new Error('User bag not found');
       }
 
-      // Prepare product order details
+      // Map selected products to enhanced order format
       const products = selectedProducts.map(product => {
         const fetchedProduct = productsWithOldPrice[product.id];
         const unitPrice = parseFloat(product.price);
@@ -193,36 +696,153 @@ export default function Checkout() {
         const discount = oldPrice > unitPrice ? ((oldPrice - unitPrice) / oldPrice) * 100 : 0;
         const finalPrice = unitPrice * product.quantity;
 
-        // Get size and color from product's available options
-        const availableSize = product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M";
-        const availableColor = product.colors && product.colors.length > 0 
-          ? (typeof product.colors[0] === 'string' ? product.colors[0] : product.colors[0].name || "default")
-          : "default";
+        // Get the actual selected size and color from the product
+        const availableSize = product.selectedSize || 
+                            (product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M");
+        const availableColor = product.selectedColor || 
+                             (product.colors && product.colors.length > 0 
+                               ? (typeof product.colors[0] === 'string' ? product.colors[0] : product.colors[0].name || "default")
+                               : "default");
+        
+        console.log(`📦 Processing product for order:`, {
+          productId: product.id,
+          documentId: product.documentId,
+          title: product.title,
+          selectedSize: availableSize,
+          selectedColor: availableColor,
+          variantInfo: product.variantInfo
+        });
 
         return {
-          size: availableSize,
-          color: availableColor,
-          discount: Math.round(discount),
-          quantity: product.quantity,
-          subtotal: subtotal,
-          unitPrice: unitPrice,
+          // Basic Product Info
+          productId: product.id,
           documentId: product.documentId,
-          finalPrice: finalPrice,
-          // DHL package fields
-          weight: fetchedProduct?.weight || 1, // Default weight 1kg
-          length: fetchedProduct?.dimensions?.length || 10, // Default dimensions
-          width: fetchedProduct?.dimensions?.width || 10,
-          height: fetchedProduct?.dimensions?.height || 10,
-          description: product.title || product.name || "Product",
-          declaredValue: unitPrice,
-          commodityCode: fetchedProduct?.hsCode || "",
-          manufacturingCountryCode: "NP" // Nepal
+          variantId: product.variantInfo?.documentId || null, // Add variant ID for matching
+          title: product.title || product.name || "Product",
+          description: product.description || fetchedProduct?.description || "",
+          category: fetchedProduct?.category || product.category || "",
+          collection: fetchedProduct?.collection || product.collection || "",
+          brand: fetchedProduct?.brand || "Traditional Alley",
+          sku: fetchedProduct?.sku || product.sku || `SKU-${product.documentId}`,
+          
+          // Size and variant info for cart matching
+          selectedSize: availableSize,
+          selectedColor: availableColor,
+          
+          // Variant Details
+          selectedVariant: {
+            size: availableSize,
+            color: availableColor,
+            variantSku: `${fetchedProduct?.sku || product.sku || `SKU-${product.documentId}`}-${availableSize}-${availableColor}`
+          },
+          
+          // Pricing Details
+          pricing: {
+            originalPrice: oldPrice,
+            currentPrice: unitPrice,
+            discountPercentage: Math.round(discount),
+            discountAmount: oldPrice - unitPrice,
+            quantity: product.quantity,
+            subtotal: subtotal,
+            finalPrice: finalPrice
+          },
+          
+          // Shipping & Package Details
+          packageInfo: {
+            weight: fetchedProduct?.weight || 1, // kg (now using parsed value from Strapi)
+            dimensions: fetchedProduct?.dimensions || {
+              length: 10, // cm (fallback if no parsed dimensions available)
+              width: 10, // cm
+              height: 10 // cm
+            },
+            declaredValue: unitPrice,
+            commodityCode: fetchedProduct?.hsCode || "",
+            manufacturingCountry: "Nepal",
+            manufacturingCountryCode: "NP",
+            productType: fetchedProduct?.productType || "General Merchandise",
+            isFragile: fetchedProduct?.isFragile || false,
+            requiresSpecialHandling: fetchedProduct?.requiresSpecialHandling || false
+          },
+          
+          // Admin Reference
+          adminNotes: {
+            stockLocation: fetchedProduct?.stockLocation || "Main Warehouse",
+            supplier: fetchedProduct?.supplier || "Traditional Alley",
+            lastUpdated: fetchedProduct?.updatedAt || new Date().toISOString(),
+            internalNotes: fetchedProduct?.internalNotes || ""
+          }
         };
       });
 
-      // Prepare order data (removed orderStatus and paymentMethod as they're redundant with the main payment object)
+      // Prepare comprehensive order data for admin use
       const orderData = {
+        // Order Summary
+        orderSummary: {
+          totalItems: selectedProducts.reduce((sum, product) => sum + product.quantity, 0),
+          totalProducts: selectedProducts.length,
+          subtotal: actualTotal,
+          shippingCost: shippingCost,
+          totalAmount: actualTotal + shippingCost,
+          currency: "NPR",
+          orderDate: new Date().toISOString(),
+          orderTimezone: "Asia/Kathmandu"
+        },
+        
+        // Complete Product Details for Admin
         products: products,
+        
+        // Comprehensive Shipping Details for Admin
+        shipping: {
+          // Shipping Method & Cost
+          method: {
+            carrier: "Cash on Delivery", // COD carrier
+            service: "COD Standard",
+            estimatedDays: receiverDetails.address.country === "Nepal" ? "3-5" : "7-10",
+            cost: shippingCost,
+            currency: "NPR",
+            trackingAvailable: false, // COD usually doesn't have tracking
+            insuranceIncluded: false, // COD payment on delivery
+            signatureRequired: true // Always required for COD
+          },
+          
+          // Package Details for Shipping Label
+          package: {
+            totalWeight: selectedProducts.reduce((total, product) => {
+              const fetchedProduct = productsWithOldPrice[product.id];
+              return total + ((fetchedProduct?.weight || 1) * product.quantity); // Now using parsed weight from Strapi
+            }, 0),
+            totalVolume: selectedProducts.reduce((total, product) => {
+              const fetchedProduct = productsWithOldPrice[product.id];
+              // Use parsed dimensions object or fallback to 10x10x10
+              const dimensions = fetchedProduct?.dimensions || { length: 10, width: 10, height: 10 };
+              const volume = dimensions.length * dimensions.width * dimensions.height;
+              return total + ((volume * product.quantity) / 1000000); // Convert cm³ to m³
+            }, 0),
+            packageType: "Box",
+            packagingMaterial: "Cardboard Box with Bubble Wrap",
+            specialInstructions: receiverDetails.note || "",
+            declaredValue: actualTotal,
+            contentDescription: `Traditional Alley Products - ${selectedProducts.length} items (COD)`,
+            dangerousGoods: false,
+            customsDeclaration: receiverDetails.address.country !== "Nepal"
+          },
+          
+          // Admin Processing Info
+          processing: {
+            warehouseLocation: "Kathmandu Main Warehouse",
+            expectedPackingDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Next day
+            expectedShipDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days
+            priorityLevel: actualTotal > 20000 ? "High" : actualTotal > 10000 ? "Medium" : "Normal",
+            packingInstructions: "Handle with care. Traditional items may be fragile. COD - Collect payment on delivery.",
+            qualityCheckRequired: actualTotal > 15000,
+            photographRequired: actualTotal > 25000, // Photo documentation for high-value orders
+            adminAssigned: null, // To be assigned by admin
+            packingNotes: "COD Order - Payment to be collected upon delivery",
+            codAmount: actualTotal + shippingCost // Amount to collect
+          }
+        },
+        
+        // Legacy fields for backward compatibility
         shippingPrice: shippingCost,
         receiver_details: receiverDetails
       };
@@ -242,29 +862,76 @@ export default function Checkout() {
 
       console.log('COD order saved:', codPaymentData);
       
-      setOrderSuccess(true);
-      
-      // Clear only the purchased items from cart after successful cash on delivery order
-      console.log("=== ATTEMPTING TO CLEAR PURCHASED ITEMS FROM CART AFTER COD ORDER ===");
-      console.log("User ID:", user?.id);
-      console.log("ClearPurchasedItemsFromCart function available:", typeof clearPurchasedItemsFromCart);
-      console.log("Order data products:", orderData.products);
+      // Create individual order record in Strapi user_orders collection for COD
+      console.log("=== CREATING COD ORDER RECORD IN STRAPI USER_ORDERS COLLECTION ===");
       
       try {
-        // Extract the purchased products from the order data
+        const orderRecord = await createOrderRecord(codPaymentData, user?.id);
+        if (orderRecord) {
+          console.log("✅ COD Order record created successfully:", orderRecord.data?.documentId);
+          console.log("COD Order details:", {
+            orderId: orderRecord.data?.orderId,
+            totalAmount: orderRecord.data?.totalAmount,
+            productCount: orderRecord.data?.productSummary?.totalProducts,
+            customerName: orderRecord.data?.customerInfo?.fullName,
+            paymentMethod: "Cash on Delivery",
+            codAmount: orderRecord.data?.processingInfo?.codAmount
+          });
+        } else {
+          console.warn("⚠️ COD Order record creation returned null");
+        }
+      } catch (orderRecordError) {
+        console.error("❌ Error creating COD order record:", orderRecordError);
+        // Don't fail the entire process if order record creation fails
+      }
+      
+      // Process post-payment stock update and cart clearing (same as "Update Stock & Delete" button)
+      console.log("=== STARTING POST-PAYMENT PROCESSING FOR COD ORDER (STOCK UPDATE & CART CLEARING) ===");
+      
+      try {
         const purchasedProducts = orderData.products || [];
-        console.log("Purchased products to remove from cart:", purchasedProducts.length);
+        console.log("Products to process:", purchasedProducts.length);
         
         if (purchasedProducts.length > 0) {
-          await clearPurchasedItemsFromCart(purchasedProducts);
-          console.log("✅ Purchased items cleared successfully from cart after COD order");
+          // Use the same logic as the "Update Stock & Delete" button
+          const processingResult = await processPostPaymentStockAndCart(
+            purchasedProducts, 
+            user, 
+            clearPurchasedItemsFromCart
+          );
+          
+          console.log("✅ Post-payment processing completed for COD:", {
+            totalProducts: processingResult.totalProducts,
+            stockUpdate: {
+              success: processingResult.stockUpdate.success,
+              successCount: processingResult.stockUpdate.successCount,
+              failureCount: processingResult.stockUpdate.failureCount
+            },
+            cartClear: {
+              success: processingResult.cartClear.success
+            }
+          });
+          
+          // Log results for admin visibility
+          if (processingResult.stockUpdate.success && processingResult.cartClear.success) {
+            console.log(`✅ COD Order: Stock updated for ${processingResult.stockUpdate.successCount} products and cart cleared`);
+          } else if (processingResult.stockUpdate.success) {
+            console.log(`✅ COD Order: Stock updated but cart clearing ${processingResult.cartClear.success ? 'succeeded' : 'failed'}`);
+          } else if (processingResult.cartClear.success) {
+            console.log(`⚠️ COD Order: Cart cleared but ${processingResult.stockUpdate.failureCount} stock updates failed`);
+          } else {
+            console.log(`⚠️ COD Order: Post-payment processing completed with issues`);
+          }
+          
         } else {
-          console.log("⚠️ No purchased products found in order data");
+          console.log("⚠️ No products found in order data for post-payment processing");
         }
-      } catch (cartError) {
-        console.error("❌ Error clearing purchased items from cart after COD order:", cartError);
-        // Don't fail the entire process if cart clearing fails
+      } catch (processingError) {
+        console.error("❌ Error in post-payment processing for COD:", processingError);
+        // Don't fail the entire process if post-payment processing fails
       }
+      
+      setOrderSuccess(true);
       
       alert('Order placed successfully! Admin will create your DHL shipment and provide tracking details.');
       
@@ -275,6 +942,10 @@ export default function Checkout() {
       setIsProcessingOrder(false);
     }
   };
+
+
+
+
 
   // Fetch product details when selectedProducts change
   useEffect(() => {
@@ -297,14 +968,46 @@ export default function Checkout() {
             if (response?.data && Array.isArray(response.data) && response.data.length > 0) {
               const productData = response.data[0];
               console.log('Product data found:', productData);
+              // Parse weight from string to number (e.g., "1.5 kg" -> 1.5)
+              let parsedWeight = null;
+              if (productData.weight) {
+                const weightMatch = productData.weight.toString().match(/([0-9.]+)/);
+                parsedWeight = weightMatch ? parseFloat(weightMatch[1]) : 1; // Default to 1kg if can't parse
+              }
+              
+              // Parse dimensions from string to object (e.g., "30x20x10 cm" -> {length: 30, width: 20, height: 10})
+              let parsedDimensions = null;
+              if (productData.dimensions) {
+                const dimensionsMatch = productData.dimensions.toString().match(/([0-9.]+)\s*[x×]\s*([0-9.]+)\s*[x×]\s*([0-9.]+)/);
+                if (dimensionsMatch) {
+                  parsedDimensions = {
+                    length: parseFloat(dimensionsMatch[1]),
+                    width: parseFloat(dimensionsMatch[2]),
+                    height: parseFloat(dimensionsMatch[3])
+                  };
+                } else {
+                  // Fallback: try to extract single number and assume cubic
+                  const singleDimMatch = productData.dimensions.toString().match(/([0-9.]+)/);
+                  const dim = singleDimMatch ? parseFloat(singleDimMatch[1]) : 10; // Default to 10cm if can't parse
+                  parsedDimensions = {
+                    length: dim,
+                    width: dim,
+                    height: dim
+                  };
+                }
+              }
+              
               return {
                 id: product.id,
                 data: {
                   ...product,
                   oldPrice: productData.oldPrice ? parseFloat(productData.oldPrice) : null,
-                  weight: productData.weight || null,
-                  dimensions: productData.dimensions || null,
-                  hsCode: productData.hsCode || null
+                  weight: parsedWeight,
+                  dimensions: parsedDimensions,
+                  hsCode: productData.hsCode || null,
+                  // Keep original string values for reference
+                  originalWeight: productData.weight,
+                  originalDimensions: productData.dimensions
                 }
               };
             }
@@ -476,27 +1179,43 @@ export default function Checkout() {
                     const dimensions = productData.dimensions || (productData.product && productData.product.dimensions);
                     const hsCode = productData.hsCode || (productData.product && productData.product.hsCode);
                     
-                    // Parse dimensions
+                    // Parse dimensions - handle both parsed object and string formats
                     let length = 10, width = 10, height = 10;
                     if (dimensions) {
-                      const dimensionMatch = dimensions.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/i);
-                      if (dimensionMatch) {
-                        length = parseFloat(dimensionMatch[1]) || 10;
-                        width = parseFloat(dimensionMatch[2]) || 10;
-                        height = parseFloat(dimensionMatch[3]) || 10;
+                      // If dimensions is already a parsed object (from fetchProductDetails)
+                      if (typeof dimensions === 'object' && dimensions.length && dimensions.width && dimensions.height) {
+                        length = dimensions.length;
+                        width = dimensions.width;
+                        height = dimensions.height;
+                      }
+                      // If dimensions is still a string, parse it
+                      else if (typeof dimensions === 'string') {
+                        const dimensionMatch = dimensions.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/i);
+                        if (dimensionMatch) {
+                          length = parseFloat(dimensionMatch[1]) || 10;
+                          width = parseFloat(dimensionMatch[2]) || 10;
+                          height = parseFloat(dimensionMatch[3]) || 10;
+                        }
                       }
                     }
                     
-                    // Parse weight
+                    // Parse weight - handle both parsed numeric and string formats
                     let parsedWeight = 1;
                     if (weight) {
-                      const weightMatch = weight.toString().match(/(\d+(?:\.\d+)?)/);
-                      if (weightMatch) {
-                        let weightValue = parseFloat(weightMatch[1]);
-                        if (weight.toString().toLowerCase().includes('g') && !weight.toString().toLowerCase().includes('kg')) {
-                          weightValue = weightValue / 1000;
+                      // If weight is already a parsed number (from fetchProductDetails)
+                      if (typeof weight === 'number') {
+                        parsedWeight = weight;
+                      }
+                      // If weight is still a string, parse it
+                      else {
+                        const weightMatch = weight.toString().match(/(\d+(?:\.\d+)?)/);
+                        if (weightMatch) {
+                          let weightValue = parseFloat(weightMatch[1]);
+                          if (weight.toString().toLowerCase().includes('g') && !weight.toString().toLowerCase().includes('kg')) {
+                            weightValue = weightValue / 1000;
+                          }
+                          parsedWeight = weightValue || 1;
                         }
-                        parsedWeight = weightValue || 1;
                       }
                     }
 
@@ -762,6 +1481,19 @@ export default function Checkout() {
                             alert(`Payment failed: ${error.message || 'Unknown error'}`);
                           }}
                           orderData={{
+                            // Order Summary
+                            orderSummary: {
+                              totalItems: selectedProducts.reduce((sum, product) => sum + product.quantity, 0),
+                              totalProducts: selectedProducts.length,
+                              subtotal: actualTotal,
+                              shippingCost: shippingCost,
+                              totalAmount: actualTotal + shippingCost,
+                              currency: "NPR",
+                              orderDate: new Date().toISOString(),
+                              orderTimezone: "Asia/Kathmandu"
+                            },
+                             
+                            // Complete Product Details for Admin
                             products: selectedProducts.map(product => {
                               const fetchedProduct = productsWithOldPrice[product.id];
                               const unitPrice = parseFloat(product.price);
@@ -773,26 +1505,114 @@ export default function Checkout() {
                               const availableColor = product.colors && product.colors.length > 0 
                                 ? (typeof product.colors[0] === 'string' ? product.colors[0] : product.colors[0].name || "default")
                                 : "default";
+                               
                               return {
-                                size: availableSize,
-                                color: availableColor,
-                                discount: Math.round(discount),
-                                quantity: product.quantity,
-                                subtotal: subtotal,
-                                unitPrice: unitPrice,
+                                // Basic Product Info
+                                productId: product.id,
                                 documentId: product.documentId,
-                                finalPrice: finalPrice,
-                                // DHL package fields
-                                weight: fetchedProduct?.weight || 1, // Default weight 1kg
-                                length: fetchedProduct?.dimensions?.length || 10, // Default dimensions
-                                width: fetchedProduct?.dimensions?.width || 10,
-                                height: fetchedProduct?.dimensions?.height || 10,
-                                description: product.title || product.name || "Product",
-                                declaredValue: unitPrice,
-                                commodityCode: fetchedProduct?.hsCode || "",
-                                manufacturingCountryCode: "NP" // Nepal
+                                title: product.title || product.name || "Product",
+                                description: product.description || fetchedProduct?.description || "",
+                                category: fetchedProduct?.category || product.category || "",
+                                collection: fetchedProduct?.collection || product.collection || "",
+                                brand: fetchedProduct?.brand || "Traditional Alley",
+                                sku: fetchedProduct?.sku || product.sku || `SKU-${product.documentId}`,
+                                 
+                                // Variant Details
+                                selectedVariant: {
+                                  size: availableSize,
+                                  color: availableColor,
+                                  variantSku: `${fetchedProduct?.sku || product.sku || `SKU-${product.documentId}`}-${availableSize}-${availableColor}`
+                                },
+                                 
+                                // Pricing Details
+                                pricing: {
+                                  originalPrice: oldPrice,
+                                  currentPrice: unitPrice,
+                                  discountPercentage: Math.round(discount),
+                                  discountAmount: oldPrice - unitPrice,
+                                  quantity: product.quantity,
+                                  subtotal: subtotal,
+                                  finalPrice: finalPrice
+                                },
+                                 
+                                // Shipping & Package Details
+                                packageInfo: {
+                                  weight: fetchedProduct?.weight || 1, // kg (now using parsed value from Strapi)
+                                  dimensions: fetchedProduct?.dimensions || {
+                                    length: 10, // cm (fallback if no parsed dimensions available)
+                                    width: 10, // cm
+                                    height: 10 // cm
+                                  },
+                                  declaredValue: unitPrice,
+                                  commodityCode: fetchedProduct?.hsCode || "",
+                                  manufacturingCountry: "Nepal",
+                                  manufacturingCountryCode: "NP",
+                                  productType: fetchedProduct?.productType || "General Merchandise",
+                                  isFragile: fetchedProduct?.isFragile || false,
+                                  requiresSpecialHandling: fetchedProduct?.requiresSpecialHandling || false
+                                },
+                                 
+                                // Admin Reference
+                                adminNotes: {
+                                  stockLocation: fetchedProduct?.stockLocation || "Main Warehouse",
+                                  supplier: fetchedProduct?.supplier || "Traditional Alley",
+                                  lastUpdated: fetchedProduct?.updatedAt || new Date().toISOString(),
+                                  internalNotes: fetchedProduct?.internalNotes || ""
+                                }
                               };
                             }),
+                             
+                            // Comprehensive Shipping Details for Admin
+                            shipping: {
+                              // Shipping Method & Cost
+                              method: {
+                                carrier: "DHL Express", // Default carrier
+                                service: receiverDetails.address.country === "Nepal" ? "Domestic Standard" : "International Express",
+                                estimatedDays: receiverDetails.address.country === "Nepal" ? "2-3" : "5-7",
+                                cost: shippingCost,
+                                currency: "NPR",
+                                trackingAvailable: true,
+                                insuranceIncluded: actualTotal > 5000, // Insurance for orders > NPR 5000
+                                signatureRequired: actualTotal > 10000 // Signature for orders > NPR 10000
+                              },
+                               
+                              // Package Details for Shipping Label
+                              package: {
+                                totalWeight: selectedProducts.reduce((total, product) => {
+                                  const fetchedProduct = productsWithOldPrice[product.id];
+                                  return total + ((fetchedProduct?.weight || 1) * product.quantity);
+                                }, 0),
+                                totalVolume: selectedProducts.reduce((total, product) => {
+                                  const fetchedProduct = productsWithOldPrice[product.id];
+                                  // Use parsed dimensions object or fallback to 10x10x10
+                                  const dimensions = fetchedProduct?.dimensions || { length: 10, width: 10, height: 10 };
+                                  const volume = dimensions.length * dimensions.width * dimensions.height;
+                                  return total + ((volume * product.quantity) / 1000000); // Convert cm³ to m³
+                                }, 0),
+                                packageType: "Box",
+                                packagingMaterial: "Cardboard Box with Bubble Wrap",
+                                specialInstructions: receiverDetails.note || "",
+                                declaredValue: actualTotal,
+                                contentDescription: `Traditional Alley Products - ${selectedProducts.length} items`,
+                                dangerousGoods: false,
+                                customsDeclaration: receiverDetails.address.country !== "Nepal"
+                              },
+                               
+                              // Admin Processing Info
+                              processing: {
+                                warehouseLocation: "Kathmandu Main Warehouse",
+                                expectedPackingDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Next day
+                                expectedShipDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days
+                                priorityLevel: actualTotal > 20000 ? "High" : actualTotal > 10000 ? "Medium" : "Normal",
+                                packingInstructions: "Handle with care. Traditional items may be fragile.",
+                                qualityCheckRequired: actualTotal > 15000,
+                                photographRequired: actualTotal > 25000, // Photo documentation for high-value orders
+                                adminAssigned: null, // To be assigned by admin
+                                packingNotes: ""
+                              }
+                            },
+                             
+                            // Legacy fields for backward compatibility
                             shippingPrice: shippingCost,
                             receiver_details: receiverDetails
                           }}
@@ -824,18 +1644,71 @@ export default function Checkout() {
           <div className="col-xl-5">
             <div className="flat-spacing flat-sidebar-checkout">
               <div className="sidebar-checkout-content">
-                <h5 className="title" style={{ 
-                  position: 'relative',
-                  display: 'inline-block',
-                  marginBottom: '25px',
-                  background: 'linear-gradient(90deg, #25D366 0%, #181818 100%)',
-                  color: 'white',
-                  padding: '8px 15px',
-                  borderRadius: '4px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                }}>
-                  Shopping Cart
-                </h5>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                  <h5 className="title" style={{ 
+                    position: 'relative',
+                    display: 'inline-block',
+                    marginBottom: '0',
+                    background: 'linear-gradient(90deg, #25D366 0%, #181818 100%)',
+                    color: 'white',
+                    padding: '8px 15px',
+                    borderRadius: '4px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}>
+                    Shopping Cart
+                  </h5>
+                  
+                  {/* Combined Update Stock & Delete Button */}
+                  {selectedProducts.length > 0 && (
+                    <div style={{ marginBottom: '16px' }}>
+                      <button
+                        onClick={handleUpdateStockAndDelete}
+                        disabled={isProcessingUpdateAndDelete}
+                        style={{
+                          background: isProcessingUpdateAndDelete ? '#ccc' : 'linear-gradient(90deg, #6f42c1 0%, #e83e8c 100%)',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 16px',
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          cursor: isProcessingUpdateAndDelete ? 'not-allowed' : 'pointer',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          width: '100%',
+                          justifyContent: 'center'
+                        }}
+                        onMouseOver={(e) => {
+                          if (!isProcessingUpdateAndDelete) {
+                            e.target.style.transform = 'translateY(-1px)';
+                            e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                          }
+                        }}
+                        onMouseOut={(e) => {
+                          if (!isProcessingUpdateAndDelete) {
+                            e.target.style.transform = 'translateY(0)';
+                            e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                          }
+                        }}
+                      >
+                        {isProcessingUpdateAndDelete ? (
+                          <>
+                            <span>⏳</span>
+                            <span>Processing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>🔄</span>
+                            <span>Update Stock & Delete ({selectedProducts.length})</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <div className="checkout-summary-vertical" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
                   <div className="d-flex align-items-center justify-content-between text-button">
                     <span>Selected Items</span>
