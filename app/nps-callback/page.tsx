@@ -260,10 +260,10 @@ const NPSCallbackContent = () => {
         if (finalStatus === "Success" || finalStatus === "SUCCESS" || finalStatus === "success") {
           try {
             // Always create order record with the paymentData we have
-            const orderCreationResult = await createOrderRecord(
-              paymentData, // Pass the paymentData directly
-              user.id
-            );
+            const orderCreationResult = await createOrderRecord({
+              ...paymentData, // Include all payment data
+              userId: user.id   // Add user ID to the object
+            });
             
             if (orderCreationResult.success) {
               setProcessingStatus("✅ Order created successfully!");
