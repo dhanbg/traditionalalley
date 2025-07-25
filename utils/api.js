@@ -170,20 +170,14 @@ export const createData = async (endpoint, data) => {
     const res = await fetch(`${API_URL}${endpoint}`, options)
     
     if (!res.ok) {
-      // Try to read the error response body
-      const errorBody = await res.text();
-      let errorDetail;
-      
+      // Try to get the response body to include more details
+      let errorBody = null;
       try {
-        errorDetail = JSON.parse(errorBody);
+        errorBody = await res.text();
       } catch (e) {
-        errorDetail = errorBody;
+        // Ignore if we can't read the body
       }
-      
-      const error = new Error(`Create failed: ${res.statusText}`);
-      error.status = res.status;
-      error.detail = errorDetail;
-      throw error;
+      throw new Error(`HTTP error! status: ${res.status}, body: ${errorBody}`);
     }
     
     return res.json()
@@ -531,149 +525,17 @@ export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) =
 };
 
 // Create individual order record in Strapi user_orders collection
-export const createOrderRecord = async (paymentData, userAuthId) => {
+export const createOrderRecord = async (orderData) => {
   try {
-    console.log('Creating order record for payment:', paymentData.merchantTxnId || paymentData.provider);
-    
-    // Prepare order data for Strapi user_orders collection
-    const orderRecord = {
-      // Order identification
-      orderId: paymentData.merchantTxnId || `${paymentData.provider.toUpperCase()}-${Date.now()}`,
-      orderNumber: paymentData.merchantTxnId || `${paymentData.provider.toUpperCase()}-${Date.now()}`,
-      
-      // Payment information
-      paymentProvider: paymentData.provider,
-      paymentStatus: paymentData.status,
-      totalAmount: paymentData.amount,
-      currency: "NPR",
-      
-      // Timestamps
-      orderDate: paymentData.timestamp || new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      
-      // User reference
-      authUserId: userAuthId,
-      
-      // Complete order data with shipping and product details
-      orderData: paymentData.orderData || {},
-      
-      // Extract key information for easy admin access (prioritize receiver_details over legacy shipping.receiver)
-      customerInfo: (paymentData.orderData?.receiver_details ? {
-                     firstName: paymentData.orderData.receiver_details.firstName,
-                     lastName: paymentData.orderData.receiver_details.lastName,
-                     fullName: `${paymentData.orderData.receiver_details.firstName || ''} ${paymentData.orderData.receiver_details.lastName || ''}`.trim(),
-                     email: paymentData.orderData.receiver_details.email,
-                     phone: paymentData.orderData.receiver_details.phone,
-                     alternatePhone: paymentData.orderData.receiver_details.alternatePhone || ""
-                   } : {}) || 
-                   paymentData.orderData?.shipping?.receiver?.personalInfo || {},
-      
-      shippingAddress: (paymentData.orderData?.receiver_details?.address ? {
-                        street: paymentData.orderData.receiver_details.address.street,
-                        city: paymentData.orderData.receiver_details.address.city,
-                        state: paymentData.orderData.receiver_details.address.state || "",
-                        postalCode: paymentData.orderData.receiver_details.address.postalCode,
-                        country: paymentData.orderData.receiver_details.address.country,
-                        countryCode: paymentData.orderData.receiver_details.address.country === "Nepal" ? "NP" : 
-                                    paymentData.orderData.receiver_details.address.country === "India" ? "IN" : 
-                                    paymentData.orderData.receiver_details.address.country === "United States" ? "US" : 
-                                    paymentData.orderData.receiver_details.address.country === "Canada" ? "CA" : 
-                                    paymentData.orderData.receiver_details.address.country === "Australia" ? "AU" : 
-                                    paymentData.orderData.receiver_details.address.country === "United Kingdom" ? "GB" : "XX",
-                        fullAddress: `${paymentData.orderData.receiver_details.address.street}, ${paymentData.orderData.receiver_details.address.city}, ${paymentData.orderData.receiver_details.address.state ? paymentData.orderData.receiver_details.address.state + ', ' : ''}${paymentData.orderData.receiver_details.address.postalCode}, ${paymentData.orderData.receiver_details.address.country}`,
-                        addressType: paymentData.orderData.receiver_details.addressType || "Home",
-                        landmark: paymentData.orderData.receiver_details.landmark || ""
-                      } : {}) || 
-                      paymentData.orderData?.shipping?.receiver?.address || {},
-      
-      shippingMethod: paymentData.orderData?.shipping?.method || 
-                     (paymentData.provider === 'nps' ? {
-                       carrier: "NPS Payment",
-                       service: "NPS Standard",
-                       estimatedDays: paymentData.orderData?.receiver_details?.address?.country === "Nepal" ? "3-5" : "7-10",
-                       cost: paymentData.orderData?.shippingPrice || 0,
-                       currency: "NPR",
-                       trackingAvailable: true,
-                       insuranceIncluded: true,
-                       signatureRequired: true
-                     } : {}) || {},
-      
-      packageDetails: paymentData.orderData?.shipping?.package || 
-                     (paymentData.orderData?.products ? {
-                       totalWeight: paymentData.orderData.products.reduce((total, product) => {
-                         return total + ((product.packageInfo?.weight || 1) * (product.pricing?.quantity || product.quantity || 1));
-                       }, 0),
-                       packageType: "Box",
-                       packagingMaterial: "Cardboard Box with Bubble Wrap",
-                       specialInstructions: paymentData.orderData.receiver_details?.note || "",
-                       declaredValue: paymentData.amount || 0,
-                       contentDescription: `Traditional Alley Products - ${paymentData.orderData.products.length} items (${paymentData.provider.toUpperCase()})`,
-                       dangerousGoods: false,
-                       customsDeclaration: paymentData.orderData.receiver_details?.address?.country !== "Nepal"
-                     } : {}) || {},
-      
-      processingInfo: paymentData.orderData?.shipping?.processing || 
-                     (paymentData.provider === 'cod' ? {
-                       codAmount: paymentData.amount
-                     } : {
-                       warehouseLocation: "Kathmandu Main Warehouse",
-                       expectedPackingDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-                       expectedShipDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-                       priorityLevel: paymentData.amount > 20000 ? "High" : paymentData.amount > 10000 ? "Medium" : "Normal",
-                       packingInstructions: `Handle with care. Traditional items may be fragile. Payment via ${paymentData.provider.toUpperCase()}.`,
-                       qualityCheckRequired: paymentData.amount > 15000,
-                       photographRequired: paymentData.amount > 25000,
-                       adminAssigned: null,
-                       packingNotes: `${paymentData.provider.toUpperCase()} Payment Order`
-                     }) || {},
-      
-      // Product summary for quick reference
-      productSummary: {
-        totalItems: paymentData.orderData?.orderSummary?.totalItems || 0,
-        totalProducts: paymentData.orderData?.orderSummary?.totalProducts || 0,
-        products: paymentData.orderData?.products?.map(product => ({
-          productId: product.productId || product.documentId,
-          title: product.title,
-          sku: product.sku,
-          quantity: product.pricing?.quantity || product.quantity || 1,
-          unitPrice: product.pricing?.currentPrice || product.unitPrice,
-          totalPrice: product.pricing?.finalPrice || product.finalPrice,
-          variant: product.selectedVariant || { size: product.size, color: product.color }
-        })) || []
-      },
-      
-      // Admin workflow fields
-      adminStatus: "pending", // pending, processing, shipped, delivered, cancelled
-      adminAssigned: null,
-      adminNotes: "",
-      trackingNumber: null,
-      shippingCarrier: paymentData.orderData?.shipping?.method?.carrier || null,
-      
-      // Legacy compatibility
-      legacyPaymentData: paymentData
-    };
-    
-    console.log('Order record prepared:', {
-      orderId: orderRecord.orderId,
-      paymentProvider: orderRecord.paymentProvider,
-      totalAmount: orderRecord.totalAmount,
-      customerName: orderRecord.customerInfo?.fullName,
-      productCount: orderRecord.productSummary?.totalProducts
-    });
-    
-    // Create the order record in Strapi
-    const createResponse = await createData('/api/user-orders', {
-      data: orderRecord
-    });
-    
-    console.log('✅ Order record created successfully:', createResponse.data?.documentId);
-    return createResponse;
-    
+    // Use the correct Strapi endpoint convention
+    const response = await createData("/api/user-orders", orderData);
+    if (!response.success) {
+      throw new Error(`Create failed: ${response.error}`);
+    }
+    return response;
   } catch (error) {
-    console.error('❌ Error creating order record:', error);
-    // Don't throw error - order creation failure shouldn't break payment flow
-    return null;
+    console.error('Error creating order record:', error);
+    throw error;
   }
 };
 
@@ -823,4 +685,3 @@ export const updateProductStock = async (purchasedProducts) => {
     results: updateResults
   };
 };
-
