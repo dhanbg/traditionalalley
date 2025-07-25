@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     if (!userBagId) {
       try {
         const userDataResponse = await fetchDataFromApi(
-          `/api/user-datas?filters[authUserId][$eq]=${session.user.id}&populate=user_bag`
+          `/api/user-data?filters[authUserId][$eq]=${session.user.id}&populate=user_bag`
         );
         
         if (userDataResponse?.data && userDataResponse.data.length > 0) {

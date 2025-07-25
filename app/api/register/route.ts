@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     
     // Check if user already exists
     const existingUser = await fetchDataFromApi(
-      `/api/user-datas?filters[email][$eq]=${encodeURIComponent(email)}`
+      `/api/user-data?filters[email][$eq]=${encodeURIComponent(email)}`
     );
     
     console.log(`🔍 [${requestId}] Registration: Existing user check result:`, existingUser?.data?.length || 0);
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       password: '[HIDDEN]'
     });
     
-    const newUser = await createData("/api/user-datas", userData);
+    const newUser = await createData("/api/user-data", userData);
     console.log(`✨ [${requestId}] Registration: User created in Strapi with ID: ${newUser?.data?.id}`);
     
     if (newUser?.data?.id) {

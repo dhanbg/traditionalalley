@@ -81,7 +81,7 @@ const NPSCallbackContent = () => {
         
         try {
           currentUserData = await fetchDataFromApi(
-            `/api/user-datas?filters[authUserId][$eq]=${user.id}&populate=user_bag`
+            `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag`
           );
           
           if (!currentUserData?.data || currentUserData.data.length === 0) {
