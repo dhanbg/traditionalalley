@@ -115,18 +115,12 @@ export default function Checkout() {
 
   // Function to handle both stock update and cart deletion
   const handleUpdateStockAndDelete = async () => {
-    console.log('🔄 handleUpdateStockAndDelete called');
-    console.log('User:', user);
-    console.log('Selected products:', selectedProducts);
-    
     if (!user?.id) {
-      console.error('❌ User not logged in');
       alert('Please log in to perform this operation.');
       return;
     }
 
     if (selectedProducts.length === 0) {
-      console.error('❌ No products selected');
       alert('No products selected.');
       return;
     }
@@ -138,7 +132,6 @@ export default function Checkout() {
 
     try {
       console.log('🔄 Starting combined update stock and delete operation for:', selectedProducts.length, 'products');
-      console.log('🔄 Processing state set to true');
       
       // Step 1: Update stock first
       console.log('📦 Step 1: Updating stock...');
@@ -866,10 +859,7 @@ export default function Checkout() {
       console.log("=== CREATING COD ORDER RECORD IN STRAPI USER_ORDERS COLLECTION ===");
       
       try {
-        const orderRecord = await createOrderRecord({
-          ...codPaymentData,
-          userId: user?.id
-        });
+        const orderRecord = await createOrderRecord(codPaymentData, user?.id);
         if (orderRecord) {
           console.log("✅ COD Order record created successfully:", orderRecord.data?.documentId);
           console.log("COD Order details:", {

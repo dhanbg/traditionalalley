@@ -2,7 +2,7 @@
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, Suspense, useState } from "react";
-import { fetchDataFromApi, updateUserBagWithPayment, createOrderRecord, updateProductStock } from "@/utils/api";
+import { fetchDataFromApi, updateUserBagWithPayment, createOrderRecord, updateProductStock, updateData, deleteData } from "@/utils/api";
 import { processPostPaymentStockAndCart } from "@/utils/postPaymentProcessing";
 const { generateLocalTimestamp } = require("@/utils/timezone");
 import type { NPSPaymentData } from "@/types/nps";
@@ -13,9 +13,202 @@ const NPSCallbackContent = () => {
   const searchParams = useSearchParams();
   const { data: session } = useSession();
   const user = session?.user;
-  const { clearPurchasedItemsFromCart } = useContextElement();
+  const { clearPurchasedItemsFromCart, cartProducts, selectedCartItems } = useContextElement();
   const [isProcessing, setIsProcessing] = useState(true);
   const [processingStatus, setProcessingStatus] = useState("Processing your payment...");
+
+  // Production-safe automatic stock update and cart cleanup using CURRENT cart data with comprehensive debug logging
+  const handleAutomaticUpdateStockAndDelete = async (user: any, clearPurchasedItemsFromCart: any) => {
+    const debugId = `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const startTime = Date.now();
+    
+    console.log(`🚀 [${debugId}] ===== AUTOMATIC UPDATE & DELETE PROCESS STARTED =====`);
+    console.log(`🕐 [${debugId}] Start time: ${new Date().toISOString()}`);
+    console.log(`👤 [${debugId}] User info:`, {
+      hasUser: !!user,
+      userId: user?.id,
+      userEmail: user?.email,
+      userType: typeof user
+    });
+    console.log(`🔧 [${debugId}] Function info:`, {
+      hasClearFunction: !!clearPurchasedItemsFromCart,
+      clearFunctionType: typeof clearPurchasedItemsFromCart,
+      clearFunctionName: clearPurchasedItemsFromCart?.name
+    });
+    
+    if (!user?.id) {
+      console.error(`❌ [${debugId}] CRITICAL: User authentication required - aborting process`);
+      console.log(`🕐 [${debugId}] Process aborted at: ${new Date().toISOString()}`);
+      return; // Don't throw to avoid breaking payment flow
+    }
+
+    try {
+      console.log(`🔄 [${debugId}] Starting automatic stock update and cart cleanup using CURRENT cart data...`);
+      
+      // CRITICAL FIX: Fetch CURRENT cart items from backend instead of using potentially stale orderData
+      console.log(`🔍 [${debugId}] Fetching current cart items from backend for accurate processing...`);
+      const cartApiUrl = `/api/carts?filters[user][authUserId][$eq]=${user.id}&populate=*`;
+      console.log(`🌐 [${debugId}] Cart API URL: ${cartApiUrl}`);
+      
+      const cartFetchStart = Date.now();
+      const cartResponse = await fetchDataFromApi(cartApiUrl);
+      const cartFetchTime = Date.now() - cartFetchStart;
+      
+      console.log(`📊 [${debugId}] Cart fetch completed in ${cartFetchTime}ms`);
+      console.log(`📦 [${debugId}] Cart response structure:`, {
+        hasResponse: !!cartResponse,
+        hasData: !!(cartResponse?.data),
+        dataType: typeof cartResponse?.data,
+        dataLength: cartResponse?.data?.length,
+        responseKeys: cartResponse ? Object.keys(cartResponse) : [],
+        fullResponse: cartResponse
+      });
+      
+      if (!cartResponse?.data || cartResponse.data.length === 0) {
+        console.log(`ℹ️ [${debugId}] No current cart items found - cart may already be empty or payment processed elsewhere`);
+        console.log(`✅ [${debugId}] No action needed - cart is already clean`);
+        console.log(`🕐 [${debugId}] Process completed at: ${new Date().toISOString()}`);
+        console.log(`⏱️ [${debugId}] Total execution time: ${Date.now() - startTime}ms`);
+        console.log(`🏁 [${debugId}] ===== AUTOMATIC UPDATE & DELETE PROCESS COMPLETED (NO ITEMS) =====`);
+        return;
+      }
+      
+      // Transform current cart items to selectedProducts format expected by the utility
+      const currentCartItems = cartResponse.data;
+      console.log(`🔄 [${debugId}] Raw cart items before transformation:`, {
+        itemCount: currentCartItems.length,
+        items: currentCartItems.map((item: any, index: number) => ({
+          index,
+          cartItemId: item.id,
+          productId: item.product?.id,
+          productDocumentId: item.product?.documentId,
+          productTitle: item.product?.title || item.product?.name,
+          size: item.size,
+          quantity: item.quantity,
+          price: item.price,
+          hasVariant: !!item.variant,
+          variantId: item.variant?.id,
+          variantDocumentId: item.variant?.documentId,
+          variantTitle: item.variant?.title || item.variant?.color,
+          allCartItemKeys: Object.keys(item),
+          productKeys: item.product ? Object.keys(item.product) : [],
+          variantKeys: item.variant ? Object.keys(item.variant) : []
+        }))
+      });
+      
+      const transformStart = Date.now();
+      const selectedProducts = currentCartItems.map((cartItem: any, index: number) => {
+        const product = cartItem.product;
+        const transformed = {
+          id: product.id,
+          documentId: product.documentId,
+          title: product.title || product.name,
+          selectedSize: cartItem.size,
+          quantity: cartItem.quantity,
+          price: cartItem.price,
+          // Check if this cart item represents a variant product
+          variantInfo: cartItem.variant ? {
+            documentId: cartItem.variant.documentId,
+            isVariant: true,
+            title: cartItem.variant.title || cartItem.variant.color
+          } : null
+        };
+        
+        console.log(`🔄 [${debugId}] Item ${index + 1} transformation:`, {
+          original: {
+            cartItemId: cartItem.id,
+            productId: product.id,
+            productDocumentId: product.documentId,
+            size: cartItem.size,
+            quantity: cartItem.quantity,
+            hasVariant: !!cartItem.variant
+          },
+          transformed: transformed
+        });
+        
+        return transformed;
+      });
+      const transformTime = Date.now() - transformStart;
+      
+      console.log(`🔄 [${debugId}] Cart items transformation completed in ${transformTime}ms`);
+      console.log(`📊 [${debugId}] Transformed products summary:`, {
+        totalItems: selectedProducts.length,
+        mainProducts: selectedProducts.filter(p => !p.variantInfo).length,
+        variantProducts: selectedProducts.filter(p => !!p.variantInfo).length,
+        items: selectedProducts.map((p, index) => ({
+          index: index + 1,
+          title: p.title,
+          size: p.selectedSize,
+          quantity: p.quantity,
+          isVariant: !!p.variantInfo,
+          variantTitle: p.variantInfo?.title
+        }))
+      });
+      
+      if (selectedProducts.length === 0) {
+        console.log(`ℹ️ [${debugId}] No products to process from current cart`);
+        console.log(`🕐 [${debugId}] Process completed at: ${new Date().toISOString()}`);
+        console.log(`⏱️ [${debugId}] Total execution time: ${Date.now() - startTime}ms`);
+        console.log(`🏁 [${debugId}] ===== AUTOMATIC UPDATE & DELETE PROCESS COMPLETED (NO PRODUCTS) =====`);
+        return;
+      }
+      
+      // Use the existing processPostPaymentStockAndCart utility with CURRENT cart data
+      console.log(`🚀 [${debugId}] Calling processPostPaymentStockAndCart utility...`);
+      const utilityStart = Date.now();
+      
+      const utilityResult = await processPostPaymentStockAndCart(selectedProducts, user, clearPurchasedItemsFromCart);
+      
+      const utilityTime = Date.now() - utilityStart;
+      console.log(`📊 [${debugId}] Utility execution completed in ${utilityTime}ms`);
+      console.log(`✅ [${debugId}] Utility result:`, {
+        hasResult: !!utilityResult,
+        resultType: typeof utilityResult,
+        resultKeys: utilityResult ? Object.keys(utilityResult) : [],
+        stockUpdateSuccess: utilityResult?.stockUpdate?.success,
+        stockUpdateCount: utilityResult?.stockUpdate?.successCount,
+        cartClearSuccess: utilityResult?.cartClear?.success,
+        fullResult: utilityResult
+      });
+      
+      const totalTime = Date.now() - startTime;
+      console.log(`✅ [${debugId}] Automatic stock update and cart cleanup completed successfully using current cart data`);
+      console.log(`🕐 [${debugId}] Process completed at: ${new Date().toISOString()}`);
+      console.log(`⏱️ [${debugId}] Total execution time: ${totalTime}ms`);
+      console.log(`📊 [${debugId}] Performance breakdown:`, {
+        cartFetch: `${cartFetchTime}ms`,
+        transformation: `${transformTime}ms`,
+        utilityExecution: `${utilityTime}ms`,
+        total: `${totalTime}ms`
+      });
+      console.log(`🏁 [${debugId}] ===== AUTOMATIC UPDATE & DELETE PROCESS COMPLETED SUCCESSFULLY =====`);
+      
+    } catch (error: any) {
+      const errorTime = Date.now() - startTime;
+      console.error(`❌ [${debugId}] CRITICAL ERROR in automatic update and delete operation:`);
+      console.error(`🕐 [${debugId}] Error occurred at: ${new Date().toISOString()}`);
+      console.error(`⏱️ [${debugId}] Time before error: ${errorTime}ms`);
+      console.error(`🔍 [${debugId}] Error details:`, {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        cause: error.cause,
+        errorType: typeof error,
+        errorKeys: Object.keys(error),
+        fullError: error
+      });
+      console.error(`🌐 [${debugId}] Environment context:`, {
+        userAgent: typeof window !== 'undefined' ? window.navigator?.userAgent : 'N/A',
+        url: typeof window !== 'undefined' ? window.location?.href : 'N/A',
+        timestamp: new Date().toISOString(),
+        processEnv: typeof process !== 'undefined' ? process.env.NODE_ENV : 'N/A'
+      });
+      
+      // Don't throw error to prevent payment success from being affected
+      console.warn(`⚠️ [${debugId}] Continuing with payment success despite update/delete error`);
+      console.log(`🏁 [${debugId}] ===== AUTOMATIC UPDATE & DELETE PROCESS FAILED =====`);
+    }
+  };
 
   // Extract payment data from URL parameters
   // Handle both real NPS callback and mock callback parameters
@@ -209,61 +402,8 @@ const NPSCallbackContent = () => {
           console.log("Mock payment details:", { amount: finalAmount, status: finalStatus, merchantTxnId, gatewayTxnId });
         }
 
-        // TEMPORARY DEBUG MODE: Force success for testing (REMOVE IN PRODUCTION)
-        const FORCE_SUCCESS_FOR_TESTING = true; // Set to false in production
-        
-        if (FORCE_SUCCESS_FOR_TESTING && (finalStatus === "Fail" || finalStatus === "FAILED" || finalStatus === "fail")) {
-          console.log("🔧 DEBUG MODE: Forcing failed payment to be treated as successful for testing");
-          console.log("Original status:", finalStatus, "-> Forcing to: Success");
-          finalStatus = "Success"; // Override the status for testing
-        }
-        
-        // CRITICAL: Handle failed payments immediately after status check
-        if (finalStatus === "Fail" || finalStatus === "FAILED" || finalStatus === "fail") {
-          console.log("❌ Payment failed - Status:", finalStatus);
-          setProcessingStatus("❌ Payment failed");
-          
-          // Still save the failed payment data for record keeping
-          const failedPaymentData: NPSPaymentData = {
-            provider: "nps",
-            processId: finalProcessId,
-            merchantTxnId: merchantTxnId,
-            gatewayReferenceNo: gatewayTxnId,
-            amount: finalAmount,
-            status: "Fail",
-            institution: finalInstitution,
-            instrument: finalInstrument,
-            serviceCharge: finalServiceCharge,
-            cbsMessage: finalCbsMessage,
-            timestamp: generateLocalTimestamp(),
-            webhook_processed: false,
-          };
-          
-          try {
-            await updateUserBagWithPayment(userBag.documentId, failedPaymentData);
-            console.log("Failed payment data saved for record keeping:", failedPaymentData);
-          } catch (error) {
-            console.error("Error saving failed payment data:", error);
-          }
-          
-          setTimeout(() => {
-            window.location.href = "/?payment=failed";
-          }, 2000);
-          return; // Exit early - do not process orders or stock for failed payments
-        }
-
-        // Handle cancelled payments
-        if (finalStatus === "Cancelled" || finalStatus === "CANCELLED" || finalStatus === "cancelled") {
-          console.log("❌ Payment cancelled - Status:", finalStatus);
-          setProcessingStatus("❌ Payment was cancelled");
-          setTimeout(() => {
-            window.location.href = "/?payment=cancelled";
-          }, 2000);
-          return; // Exit early
-        }
-
         // Get orderData from existing payment record if available
-        let orderData: any[] | null = null;
+        let orderData: any = null;
         
         // First, try to find existing payment with orderData
         const existingPayments = userBag.user_orders?.payments || [];
@@ -323,36 +463,15 @@ const NPSCallbackContent = () => {
             } else {
               setProcessingStatus("⚠️ Payment successful but order creation failed");
             }
+
+            // Step: Automatic Stock Update & Cart Cleanup using CURRENT cart data (no stale orderData)
+            setProcessingStatus("🔄 Updating inventory and cleaning up cart...");
+            await handleAutomaticUpdateStockAndDelete(user, clearPurchasedItemsFromCart);
+            setProcessingStatus("✅ Inventory updated and cart cleaned up!");
+            
           } catch (orderError) {
             console.error("Error creating order:", orderError);
             setProcessingStatus("⚠️ Payment successful but failed to create order");
-          }
-
-          // CRITICAL: Process post-payment stock updates and cart cleanup
-          // This was missing and causing the backend stock/cart issues
-          if (orderData && Array.isArray(orderData) && orderData.length > 0) {
-            try {
-              setProcessingStatus("📦 Updating inventory and clearing cart...");
-              console.log("🔄 [NPS-CALLBACK] Starting post-payment stock and cart processing...");
-              console.log("📦 [NPS-CALLBACK] OrderData found:", orderData);
-              
-              const postPaymentResult = await processPostPaymentStockAndCart(
-                orderData, // The purchased products
-                user,      // User object with authentication
-                clearPurchasedItemsFromCart // Cart cleanup function
-              );
-              
-              console.log("✅ [NPS-CALLBACK] Post-payment processing completed:", postPaymentResult);
-              setProcessingStatus("✅ Inventory updated and cart cleared!");
-              
-            } catch (stockError) {
-              console.error("❌ [NPS-CALLBACK] Error in post-payment processing:", stockError);
-              setProcessingStatus("⚠️ Payment successful but inventory update failed");
-              // Don't throw - payment was successful, this is a secondary operation
-            }
-          } else {
-            console.warn("⚠️ [NPS-CALLBACK] No orderData found for stock/cart processing");
-            setProcessingStatus("⚠️ Payment successful but no order data for inventory update");
           }
         }
         
