@@ -1,0 +1,60 @@
+/* Payment Methods Styles */
+.paymentMethods {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.paymentMethodCard {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.paymentMethodCard:hover {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.paymentMethodCard.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.paymentMethodCard.selected {
+  border-color: #007bff;
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+.paymentMethodCard input[type="radio"] {
+  display: none;
+}
+
+.paymentMethodCard label {
+  display: block;
+  cursor: pointer;
+}
+
+.paymentMethodHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+}
+
+.paymentIcon {
+  font-size: 20px;
+}
+
+.lockIcon {
+  margin-left: auto;
+}
+
+.errorMessage {
+  margin-top: 8px;
+  color: #ff0000;
+  font-size: 13px;
+}

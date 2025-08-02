@@ -1,71 +1,43 @@
-import { fetchDataFromApi, updateData } from './api';
+import { fetchDataFromApi, updateData, deleteData } from './api';
 
 /**
- * Post-payment processing function that replicates the "Update Stock & Delete" functionality
- * This function updates product stock and clears purchased items from cart after successful payment
+ * Post-payment processing function that EXACTLY replicates the "Update Stock & Delete" functionality
+ * This function uses IDENTICAL logic to the working checkout button for production safety
  * @param {Array} selectedProducts - Array of products that were purchased
  * @param {Object} user - User object with authentication info
  * @param {Function} clearPurchasedItemsFromCart - Function to clear items from cart
  * @returns {Object} - Processing results with success/failure details
  */
 export const processPostPaymentStockAndCart = async (selectedProducts, user, clearPurchasedItemsFromCart) => {
-  console.log('🔄 [POST-PAYMENT] Starting post-payment stock update and cart clearing...');
-  console.log('📦 [POST-PAYMENT] Products to process:', selectedProducts.length);
-  console.log('🔍 [POST-PAYMENT] Input validation:', {
-    hasUser: !!user,
-    userId: user?.id,
-    hasProducts: !!selectedProducts,
-    productsLength: selectedProducts?.length,
-    hasClearFunction: typeof clearPurchasedItemsFromCart === 'function'
-  });
-  
+  // EXACT validation logic from checkout button
   if (!user?.id) {
-    console.error('❌ [POST-PAYMENT] User authentication required');
-    throw new Error('User authentication required for post-payment processing');
+    console.error('❌ [POST-PAYMENT] Please log in to perform this operation.');
+    throw new Error('Please log in to perform this operation.');
   }
 
-  if (!selectedProducts || selectedProducts.length === 0) {
-    console.error('❌ [POST-PAYMENT] No products provided');
-    throw new Error('No products provided for post-payment processing');
+  if (selectedProducts.length === 0) {
+    console.error('❌ [POST-PAYMENT] No products selected.');
+    throw new Error('No products selected.');
   }
 
-  const results = {
-    stockUpdate: { success: false, results: [] },
-    cartClear: { success: false },
-    totalProducts: selectedProducts.length
-  };
+  // Calculate total quantity to be decreased (exact checkout logic)
+  const totalQuantity = selectedProducts.reduce((sum, product) => sum + (product.quantity || 1), 0);
 
   try {
-    // Step 1: Update stock first (same logic as handleUpdateStockAndDelete)
-    console.log('📦 [POST-PAYMENT] Step 1: Updating product stock...');
+    console.log('🔄 Starting combined update stock and delete operation for:', selectedProducts.length, 'products');
     
-    // Log each product in detail
-    selectedProducts.forEach((product, index) => {
-      console.log(`🔍 [POST-PAYMENT] Product ${index + 1} structure:`, {
-        id: product.id,
-        productId: product.productId,
-        documentId: product.documentId,
-        title: product.title,
-        selectedSize: product.selectedSize,
-        quantity: product.quantity,
-        pricing: product.pricing,
-        variantInfo: product.variantInfo,
-        hasVariantInfo: !!product.variantInfo,
-        isVariant: product.variantInfo?.isVariant,
-        variantDocumentId: product.variantInfo?.documentId,
-        allKeys: Object.keys(product)
-      });
-    });
+    // Step 1: Update stock first (EXACT checkout button logic)
+    console.log('📦 Step 1: Updating stock...');
     
-    // Separate products and variants for different processing
+    // Separate products and variants for different processing (EXACT logic)
     const mainProducts = [];
     const variantProducts = [];
     
     selectedProducts.forEach(product => {
       // Check if product is a variant by looking for variantInfo with documentId or isVariant flag
       if (product.variantInfo && (product.variantInfo.documentId || product.variantInfo.isVariant)) {
-        console.log('📦 [POST-PAYMENT] Variant product detected:', {
-          productId: product.productId || product.id,
+        console.log('📦 Variant product detected:', {
+          productId: product.id,
           title: product.title,
           variantInfo: product.variantInfo,
           hasDocumentId: !!product.variantInfo.documentId,
@@ -74,13 +46,6 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
         });
         variantProducts.push(product);
       } else {
-        console.log('📦 [POST-PAYMENT] Main product detected:', {
-          productId: product.productId || product.id,
-          documentId: product.documentId,
-          title: product.title,
-          selectedSize: product.selectedSize,
-          quantity: product.quantity
-        });
         mainProducts.push(product);
       }
     });
@@ -92,7 +57,7 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
     
     const allUpdateResults = [];
     
-    // Process main products
+    // Process main products (EXACT checkout button logic)
     if (mainProducts.length > 0) {
       console.log('📦 Processing main products...');
       
@@ -111,12 +76,7 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
         try {
           console.log('📦 Processing main product group:', {
             documentId,
-            products: products.map(p => ({ 
-              id: p.productId || p.id, 
-              size: p.selectedSize, 
-              quantity: p.quantity || p.pricing?.quantity, 
-              title: p.title 
-            }))
+            products: products.map(p => ({ id: p.id, size: p.selectedSize, quantity: p.quantity, title: p.title }))
           });
 
           // Fetch current product data
@@ -167,13 +127,11 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
 
           console.log('📦 Original main product size_stocks:', sizeStocks);
 
-          // Update stock for all sizes
           const updateResults = [];
           const updatedSizeStocks = { ...sizeStocks };
 
           for (const product of products) {
             const selectedSize = product.selectedSize;
-            const quantity = product.quantity || product.pricing?.quantity || 1;
             
             if (!updatedSizeStocks.hasOwnProperty(selectedSize)) {
               console.warn('📦 Size not found in main product stock:', selectedSize);
@@ -188,18 +146,19 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
             }
 
             const currentStock = parseInt(updatedSizeStocks[selectedSize]) || 0;
-            const newStock = Math.max(0, currentStock - quantity);
+            const quantityToDecrease = product.quantity || 1;
+            console.log('📦 Processing main product size', selectedSize, '- Current stock:', currentStock, ', quantity to decrease:', quantityToDecrease);
 
-            console.log(`📦 Main product stock update: ${selectedSize} - Current: ${currentStock}, Quantity: ${quantity}, New: ${newStock}`);
-
+            const newStock = Math.max(0, currentStock - quantityToDecrease);
             updatedSizeStocks[selectedSize] = newStock;
+
             updateResults.push({
               success: true,
               productTitle: product.title,
               size: selectedSize,
               oldStock: currentStock,
               newStock: newStock,
-              quantityPurchased: quantity,
+              quantityDecreased: quantityToDecrease,
               type: 'main_product'
             });
           }
@@ -401,10 +360,93 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
     });
     
     try {
-      if (typeof clearPurchasedItemsFromCart !== 'function') {
-        throw new Error('clearPurchasedItemsFromCart is not a function');
+      // Add checkout button's stock update logic
+      const updateStockForProducts = async (products, isVariant = false) => {
+        const updateGroups = {};
+        
+        // Group products by documentId for batch updates
+        products.forEach(product => {
+          const key = isVariant ? product.variantInfo.documentId : product.documentId;
+          if (!updateGroups[key]) {
+            updateGroups[key] = {
+              documentId: key,
+              sizeUpdates: {},
+              isVariant
+            };
+          }
+          
+          const size = product.selectedSize || 'default';
+          updateGroups[key].sizeUpdates[size] = (updateGroups[key].sizeUpdates[size] || 0) + product.quantity;
+        });
+        
+        // Process each group
+        for (const group of Object.values(updateGroups)) {
+          try {
+            const endpoint = group.isVariant 
+              ? `/api/variants/${group.documentId}` 
+              : `/api/products/${group.documentId}`;
+            
+            const currentData = await fetchDataFromApi(endpoint);
+            const sizeStocks = currentData.size_stocks;
+            
+            // Update size-specific quantities
+            Object.entries(group.sizeUpdates).forEach(([size, qty]) => {
+              if (sizeStocks[size]) {
+                sizeStocks[size] = Math.max(0, sizeStocks[size] - qty);
+              }
+            });
+            
+            // Send update
+            await updateData(endpoint, { size_stocks: sizeStocks });
+          } catch (error) {
+            console.error(`Stock update failed for ${group.isVariant ? 'variant' : 'product'} ${group.documentId}:`, error);
+          }
+        }
+      };
+
+      // Add direct cart item deletion
+      const deleteCartItems = async (products, userId) => {
+        try {
+          // Fetch user's cart
+          const cartResponse = await fetchDataFromApi(`/api/carts?filters[user][id][$eq]=${userId}`);
+          const cartItems = cartResponse.data;
+          
+          // Find matching items and delete
+          for (const product of products) {
+            const matchingItem = cartItems.find(item => 
+              item.attributes.product.data.id === product.documentId &&
+              item.attributes.size === product.selectedSize
+            );
+            
+            if (matchingItem) {
+              await deleteData(`/api/carts/${matchingItem.id}`);
+            }
+          }
+        } catch (error) {
+          console.error('Cart item deletion failed:', error);
+        }
+      };
+
+      // Update main function
+      try {
+        // Existing stock update logic
+        await updateProductStock(selectedProducts);
+        
+        // New: Add checkout button's precise stock update
+        await updateStockForProducts(mainProducts);
+        await updateStockForProducts(variantProducts, true);
+        
+        // New: Add direct cart item deletion
+        await deleteCartItems(selectedProducts, user.id);
+        
+        // Existing context cleanup
+        if (typeof clearPurchasedItemsFromCart === 'function') {
+          await clearPurchasedItemsFromCart(selectedProducts);
+        }
+      } catch (error) {
+        console.error('Post-payment processing failed:', error);
       }
-      
+
       console.log('🚀 [POST-PAYMENT] Calling clearPurchasedItemsFromCart...');
       const cartClearResult = await clearPurchasedItemsFromCart(selectedProducts);
       console.log('✅ [POST-PAYMENT] Cart clearing completed successfully:', cartClearResult);

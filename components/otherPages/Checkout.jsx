@@ -12,6 +12,7 @@ import { processPostPaymentStockAndCart } from "@/utils/postPaymentProcessing";
 import { useSession } from "next-auth/react";
 import PriceDisplay from "@/components/common/PriceDisplay";
 import { convertUsdToNpr, getExchangeRate } from "@/utils/currency";
+import styles from './Checkout.module.css'; // Import CSS module for Checkout component
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
 
@@ -98,6 +99,7 @@ export default function Checkout() {
 
   // Add state for DHL shipping
   const [shippingCost, setShippingCost] = useState(0);
+  const [shippingRatesObtained, setShippingRatesObtained] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState('');
 
   // Add state for loading and success states
@@ -108,8 +110,6 @@ export default function Checkout() {
   // Add state for NPR conversion
   const [nprExchangeRate, setNprExchangeRate] = useState(null);
 
-
-  
   // Add state for combined update and delete operation
   const [isProcessingUpdateAndDelete, setIsProcessingUpdateAndDelete] = useState(false);
 
@@ -625,13 +625,6 @@ export default function Checkout() {
     }
   });
 
-  // Debug: Log when productsWithOldPrice changes
-  useEffect(() => {
-    console.log('productsWithOldPrice updated:', productsWithOldPrice);
-  }, [productsWithOldPrice]);
-
-
-
   // Function to get user's bag documentId
   const getUserBagDocumentId = async () => {
     if (!user?.id) return null;
@@ -943,10 +936,6 @@ export default function Checkout() {
     }
   };
 
-
-
-
-
   // Fetch product details when selectedProducts change
   useEffect(() => {
     if (selectedProducts.length === 0 || isLoadingProductDetails) return;
@@ -978,7 +967,7 @@ export default function Checkout() {
               // Parse dimensions from string to object (e.g., "30x20x10 cm" -> {length: 30, width: 20, height: 10})
               let parsedDimensions = null;
               if (productData.dimensions) {
-                const dimensionsMatch = productData.dimensions.toString().match(/([0-9.]+)\s*[x×]\s*([0-9.]+)\s*[x×]\s*([0-9.]+)/);
+                const dimensionsMatch = productData.dimensions.toString().match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/i);
                 if (dimensionsMatch) {
                   parsedDimensions = {
                     length: parseFloat(dimensionsMatch[1]),
@@ -996,7 +985,7 @@ export default function Checkout() {
                   };
                 }
               }
-              
+
               return {
                 id: product.id,
                 data: {
@@ -1062,6 +1051,11 @@ export default function Checkout() {
     
     fetchProductDetails();
   }, [selectedProducts.length, selectedProducts.map(p => p.documentId).join(',')]); // Simpler, more stable dependency
+
+  // Debug: Log when productsWithOldPrice changes
+  useEffect(() => {
+    console.log('productsWithOldPrice updated:', productsWithOldPrice);
+  }, [productsWithOldPrice]);
 
   // Calculate subtotal: sum of oldPrice (if available) or price, times quantity
   const subtotal = selectedProducts.reduce((acc, product) => {
@@ -1140,6 +1134,11 @@ export default function Checkout() {
     );
   }
 
+  // Shipping methods
+  const shippingMethods = [
+    { id: 'dhl', name: 'DHL Shipping' },
+  ];
+
   return (
     <section>
       <div className="container">
@@ -1167,7 +1166,6 @@ export default function Checkout() {
                 </form> */}
               </div>
               <div className="wrap">
-                <h5 className="title">🚀 DHL Express Shipping</h5>
                 <DHLShippingForm 
                   isCheckoutMode={true}
                   initialPackages={selectedProducts.reduce((acc, product) => {
@@ -1241,7 +1239,8 @@ export default function Checkout() {
                   }, [])}
                   onRateCalculated={(rateInfo) => {
                     console.log('Rate calculated:', rateInfo);
-                    setShippingCost(rateInfo.price);
+                    setShippingCost(parseFloat(rateInfo.price));
+                    setShippingRatesObtained(true);
                   }}
                   onReceiverChange={setReceiverDetails}
                 />
@@ -1398,49 +1397,42 @@ export default function Checkout() {
                   className="form-payment"
                   onSubmit={(e) => e.preventDefault()}
                 >
-                  <div className="payment-box" id="payment-box">
-                    <div className="payment-item">
-                      <label
-                        htmlFor="delivery-method"
-                        className="payment-header"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#delivery-payment"
-                        aria-controls="delivery-payment"
-                      >
-                        <input
-                          type="radio"
-                          name="payment-method"
-                          className="tf-check-rounded"
-                          id="delivery-method"
-                          checked={selectedPaymentMethod === 'cod'}
-                          onChange={() => setSelectedPaymentMethod('cod')}
-                        />
-                        <span className="text-title">Cash on delivery</span>
-                      </label>
-                      <div
-                        id="delivery-payment"
-                        className="collapse show"
-                        data-bs-parent="#payment-box"
+                  <div className={styles.paymentMethods}>
+                    <div className={`${styles.paymentMethodCard} ${selectedPaymentMethod === 'cod' ? styles.selected : ''}`}>
+                      <input
+                        type="radio"
+                        name="payment-method"
+                        id="cod-method"
+                        checked={selectedPaymentMethod === 'cod'}
+                        onChange={() => setSelectedPaymentMethod('cod')}
                       />
+                      <div className={styles.paymentMethodHeader}>
+                        <span className={styles.paymentIcon}>💰</span>
+                        <span>Cash on Delivery</span>
+                      </div>
                     </div>
-                    <div className="payment-item">
-                      <label
-                        htmlFor="nps-method"
-                        className="payment-header"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#nps-payment"
-                        aria-controls="nps-payment"
-                      >
-                        <input
-                          type="radio"
-                          name="payment-method"
-                          className="tf-check-rounded"
-                          id="nps-method"
-                          checked={selectedPaymentMethod === 'nps'}
-                          onChange={() => setSelectedPaymentMethod('nps')}
-                        />
-                        <span className="text-title">Pay with NPS (NPR)</span>
-                      </label>
+
+                    <div className={`${styles.paymentMethodCard} ${!shippingRatesObtained ? styles.disabled : ''} ${selectedPaymentMethod === 'nps' ? styles.selected : ''}`}>
+                      <input
+                        type="radio"
+                        name="payment-method"
+                        id="nps-method"
+                        checked={selectedPaymentMethod === 'nps'}
+                        onChange={() => shippingRatesObtained && setSelectedPaymentMethod('nps')}
+                        disabled={!shippingRatesObtained}
+                      />
+                      <div className={styles.paymentMethodHeader}>
+                        <span className={styles.paymentIcon}>🏦</span>
+                        <span>NPS (Nepal Payment System)</span>
+                        {!shippingRatesObtained && (
+                          <span className={styles.lockIcon}>🔒</span>
+                        )}
+                      </div>
+                      {!shippingRatesObtained && (
+                        <p className={styles.errorMessage}>
+                          Please get shipping rates first to use NPS.
+                        </p>
+                      )}
                     </div>
                   </div>
                   
@@ -1501,10 +1493,14 @@ export default function Checkout() {
                               const subtotal = oldPrice * product.quantity;
                               const discount = oldPrice > unitPrice ? ((oldPrice - unitPrice) / oldPrice) * 100 : 0;
                               const finalPrice = unitPrice * product.quantity;
-                              const availableSize = product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M";
-                              const availableColor = product.colors && product.colors.length > 0 
-                                ? (typeof product.colors[0] === 'string' ? product.colors[0] : product.colors[0].name || "default")
-                                : "default";
+
+                              // Get the actual selected size and color from the product
+                              const availableSize = product.selectedSize || 
+                                (product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M");
+                              const availableColor = product.selectedColor || 
+                                (product.colors && product.colors.length > 0 
+                                  ? (typeof product.colors[0] === 'string' ? product.colors[0] : product.colors[0].name || "default")
+                                  : "default");
                                
                               return {
                                 // Basic Product Info
@@ -1625,13 +1621,15 @@ export default function Checkout() {
                       )
                     )}
                     {selectedPaymentMethod === 'cod' && (
-                      <button 
-                        className="tf-btn btn-reset"
-                        onClick={handleCashPaymentOrder}
-                        disabled={isProcessingOrder}
-                      >
-                        {isProcessingOrder ? 'Processing Order...' : 'Place Order (Cash on Delivery)'}
-                      </button>
+                      <label htmlFor="cod-method">
+                        <button 
+                          className="tf-btn btn-reset"
+                          onClick={handleCashPaymentOrder}
+                          disabled={isProcessingOrder}
+                        >
+                          {isProcessingOrder ? 'Processing Order...' : 'Place Order (Cash on Delivery)'}
+                        </button>
+                      </label>
                     )}
                   </div>
                 </form>

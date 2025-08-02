@@ -285,7 +285,7 @@ const DashboardContent = () => {
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
-                className={`${getTabColorClasses(tab, activeTab === tab.id)} whitespace-nowrap py-4 px-3 border-b-2 font-medium text-sm flex items-center space-x-2 transition-all duration-300 flex-shrink-0 rounded-t-lg transform hover:scale-105 relative group`}
+                className={`${getTabColorClasses(tab, activeTab === tab.id)} whitespace-nowrap py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-1 transition-all duration-300 flex-shrink-0 rounded-t-lg transform hover:scale-105 relative group`}
               >
                 <span className="text-lg transform transition-transform duration-200 group-hover:scale-110">{tab.icon}</span>
                 <span className="hidden md:inline">{tab.name}</span>

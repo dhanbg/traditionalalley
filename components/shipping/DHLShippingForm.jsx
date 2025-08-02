@@ -76,6 +76,8 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
   const [cities, setCities] = useState([]);
   const [loadingCities, setLoadingCities] = useState(false);
   const [isCustomCity, setIsCustomCity] = useState(false);
+  const [branches, setBranches] = useState([]);
+  const [loadingBranches, setLoadingBranches] = useState(false);
 
   // Responsive helper
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
@@ -139,6 +141,12 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
     }
   }, [initialPackages]);
 
+  useEffect(() => {
+    if (formData.destinationAddress.countryCode === 'NP') {
+      loadBranches();
+    }
+  }, [formData.destinationAddress.countryCode]);
+
   const loadCountries = async () => {
     try {
       const response = await axios.get('/api/countries');
@@ -161,6 +169,88 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
       console.error('Failed to load cities:', error);
     } finally {
       setLoadingCities(false);
+    }
+  };
+
+  const loadBranches = async () => {
+    try {
+      setLoadingBranches(true);
+      const response = await axios.get('/api/ncm/branches');
+      if (response.data.success) {
+        setBranches(response.data.branches);
+      }
+    } catch (error) {
+      console.error('Failed to load branches:', error);
+    } finally {
+      setLoadingBranches(false);
+    }
+  };
+
+  const getNCMRates = async () => {
+    try {
+      setDhlLoading(true);
+      setDhlError('');
+      
+      // For NCM, we need pickup branch (origin) and destination branch
+      const pickupBranch = 'TINKUNE'; // Default pickup branch - you may want to make this configurable
+      const destinationBranch = formData.destinationAddress.cityName; // This contains the selected branch name
+      
+      console.log('NCM Rate Request:', { from: pickupBranch, to: destinationBranch });
+      
+      const response = await axios.get('/api/ncm/shipping-rate', {
+        params: {
+          from: pickupBranch,
+          to: destinationBranch,
+          type: 'Pickup'
+        }
+      });
+      
+      if (response.data.success) {
+        // Format NCM response to match DHL structure for consistency
+        const ncmRate = {
+          success: true,
+          data: {
+            products: [{
+              productName: 'NCM Delivery',
+              totalPrice: [{
+                currencyType: 'BILLC',
+                price: response.data.charge
+              }],
+              deliveryCapabilities: {
+                estimatedDeliveryDateAndTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days from now
+                totalTransitDays: '2-3'
+              }
+            }]
+          },
+          isNCM: true // Flag to identify NCM rates
+        };
+        
+        setRates(ncmRate);
+        
+        // Set selected rate for pricing display
+        setSelectedRate({
+          price: response.data.charge,
+          currency: 'NPR',
+          productName: 'NCM Delivery',
+          deliveryDate: ncmRate.data.products[0].deliveryCapabilities.estimatedDeliveryDateAndTime,
+          transitDays: '2-3'
+        });
+        
+        // Notify parent component if callback exists
+        if (onRateCalculated) {
+          onRateCalculated({
+            price: response.data.charge,
+            currency: 'NPR',
+            productName: 'NCM Delivery',
+            isNCM: true
+          });
+        }
+      }
+    } catch (error) {
+      console.error('NCM Rate Error:', error);
+      setDhlError(error.response?.data?.error || 'Failed to get NCM rates');
+    } finally {
+      setDhlLoading(false);
     }
   };
 
@@ -212,12 +302,26 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
 
   const isFormValid = () => {
     const { destinationAddress, shipper, recipient, packages } = formData;
-    return destinationAddress.countryCode && destinationAddress.cityName && destinationAddress.addressLine1 && destinationAddress.postalCode &&
-           shipper.fullName && shipper.email && shipper.phone && recipient.fullName && recipient.email && recipient.phone &&
+    const isNepal = destinationAddress.countryCode === 'NP';
+    
+    // For Nepal (NCM), postal code is not required
+    const addressValid = isNepal 
+      ? destinationAddress.countryCode && destinationAddress.cityName && destinationAddress.addressLine1
+      : destinationAddress.countryCode && destinationAddress.cityName && destinationAddress.addressLine1 && destinationAddress.postalCode;
+    
+    return addressValid &&
+           shipper.fullName && shipper.email && shipper.phone && 
+           recipient.fullName && recipient.email && recipient.phone &&
            packages.length && packages.every(pkg => pkg.weight && pkg.description && pkg.declaredValue);
   };
 
   const getRates = async () => {
+    // Switch between NCM and DHL based on destination country
+    if (formData.destinationAddress.countryCode === 'NP') {
+      return getNCMRates();
+    }
+    
+    // Original DHL logic for non-Nepal destinations
     try {
       setDhlLoading(true);
       setDhlError('');
@@ -239,6 +343,8 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
             price: billingPrice.price,
             currency: billingPrice.priceCurrency
           });
+          
+          // Notify parent component if callback exists
           if (onRateCalculated) {
             onRateCalculated({
               price: billingPrice.price,
@@ -358,7 +464,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
             fontWeight: 700,
             color: '#1f2937',
             margin: '0 0 0.5rem 0'
-          }}>DHL Express Shipping</h2>
+          }}>Shipping</h2>
           <p style={{ color: '#6b7280', margin: 0 }}>Fast, reliable worldwide delivery</p>
         </div>
 
@@ -484,89 +590,126 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
               </select>
             </div>
 
-            <div>
-                  <label style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    color: '#374151',
-                    marginBottom: '0.5rem'
-                  }}>
-                    <span style={{ marginRight: '0.5rem' }}>🏙️</span>
-                    City *
-                  </label>
-              <select
-                value={isCustomCity ? 'custom' : formData.destinationAddress.cityName}
-                onChange={(e) => {
-                  if (e.target.value === 'custom') {
-                    setIsCustomCity(true);
-                    handleInputChange('destinationAddress', 'cityName', '');
-                  } else {
-                    setIsCustomCity(false);
-                    const selectedCity = cities.find(city => city.name === e.target.value);
-                    if (selectedCity) {
-                      handleInputChange('destinationAddress', 'cityName', selectedCity.name);
-                      if (selectedCity.postal) {
-                        handleInputChange('destinationAddress', 'postalCode', selectedCity.postal);
-                      }
+            {formData.destinationAddress.countryCode === 'NP' ? (
+              <div>
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                  marginBottom: '0.5rem'
+                }}>
+                  <span style={{ marginRight: '0.5rem' }}>🏢</span>
+                  Destination Branch *
+                </label>
+                <select
+                  value={formData.destinationAddress.cityName}
+                  onChange={(e) => handleInputChange('destinationAddress', 'cityName', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '1rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '0.75rem',
+                    fontSize: '1rem',
+                    background: 'white',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    transition: 'all 0.2s'
+                  }}
+                  required
+                  disabled={loadingBranches}
+                >
+                  <option value="">{loadingBranches ? 'Loading branches...' : 'Select Branch'}</option>
+                  {branches.map((branch, index) => (
+                    <option key={index} value={branch.name}>
+                      {`${branch.name} - ${branch.district}, ${branch.region.split(' - ')[1] || branch.region}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div>
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                  marginBottom: '0.5rem'
+                }}>
+                  <span style={{ marginRight: '0.5rem' }}>🏙️</span>
+                  City *
+                </label>
+                <select
+                  value={isCustomCity ? 'custom' : formData.destinationAddress.cityName}
+                  onChange={(e) => {
+                    if (e.target.value === 'custom') {
+                      setIsCustomCity(true);
+                      handleInputChange('destinationAddress', 'cityName', '');
                     } else {
-                       handleInputChange('destinationAddress', 'cityName', e.target.value);
+                      setIsCustomCity(false);
+                      const selectedCity = cities.find(city => city.name === e.target.value);
+                      if (selectedCity) {
+                        handleInputChange('destinationAddress', 'cityName', selectedCity.name);
+                        if (selectedCity.postal) {
+                          handleInputChange('destinationAddress', 'postalCode', selectedCity.postal);
+                        }
+                      } else {
+                        handleInputChange('destinationAddress', 'cityName', e.target.value);
+                      }
                     }
-                  }
-                }}
-                    style={{
-                      width: '100%',
-                      padding: '1rem',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '0.75rem',
-                      fontSize: '1rem',
-                      background: 'white',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                      transition: 'all 0.2s'
-                    }}
-                required
-                disabled={loadingCities}
-                    onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                    onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-              >
-                <option value="">{loadingCities ? 'Loading cities...' : 'Select City'}</option>
-                {cities.map((city, index) => (
-                  <option key={index} value={city.name}>
-                    {city.name} {city.postal && `(${city.postal})`}
-                  </option>
-                ))}
-                <option value="custom">🏙️ Enter custom city</option>
-              </select>
-            </div>
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '1rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '0.75rem',
+                    fontSize: '1rem',
+                    background: 'white',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    transition: 'all 0.2s'
+                  }}
+                  required
+                  disabled={loadingCities}
+                >
+                  <option value="">{loadingCities ? 'Loading cities...' : 'Select City'}</option>
+                  {cities.map((city, index) => (
+                    <option key={index} value={city.name}>
+                      {city.name} {city.postal && `(${city.postal})`}
+                    </option>
+                  ))}
+                  <option value="custom">🏙️ Enter custom city</option>
+                </select>
+              </div>
+            )}
 
             {isCustomCity && (
               <div>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: 600,
-                      color: '#374151',
-                      marginBottom: '0.5rem'
-                    }}>Custom City Name *</label>
+                <label style={{
+                  display: 'block',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                  marginBottom: '0.5rem'
+                }}>Custom City Name *</label>
                 <input
                   type="text"
                   placeholder="Enter city name"
                   value={formData.destinationAddress.cityName}
                   onChange={(e) => handleInputChange('destinationAddress', 'cityName', e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '1rem',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '0.75rem',
-                        fontSize: '1rem',
-                        background: 'white',
-                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                        transition: 'all 0.2s'
-                      }}
+                  style={{
+                    width: '100%',
+                    padding: '1rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '0.75rem',
+                    fontSize: '1rem',
+                    background: 'white',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    transition: 'all 0.2s'
+                  }}
                   required
-                      onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  onFocus={(e) => e.target.style.borderColor = '#eab308'}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                 />
               </div>
             )}
@@ -588,54 +731,56 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                 placeholder="Street address, house no..."
                 value={formData.destinationAddress.addressLine1}
                 onChange={(e) => handleInputChange('destinationAddress', 'addressLine1', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '1rem',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '0.75rem',
-                      fontSize: '1rem',
-                      background: 'white',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                      transition: 'all 0.2s'
-                    }}
+                style={{
+                  width: '100%',
+                  padding: '1rem',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '0.75rem',
+                  fontSize: '1rem',
+                  background: 'white',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                  transition: 'all 0.2s'
+                }}
                 required
-                    onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                    onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                onFocus={(e) => e.target.style.borderColor = '#eab308'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               />
             </div>
 
-            <div>
-                  <label style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    color: '#374151',
-                    marginBottom: '0.5rem'
-                  }}>
-                    <span style={{ marginRight: '0.5rem' }}>📮</span>
-                    Postal Code *
-                  </label>
-              <input
-                type="text"
-                placeholder="Postal/ZIP code"
-                value={formData.destinationAddress.postalCode}
-                onChange={(e) => handleInputChange('destinationAddress', 'postalCode', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '1rem',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '0.75rem',
-                      fontSize: '1rem',
-                      background: 'white',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                      transition: 'all 0.2s'
-                    }}
-                required
-                    onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                    onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-              />
-                </div>
+            {formData.destinationAddress.countryCode !== 'NP' && (
+              <div>
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '0.875rem',
+                      fontWeight: 600,
+                      color: '#374151',
+                      marginBottom: '0.5rem'
+                    }}>
+                      <span style={{ marginRight: '0.5rem' }}>📮</span>
+                      Postal Code *
+                    </label>
+                <input
+                  type="text"
+                  placeholder="Postal/ZIP code"
+                  value={formData.destinationAddress.postalCode}
+                  onChange={(e) => handleInputChange('destinationAddress', 'postalCode', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '1rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '0.75rem',
+                    fontSize: '1rem',
+                    background: 'white',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    transition: 'all 0.2s'
+                  }}
+                  required
+                  onFocus={(e) => e.target.style.borderColor = '#eab308'}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                />
+                  </div>
+            )}
             </div>
           </div>
 
@@ -785,54 +930,56 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                   placeholder="Phone number"
                   value={formData.recipient.phone}
                   onChange={(e) => handleInputChange('recipient', 'phone', e.target.value)}
-                      style={{
-                        flex: 1,
-                        padding: '0.5rem 0.75rem',
-                        border: 'none',
-                        outline: 'none',
-                        background: 'white',
-                        lineHeight: '37px'
-                      }}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem 0.75rem',
+                    border: 'none',
+                    outline: 'none',
+                    background: 'white',
+                    lineHeight: '37px'
+                  }}
                   required
                 />
               </div>
             </div>
 
-            <div>
-                  <label style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    color: '#374151',
-                    marginBottom: '0.5rem'
-                  }}>
-                    <span style={{ marginRight: '0.5rem' }}>🏢</span>
-                    Company (Optional)
-                  </label>
-              <input
-                type="text"
-                placeholder="Company name"
-                value={formData.recipient.companyName}
-                onChange={(e) => handleInputChange('recipient', 'companyName', e.target.value)}
-                style={{
-                  width: '100%',
-                  fontSize: isMobile ? '1rem' : '1rem',
-                  minWidth: 0,
-                  padding: '0.5rem 0.75rem',
-                  border: '2px solid #e5e7eb',
-                  borderRadius: '0.75rem',
-                  fontSize: '1rem',
-                  background: 'white',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                  transition: 'all 0.2s',
-                  lineHeight: '42px',
-                  minHeight: '42px'
-                }}
-                onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                  />
-                </div>
+            {formData.destinationAddress.countryCode !== 'NP' && (
+              <div>
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '0.875rem',
+                      fontWeight: 600,
+                      color: '#374151',
+                      marginBottom: '0.5rem'
+                    }}>
+                      <span style={{ marginRight: '0.5rem' }}>🏢</span>
+                      Company (Optional)
+                    </label>
+                <input
+                  type="text"
+                  placeholder="Company name"
+                  value={formData.recipient.companyName}
+                  onChange={(e) => handleInputChange('recipient', 'companyName', e.target.value)}
+                  style={{
+                    width: '100%',
+                    fontSize: isMobile ? '1rem' : '1rem',
+                    minWidth: 0,
+                    padding: '0.5rem 0.75rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '0.75rem',
+                    fontSize: '1rem',
+                    background: 'white',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    transition: 'all 0.2s',
+                    lineHeight: '42px',
+                    minHeight: '42px'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#eab308'}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                />
+                  </div>
+            )}
                 </div>
                 </div>
                 </div>

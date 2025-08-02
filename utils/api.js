@@ -131,7 +131,14 @@ export const fetchDataFromApi = async (endpoint) => {
       processedEndpoint = `${basePath}?${queryParams.join('&')}`;
     }
 
-    const res = await fetch(`${API_URL}${processedEndpoint}`, options);
+    // Determine if this is a Next.js API route or Strapi API call
+    const isNextApiRoute = processedEndpoint.startsWith('/api/ncm/') || processedEndpoint.startsWith('/api/auth/') || processedEndpoint.startsWith('/api/webhook/');
+    const fetchUrl = isNextApiRoute ? processedEndpoint : `${API_URL}${processedEndpoint}`;
+    
+    // Don't add Strapi auth header for Next.js API routes
+    const fetchOptions = isNextApiRoute ? { method: "GET" } : options;
+    
+    const res = await fetch(fetchUrl, fetchOptions);
     
     if (!res.ok) {
       // Try to read the error response body
@@ -144,10 +151,13 @@ export const fetchDataFromApi = async (endpoint) => {
         errorDetail = errorBody;
       }
       
-      const error = new Error(`HTTP error! status: ${res.status}`);
-      error.status = res.status;
-      error.detail = errorDetail;
-      throw error;
+      // Instead of throwing, return the error response
+      return {
+        success: false,
+        error: `HTTP error! status: ${res.status}`,
+        status: res.status,
+        detail: errorDetail
+      };
     }
     
     return res.json();
