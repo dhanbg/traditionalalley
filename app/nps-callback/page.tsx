@@ -209,6 +209,50 @@ const NPSCallbackContent = () => {
           console.log("Mock payment details:", { amount: finalAmount, status: finalStatus, merchantTxnId, gatewayTxnId });
         }
 
+        // CRITICAL: Handle failed payments immediately after status check
+        if (finalStatus === "Fail" || finalStatus === "FAILED" || finalStatus === "fail") {
+          console.log("❌ Payment failed - Status:", finalStatus);
+          setProcessingStatus("❌ Payment failed");
+          
+          // Still save the failed payment data for record keeping
+          const failedPaymentData: NPSPaymentData = {
+            provider: "nps",
+            processId: finalProcessId,
+            merchantTxnId: merchantTxnId,
+            gatewayReferenceNo: gatewayTxnId,
+            amount: finalAmount,
+            status: "Fail",
+            institution: finalInstitution,
+            instrument: finalInstrument,
+            serviceCharge: finalServiceCharge,
+            cbsMessage: finalCbsMessage,
+            timestamp: generateLocalTimestamp(),
+            webhook_processed: false,
+          };
+          
+          try {
+            await updateUserBagWithPayment(userBag.documentId, failedPaymentData);
+            console.log("Failed payment data saved for record keeping:", failedPaymentData);
+          } catch (error) {
+            console.error("Error saving failed payment data:", error);
+          }
+          
+          setTimeout(() => {
+            window.location.href = "/?payment=failed";
+          }, 2000);
+          return; // Exit early - do not process orders or stock for failed payments
+        }
+
+        // Handle cancelled payments
+        if (finalStatus === "Cancelled" || finalStatus === "CANCELLED" || finalStatus === "cancelled") {
+          console.log("❌ Payment cancelled - Status:", finalStatus);
+          setProcessingStatus("❌ Payment was cancelled");
+          setTimeout(() => {
+            window.location.href = "/?payment=cancelled";
+          }, 2000);
+          return; // Exit early
+        }
+
         // Get orderData from existing payment record if available
         let orderData: any[] | null = null;
         
