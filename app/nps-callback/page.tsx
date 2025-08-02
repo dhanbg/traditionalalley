@@ -274,6 +274,33 @@ const NPSCallbackContent = () => {
             console.error("Error creating order:", orderError);
             setProcessingStatus("⚠️ Payment successful but failed to create order");
           }
+
+          // CRITICAL: Process post-payment stock updates and cart cleanup
+          // This was missing and causing the backend stock/cart issues
+          if (orderData && Array.isArray(orderData) && orderData.length > 0) {
+            try {
+              setProcessingStatus("📦 Updating inventory and clearing cart...");
+              console.log("🔄 [NPS-CALLBACK] Starting post-payment stock and cart processing...");
+              console.log("📦 [NPS-CALLBACK] OrderData found:", orderData);
+              
+              const postPaymentResult = await processPostPaymentStockAndCart(
+                orderData, // The purchased products
+                user,      // User object with authentication
+                clearPurchasedItemsFromCart // Cart cleanup function
+              );
+              
+              console.log("✅ [NPS-CALLBACK] Post-payment processing completed:", postPaymentResult);
+              setProcessingStatus("✅ Inventory updated and cart cleared!");
+              
+            } catch (stockError) {
+              console.error("❌ [NPS-CALLBACK] Error in post-payment processing:", stockError);
+              setProcessingStatus("⚠️ Payment successful but inventory update failed");
+              // Don't throw - payment was successful, this is a secondary operation
+            }
+          } else {
+            console.warn("⚠️ [NPS-CALLBACK] No orderData found for stock/cart processing");
+            setProcessingStatus("⚠️ Payment successful but no order data for inventory update");
+          }
         }
         
         // Show success and redirect based on payment status
