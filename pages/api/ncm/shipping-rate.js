@@ -18,8 +18,8 @@ export default async function handler(req, res) {
     const response = await getDeliveryCharges(from, to, type);
     console.log('NCM API response:', response);
     
-    // Extract charge from NCM API response
-    const charge = response.charge || response.charges?.charge || '0.00';
+    // TEMPORARY: Set shipping charge to 0 for testing
+    const charge = 0;
     
     res.status(200).json({ 
       success: true, 
