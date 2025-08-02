@@ -210,7 +210,7 @@ const NPSCallbackContent = () => {
         }
 
         // Get orderData from existing payment record if available
-        let orderData = null;
+        let orderData: any[] | null = null;
         
         // First, try to find existing payment with orderData
         const existingPayments = userBag.user_orders?.payments || [];
