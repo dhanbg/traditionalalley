@@ -539,8 +539,12 @@ export const createOrderRecord = async (orderData) => {
   try {
     console.log('Creating order record via Next.js API route...');
     
-    // Make a direct call to the Next.js API route (not Strapi)
-    const response = await fetch('/api/user-orders', {
+    // Construct the absolute URL for clarity in logging
+    const apiUrl = window.location.origin + '/api/user-orders';
+    console.log('🌐 [Order Creation] Calling:', apiUrl);
+    console.log('📦 [Order Creation] Request payload:', { data: orderData });
+    
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

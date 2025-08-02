@@ -859,7 +859,10 @@ export default function Checkout() {
       console.log("=== CREATING COD ORDER RECORD IN STRAPI USER_ORDERS COLLECTION ===");
       
       try {
-        const orderRecord = await createOrderRecord(codPaymentData, user?.id);
+        const orderRecord = await createOrderRecord({
+          ...codPaymentData,
+          userId: user?.id
+        });
         if (orderRecord) {
           console.log("✅ COD Order record created successfully:", orderRecord.data?.documentId);
           console.log("COD Order details:", {
