@@ -321,50 +321,36 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
       return getNCMRates();
     }
     
-    // Original DHL logic for non-Nepal destinations
-    try {
-      setDhlLoading(true);
-      setDhlError('');
-      console.log('DHL Rate Request Payload:', formData);
-      const response = await axios.post('/api/dhl/rates', formData);
-      setRates(response.data);
-      
-      // Store the first rate as selected rate for pricing display
-      if (response.data && response.data.success && response.data.data.products && response.data.data.products.length > 0) {
-        const firstProduct = response.data.data.products[0];
-        const billingPrice = firstProduct.totalPrice.find(p => p.currencyType === 'BILLC');
-        if (billingPrice) {
-          console.log('🔍 DHL Rate Currency Debug:', {
-            currency: billingPrice.priceCurrency,
-            price: billingPrice.price,
-            currencyType: billingPrice.currencyType
-          });
-          setSelectedRate({
-            price: billingPrice.price,
-            currency: billingPrice.priceCurrency
-          });
-          
-          // Notify parent component if callback exists
-          if (onRateCalculated) {
-            onRateCalculated({
-              price: billingPrice.price,
-              currency: billingPrice.priceCurrency,
-              productName: firstProduct.productName,
-              deliveryDate: firstProduct.deliveryCapabilities.estimatedDeliveryDateAndTime,
-              transitDays: firstProduct.deliveryCapabilities.totalTransitDays
-            });
+    // TEMPORARY OVERRIDE: Set shipping cost to 0 for production testing
+    const mockRates = {
+      success: true,
+      data: {
+        products: [{
+          productName: "DHL Express Worldwide",
+          totalPrice: [{
+            currencyType: "BILLC",
+            priceCurrency: "USD",
+            price: 0
+          }],
+          deliveryCapabilities: {
+            estimatedDeliveryDateAndTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+            totalTransitDays: "2"
           }
-        }
+        }]
       }
-    } catch (error) {
-      if (error.response) {
-        console.error('DHL Rate Error Response:', error.response.data);
-        setDhlError(error.response.data?.message || error.response.data?.error || 'Failed to get rates');
-      } else {
-        setDhlError('Failed to get rates');
-      }
-    } finally {
-      setDhlLoading(false);
+    };
+
+    setRates(mockRates);
+    setDhlLoading(false);
+    
+    if (onRateCalculated) {
+      onRateCalculated({
+        price: 0,
+        currency: "USD",
+        productName: "DHL Express Worldwide",
+        deliveryDate: mockRates.data.products[0].deliveryCapabilities.estimatedDeliveryDateAndTime,
+        transitDays: mockRates.data.products[0].deliveryCapabilities.totalTransitDays
+      });
     }
   };
 
