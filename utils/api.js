@@ -534,15 +534,29 @@ export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) =
   }
 };
 
-// Create individual order record in Strapi user_orders collection
+// Create individual order record via Next.js API route
 export const createOrderRecord = async (orderData) => {
   try {
-    // Use the correct Strapi endpoint convention
-    const response = await createData("/api/user-orders", orderData);
-    if (!response.success) {
-      throw new Error(`Create failed: ${response.error}`);
+    console.log('Creating order record via Next.js API route...');
+    
+    // Make a direct call to the Next.js API route (not Strapi)
+    const response = await fetch('/api/user-orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ data: orderData }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to create order via Next.js API:', response.status, response.statusText, errorText);
+      throw new Error(`Create failed: ${response.status} ${response.statusText} - ${errorText}`);
     }
-    return response;
+
+    const result = await response.json();
+    console.log('✅ Order created successfully via Next.js API:', result.data?.documentId);
+    return result;
   } catch (error) {
     console.error('Error creating order record:', error);
     throw error;
