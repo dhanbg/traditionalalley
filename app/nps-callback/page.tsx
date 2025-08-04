@@ -45,9 +45,22 @@ const NPSCallbackContent = () => {
     try {
       console.log(`🔄 [${debugId}] Starting automatic stock update and cart cleanup using CURRENT cart data...`);
       
-      // CRITICAL FIX: Fetch CURRENT cart items from backend instead of using potentially stale orderData
-      console.log(`🔍 [${debugId}] Fetching current cart items from backend for accurate processing...`);
-      const cartApiUrl = `/api/carts?filters[user][authUserId][$eq]=${user.id}&populate=*`;
+      // CRITICAL FIX: Fetch CURRENT cart items using EXACT same pattern as manual clearPurchasedItemsFromCart
+      console.log(`🔍 [${debugId}] Step 1: Fetching user data to find user_datum documentId...`);
+      const userDataResponse = await fetchDataFromApi(`/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`);
+      
+      if (!userDataResponse?.data || userDataResponse.data.length === 0) {
+        console.error(`❌ [${debugId}] User data not found for authUserId: ${user.id}`);
+        console.log(`🕐 [${debugId}] Process aborted at: ${new Date().toISOString()}`);
+        return;
+      }
+      
+      const userData = userDataResponse.data[0];
+      const userDocumentId = userData.documentId || userData.attributes?.documentId;
+      console.log(`✅ [${debugId}] Found user_datum documentId: ${userDocumentId}`);
+      
+      console.log(`🔍 [${debugId}] Step 2: Fetching current cart items using user_datum relation...`);
+      const cartApiUrl = `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`;
       console.log(`🌐 [${debugId}] Cart API URL: ${cartApiUrl}`);
       
       const cartFetchStart = Date.now();
