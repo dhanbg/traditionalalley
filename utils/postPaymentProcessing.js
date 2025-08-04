@@ -205,13 +205,13 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
           }
 
           // Update the main product
-          const updateData = {
+          const updatePayload = {
             data: {
               size_stocks: updatedSizeStocks
             }
           };
 
-          const updateResponse = await updateData(`/api/products/${currentProduct.documentId}`, updateData);
+          const updateResponse = await updateData(`/api/products/${currentProduct.documentId}`, updatePayload);
 
           if (updateResponse && updateResponse.data) {
             console.log('✅ Main product stock updated successfully:', currentProduct.title);
