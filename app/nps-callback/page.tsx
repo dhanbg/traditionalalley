@@ -2,7 +2,7 @@
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, Suspense, useState } from "react";
-import { fetchDataFromApi, updateUserBagWithPayment, createOrderRecord, updateProductStock, updateData, deleteData } from "@/utils/api";
+import { fetchDataFromApi, updateUserBagWithPayment, updateProductStock, updateData, deleteData } from "@/utils/api";
 import { processPostPaymentStockAndCart } from "@/utils/postPaymentProcessing";
 const { generateLocalTimestamp } = require("@/utils/timezone");
 import type { NPSPaymentData } from "@/types/nps";
@@ -449,21 +449,9 @@ const NPSCallbackContent = () => {
         await updateUserBagWithPayment(userBag.documentId, paymentData);
         console.log("Payment data saved successfully:", paymentData);
         
-        // Create order record if payment is successful
+        // Automatic Stock Update & Cart Cleanup after successful payment
         if (finalStatus === "Success" || finalStatus === "SUCCESS" || finalStatus === "success") {
           try {
-            // Always create order record with the paymentData we have
-            const orderCreationResult = await createOrderRecord({
-              ...paymentData, // Include all payment data
-              userId: user.id   // Add user ID to the object
-            });
-            
-            if (orderCreationResult.success) {
-              setProcessingStatus("✅ Order created successfully!");
-            } else {
-              setProcessingStatus("⚠️ Payment successful but order creation failed");
-            }
-
             // Step: Automatic Stock Update & Cart Cleanup using CURRENT cart data (no stale orderData)
             setProcessingStatus("🔄 Updating inventory and cleaning up cart...");
             await handleAutomaticUpdateStockAndDelete(user, clearPurchasedItemsFromCart);

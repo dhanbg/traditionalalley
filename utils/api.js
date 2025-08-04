@@ -534,20 +534,9 @@ export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) =
   }
 };
 
-// Create individual order record in Strapi user_orders collection
-export const createOrderRecord = async (orderData) => {
-  try {
-    // Use the correct Strapi endpoint convention
-    const response = await createData("/api/user-orders", orderData);
-    if (!response.success) {
-      throw new Error(`Create failed: ${response.error}`);
-    }
-    return response;
-  } catch (error) {
-    console.error('Error creating order record:', error);
-    throw error;
-  }
-};
+// Note: Order record creation removed from automation per user requirements
+// Automation now only performs stock updates and cart cleanup like the manual button
+
 
 // Function to update product stock after successful payment
 export const updateProductStock = async (purchasedProducts) => {
