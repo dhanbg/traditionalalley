@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     
     const response = await fetch(strapiUrl, {
       headers: {
-        'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`,
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`,
         'Content-Type': 'application/json',
       },
     });
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     const response = await fetch(strapiUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`,
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ data: orderData }),
@@ -118,7 +118,7 @@ export async function PUT(request: NextRequest) {
     const response = await fetch(strapiUrl, {
       method: 'PUT',
       headers: {
-        'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`,
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ data: updateData }),
