@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get("sort") || "createdAt:desc";
 
     // Fetch orders from Strapi
-    const strapiUrl = `${process.env.STRAPI_URL}/api/user-orders?filters[authUserId][$eq]=${authUserId}&pagination[limit]=${limit}&sort=${sort}&populate=*`;
+    const strapiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/user-orders?filters[authUserId][$eq]=${authUserId}&pagination[limit]=${limit}&sort=${sort}&populate=*`;
     
     const response = await fetch(strapiUrl, {
       headers: {
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create order in Strapi
-    const strapiUrl = `${process.env.STRAPI_URL}/api/user-orders`;
+    const strapiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/user-orders`;
     
     const response = await fetch(strapiUrl, {
       method: 'POST',
@@ -113,7 +113,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update order in Strapi
-    const strapiUrl = `${process.env.STRAPI_URL}/api/user-orders/${orderId}`;
+    const strapiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/user-orders/${orderId}`;
     
     const response = await fetch(strapiUrl, {
       method: 'PUT',

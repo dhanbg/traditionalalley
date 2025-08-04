@@ -26,6 +26,13 @@ ENV NODE_ENV=production
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/next.config.mjs ./next.config.mjs
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+COPY --from=builder /app/next-env.d.ts ./next-env.d.ts
+# Copy additional files needed for API routes and authentication
+COPY --from=builder /app/auth.config.ts ./auth.config.ts
+COPY --from=builder /app/auth.ts ./auth.ts
+COPY --from=builder /app/middleware.ts ./middleware.ts
 
 # Install only production dependencies
 RUN npm install --omit=dev --legacy-peer-deps
