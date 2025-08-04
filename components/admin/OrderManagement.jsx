@@ -244,31 +244,91 @@ const OrderManagement = () => {
   };
 
   const formatTimeAgo = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
-    let interval = seconds / 31536000;
-
-    if (interval > 1) {
-      return Math.floor(interval) + " years ago";
+    if (!dateString) return 'Unknown time';
+    
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      
+      // Debug logging
+      console.log('formatTimeAgo called with:', dateString);
+      console.log('Parsed date:', date.toISOString());
+      console.log('Current time:', now.toISOString());
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.log('Invalid date detected');
+        return 'Invalid date';
+      }
+      
+      // Calculate difference in milliseconds - always use absolute value
+      const rawDiffInMs = now.getTime() - date.getTime();
+      const diffInMs = Math.abs(rawDiffInMs);
+      const totalSeconds = Math.floor(diffInMs / 1000);
+      
+      console.log('Raw time difference (ms):', rawDiffInMs);
+      console.log('Absolute time difference (ms):', diffInMs);
+      console.log('Total seconds:', totalSeconds);
+      
+      // Triple safety: ensure we never have negative values
+      const seconds = Math.max(0, Math.abs(totalSeconds));
+      
+      console.log('Final seconds value:', seconds);
+      
+      // Years (365.25 days * 24 hours * 60 minutes * 60 seconds)
+      if (seconds >= 31557600) {
+        const years = Math.floor(seconds / 31557600);
+        const result = years === 1 ? '1 year ago' : `${years} years ago`;
+        console.log('Returning years:', result);
+        return result;
+      }
+      
+      // Months (30.44 days average * 24 hours * 60 minutes * 60 seconds)
+      if (seconds >= 2629800) {
+        const months = Math.floor(seconds / 2629800);
+        const result = months === 1 ? '1 month ago' : `${months} months ago`;
+        console.log('Returning months:', result);
+        return result;
+      }
+      
+      // Days
+      if (seconds >= 86400) {
+        const days = Math.floor(seconds / 86400);
+        const result = days === 1 ? '1 day ago' : `${days} days ago`;
+        console.log('Returning days:', result);
+        return result;
+      }
+      
+      // Hours
+      if (seconds >= 3600) {
+        const hours = Math.floor(seconds / 3600);
+        const result = hours === 1 ? '1 hour ago' : `${hours} hours ago`;
+        console.log('Returning hours:', result);
+        return result;
+      }
+      
+      // Minutes
+      if (seconds >= 60) {
+        const minutes = Math.floor(seconds / 60);
+        const result = minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`;
+        console.log('Returning minutes:', result);
+        return result;
+      }
+      
+      // Seconds
+      if (seconds === 0) {
+        console.log('Returning: Just now');
+        return 'Just now';
+      }
+      
+      const result = seconds === 1 ? '1 second ago' : `${seconds} seconds ago`;
+      console.log('Returning seconds:', result);
+      return result;
+      
+    } catch (error) {
+      console.error('Error formatting time:', error, 'for dateString:', dateString);
+      return 'Time error';
     }
-    interval = seconds / 2592000;
-    if (interval > 1) {
-      return Math.floor(interval) + " months ago";
-    }
-    interval = seconds / 86400;
-    if (interval > 1) {
-      return Math.floor(interval) + " days ago";
-    }
-    interval = seconds / 3600;
-    if (interval > 1) {
-      return Math.floor(interval) + " hours ago";
-    }
-    interval = seconds / 60;
-    if (interval > 1) {
-      return Math.floor(interval) + " minutes ago";
-    }
-    return Math.floor(seconds) + " seconds ago";
   };
 
   const [error, setError] = useState('');

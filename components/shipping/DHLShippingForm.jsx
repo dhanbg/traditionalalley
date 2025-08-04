@@ -354,10 +354,80 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
     }
   };
 
+  const validateFormData = () => {
+    const errors = [];
+    
+    // Validate recipient information
+    if (!formData.recipient.fullName?.trim()) {
+      errors.push('Recipient full name is required');
+    }
+    if (!formData.recipient.email?.trim()) {
+      errors.push('Recipient email is required');
+    }
+    if (!formData.recipient.phone?.trim()) {
+      errors.push('Recipient phone is required');
+    }
+    
+    // Validate destination address
+    if (!formData.destinationAddress.postalCode?.trim()) {
+      errors.push('Destination postal code is required');
+    }
+    if (!formData.destinationAddress.cityName?.trim()) {
+      errors.push('Destination city is required');
+    }
+    if (!formData.destinationAddress.countryCode?.trim()) {
+      errors.push('Destination country is required');
+    }
+    
+    // Validate packages
+    if (!formData.packages || formData.packages.length === 0) {
+      errors.push('At least one package is required');
+    } else {
+      formData.packages.forEach((pkg, index) => {
+        if (!pkg.weight || pkg.weight <= 0) {
+          errors.push(`Package ${index + 1}: Weight must be greater than 0`);
+        }
+        if (!pkg.length || pkg.length <= 0) {
+          errors.push(`Package ${index + 1}: Length must be greater than 0`);
+        }
+        if (!pkg.width || pkg.width <= 0) {
+          errors.push(`Package ${index + 1}: Width must be greater than 0`);
+        }
+        if (!pkg.height || pkg.height <= 0) {
+          errors.push(`Package ${index + 1}: Height must be greater than 0`);
+        }
+      });
+    }
+    
+    // Validate planned shipping date
+    if (!formData.plannedShippingDate) {
+      errors.push('Planned shipping date is required');
+    } else {
+      const shippingDate = new Date(formData.plannedShippingDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (shippingDate < today) {
+        errors.push('Planned shipping date cannot be in the past');
+      }
+    }
+    
+    return errors;
+  };
+
   const createShipment = async () => {
     try {
       setDhlLoading(true);
       setDhlError('');
+      
+      // Validate form data before sending
+      const validationErrors = validateFormData();
+      if (validationErrors.length > 0) {
+        setDhlError(`Please fix the following errors:\n• ${validationErrors.join('\n• ')}`);
+        return;
+      }
+      
+      console.log('Creating shipment with data:', JSON.stringify(formData, null, 2));
       const response = await axios.post('/api/dhl/shipments', formData);
       setShipment(response.data);
       if (onShipmentCreated && response.data.success) {
@@ -368,7 +438,18 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         });
       }
     } catch (error) {
-      setDhlError(error.response?.data?.message || 'Failed to create shipment');
+      console.error('Shipment creation error:', error);
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          'Failed to create shipment';
+      const errorDetails = error.response?.data?.details;
+      
+      let fullErrorMessage = errorMessage;
+      if (errorDetails) {
+        fullErrorMessage += `\n\nDetails: ${JSON.stringify(errorDetails, null, 2)}`;
+      }
+      
+      setDhlError(fullErrorMessage);
     } finally {
       setDhlLoading(false);
     }
