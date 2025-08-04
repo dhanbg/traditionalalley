@@ -329,13 +329,13 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
             [selectedSize]: newStock
           };
 
-          const updateData = {
+          const updatePayload = {
             data: {
               size_stocks: updatedVariantSizeStocks
             }
           };
 
-          const updateResponse = await updateData(`/api/product-variants/${currentVariant.documentId}`, updateData);
+          const updateResponse = await updateData(`/api/product-variants/${currentVariant.documentId}`, updatePayload);
 
           if (updateResponse && updateResponse.data) {
             console.log('✅ Variant stock updated successfully:', currentVariant.title);
