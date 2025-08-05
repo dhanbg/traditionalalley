@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import NCMOrderForm from './NCMOrderForm';
 import NCMOrderButton from './NCMOrderButton';
+// Force recompilation - all userBag references fixed
 
 const OrderManagement = () => {
   const [userBags, setUserBags] = useState([]);
@@ -11,10 +12,141 @@ const OrderManagement = () => {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showNCMForm, setShowNCMForm] = useState(false);
   const [ncmOrders, setNcmOrders] = useState([]);
+  const [activeTab, setActiveTab] = useState('pending');
 
   useEffect(() => {
     fetchUserBags();
   }, []);
+
+  // Helper function to get individual payment status
+  const getPaymentStatus = (payment, userBag) => {
+    // Only orders with ACTUAL "NCM Order Created" or "Shipment Created" should be in shipped tab
+    // This means they must have either:
+    // 1. DHL tracking info with successful shipment creation (stored in userBag.trackingInfo)
+    // 2. NCM order ID (indicating NCM order was created)
+    
+    // Find shipment info for this payment from userBag.trackingInfo
+    let shipmentInfo = null;
+    let ncmOrderInfo = null;
+    
+    if (userBag.trackingInfo) {
+      if (Array.isArray(userBag.trackingInfo)) {
+        // Find DHL shipment info by merchantTxnId
+        shipmentInfo = userBag.trackingInfo.find(info => 
+          info.merchantTxnId === payment.merchantTxnId && info.type !== 'ncm_order'
+        );
+        // Find NCM order info by gatewayReferenceNo
+        ncmOrderInfo = userBag.trackingInfo.find(info => 
+          info.type === 'ncm_order' && 
+          info.gatewayReferenceNo === payment.gatewayReferenceNo
+        );
+      } else if (userBag.trackingInfo.merchantTxnId === payment.merchantTxnId) {
+        shipmentInfo = userBag.trackingInfo;
+      }
+    }
+    
+    const hasActualShipmentCreated = shipmentInfo && (shipmentInfo.status === 'Created' || shipmentInfo.success);
+    const hasActualNCMOrderCreated = 
+      (payment.ncmOrderId && payment.ncmOrderId.trim() !== '') || // Legacy check
+      (ncmOrderInfo && ncmOrderInfo.ncmOrderId); // New check in trackingInfo
+    
+    // Debug logging to see what's happening
+    console.log(`Payment ${payment.merchantTxnId} (Gateway: ${payment.gatewayReferenceNo}):`, {
+      hasActualShipmentCreated,
+      hasActualNCMOrderCreated,
+      shipmentInfo,
+      ncmOrderInfo,
+      userBagTrackingInfo: userBag.trackingInfo,
+      paymentStatus: payment.status
+    });
+    
+    // ONLY return 'shipped' if there's actual proof of INDIVIDUAL payment shipment/NCM order creation
+    if (hasActualShipmentCreated || hasActualNCMOrderCreated) {
+      return 'shipped';
+    }
+    
+    // Return the payment status (success, failed, pending)
+    const status = payment.status?.toLowerCase();
+    if (status === 'success') return 'success';
+    if (status === 'fail' || status === 'failed') return 'failed';
+    return 'pending';
+  };
+
+  // Sort user bags with latest orders at bottom
+  const sortedUserBags = [...userBags].sort((a, b) => {
+    const dateA = new Date(a.attributes?.createdAt || a.createdAt || 0);
+    const dateB = new Date(b.attributes?.createdAt || b.createdAt || 0);
+    return dateA - dateB; // Ascending order (oldest first, latest at bottom)
+  });
+
+  // Get all payments with their status
+  const getAllPayments = () => {
+    const allPayments = [];
+    
+    sortedUserBags.forEach(userBag => {
+      if (userBag && userBag.user_orders?.payments) {
+        userBag.user_orders.payments.forEach((payment, index) => {
+          const status = getPaymentStatus(payment, userBag);
+          allPayments.push({
+            ...payment,
+            userBag,
+            paymentIndex: index,
+            computedStatus: status
+          });
+        });
+      }
+    });
+    
+    // Debug: Log timestamp fields for sorting
+    console.log('\n=== PAYMENT TIMESTAMPS FOR SORTING ===');
+    allPayments.forEach((payment, index) => {
+      console.log(`Payment ${index + 1} (${payment.orderData?.receiver_details?.fullName}):`);
+      console.log('  timestamp:', payment.timestamp);
+      console.log('  createdAt:', payment.createdAt);
+      console.log('  userBag.createdAt:', payment.userBag.attributes?.createdAt);
+    });
+    
+    // Sort payments by their individual timestamps (oldest first)
+    allPayments.sort((a, b) => {
+      const dateA = new Date(a.timestamp || a.createdAt || a.userBag.attributes?.createdAt || 0);
+      const dateB = new Date(b.timestamp || b.createdAt || b.userBag.attributes?.createdAt || 0);
+      console.log(`Comparing ${a.orderData?.receiver_details?.fullName} (${dateA.toISOString()}) vs ${b.orderData?.receiver_details?.fullName} (${dateB.toISOString()})`);
+      return dateA - dateB;
+    });
+    
+    console.log('\n=== FINAL SORTED ORDER ===');
+    allPayments.forEach((payment, index) => {
+      const sortDate = new Date(payment.timestamp || payment.createdAt || payment.userBag.attributes?.createdAt || 0);
+      console.log(`${index + 1}. ${payment.orderData?.receiver_details?.fullName} - ${sortDate.toISOString()}`);
+    });
+    
+    return allPayments;
+  };
+
+  console.log('🚀 About to call getAllPayments');
+  const allPayments = getAllPayments();
+  console.log('✅ getAllPayments completed, found', allPayments.length, 'payments');
+
+  // Filter payments based on active tab
+  const filteredPayments = allPayments.filter(payment => payment.computedStatus === activeTab);
+
+  // Get counts for each tab
+  const getTabCounts = () => {
+    const counts = { pending: 0, success: 0, failed: 0, shipped: 0 };
+    
+    allPayments.forEach(payment => {
+      counts[payment.computedStatus]++;
+    });
+    
+    console.log('\n=== PAYMENT COUNTS ===');
+    console.log('Total payments found:', allPayments.length);
+    console.log('Tab counts:', counts);
+    console.log('Expected: Success=7, Pending=5, Failed=1');
+    
+    return counts;
+  };
+
+  const tabCounts = getTabCounts();
 
   const fetchUserBags = async () => {
     setLoadingUserBags(true);
@@ -449,18 +581,84 @@ const OrderManagement = () => {
       {/* User Payments Section */}
       {userBags && userBags.length > 0 && (
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">User Payments</h3>
+          {/* Tab Navigation */}
+          <div className="mb-6">
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => setActiveTab('pending')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'pending'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Pending ({tabCounts.pending})
+                </button>
+                <button
+                  onClick={() => setActiveTab('success')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'success'
+                      ? 'border-green-500 text-green-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Success ({tabCounts.success})
+                </button>
+                <button
+                  onClick={() => setActiveTab('failed')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'failed'
+                      ? 'border-red-500 text-red-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Failed ({tabCounts.failed})
+                </button>
+                <button
+                  onClick={() => setActiveTab('shipped')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'shipped'
+                      ? 'border-purple-500 text-purple-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Shipped ({tabCounts.shipped})
+                </button>
+              </nav>
+            </div>
+          </div>
+
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            {activeTab === 'pending' && 'Pending Orders'}
+            {activeTab === 'success' && 'Successful Orders'}
+            {activeTab === 'failed' && 'Failed Orders'}
+            {activeTab === 'shipped' && 'Shipped Orders'}
+            ({filteredPayments.length})
+          </h3>
           <div className="space-y-4">
-            {userBags.map((userBag) => (
-              userBag.user_orders && userBag.user_orders.payments.map((payment, index) => (
+            {filteredPayments.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No orders with {activeTab} status.</p>
+              </div>
+            ) : (
+              filteredPayments.map((payment, globalIndex) => (
                 <div 
-                  key={`${userBag.id}-${index}-${payment.merchantTxnId}`}
+                  key={`${payment.userBag.id}-${payment.paymentIndex}-${payment.merchantTxnId}`}
                   className="border p-2 mb-2 rounded">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
                       <h3 className="font-bold text-gray-900">{payment.orderData.receiver_details.fullName}</h3>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-gray-600">
                         <span>Order Time: {formatTimeAgo(payment.timestamp)}</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          payment.computedStatus === 'success' ? 'bg-green-100 text-green-800' :
+                          payment.computedStatus === 'failed' ? 'bg-red-100 text-red-800' :
+                          payment.computedStatus === 'shipped' ? 'bg-purple-100 text-purple-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {payment.computedStatus.toUpperCase()}
+                        </span>
                       </div>
                       {
                         payment.orderData.products && payment.orderData.products.length > 0 && (
@@ -479,16 +677,16 @@ const OrderManagement = () => {
                         )
                       }
                     </div>
-                    
+                      
                     <div className="flex flex-wrap gap-2">
                       {(() => {
-                        const shipmentInfo = getShipmentInfo(userBag, payment.merchantTxnId);
+                        const shipmentInfo = getShipmentInfo(payment.userBag, payment.merchantTxnId);
                         const { label, invoice } = getDocuments(shipmentInfo);
                         const isNepal = isNepalDestination(payment);
                         
                         if (shipmentInfo) {
                           return (
-                            <div key={`shipment-${userBag.id}-${payment.merchantTxnId}`} className="mt-2 p-2 bg-gray-50 rounded">
+                            <div key={`shipment-${payment.userBag.id}-${payment.merchantTxnId}`} className="mt-2 p-2 bg-gray-50 rounded">
                               <div className="flex items-center text-green-600 font-medium">
                                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -524,7 +722,7 @@ const OrderManagement = () => {
                               {isNepal && (
                                 <NCMOrderButton 
                                   payment={payment} 
-                                  bag={userBag} 
+                                  bag={payment.userBag} 
                                   onOrderCreated={(orderData, paymentId) => {
                                     console.log('NCM Order created for payment:', paymentId, orderData);
                                     fetchUserBags();
@@ -540,12 +738,12 @@ const OrderManagement = () => {
                               {!isNepal && (
                                 <button 
                                   onClick={() => {
-                                    console.log(`Creating DHL shipment for ${userBag.id}`);
-                                    createShipment(payment, userBag.documentId);
+                                    console.log(`Creating DHL shipment for ${payment.userBag.id}`);
+                                    createShipment(payment, payment.userBag.documentId);
                                   }}
                                   className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
                                 >
-                                  <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                                   </svg>
                                   Create DHL Shipment
@@ -556,7 +754,7 @@ const OrderManagement = () => {
                               {isNepal && (
                                 <NCMOrderButton 
                                   payment={payment} 
-                                  bag={userBag} 
+                                  bag={payment.userBag} 
                                   onOrderCreated={(orderData, paymentId) => {
                                     console.log('NCM Order created for payment:', paymentId, orderData);
                                     fetchUserBags();
@@ -571,7 +769,7 @@ const OrderManagement = () => {
                   </div>
                 </div>
               ))
-            ))}
+            )}
           </div>
         </div>
       )}
