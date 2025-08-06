@@ -102,12 +102,14 @@ const NCMOrderButton = ({ payment, bag, onOrderCreated }) => {
       const orderData = {
         name: payment.orderData.receiver_details.fullName,
         phone: payment.orderData.receiver_details.phone,
-        cod_charge: calculateCODCharge(),
+        phone2: '', // Add phone2 field as required by NCM API
+        cod_charge: String(calculateCODCharge() || 0), // Convert to string format
         address: `${payment.orderData.receiver_details.address.addressLine1}, ${payment.orderData.receiver_details.address.cityName}`,
-        fbranch: 'Tinkune',
-        branch: formData.branch,
+        fbranch: 'TINKUNE', // Use uppercase as required by NCM API
+        branch: String(formData.branch || '').toUpperCase(), // Ensure uppercase
         package: 'Clothing',
-        vref_id: payment.gatewayReferenceNo || payment.merchantTxnId
+        vref_id: payment.gatewayReferenceNo || payment.merchantTxnId,
+        instruction: '' // Add instruction field as required by NCM API
       };
 
       console.log('Sending NCM order data:', orderData);
