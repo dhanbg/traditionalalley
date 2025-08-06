@@ -16,8 +16,15 @@ export default function Orders() {
 
       try {
         const response = await fetchDataFromApi(
-          `${USER_BAGS_API}?filters[authUserId][$eq]=${session.user.id}&populate=*&sort=createdAt:desc`
+          `${USER_BAGS_API}?filters[user_datum][authUserId][$eq]=${session.user.id}&populate=*&sort=createdAt:desc`
         );
+        
+        // Check if the response contains an error
+        if (response.success === false || response.error) {
+          console.error("API Error:", response.error, response.detail);
+          setOrders([]);
+          return;
+        }
         
         // Filter for shipped orders only (those with trackingInfo)
         const shippedOrders = (response.data || []).filter(bag => {
@@ -30,6 +37,7 @@ export default function Orders() {
         setOrders(shippedOrders);
       } catch (error) {
         console.error("Error fetching orders:", error);
+        setOrders([]);
       } finally {
         setLoading(false);
       }
