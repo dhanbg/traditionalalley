@@ -31,17 +31,18 @@ export async function POST(request) {
       }, { status: 500 });
     }
 
-    // Prepare the data for NCM API
+    // Prepare the data for NCM API (cod_charge must be string per NCM API docs)
     const ncmOrderData = {
       name: body.name,
       phone: body.phone,
       phone2: body.phone2 || '',
-      cod_charge: parseFloat(body.cod_charge || '0'),
+      cod_charge: String(body.cod_charge || '0'),
       address: body.address,
       fbranch: body.fbranch,
       branch: body.branch,
       package: body.package || '',
-      vref_id: body.vref_id || ''
+      vref_id: body.vref_id || '',
+      instruction: body.instruction || ''
     };
 
     console.log('Creating NCM order with data:', ncmOrderData);
