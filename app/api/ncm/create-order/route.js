@@ -48,11 +48,12 @@ export async function POST(request) {
     console.log('Creating NCM order with data:', ncmOrderData);
 
     // Make request to NCM API - Use portal endpoint for production
-    const NCM_API_BASE_URL = process.env.NCM_API_BASE_URL || 'https://portal.nepalcanmove.com/api/v1';
-    console.log(`Making request to: ${NCM_API_BASE_URL}/order/create`);
+    const NCM_API_BASE_URL = (process.env.NCM_API_BASE_URL || 'https://portal.nepalcanmove.com/api/v1').replace(/\/$/, '');
+    const orderEndpoint = `${NCM_API_BASE_URL}/order/create`;
+    console.log(`Making request to: ${orderEndpoint}`);
     console.log(`Request payload: ${JSON.stringify(ncmOrderData, null, 2)}`);
     
-    const ncmResponse = await fetch(`${NCM_API_BASE_URL}/order/create`, {
+    const ncmResponse = await fetch(orderEndpoint, {
       method: 'POST',
       headers: {
         'Authorization': `Token ${NCM_API_TOKEN}`,
