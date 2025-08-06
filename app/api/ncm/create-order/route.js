@@ -47,7 +47,8 @@ export async function POST(request) {
     console.log('Creating NCM order with data:', ncmOrderData);
 
     // Make request to NCM API
-    const ncmResponse = await fetch('https://demo.nepalcanmove.com/api/v1/order/create', {
+    const NCM_API_BASE_URL = process.env.NCM_API_BASE_URL || 'https://portal.nepalcanmove.com/api/v1';
+    const ncmResponse = await fetch(`${NCM_API_BASE_URL}/order/create`, {
       method: 'POST',
       headers: {
         'Authorization': `Token ${NCM_API_TOKEN}`,

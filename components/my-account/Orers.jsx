@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { fetchDataFromApi } from "@/utils/api";
-import { ORDERS_API } from "@/utils/urls";
+import { USER_BAGS_API } from "@/utils/urls";
 import Link from "next/link";
 
 export default function Orders() {
@@ -16,9 +16,18 @@ export default function Orders() {
 
       try {
         const response = await fetchDataFromApi(
-          `${ORDERS_API}?filters[authUserId][$eq]=${session.user.id}&populate=*&sort=createdAt:desc`
+          `${USER_BAGS_API}?filters[authUserId][$eq]=${session.user.id}&populate=*&sort=createdAt:desc`
         );
-        setOrders(response.data || []);
+        
+        // Filter for shipped orders only (those with trackingInfo)
+        const shippedOrders = (response.data || []).filter(bag => {
+          return bag.trackingInfo && (
+            (Array.isArray(bag.trackingInfo) && bag.trackingInfo.length > 0) ||
+            (typeof bag.trackingInfo === 'object' && bag.trackingInfo.status)
+          );
+        });
+        
+        setOrders(shippedOrders);
       } catch (error) {
         console.error("Error fetching orders:", error);
       } finally {
@@ -36,8 +45,8 @@ export default function Orders() {
   if (!orders.length) {
     return (
       <div className="no-orders">
-        <h3>No orders found</h3>
-        <p>You haven't placed any orders yet.</p>
+        <h3>No shipped orders found</h3>
+        <p>You don't have any shipped orders yet.</p>
         <Link href="/shop-default-grid" className="tf-btn btn-fill">
           Start Shopping
         </Link>
@@ -45,44 +54,77 @@ export default function Orders() {
     );
   }
 
+  // Helper function to get tracking info display
+  const getTrackingDisplay = (trackingInfo) => {
+    if (Array.isArray(trackingInfo)) {
+      const latestTracking = trackingInfo[trackingInfo.length - 1];
+      return latestTracking.shipmentTrackingNumber || 'Tracking Available';
+    }
+    return trackingInfo.shipmentTrackingNumber || 'Tracking Available';
+  };
+
+  // Helper function to get total amount from payments
+  const getTotalAmount = (userOrders) => {
+    if (!userOrders?.payments || userOrders.payments.length === 0) return 'N/A';
+    const successfulPayments = userOrders.payments.filter(p => p.status === 'Success');
+    if (successfulPayments.length === 0) return 'N/A';
+    return successfulPayments.reduce((total, payment) => total + (payment.amount || 0), 0);
+  };
+
+  // Helper function to get items count
+  const getItemsCount = (userOrders) => {
+    if (!userOrders?.payments || userOrders.payments.length === 0) return 0;
+    const successfulPayments = userOrders.payments.filter(p => p.status === 'Success');
+    return successfulPayments.reduce((total, payment) => {
+      const products = payment.orderData?.products || [];
+      return total + products.reduce((sum, product) => sum + (product.quantity || 1), 0);
+    }, 0);
+  };
+
   return (
     <div className="orders-list">
-      <h2>My Orders</h2>
+      <h2>My Shipped Orders</h2>
       <div className="orders-container">
-        {orders.map((order) => (
-          <div key={order.id} className="order-card">
-            <div className="order-header">
-              <div className="order-info">
-                <h4>Order #{order.id}</h4>
-                <p className="order-date">
-                  {new Date(order.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-              <div className="order-status">
-                <span className={`status ${order.status?.toLowerCase()}`}>
-                  {order.status}
-                </span>
-              </div>
-            </div>
-            
-            <div className="order-details">
-              <div className="order-summary">
-                <p><strong>Total:</strong> ${order.totalAmount}</p>
-                <p><strong>Items:</strong> {order.orderItems?.length || 0}</p>
-                <p><strong>Payment:</strong> {order.paymentStatus}</p>
+        {orders.map((order) => {
+          const totalAmount = getTotalAmount(order.user_orders);
+          const itemsCount = getItemsCount(order.user_orders);
+          const trackingDisplay = getTrackingDisplay(order.trackingInfo);
+          
+          return (
+            <div key={order.id} className="order-card">
+              <div className="order-header">
+                <div className="order-info">
+                  <h4>Order #{order.id}</h4>
+                  <p className="order-date">
+                    {new Date(order.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="order-status">
+                  <span className="status shipped">
+                    Shipped
+                  </span>
+                </div>
               </div>
               
-              <div className="order-actions">
-                <Link 
-                  href={`/my-account-order-details/${order.id}`}
-                  className="tf-btn btn-outline"
-                >
-                  View Details
-                </Link>
+              <div className="order-details">
+                <div className="order-summary">
+                  <p><strong>Total:</strong> NPR {totalAmount}</p>
+                  <p><strong>Items:</strong> {itemsCount}</p>
+                  <p><strong>Tracking:</strong> {trackingDisplay}</p>
+                </div>
+                
+                <div className="order-actions">
+                  <Link 
+                    href={`/my-account-order-details/${order.id}`}
+                    className="tf-btn btn-outline"
+                  >
+                    View Details
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

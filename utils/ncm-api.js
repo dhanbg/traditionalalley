@@ -3,7 +3,7 @@
  * Provides functionality to interact with NCM's logistics API
  */
 
-const NCM_BASE_URL = 'https://demo.nepalcanmove.com/api/v1';
+const NCM_BASE_URL = process.env.NCM_API_BASE_URL || 'https://portal.nepalcanmove.com/api/v1';
 
 /**
  * Make authenticated request to NCM API

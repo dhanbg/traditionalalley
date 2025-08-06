@@ -20,5 +20,9 @@ export const USER_CARTS_API = (userId) => `/api/carts?filters[userId][$eq]=${use
 export const CUSTOMER_REVIEWS_API = "/api/customer-reviews?populate=*";
 export const PRODUCT_REVIEWS_API = (productDocumentId) => `/api/customer-reviews?filters[product][documentId][$eq]=${productDocumentId}&populate=*`;
 
+// Orders endpoints
+export const ORDERS_API = "/api/orders";
+export const USER_BAGS_API = "/api/user-bags";
+
 // Search endpoint
 export const SEARCH_PRODUCTS_API = (query) => `/api/products?filters[title][$containsi]=${encodeURIComponent(query)}&populate=*`;
