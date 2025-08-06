@@ -36,10 +36,10 @@ export async function POST(request) {
       name: body.name,
       phone: body.phone,
       phone2: body.phone2 || '',
-      cod_charge: String(body.cod_charge || '0'),
+      cod_charge: String(parseFloat(body.cod_charge || 0).toFixed(2)), // Ensure proper string format
       address: body.address,
-      fbranch: body.fbranch,
-      branch: body.branch,
+      fbranch: String(body.fbranch || '').toUpperCase(), // Normalize branch to uppercase
+      branch: String(body.branch || '').toUpperCase(), // Normalize branch to uppercase
       package: body.package || '',
       vref_id: body.vref_id || '',
       instruction: body.instruction || ''
