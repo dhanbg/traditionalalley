@@ -119,8 +119,28 @@ export async function getAvailableBranches() {
  */
 export async function getDeliveryCharges(fromBranch, toBranch, type = 'Pickup') {
   try {
-    const endpoint = `/shipping-rate?creation=${encodeURIComponent(fromBranch)}&destination=${encodeURIComponent(toBranch)}&type=${encodeURIComponent(type)}`;
-    return await makeNCMRequest(endpoint);
+    // Use direct API call without authentication (like branchlist endpoint)
+    const url = `https://portal.nepalcanmove.com/api/v1/shipping-rate?creation=${encodeURIComponent(fromBranch)}&destination=${encodeURIComponent(toBranch)}&type=${encodeURIComponent(type)}/Collect`;
+    
+    console.log('NCM Shipping Rate URL:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('NCM API Error Response:', response.status, errorText);
+      throw new Error(`NCM API Error (${response.status}): ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('NCM Shipping Rate Response:', data);
+    
+    return data;
   } catch (error) {
     console.error('Failed to fetch delivery charges:', error);
     throw error;
