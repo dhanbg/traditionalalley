@@ -27,14 +27,10 @@ export default async function handler(req, res) {
     // Extract charge from NCM API response
     const baseCharge = response.charge || response.charges?.charge || '0.00';
     
-    // Add Rs. 20 surcharge to every branch delivery in Nepal
-    const finalCharge = parseFloat(baseCharge) + 20;
-    
+    // Return the base charge directly without surcharge
     res.status(200).json({ 
       success: true, 
-      charge: finalCharge,
-      baseCharge: parseFloat(baseCharge),
-      surcharge: 20,
+      charge: parseFloat(baseCharge),
       rawResponse: response 
     });
   } catch (error) {
