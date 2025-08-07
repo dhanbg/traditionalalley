@@ -9,7 +9,6 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-COPY ./api ./api
 # Accept build-time environment variables for NEXT_PUBLIC_*
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_STRAPI_API_TOKEN
@@ -34,7 +33,6 @@ COPY --from=builder /app/next-env.d.ts ./next-env.d.ts
 COPY --from=builder /app/auth.config.ts ./auth.config.ts
 COPY --from=builder /app/auth.ts ./auth.ts
 COPY --from=builder /app/middleware.ts ./middleware.ts
-COPY --from=builder /app/api ./api
 
 # Install only production dependencies
 RUN npm install --omit=dev --legacy-peer-deps
