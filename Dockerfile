@@ -9,6 +9,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+COPY ./api ./api
 # Accept build-time environment variables for NEXT_PUBLIC_*
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_STRAPI_API_TOKEN
