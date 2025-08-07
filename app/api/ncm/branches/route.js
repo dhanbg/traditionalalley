@@ -3,10 +3,10 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   try {
     // Get NCM API credentials from environment variables
-    const NCM_API_BASE_URL = process.env.NCM_API_BASE_URL;
+    const NCM_API_BASE_URL = process.env.NCM_API_BASE_URL || 'https://portal.nepalcanmove.com';
     const NCM_API_TOKEN = process.env.NCM_API_TOKEN;
 
-    if (!NCM_API_BASE_URL || !NCM_API_TOKEN) {
+    if (!NCM_API_TOKEN) {
       console.error('NCM API credentials not found in environment variables');
       return NextResponse.json({
         success: false,
@@ -15,7 +15,7 @@ export async function GET() {
     }
 
     // Fetch branches from NCM API
-    const response = await fetch(`${NCM_API_BASE_URL}/branchlist`, {
+    const response = await fetch(`${NCM_API_BASE_URL}/api/v1/branchlist`, {
       method: 'GET',
       headers: {
         'Authorization': `Token ${NCM_API_TOKEN}`,
