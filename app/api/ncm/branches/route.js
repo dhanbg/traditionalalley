@@ -15,7 +15,7 @@ export async function GET() {
     }
 
     // Fetch branches from NCM API
-    const response = await fetch(`${NCM_API_BASE_URL}branchlist`, {
+    const response = await fetch(`${NCM_API_BASE_URL}/branchlist`, {
       method: 'GET',
       headers: {
         'Authorization': `Token ${NCM_API_TOKEN}`,

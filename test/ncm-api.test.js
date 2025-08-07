@@ -13,7 +13,7 @@ async function testNcmApi() {
     console.log(`Using base URL: ${process.env.NCM_API_BASE_URL}`);
     
     // Test branch list endpoint
-    const branchUrl = `${process.env.NCM_API_BASE_URL}branchlist`;
+    const branchUrl = `${process.env.NCM_API_BASE_URL}/branchlist`;
     console.log(`\nTesting branch list endpoint: ${branchUrl}`);
     
     const response = await axios.get(branchUrl, {
