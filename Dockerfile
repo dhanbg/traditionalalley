@@ -33,13 +33,11 @@ COPY --from=builder /app/next-env.d.ts ./next-env.d.ts
 COPY --from=builder /app/auth.config.ts ./auth.config.ts
 COPY --from=builder /app/auth.ts ./auth.ts
 COPY --from=builder /app/middleware.ts ./middleware.ts
-# Copy essential directories for API functionality
-COPY --from=builder /app/utils ./utils
-COPY --from=builder /app/pages ./pages
+# Copy API routes directories
 COPY --from=builder /app/app ./app
+COPY --from=builder /app/pages ./pages
+COPY --from=builder /app/utils ./utils
 COPY --from=builder /app/components ./components
-COPY --from=builder /app/context ./context
-COPY --from=builder /app/lib ./lib
 
 # Install only production dependencies
 RUN npm install --omit=dev --legacy-peer-deps

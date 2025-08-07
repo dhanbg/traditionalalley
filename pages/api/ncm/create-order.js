@@ -1,0 +1,117 @@
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const body = req.body;
+    
+    // Validate required fields
+    const requiredFields = ['name', 'phone', 'cod_charge', 'address', 'fbranch', 'branch'];
+    const missingFields = requiredFields.filter(field => {
+      // Special handling for cod_charge - it might be 0 which is falsy
+      if (field === 'cod_charge') {
+        return body[field] === undefined || body[field] === null || body[field] === '';
+      }
+      return !body[field];
+    });
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`
+      });
+    }
+
+    // Get NCM API token from environment variables
+    const NCM_API_TOKEN = process.env.NCM_API_TOKEN;
+    if (!NCM_API_TOKEN) {
+      console.error('NCM_API_TOKEN not found in environment variables');
+      return res.status(500).json({
+        success: false,
+        message: 'NCM API configuration error'
+      });
+    }
+
+    // Prepare the data for NCM API (cod_charge must be string per NCM API docs)
+    const ncmOrderData = {
+      name: body.name,
+      phone: body.phone,
+      phone2: body.phone2 || '',
+      cod_charge: String(parseFloat(body.cod_charge || 0).toFixed(2)), // Ensure proper string format
+      address: body.address,
+      fbranch: String(body.fbranch || '').toUpperCase(), // Normalize branch to uppercase
+      branch: String(body.branch || '').toUpperCase(), // Normalize branch to uppercase
+      package: body.package || '',
+      vref_id: body.vref_id || '',
+      instruction: body.instruction || ''
+    };
+
+    console.log('Creating NCM order with data:', ncmOrderData);
+
+    // Make request to NCM API - Use portal endpoint for production
+    const NCM_API_BASE_URL = (process.env.NCM_API_BASE_URL || 'https://portal.nepalcanmove.com/api/v1').replace(/\/$/, '');
+    const orderEndpoint = `${NCM_API_BASE_URL}/order/create`;
+    console.log(`Making request to: ${orderEndpoint}`);
+    console.log(`Request payload: ${JSON.stringify(ncmOrderData, null, 2)}`);
+    
+    const ncmResponse = await fetch(orderEndpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${NCM_API_TOKEN}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'Traditional-Alley-API/1.0',
+        'Cache-Control': 'no-cache'
+      },
+      body: JSON.stringify(ncmOrderData)
+    });
+
+    const ncmResponseText = await ncmResponse.text();
+    console.log('NCM API raw response:', ncmResponseText);
+
+    let ncmData;
+    try {
+      ncmData = JSON.parse(ncmResponseText);
+    } catch (parseError) {
+      console.error('Failed to parse NCM API response:', parseError);
+      return res.status(500).json({
+        success: false,
+        message: 'Invalid response from NCM API',
+        rawResponse: ncmResponseText
+      });
+    }
+
+    if (!ncmResponse.ok) {
+      console.error('NCM API error:', ncmData);
+      return res.status(ncmResponse.status).json({
+        success: false,
+        message: ncmData.detail || ncmData.message || 'Failed to create NCM order',
+        error: ncmData
+      });
+    }
+
+    console.log('NCM order created successfully:', ncmData);
+
+    // Return success response
+    res.status(200).json({
+      success: true,
+      message: 'NCM order created successfully',
+      data: {
+        orderId: ncmData.orderid || ncmData.id,
+        orderDetails: ncmData,
+        requestData: ncmOrderData
+      }
+    });
+
+  } catch (error) {
+    console.error('Error creating NCM order:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while creating NCM order',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+}
