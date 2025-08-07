@@ -187,13 +187,18 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
   };
 
   const getNCMRates = async () => {
+    // For NCM, we need pickup branch (origin) and destination branch
+    const pickupBranch = 'TINKUNE'; // Default pickup branch - you may want to make this configurable
+    const destinationBranch = formData.destinationAddress.cityName; // This contains the selected branch name
+    
     try {
       setDhlLoading(true);
       setDhlError('');
       
-      // For NCM, we need pickup branch (origin) and destination branch
-      const pickupBranch = 'TINKUNE'; // Default pickup branch - you may want to make this configurable
-      const destinationBranch = formData.destinationAddress.cityName; // This contains the selected branch name
+      // Validate required data
+      if (!destinationBranch) {
+        throw new Error('Please select a destination branch');
+      }
       
       console.log('NCM Rate Request:', { from: pickupBranch, to: destinationBranch });
       
@@ -202,7 +207,8 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
           from: pickupBranch,
           to: destinationBranch,
           type: 'Pickup'
-        }
+        },
+        timeout: 30000 // 30 second timeout
       });
       
       if (response.data.success) {
@@ -247,8 +253,29 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         }
       }
     } catch (error) {
-      console.error('NCM Rate Error:', error);
-      setDhlError(error.response?.data?.error || 'Failed to get NCM rates');
+      console.error('NCM Rate Error - Full Error Object:', error);
+      console.error('NCM Rate Error - Error Details:', {
+        errorType: typeof error,
+        errorConstructor: error.constructor?.name,
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        pickupBranch,
+        destinationBranch,
+        hasResponse: !!error.response,
+        errorKeys: Object.keys(error || {})
+      });
+      
+      // Handle different error structures
+      let errorMessage = 'Failed to get NCM rates';
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response?.data?.details) {
+        errorMessage = error.response.data.details;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      setDhlError(errorMessage);
     } finally {
       setDhlLoading(false);
     }
@@ -321,36 +348,50 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
       return getNCMRates();
     }
     
-    // TEMPORARY OVERRIDE: Set shipping cost to 0 for production testing
-    const mockRates = {
-      success: true,
-      data: {
-        products: [{
-          productName: "DHL Express Worldwide",
-          totalPrice: [{
-            currencyType: "BILLC",
-            priceCurrency: "USD",
-            price: 0
-          }],
-          deliveryCapabilities: {
-            estimatedDeliveryDateAndTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-            totalTransitDays: "2"
+    // Original DHL logic for non-Nepal destinations
+    try {
+      setDhlLoading(true);
+      setDhlError('');
+      console.log('DHL Rate Request Payload:', formData);
+      const response = await axios.post('/api/dhl/rates', formData);
+      setRates(response.data);
+      
+      // Store the first rate as selected rate for pricing display
+      if (response.data && response.data.success && response.data.data.products && response.data.data.products.length > 0) {
+        const firstProduct = response.data.data.products[0];
+        const billingPrice = firstProduct.totalPrice.find(p => p.currencyType === 'BILLC');
+        if (billingPrice) {
+          console.log('🔍 DHL Rate Currency Debug:', {
+            currency: billingPrice.priceCurrency,
+            price: billingPrice.price,
+            currencyType: billingPrice.currencyType
+          });
+          setSelectedRate({
+            price: billingPrice.price,
+            currency: billingPrice.priceCurrency
+          });
+          
+          // Notify parent component if callback exists
+          if (onRateCalculated) {
+            onRateCalculated({
+              price: billingPrice.price,
+              currency: billingPrice.priceCurrency,
+              productName: firstProduct.productName,
+              deliveryDate: firstProduct.deliveryCapabilities.estimatedDeliveryDateAndTime,
+              transitDays: firstProduct.deliveryCapabilities.totalTransitDays
+            });
           }
-        }]
+        }
       }
-    };
-
-    setRates(mockRates);
-    setDhlLoading(false);
-    
-    if (onRateCalculated) {
-      onRateCalculated({
-        price: 0,
-        currency: "USD",
-        productName: "DHL Express Worldwide",
-        deliveryDate: mockRates.data.products[0].deliveryCapabilities.estimatedDeliveryDateAndTime,
-        transitDays: mockRates.data.products[0].deliveryCapabilities.totalTransitDays
-      });
+    } catch (error) {
+      if (error.response) {
+        console.error('DHL Rate Error Response:', error.response.data);
+        setDhlError(error.response.data?.message || error.response.data?.error || 'Failed to get rates');
+      } else {
+        setDhlError('Failed to get rates');
+      }
+    } finally {
+      setDhlLoading(false);
     }
   };
 

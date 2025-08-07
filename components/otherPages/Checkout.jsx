@@ -97,6 +97,13 @@ export default function Checkout() {
   // Add state for selected payment method
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('nps');
 
+  // Add state for coupon functionality
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponError, setCouponError] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+
   // Add state for DHL shipping
   const [shippingCost, setShippingCost] = useState(0);
   const [shippingRatesObtained, setShippingRatesObtained] = useState(false);
@@ -587,6 +594,27 @@ export default function Checkout() {
       
       await clearPurchasedItemsFromCart(purchasedProducts);
       
+      // Apply coupon if one was used
+      if (appliedCoupon && appliedCoupon.id) {
+        try {
+          const response = await fetch('/api/coupons/apply', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ couponId: appliedCoupon.id }),
+          });
+          
+          if (response.ok) {
+            console.log('✅ Coupon applied successfully');
+          } else {
+            console.error('❌ Failed to apply coupon');
+          }
+        } catch (error) {
+          console.error('❌ Error applying coupon:', error);
+        }
+      }
+      
       // Show success message
       const stockSuccessCount = successfulStockUpdates.length;
       const stockFailCount = failedStockUpdates.length;
@@ -597,6 +625,9 @@ export default function Checkout() {
         message += `❌ Stock update failed for ${stockFailCount} item(s)\n`;
       }
       message += `✅ Items removed from cart`;
+      if (appliedCoupon) {
+        message += `\n✅ Coupon "${appliedCoupon.code}" applied`;
+      }
       
       alert(message);
       
@@ -774,8 +805,13 @@ export default function Checkout() {
           totalItems: selectedProducts.reduce((sum, product) => sum + product.quantity, 0),
           totalProducts: selectedProducts.length,
           subtotal: actualTotal,
+          productDiscounts: totalDiscounts,
+          couponCode: appliedCoupon?.code || null,
+          couponDiscount: couponDiscount,
+          totalDiscounts: totalDiscounts + couponDiscount,
+          finalSubtotal: finalTotal,
           shippingCost: shippingCost,
-          totalAmount: actualTotal + shippingCost,
+          totalAmount: finalTotal + shippingCost,
           currency: "NPR",
           orderDate: new Date().toISOString(),
           orderTimezone: "Asia/Kathmandu"
@@ -1113,6 +1149,60 @@ export default function Checkout() {
   // Calculate total discounts: subtotal - actualTotal (if positive)
   const totalDiscounts = subtotal > actualTotal ? Math.round((subtotal - actualTotal) * 100) / 100 : 0;
 
+  // Function to validate coupon
+  const validateCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError('Please enter a coupon code');
+      return;
+    }
+
+    setCouponLoading(true);
+    setCouponError('');
+
+    try {
+      const response = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code: couponCode.trim(),
+          orderAmount: actualTotal
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.valid) {
+        setAppliedCoupon(data.coupon);
+        setCouponDiscount(data.coupon.discountAmount);
+        setCouponError('');
+      } else {
+        setCouponError(data.error || 'Invalid coupon code');
+        setAppliedCoupon(null);
+        setCouponDiscount(0);
+      }
+    } catch (error) {
+      console.error('Error validating coupon:', error);
+      setCouponError('Failed to validate coupon. Please try again.');
+      setAppliedCoupon(null);
+      setCouponDiscount(0);
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  // Function to remove applied coupon
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponDiscount(0);
+    setCouponCode('');
+    setCouponError('');
+  };
+
+  // Calculate final total with coupon discount
+  const finalTotal = Math.max(0, actualTotal - couponDiscount);
+
   // Check if cart is empty
   if (selectedProducts.length === 0) {
     return (
@@ -1302,15 +1392,75 @@ export default function Checkout() {
                     ))}
                   </Swiper>
                     <div className="ip-discount-code" style={{ marginTop: '15px', marginBottom: '10px' }}>
-                      <input type="text" placeholder="Add voucher discount" style={{ borderRadius: '4px', borderColor: '#ddd' }} />
-                      <button className="tf-btn" style={{ marginLeft: '10px' }}>
-                      <span className="text">Apply Code</span>
-                    </button>
-                  </div>
+                      <input 
+                        type="text" 
+                        placeholder="Add voucher discount" 
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value)}
+                        disabled={appliedCoupon || couponLoading}
+                        style={{ 
+                          borderRadius: '4px', 
+                          borderColor: couponError ? '#dc3545' : '#ddd',
+                          backgroundColor: appliedCoupon ? '#f8f9fa' : 'white'
+                        }} 
+                      />
+                      {!appliedCoupon ? (
+                        <button 
+                          className="tf-btn" 
+                          onClick={validateCoupon}
+                          disabled={couponLoading || !couponCode.trim()}
+                          style={{ marginLeft: '10px' }}
+                        >
+                          <span className="text">
+                            {couponLoading ? 'Validating...' : 'Apply Code'}
+                          </span>
+                        </button>
+                      ) : (
+                        <button 
+                          className="tf-btn" 
+                          onClick={removeCoupon}
+                          style={{ marginLeft: '10px', backgroundColor: '#dc3545' }}
+                        >
+                          <span className="text">Remove</span>
+                        </button>
+                      )}
+                    </div>
+                    
+                    {/* Coupon Error Message */}
+                    {couponError && (
+                      <div style={{ 
+                        color: '#dc3545', 
+                        fontSize: '13px', 
+                        marginTop: '5px',
+                        marginBottom: '10px'
+                      }}>
+                        {couponError}
+                      </div>
+                    )}
+                    
+                    {/* Applied Coupon Success Message */}
+                    {appliedCoupon && (
+                      <div style={{ 
+                        color: '#28a745', 
+                        fontSize: '13px', 
+                        marginTop: '5px',
+                        marginBottom: '10px',
+                        padding: '8px',
+                        backgroundColor: '#d4edda',
+                        borderRadius: '4px',
+                        border: '1px solid #c3e6cb'
+                      }}>
+                        ✓ Coupon "{appliedCoupon.code}" applied! 
+                        {appliedCoupon.discountType === 'percentage' 
+                          ? `${appliedCoupon.discountValue}% discount` 
+                          : `$${appliedCoupon.discountValue} discount`
+                        }
+                      </div>
+                    )}
+                    
                     <p style={{ fontSize: '13px', color: '#666', marginTop: '5px' }}>
-                    Discount code is only used for orders with a total value of
-                    products over $500.00
-                  </p>
+                      Discount codes may have minimum order requirements
+                    </p>
                 </div>
                   
                   {/* Order Summary */}
@@ -1330,10 +1480,22 @@ export default function Checkout() {
                         </div>
                         {totalDiscounts > 0.01 && (
                           <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
-                            <span>Total Discounts</span>
+                            <span>Product Discounts</span>
                             <span style={{ color: '#28a745' }}>
                               <PriceDisplay 
                                 price={-totalDiscounts}
+                                className="text-button"
+                                size="normal"
+                              />
+                            </span>
+                          </div>
+                        )}
+                        {couponDiscount > 0 && (
+                          <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
+                            <span>Coupon Discount ({appliedCoupon?.code})</span>
+                            <span style={{ color: '#28a745' }}>
+                              <PriceDisplay 
+                                price={-couponDiscount}
                                 className="text-button"
                                 size="normal"
                               />
@@ -1344,7 +1506,7 @@ export default function Checkout() {
                           <span>Total (Without Shipping Charges)</span>
                           <span>
                             <PriceDisplay 
-                              price={actualTotal}
+                              price={finalTotal}
                               className="text-button"
                               size="normal"
                             />
@@ -1379,10 +1541,10 @@ export default function Checkout() {
                           />
                         ) : (
                           <PriceDisplay 
-                            price={actualTotal + (shippingCost / (nprExchangeRate || 134.5))}
-                            className="text-button"
-                            size="large"
-                          />
+                              price={finalTotal + (shippingCost / (nprExchangeRate || 134.5))}
+                              className="text-button"
+                              size="normal"
+                            />
                         )}
                       </span>
                     </h5>
@@ -1478,8 +1640,13 @@ export default function Checkout() {
                               totalItems: selectedProducts.reduce((sum, product) => sum + product.quantity, 0),
                               totalProducts: selectedProducts.length,
                               subtotal: actualTotal,
+                              productDiscounts: totalDiscounts,
+                              couponCode: appliedCoupon?.code || null,
+                              couponDiscount: couponDiscount,
+                              totalDiscounts: totalDiscounts + couponDiscount,
+                              finalSubtotal: finalTotal,
                               shippingCost: shippingCost,
-                              totalAmount: actualTotal + shippingCost,
+                              totalAmount: finalTotal + shippingCost,
                               currency: "NPR",
                               orderDate: new Date().toISOString(),
                               orderTimezone: "Asia/Kathmandu"

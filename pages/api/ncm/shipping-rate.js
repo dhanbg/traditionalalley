@@ -7,6 +7,12 @@ export default async function handler(req, res) {
 
   try {
     const { from, to, type = 'Pickup' } = req.query;
+    console.log('NCM API Request params:', { from, to, type });
+    console.log('Environment check:', {
+      hasBaseUrl: !!process.env.NCM_API_BASE_URL,
+      hasToken: !!process.env.NCM_API_TOKEN,
+      baseUrl: process.env.NCM_API_BASE_URL
+    });
 
     if (!from || !to) {
       return res.status(400).json({ 
@@ -19,11 +25,16 @@ export default async function handler(req, res) {
     console.log('NCM API response:', response);
     
     // Extract charge from NCM API response
-    const charge = response.charge || response.charges?.charge || '0.00';
+    const baseCharge = response.charge || response.charges?.charge || '0.00';
+    
+    // Add Rs. 50 surcharge to every branch delivery in Nepal
+    const finalCharge = parseFloat(baseCharge) + 50;
     
     res.status(200).json({ 
       success: true, 
-      charge: parseFloat(charge),
+      charge: finalCharge,
+      baseCharge: parseFloat(baseCharge),
+      surcharge: 50,
       rawResponse: response 
     });
   } catch (error) {
