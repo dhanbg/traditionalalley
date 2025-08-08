@@ -465,14 +465,79 @@ const NPSCallbackContent = () => {
         // Automatic Stock Update & Cart Cleanup after successful payment
         if (finalStatus === "Success" || finalStatus === "SUCCESS" || finalStatus === "success") {
           try {
-            // Step: Automatic Stock Update & Cart Cleanup using CURRENT cart data (no stale orderData)
+            // Step 1: Automatic Stock Update & Cart Cleanup using CURRENT cart data (no stale orderData)
             setProcessingStatus("🔄 Updating inventory and cleaning up cart...");
             await handleAutomaticUpdateStockAndDelete(user, clearPurchasedItemsFromCart);
             setProcessingStatus("✅ Inventory updated and cart cleaned up!");
             
+            // Step 2: Automatic Coupon Application (if coupon was used)
+            if (orderData && orderData.orderSummary && orderData.orderSummary.couponCode) {
+              try {
+                setProcessingStatus("🎫 Applying coupon automatically...");
+                console.log("🎫 Automatic coupon application started for:", orderData.orderSummary.couponCode);
+                
+                // Find the coupon by code first
+                const validateResponse = await fetch('/api/coupons/validate', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    code: orderData.orderSummary.couponCode,
+                    orderAmount: orderData.orderSummary.finalSubtotal || orderData.orderSummary.subtotal,
+                    userId: user.id
+                  })
+                });
+                
+                if (validateResponse.ok) {
+                  const validateData = await validateResponse.json();
+                  
+                  if (validateData.valid && validateData.coupon) {
+                    // Apply the coupon
+                    const applyResponse = await fetch('/api/coupons/apply', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        couponId: validateData.coupon.id,
+                        userId: user.id
+                      })
+                    });
+                    
+                    if (applyResponse.ok) {
+                      const applyData = await applyResponse.json();
+                      if (applyData.success) {
+                        console.log("✅ Coupon applied automatically:", orderData.orderSummary.couponCode);
+                        setProcessingStatus("✅ Coupon applied successfully!");
+                      } else {
+                        console.warn("⚠️ Coupon application failed:", applyData.message);
+                        setProcessingStatus("⚠️ Coupon application failed but payment successful");
+                      }
+                    } else {
+                      console.warn("⚠️ Coupon apply API request failed");
+                      setProcessingStatus("⚠️ Coupon application failed but payment successful");
+                    }
+                  } else {
+                    console.warn("⚠️ Coupon validation failed:", validateData.message);
+                    setProcessingStatus("⚠️ Coupon validation failed but payment successful");
+                  }
+                } else {
+                  console.warn("⚠️ Coupon validate API request failed");
+                  setProcessingStatus("⚠️ Coupon validation failed but payment successful");
+                }
+                
+              } catch (couponError) {
+                console.error("❌ Error in automatic coupon application:", couponError);
+                setProcessingStatus("⚠️ Coupon application error but payment successful");
+              }
+            } else {
+              console.log("ℹ️ No coupon to apply automatically");
+            }
+            
           } catch (orderError) {
-            console.error("Error creating order:", orderError);
-            setProcessingStatus("⚠️ Payment successful but failed to create order");
+            console.error("Error in post-payment processing:", orderError);
+            setProcessingStatus("⚠️ Payment successful but failed to complete post-processing");
           }
         }
         
@@ -594,4 +659,4 @@ const NPSCallbackPage = () => {
   );
 };
 
-export default NPSCallbackPage; 
+export default NPSCallbackPage;

@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 
 const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { couponId } = body;
 
@@ -14,13 +24,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Call Strapi API to apply coupon (increment usage count)
+    // Call Strapi API to apply coupon with userId
     const response = await fetch(`${STRAPI_URL}/api/coupons/apply`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ couponId }),
+      body: JSON.stringify({ couponId, userId: session.user.id }),
     });
 
     const data = await response.json();

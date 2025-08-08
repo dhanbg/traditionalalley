@@ -105,7 +105,7 @@ export default function Checkout() {
   const [couponLoading, setCouponLoading] = useState(false);
 
   // Add state for DHL shipping
-  const [shippingCost, setShippingCost] = useState(0);
+  const [shippingCost, setShippingCost] = useState(10); // Temporarily set to fixed Rs. 10
   const [shippingRatesObtained, setShippingRatesObtained] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState('');
 
@@ -597,12 +597,12 @@ export default function Checkout() {
       // Apply coupon if one was used
       if (appliedCoupon && appliedCoupon.id) {
         try {
-          const response = await fetch('/api/coupons/apply', {
+          const response = await fetch(`${API_URL}/api/coupons/apply`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ couponId: appliedCoupon.id }),
+            body: JSON.stringify({ couponId: appliedCoupon.id, userId: user?.id }),
           });
           
           if (response.ok) {
@@ -697,10 +697,11 @@ export default function Checkout() {
       return;
     }
 
-    if (shippingCost === 0) {
-      alert('Please get shipping rates first by filling out the shipping form and clicking "Get Shipping Rates"');
-      return;
-    }
+    // Temporarily removed shipping cost validation since we're using fixed Rs. 10
+    // if (shippingCost === 0) {
+    //   alert('Please get shipping rates first by filling out the shipping form and clicking "Get Shipping Rates"');
+    //   return;
+    // }
 
     setIsProcessingOrder(true);
 
@@ -804,7 +805,7 @@ export default function Checkout() {
         orderSummary: {
           totalItems: selectedProducts.reduce((sum, product) => sum + product.quantity, 0),
           totalProducts: selectedProducts.length,
-          subtotal: actualTotal,
+          subtotal: finalTotal,
           productDiscounts: totalDiscounts,
           couponCode: appliedCoupon?.code || null,
           couponDiscount: couponDiscount,
@@ -867,7 +868,7 @@ export default function Checkout() {
             photographRequired: actualTotal > 25000, // Photo documentation for high-value orders
             adminAssigned: null, // To be assigned by admin
             packingNotes: "COD Order - Payment to be collected upon delivery",
-            codAmount: actualTotal + shippingCost // Amount to collect
+            codAmount: finalTotal + shippingCost // Amount to collect
           }
         },
         
@@ -880,7 +881,7 @@ export default function Checkout() {
       const codPaymentData = {
         provider: "cod",
         merchantTxnId: `COD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        amount: actualTotal + shippingCost,
+        amount: finalTotal + shippingCost,
         status: "Pending", // COD orders are pending until payment is received
         timestamp: new Date().toISOString(),
         orderData: orderData
@@ -1103,6 +1104,9 @@ export default function Checkout() {
   // Calculate actual total: sum of price * quantity
   const actualTotal = selectedProducts.reduce((acc, product) => acc + parseFloat(product.price) * product.quantity, 0);
 
+  // Calculate final total with coupon discount
+  const finalTotal = Math.max(0, actualTotal - couponDiscount);
+
   // Helper function to calculate NPR amount for NPS payments
   const calculateNPRAmount = async (usdAmount) => {
     try {
@@ -1121,13 +1125,13 @@ export default function Checkout() {
   // Calculate NPR amount for display
   const nprAmount = React.useMemo(() => {
     if (nprExchangeRate) {
-      // Product total needs conversion from USD to NPR
-      const productTotalNPR = convertUsdToNpr(actualTotal, nprExchangeRate);
+      // Product total needs conversion from USD to NPR (using finalTotal to include coupon discount)
+      const productTotalNPR = convertUsdToNpr(finalTotal, nprExchangeRate);
       // Shipping cost is already in NPR, so add directly
       return productTotalNPR + shippingCost;
     }
-    return actualTotal + shippingCost; // Fallback to USD if no rate available
-  }, [actualTotal, shippingCost, nprExchangeRate]);
+    return finalTotal + shippingCost; // Fallback to USD if no rate available
+  }, [finalTotal, shippingCost, nprExchangeRate]);
 
   // Effect to fetch exchange rate
   React.useEffect(() => {
@@ -1160,14 +1164,15 @@ export default function Checkout() {
     setCouponError('');
 
     try {
-      const response = await fetch('/api/coupons/validate', {
+      const response = await fetch(`${API_URL}/api/coupons/validate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           code: couponCode.trim(),
-          orderAmount: actualTotal
+          orderAmount: actualTotal,
+          userId: user?.id
         }),
       });
 
@@ -1178,7 +1183,7 @@ export default function Checkout() {
         setCouponDiscount(data.coupon.discountAmount);
         setCouponError('');
       } else {
-        setCouponError(data.error || 'Invalid coupon code');
+        setCouponError(data.error?.message || data.error || 'Invalid coupon code');
         setAppliedCoupon(null);
         setCouponDiscount(0);
       }
@@ -1199,9 +1204,6 @@ export default function Checkout() {
     setCouponCode('');
     setCouponError('');
   };
-
-  // Calculate final total with coupon discount
-  const finalTotal = Math.max(0, actualTotal - couponDiscount);
 
   // Check if cart is empty
   if (selectedProducts.length === 0) {
@@ -1329,7 +1331,8 @@ export default function Checkout() {
                   }, [])}
                   onRateCalculated={(rateInfo) => {
                     console.log('Rate calculated:', rateInfo);
-                    setShippingCost(parseFloat(rateInfo.price));
+                    // Temporarily set fixed shipping cost of Rs. 10
+                    setShippingCost(10);
                     setShippingRatesObtained(true);
                   }}
                   onReceiverChange={setReceiverDetails}
@@ -1472,7 +1475,7 @@ export default function Checkout() {
                           <span>Subtotal</span>
                           <span>
                             <PriceDisplay 
-                              price={subtotal}
+                              price={actualTotal}
                               className="text-button"
                               size="normal"
                             />
@@ -1639,7 +1642,7 @@ export default function Checkout() {
                             orderSummary: {
                               totalItems: selectedProducts.reduce((sum, product) => sum + product.quantity, 0),
                               totalProducts: selectedProducts.length,
-                              subtotal: actualTotal,
+                              subtotal: finalTotal,
                               productDiscounts: totalDiscounts,
                               couponCode: appliedCoupon?.code || null,
                               couponDiscount: couponDiscount,
