@@ -471,6 +471,12 @@ const NPSCallbackContent = () => {
             setProcessingStatus("✅ Inventory updated and cart cleaned up!");
             
             // Step 2: Automatic Coupon Application (if coupon was used)
+            console.log("🔍 [COUPON DEBUG] Checking for coupon application...");
+            console.log("🔍 [COUPON DEBUG] orderData exists:", !!orderData);
+            console.log("🔍 [COUPON DEBUG] orderData.orderSummary exists:", !!(orderData && orderData.orderSummary));
+            console.log("🔍 [COUPON DEBUG] orderData.orderSummary.couponCode exists:", !!(orderData && orderData.orderSummary && orderData.orderSummary.couponCode));
+            console.log("🔍 [COUPON DEBUG] Full orderData structure:", JSON.stringify(orderData, null, 2));
+            
             if (orderData && orderData.orderSummary && orderData.orderSummary.couponCode) {
               try {
                 setProcessingStatus("🎫 Applying coupon automatically...");
@@ -500,8 +506,8 @@ const NPSCallbackContent = () => {
                         'Content-Type': 'application/json',
                       },
                       body: JSON.stringify({
-                        couponId: validateData.coupon.id,
-                        userId: user.id
+                        couponId: validateData.coupon.id
+                        // Note: userId is automatically retrieved from session in the API endpoint
                       })
                     });
                     
@@ -532,7 +538,15 @@ const NPSCallbackContent = () => {
                 setProcessingStatus("⚠️ Coupon application error but payment successful");
               }
             } else {
-              console.log("ℹ️ No coupon to apply automatically");
+              console.log("ℹ️ [COUPON DEBUG] No coupon to apply automatically");
+              console.log("ℹ️ [COUPON DEBUG] Reasons:");
+              console.log("   - orderData missing:", !orderData);
+              console.log("   - orderSummary missing:", !(orderData && orderData.orderSummary));
+              console.log("   - couponCode missing:", !(orderData && orderData.orderSummary && orderData.orderSummary.couponCode));
+              if (orderData && orderData.orderSummary) {
+                console.log("   - orderSummary keys:", Object.keys(orderData.orderSummary));
+                console.log("   - couponCode value:", orderData.orderSummary.couponCode);
+              }
             }
             
           } catch (orderError) {

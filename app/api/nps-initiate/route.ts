@@ -85,6 +85,15 @@ export async function POST(request: NextRequest) {
     console.log('Environment:', process.env.NODE_ENV);
     console.log('User:', session.user.email);
     console.log('Request body:', body);
+    console.log('🔍 [COUPON DEBUG] OrderData exists:', !!orderData);
+    if (orderData) {
+      console.log('🔍 [COUPON DEBUG] OrderData structure:', JSON.stringify(orderData, null, 2));
+      if (orderData.orderSummary) {
+        console.log('🔍 [COUPON DEBUG] OrderSummary keys:', Object.keys(orderData.orderSummary));
+        console.log('🔍 [COUPON DEBUG] CouponCode in orderSummary:', orderData.orderSummary.couponCode);
+        console.log('🔍 [COUPON DEBUG] CouponDiscount in orderSummary:', orderData.orderSummary.couponDiscount);
+      }
+    }
     console.log('NPS Config:', {
       baseURL: npsConfig.baseURL,
       merchantId: npsConfig.merchantId,
@@ -182,6 +191,7 @@ export async function POST(request: NextRequest) {
 
         await updateUserBagWithPayment(userBagId, paymentData);
         console.log('Payment data saved to user bag');
+        console.log('🔍 [COUPON DEBUG] Saved paymentData.orderData:', JSON.stringify(paymentData.orderData, null, 2));
       } catch (error) {
         console.error('Error saving payment data to user bag:', error);
       }
