@@ -118,6 +118,92 @@ export default function Checkout() {
   const [nprExchangeRate, setNprExchangeRate] = useState(null);
 
   // Add state for combined update and delete operation
+
+  // Function to construct orderData with fresh coupon state
+  const constructOrderData = () => {
+    console.log('🔍 [COUPON DEBUG] Constructing orderData with current state:');
+    console.log('🔍 [COUPON DEBUG] appliedCoupon:', appliedCoupon);
+    console.log('🔍 [COUPON DEBUG] couponCode:', appliedCoupon?.code);
+    console.log('🔍 [COUPON DEBUG] couponDiscount:', couponDiscount);
+    
+    return {
+      // Order Summary
+      orderSummary: {
+        totalItems: selectedProducts.reduce((sum, product) => sum + product.quantity, 0),
+        totalProducts: selectedProducts.length,
+        subtotal: finalTotal,
+        productDiscounts: totalDiscounts,
+        couponCode: appliedCoupon?.code || null,
+        couponDiscount: couponDiscount,
+        totalDiscounts: totalDiscounts + couponDiscount,
+        finalSubtotal: finalTotal,
+        shippingCost: shippingCost,
+        totalAmount: finalTotal + shippingCost,
+        currency: "NPR",
+        orderDate: new Date().toISOString(),
+        orderTimezone: "Asia/Kathmandu"
+      },
+       
+      // Complete Product Details for Admin
+      products: selectedProducts.map(product => {
+        const fetchedProduct = productsWithOldPrice[product.id];
+        const unitPrice = parseFloat(product.price);
+        const oldPrice = fetchedProduct?.oldPrice ? parseFloat(fetchedProduct.oldPrice) : unitPrice;
+        const subtotal = oldPrice * product.quantity;
+        const discount = oldPrice > unitPrice ? ((oldPrice - unitPrice) / oldPrice) * 100 : 0;
+        const finalPrice = unitPrice * product.quantity;
+
+        // Get the actual selected size and color from the product
+        const availableSize = product.selectedSize || 
+          (product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M");
+        const availableColor = product.selectedColor || 
+          (product.colors && product.colors.length > 0 ? product.colors[0] : "Default");
+
+        return {
+          id: product.id,
+          documentId: product.documentId,
+          title: product.title,
+          description: product.description,
+          price: unitPrice,
+          oldPrice: oldPrice,
+          quantity: product.quantity,
+          subtotal: subtotal,
+          discount: discount,
+          finalPrice: finalPrice,
+          imgSrc: product.imgSrc,
+          selectedSize: availableSize,
+          selectedColor: availableColor,
+          productDetails: {
+            productCode: fetchedProduct?.productCode || "",
+            brand: fetchedProduct?.brand || "",
+            material: fetchedProduct?.material || "",
+            weight: fetchedProduct?.weight || "",
+            dimensions: fetchedProduct?.dimensions || "",
+            careInstructions: fetchedProduct?.careInstructions || "",
+            countryOfOrigin: fetchedProduct?.countryOfOrigin || "",
+            hsCode: fetchedProduct?.hsCode || "",
+            internalNotes: fetchedProduct?.internalNotes || ""
+          }
+        };
+      }),
+
+      // Shipping information
+      shipping: {
+        method: "DHL Express",
+        cost: shippingCost,
+        currency: "NPR",
+        estimatedDelivery: "3-5 business days"
+      },
+
+      // Additional metadata
+      shippingPrice: shippingCost,
+      receiver_details: {
+        name: "Customer",
+        email: user?.email || "Not provided",
+        phone: "Not provided"
+      }
+    };
+  };
   const [isProcessingUpdateAndDelete, setIsProcessingUpdateAndDelete] = useState(false);
 
   // Function to handle both stock update and cart deletion
@@ -1637,151 +1723,7 @@ export default function Checkout() {
                             console.error('NPS Payment Error:', error);
                             alert(`Payment failed: ${error.message || 'Unknown error'}`);
                           }}
-                          orderData={{
-                            // Order Summary
-                            orderSummary: {
-                              totalItems: selectedProducts.reduce((sum, product) => sum + product.quantity, 0),
-                              totalProducts: selectedProducts.length,
-                              subtotal: finalTotal,
-                              productDiscounts: totalDiscounts,
-                              couponCode: appliedCoupon?.code || null,
-                              couponDiscount: couponDiscount,
-                              totalDiscounts: totalDiscounts + couponDiscount,
-                              finalSubtotal: finalTotal,
-                              shippingCost: shippingCost,
-                              totalAmount: finalTotal + shippingCost,
-                              currency: "NPR",
-                              orderDate: new Date().toISOString(),
-                              orderTimezone: "Asia/Kathmandu"
-                            },
-                             
-                            // Complete Product Details for Admin
-                            products: selectedProducts.map(product => {
-                              const fetchedProduct = productsWithOldPrice[product.id];
-                              const unitPrice = parseFloat(product.price);
-                              const oldPrice = fetchedProduct?.oldPrice ? parseFloat(fetchedProduct.oldPrice) : unitPrice;
-                              const subtotal = oldPrice * product.quantity;
-                              const discount = oldPrice > unitPrice ? ((oldPrice - unitPrice) / oldPrice) * 100 : 0;
-                              const finalPrice = unitPrice * product.quantity;
-
-                              // Get the actual selected size and color from the product
-                              const availableSize = product.selectedSize || 
-                                (product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M");
-                              const availableColor = product.selectedColor || 
-                                (product.colors && product.colors.length > 0 
-                                  ? (typeof product.colors[0] === 'string' ? product.colors[0] : product.colors[0].name || "default")
-                                  : "default");
-                               
-                              return {
-                                // Basic Product Info
-                                productId: product.id,
-                                documentId: product.documentId,
-                                title: product.title || product.name || "Product",
-                                description: product.description || fetchedProduct?.description || "",
-                                category: fetchedProduct?.category || product.category || "",
-                                collection: fetchedProduct?.collection || product.collection || "",
-                                brand: fetchedProduct?.brand || "Traditional Alley",
-                                sku: fetchedProduct?.sku || product.sku || `SKU-${product.documentId}`,
-                                 
-                                // Variant Details
-                                selectedVariant: {
-                                  size: availableSize,
-                                  color: availableColor,
-                                  variantSku: `${fetchedProduct?.sku || product.sku || `SKU-${product.documentId}`}-${availableSize}-${availableColor}`
-                                },
-                                 
-                                // Pricing Details
-                                pricing: {
-                                  originalPrice: oldPrice,
-                                  currentPrice: unitPrice,
-                                  discountPercentage: Math.round(discount),
-                                  discountAmount: oldPrice - unitPrice,
-                                  quantity: product.quantity,
-                                  subtotal: subtotal,
-                                  finalPrice: finalPrice
-                                },
-                                 
-                                // Shipping & Package Details
-                                packageInfo: {
-                                  weight: fetchedProduct?.weight || 1, // kg (now using parsed value from Strapi)
-                                  dimensions: fetchedProduct?.dimensions || {
-                                    length: 10, // cm (fallback if no parsed dimensions available)
-                                    width: 10, // cm
-                                    height: 10 // cm
-                                  },
-                                  declaredValue: unitPrice,
-                                  commodityCode: fetchedProduct?.hsCode || "",
-                                  manufacturingCountry: "Nepal",
-                                  manufacturingCountryCode: "NP",
-                                  productType: fetchedProduct?.productType || "General Merchandise",
-                                  isFragile: fetchedProduct?.isFragile || false,
-                                  requiresSpecialHandling: fetchedProduct?.requiresSpecialHandling || false
-                                },
-                                 
-                                // Admin Reference
-                                adminNotes: {
-                                  stockLocation: fetchedProduct?.stockLocation || "Main Warehouse",
-                                  supplier: fetchedProduct?.supplier || "Traditional Alley",
-                                  lastUpdated: fetchedProduct?.updatedAt || new Date().toISOString(),
-                                  internalNotes: fetchedProduct?.internalNotes || ""
-                                }
-                              };
-                            }),
-                             
-                            // Comprehensive Shipping Details for Admin
-                            shipping: {
-                              // Shipping Method & Cost
-                              method: {
-                                carrier: "DHL Express", // Default carrier
-                                service: receiverDetails.address.country === "Nepal" ? "Domestic Standard" : "International Express",
-                                estimatedDays: receiverDetails.address.country === "Nepal" ? "2-3" : "5-7",
-                                cost: shippingCost,
-                                currency: "NPR",
-                                trackingAvailable: true,
-                                insuranceIncluded: actualTotal > 5000, // Insurance for orders > NPR 5000
-                                signatureRequired: actualTotal > 10000 // Signature for orders > NPR 10000
-                              },
-                               
-                              // Package Details for Shipping Label
-                              package: {
-                                totalWeight: selectedProducts.reduce((total, product) => {
-                                  const fetchedProduct = productsWithOldPrice[product.id];
-                                  return total + ((fetchedProduct?.weight || 1) * product.quantity);
-                                }, 0),
-                                totalVolume: selectedProducts.reduce((total, product) => {
-                                  const fetchedProduct = productsWithOldPrice[product.id];
-                                  // Use parsed dimensions object or fallback to 10x10x10
-                                  const dimensions = fetchedProduct?.dimensions || { length: 10, width: 10, height: 10 };
-                                  const volume = dimensions.length * dimensions.width * dimensions.height;
-                                  return total + ((volume * product.quantity) / 1000000); // Convert cm³ to m³
-                                }, 0),
-                                packageType: "Box",
-                                packagingMaterial: "Cardboard Box with Bubble Wrap",
-                                specialInstructions: receiverDetails.note || "",
-                                declaredValue: actualTotal,
-                                contentDescription: `Traditional Alley Products - ${selectedProducts.length} items`,
-                                dangerousGoods: false,
-                                customsDeclaration: receiverDetails.address.country !== "Nepal"
-                              },
-                               
-                              // Admin Processing Info
-                              processing: {
-                                warehouseLocation: "Kathmandu Main Warehouse",
-                                expectedPackingDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Next day
-                                expectedShipDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days
-                                priorityLevel: actualTotal > 20000 ? "High" : actualTotal > 10000 ? "Medium" : "Normal",
-                                packingInstructions: "Handle with care. Traditional items may be fragile.",
-                                qualityCheckRequired: actualTotal > 15000,
-                                photographRequired: actualTotal > 25000, // Photo documentation for high-value orders
-                                adminAssigned: null, // To be assigned by admin
-                                packingNotes: ""
-                              }
-                            },
-                             
-                            // Legacy fields for backward compatibility
-                            shippingPrice: shippingCost,
-                            receiver_details: receiverDetails
-                          }}
+                          orderData={constructOrderData()}
                           transactionRemarks={`Checkout Order - ${selectedProducts.length} items`}
                         />
                       ) : (
