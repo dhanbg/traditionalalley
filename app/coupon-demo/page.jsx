@@ -26,15 +26,14 @@ export default function CouponDemo() {
     setValidationResult(null);
 
     try {
-      const response = await fetch(`${API_URL}/api/coupons/validate`, {
+      const response = await fetch('/api/coupons/validate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           code: couponCode.trim(),
-          orderAmount: orderAmount,
-          userId: session?.user?.id
+          orderAmount: orderAmount
         }),
       });
 
@@ -67,14 +66,13 @@ export default function CouponDemo() {
     setApplicationResult(null);
 
     try {
-      const response = await fetch(`${API_URL}/api/coupons/apply`, {
+      const response = await fetch('/api/coupons/apply', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          couponId: validationResult.id,
-          userId: session?.user?.id
+          couponId: validationResult.id
         }),
       });
 
