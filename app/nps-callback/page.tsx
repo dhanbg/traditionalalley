@@ -462,8 +462,25 @@ const NPSCallbackContent = () => {
         await updateUserBagWithPayment(userBag.documentId, paymentData);
         console.log("Payment data saved successfully:", paymentData);
         
+        // DEBUG: Log finalStatus value to identify actual success values
+        console.log("🔍 [PAYMENT STATUS DEBUG] finalStatus value:", finalStatus, "(type:", typeof finalStatus, ")");
+        console.log("🔍 [PAYMENT STATUS DEBUG] Checking if payment is successful...");
+        
         // Automatic Stock Update & Cart Cleanup after successful payment
-        if (finalStatus === "Success" || finalStatus === "SUCCESS" || finalStatus === "success") {
+        // Handle various success status formats from NPS payment system
+        const isPaymentSuccessful = finalStatus && (
+          finalStatus === "Success" || 
+          finalStatus === "SUCCESS" || 
+          finalStatus === "success" ||
+          finalStatus.toString().toLowerCase() === "success" ||
+          finalStatus === "COMPLETED" ||
+          finalStatus === "completed" ||
+          finalStatus === "Completed"
+        );
+        
+        console.log("🔍 [PAYMENT STATUS DEBUG] isPaymentSuccessful:", isPaymentSuccessful);
+        
+        if (isPaymentSuccessful) {
           try {
             // Step 1: Automatic Stock Update & Cart Cleanup using CURRENT cart data (no stale orderData)
             setProcessingStatus("🔄 Updating inventory and cleaning up cart...");
