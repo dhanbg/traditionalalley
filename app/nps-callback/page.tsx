@@ -484,7 +484,17 @@ const NPSCallbackContent = () => {
           try {
             // Step 1: Automatic Stock Update & Cart Cleanup using CURRENT cart data (no stale orderData)
             setProcessingStatus("🔄 Updating inventory and cleaning up cart...");
+            
+            // CRITICAL DEBUG: Track code execution before auto-update
+            console.log("🚨 [EXECUTION TRACK] About to call handleAutomaticUpdateStockAndDelete...");
+            console.log("🚨 [EXECUTION TRACK] Time before auto-update:", new Date().toISOString());
+            
             await handleAutomaticUpdateStockAndDelete(user, clearPurchasedItemsFromCart);
+            
+            // CRITICAL DEBUG: Track code execution after auto-update
+            console.log("🚨 [EXECUTION TRACK] AUTO-UPDATE COMPLETED! Code execution continues...");
+            console.log("🚨 [EXECUTION TRACK] Time after auto-update:", new Date().toISOString());
+            
             setProcessingStatus("✅ Inventory updated and cart cleaned up!");
             
             // CRITICAL DEBUG: Verify code continues after auto-update
