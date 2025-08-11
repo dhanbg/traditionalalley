@@ -550,17 +550,20 @@ const NPSCallbackContent = () => {
                     setProcessingStatus("⚠️ Coupon validation failed but payment successful");
                   }
                 } else {
-                  console.warn("⚠️ Coupon validate API request failed");
-                  setProcessingStatus("⚠️ Coupon validation failed but payment successful");
+                  console.warn("⚠️ Coupon validation API request failed");
+                  setProcessingStatus("⚠️ Coupon application error but payment successful");
                 }
-                
               } catch (couponError) {
-                console.error("❌ Error in automatic coupon application:", couponError);
+                console.error("⚠️ Coupon application error:", couponError.message);
                 setProcessingStatus("⚠️ Coupon application error but payment successful");
               }
             } else {
               console.log("ℹ️ No coupon to apply automatically");
             }
+            
+            // Step 3: Complete processing and set final status
+            console.log("✅ All post-payment processing completed - ready for redirect");
+            setProcessingStatus("✅ Payment processing complete!");
             
           } catch (orderError) {
             console.error("Error in post-payment processing:", orderError);
@@ -568,18 +571,22 @@ const NPSCallbackContent = () => {
           }
         }
         
-        // Show success and redirect based on payment status
+        // Step 4: Show success and redirect based on payment status (ONLY after all processing is complete)
+        console.log("🔄 Preparing redirect - finalStatus:", finalStatus);
         if (finalStatus === "Success" || finalStatus === "SUCCESS" || finalStatus === "success") {
           setTimeout(() => {
+            console.log("🔄 Redirecting to success page...");
             window.location.href = "/?payment=success";
           }, 3000); // Give time to show order creation status
         } else if (finalStatus === "Fail" || finalStatus === "FAILED" || finalStatus === "fail") {
           setTimeout(() => {
+            console.log("🔄 Redirecting to failed page...");
             window.location.href = "/?payment=failed";
           }, 3000);
         } else {
           setProcessingStatus("⏳ Payment is being processed...");
           setTimeout(() => {
+            console.log("🔄 Redirecting to pending page...");
             window.location.href = "/?payment=pending";
           }, 3000);
         }
