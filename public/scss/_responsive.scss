@@ -285,7 +285,8 @@
       .box-content {
         left: 60px;
         right: 60px;
-        bottom: 60px;
+        top: 50%;
+        transform: translateY(-50%);
       }
     }
   }
@@ -986,7 +987,8 @@
     .box-content {
       left: 80px;
       right: 80px;
-      bottom: 80px;
+      top: 50%;
+      transform: translateY(-50%);
     }
   }
   .tf-slideshow {

@@ -7,11 +7,97 @@ export const slides = [
     btnText: "Explore Collection",
   },
   {
+    // Test video slide with the problematic video
+    videoSrc: "http://localhost:1337/uploads/Whats_App_Video_2025_08_08_at_12_33_40_4dd31815_f71724b27a.mp4",
+    imgSrc: "/images/slider/slider-women2.jpg",
+    mediaType: "video",
+    alt: "test-video",
+    subheading: "TEST VIDEO",
+    heading: "Video Test\nSlide",
+    btnText: "Test Video",
+  },
+  {
     imgSrc: "/images/slider/slider-women2.jpg",
     alt: "fashion-slideshow",
     subheading: "BIKINIS & SWIMSUITS",
     heading: "Find Your\nSignature Style",
     btnText: "Explore Collection",
+  },
+];
+
+// Example slides with enhanced media support (images, videos, audio)
+export const slidesWithMedia = [
+  {
+    // Video slide example
+    media: {
+      url: "/videos/slider/fashion-video.mp4",
+      mime: "video/mp4",
+      ext: ".mp4"
+    },
+    poster: {
+      url: "/images/slider/slider-women2.jpg"
+    },
+    mediaType: "video",
+    alt: "fashion-video",
+    subheading: "NEW COLLECTION",
+    heading: "Experience Fashion\nin Motion",
+    btnText: "Watch & Shop",
+  },
+  {
+    // Audio slide example
+    media: {
+      url: "/audio/brand-story.mp3",
+      mime: "audio/mpeg",
+      ext: ".mp3"
+    },
+    poster: {
+      url: "/images/slider/audio-background.jpg"
+    },
+    mediaType: "audio",
+    alt: "brand-story-audio",
+    subheading: "Our Story",
+    heading: "Listen to Our\nJourney",
+    btnText: "Learn More",
+  },
+  {
+    // Image slide example
+    media: {
+      url: "/images/slider/slider-women3.jpg",
+      mime: "image/jpeg",
+      ext: ".jpg"
+    },
+    mediaType: "image",
+    alt: "fashion-slideshow",
+    subheading: "SUMMER STYLES",
+    heading: "Trending Now",
+    btnText: "Shop Now",
+  },
+];
+
+// Legacy video slides (for backward compatibility)
+export const slidesWithVideo = [
+  {
+    imgSrc: "/images/slider/slider-women1.jpg",
+    alt: "fashion-slideshow",
+    subheading: "BIKINIS & SWIMSUITS",
+    heading: "Flash Sale Madness",
+    btnText: "Explore Collection",
+  },
+  {
+    videoSrc: "/videos/slider/fashion-video.mp4",
+    imgSrc: "/images/slider/slider-women2.jpg", // Fallback image
+    poster: "/images/slider/slider-women2.jpg", // Video poster
+    alt: "fashion-video",
+    subheading: "NEW COLLECTION",
+    heading: "Experience Fashion\nin Motion",
+    btnText: "Watch & Shop",
+  },
+  {
+    imgSrc: "/images/slider/slider-women3.jpg",
+    alt: "fashion-slideshow",
+    subheading: "SUMMER STYLES",
+    heading: "Trending Now",
+    btnText: "Shop Now",
   },
 ];
 
