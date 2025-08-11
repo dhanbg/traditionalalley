@@ -586,17 +586,16 @@ const NPSCallbackContent = () => {
           }
         }
         
-        // Show success and redirect based on payment status
+        // CRITICAL: Don't redirect immediately! Wait for all async processing to complete
+        // Final redirect will happen after auto-update and coupon logic complete
         if (finalStatus === "Success" || finalStatus === "SUCCESS" || finalStatus === "success") {
-          setTimeout(() => {
-            window.location.href = "/?payment=success";
-          }, 3000); // Give time to show order creation status
+          // SUCCESS: Processing will continue with auto-update and coupon logic
+          // Redirect will be handled at the end of processing
         } else if (finalStatus === "Fail" || finalStatus === "FAILED" || finalStatus === "fail") {
           setTimeout(() => {
             window.location.href = "/?payment=failed";
           }, 3000);
         } else {
-          setProcessingStatus("⏳ Payment is being processed...");
           setTimeout(() => {
             window.location.href = "/?payment=pending";
           }, 3000);
