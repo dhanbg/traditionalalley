@@ -497,8 +497,20 @@ const NPSCallbackContent = () => {
             
             // Step 2: Automatic Coupon Application (if coupon was used)
             console.log("🎫 Checking for automatic coupon application...");
+            console.log("🔍 [COUPON DEBUG] orderData structure:", {
+              hasOrderData: !!orderData,
+              orderDataType: typeof orderData,
+              orderDataKeys: orderData ? Object.keys(orderData) : null,
+              hasOrderSummary: orderData && !!orderData.orderSummary,
+              orderSummaryType: orderData && orderData.orderSummary ? typeof orderData.orderSummary : null,
+              orderSummaryKeys: orderData && orderData.orderSummary ? Object.keys(orderData.orderSummary) : null,
+              hasCouponCode: orderData && orderData.orderSummary && !!orderData.orderSummary.couponCode,
+              couponCode: orderData && orderData.orderSummary ? orderData.orderSummary.couponCode : null,
+              couponCodeType: orderData && orderData.orderSummary && orderData.orderSummary.couponCode ? typeof orderData.orderSummary.couponCode : null
+            });
             
             if (orderData && orderData.orderSummary && orderData.orderSummary.couponCode) {
+              console.log("✅ [COUPON DEBUG] Coupon condition check passed - proceeding with coupon logic");
               try {
                 setProcessingStatus("🎫 Applying coupon automatically...");
                 console.log("🎫 Automatic coupon application started for:", orderData.orderSummary.couponCode);
