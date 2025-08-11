@@ -96,6 +96,47 @@ export default function CouponDemo() {
     }
   };
 
+  const applyDirectly = async () => {
+    if (!couponCode.trim()) {
+      setError('Please enter a coupon code');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setApplicationResult(null);
+    setValidationResult(null);
+
+    try {
+      const response = await fetch('/api/coupons/apply-direct', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code: couponCode.trim(),
+          orderAmount: orderAmount
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setApplicationResult(data);
+        setError('');
+      } else {
+        setError(data.error?.message || data.error || data.message || 'Failed to apply coupon directly');
+        setApplicationResult(null);
+      }
+    } catch (error) {
+      console.error('Error applying coupon directly:', error);
+      setError('Failed to apply coupon directly. Please try again.');
+      setApplicationResult(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const resetDemo = () => {
     setCouponCode('');
     setValidationResult(null);
@@ -223,6 +264,17 @@ export default function CouponDemo() {
                     </span>
                   </button>
                 )}
+                
+                <button
+                  className="tf-btn"
+                  onClick={applyDirectly}
+                  disabled={loading || !couponCode.trim()}
+                  style={{ backgroundColor: '#ff6b35' }}
+                >
+                  <span className="text">
+                    {loading ? 'Applying...' : 'Apply Directly'}
+                  </span>
+                </button>
                 
                 <button
                   className="tf-btn"

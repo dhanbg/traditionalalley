@@ -485,28 +485,18 @@ const NPSCallbackContent = () => {
             // Step 1: Automatic Stock Update & Cart Cleanup using CURRENT cart data (no stale orderData)
             setProcessingStatus("🔄 Updating inventory and cleaning up cart...");
             
-            // CRITICAL DEBUG: Track code execution before auto-update
-            console.log("🚨 [EXECUTION TRACK] About to call handleAutomaticUpdateStockAndDelete...");
-            console.log("🚨 [EXECUTION TRACK] Time before auto-update:", new Date().toISOString());
-            
-            await handleAutomaticUpdateStockAndDelete(user, clearPurchasedItemsFromCart);
-            
-            // CRITICAL DEBUG: Track code execution after auto-update
-            console.log("🚨 [EXECUTION TRACK] AUTO-UPDATE COMPLETED! Code execution continues...");
-            console.log("🚨 [EXECUTION TRACK] Time after auto-update:", new Date().toISOString());
+            // Ensure auto-update doesn't block coupon logic execution
+            try {
+              await handleAutomaticUpdateStockAndDelete(user, clearPurchasedItemsFromCart);
+              console.log("✅ Auto-update completed - proceeding to coupon logic");
+            } catch (autoUpdateError) {
+              console.error("⚠️ Auto-update error (continuing):", autoUpdateError.message);
+            }
             
             setProcessingStatus("✅ Inventory updated and cart cleaned up!");
             
-            // CRITICAL DEBUG: Verify code continues after auto-update
-            console.log("🚨 [FLOW DEBUG] Code execution reached after auto-update completion!");
-            console.log("🚨 [FLOW DEBUG] About to start coupon logic...");
-            
             // Step 2: Automatic Coupon Application (if coupon was used)
-            console.log("🔍 [COUPON DEBUG] Checking for coupon application...");
-            console.log("🔍 [COUPON DEBUG] orderData exists:", !!orderData);
-            console.log("🔍 [COUPON DEBUG] orderData.orderSummary exists:", !!(orderData && orderData.orderSummary));
-            console.log("🔍 [COUPON DEBUG] orderData.orderSummary.couponCode exists:", !!(orderData && orderData.orderSummary && orderData.orderSummary.couponCode));
-            console.log("🔍 [COUPON DEBUG] Full orderData structure:", JSON.stringify(orderData, null, 2));
+            console.log("🎫 Checking for automatic coupon application...");
             
             if (orderData && orderData.orderSummary && orderData.orderSummary.couponCode) {
               try {
@@ -569,15 +559,7 @@ const NPSCallbackContent = () => {
                 setProcessingStatus("⚠️ Coupon application error but payment successful");
               }
             } else {
-              console.log("ℹ️ [COUPON DEBUG] No coupon to apply automatically");
-              console.log("ℹ️ [COUPON DEBUG] Reasons:");
-              console.log("   - orderData missing:", !orderData);
-              console.log("   - orderSummary missing:", !(orderData && orderData.orderSummary));
-              console.log("   - couponCode missing:", !(orderData && orderData.orderSummary && orderData.orderSummary.couponCode));
-              if (orderData && orderData.orderSummary) {
-                console.log("   - orderSummary keys:", Object.keys(orderData.orderSummary));
-                console.log("   - couponCode value:", orderData.orderSummary.couponCode);
-              }
+              console.log("ℹ️ No coupon to apply automatically");
             }
             
           } catch (orderError) {
@@ -586,16 +568,17 @@ const NPSCallbackContent = () => {
           }
         }
         
-        // CRITICAL: Don't redirect immediately! Wait for all async processing to complete
-        // Final redirect will happen after auto-update and coupon logic complete
+        // Show success and redirect based on payment status
         if (finalStatus === "Success" || finalStatus === "SUCCESS" || finalStatus === "success") {
-          // SUCCESS: Processing will continue with auto-update and coupon logic
-          // Redirect will be handled at the end of processing
+          setTimeout(() => {
+            window.location.href = "/?payment=success";
+          }, 3000); // Give time to show order creation status
         } else if (finalStatus === "Fail" || finalStatus === "FAILED" || finalStatus === "fail") {
           setTimeout(() => {
             window.location.href = "/?payment=failed";
           }, 3000);
         } else {
+          setProcessingStatus("⏳ Payment is being processed...");
           setTimeout(() => {
             window.location.href = "/?payment=pending";
           }, 3000);
