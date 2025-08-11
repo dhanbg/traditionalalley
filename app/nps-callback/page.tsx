@@ -487,6 +487,10 @@ const NPSCallbackContent = () => {
             await handleAutomaticUpdateStockAndDelete(user, clearPurchasedItemsFromCart);
             setProcessingStatus("✅ Inventory updated and cart cleaned up!");
             
+            // CRITICAL DEBUG: Verify code continues after auto-update
+            console.log("🚨 [FLOW DEBUG] Code execution reached after auto-update completion!");
+            console.log("🚨 [FLOW DEBUG] About to start coupon logic...");
+            
             // Step 2: Automatic Coupon Application (if coupon was used)
             console.log("🔍 [COUPON DEBUG] Checking for coupon application...");
             console.log("🔍 [COUPON DEBUG] orderData exists:", !!orderData);
