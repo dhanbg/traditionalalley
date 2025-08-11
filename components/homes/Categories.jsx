@@ -160,7 +160,46 @@ export default function Collections() {
 
       {loading && (
         <div className="category-loading-overlay">
-          <span className="category-spinner" />
+          <div className="loading-container">
+            <div className="fashion-loader">
+              <div className="clothing-assembly">
+                <div className="fabric-piece piece-1">
+                  <div className="fabric-pattern"></div>
+                </div>
+                <div className="fabric-piece piece-2">
+                  <div className="fabric-pattern"></div>
+                </div>
+                <div className="fabric-piece piece-3">
+                  <div className="fabric-pattern"></div>
+                </div>
+                <div className="sewing-needle">
+                  <div className="needle-body"></div>
+                  <div className="needle-eye"></div>
+                </div>
+                <div className="thread-line">
+                  <div className="thread-segment segment-1"></div>
+                  <div className="thread-segment segment-2"></div>
+                  <div className="thread-segment segment-3"></div>
+                  <div className="thread-segment segment-4"></div>
+                </div>
+              </div>
+              <div className="garment-outline">
+                <div className="shirt-outline">
+                  <div className="shirt-body"></div>
+                  <div className="shirt-sleeve left"></div>
+                  <div className="shirt-sleeve right"></div>
+                  <div className="shirt-collar"></div>
+                </div>
+              </div>
+              <div className="fashion-elements">
+                <div className="button button-1"></div>
+                <div className="button button-2"></div>
+                <div className="button button-3"></div>
+                <div className="zipper-line"></div>
+              </div>
+            </div>
+            <p className="loading-text">Crafting Fashion...</p>
+          </div>
         </div>
       )}
 
@@ -176,24 +215,340 @@ export default function Collections() {
           left: 0;
           width: 100vw;
           height: 100vh;
-          background: rgba(255,255,255,0.7);
+          background: linear-gradient(135deg, rgba(228, 49, 49, 0.05) 0%, rgba(255, 255, 255, 0.95) 100%);
+          backdrop-filter: blur(8px);
           z-index: 9999;
           display: flex;
           align-items: center;
           justify-content: center;
         }
-        .category-spinner {
-          display: inline-block;
-          width: 60px;
-          height: 60px;
-          border: 6px solid #f3f3f3;
-          border-top: 6px solid #e43131;
-          border-radius: 50%;
-          animation: category-spin 1s linear infinite;
+        .loading-container {
+          text-align: center;
+          animation: fadeInScale 0.6s ease-out;
         }
-        @keyframes category-spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+        .fashion-loader {
+          position: relative;
+          width: 140px;
+          height: 140px;
+          margin: 0 auto 30px;
+        }
+        .clothing-assembly {
+          position: relative;
+          width: 100px;
+          height: 100px;
+          margin: 0 auto;
+          animation: assemblyFloat 3s ease-in-out infinite;
+        }
+        .fabric-piece {
+          position: absolute;
+          width: 30px;
+          height: 30px;
+          background: linear-gradient(135deg, #e43131, #ff6b6b);
+          border-radius: 4px;
+          overflow: hidden;
+        }
+        .fabric-pattern {
+          width: 100%;
+          height: 100%;
+          background: repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 2px,
+            rgba(255, 255, 255, 0.1) 2px,
+            rgba(255, 255, 255, 0.1) 4px
+          );
+          animation: patternShift 2s linear infinite;
+        }
+        .piece-1 {
+          top: 10px;
+          left: 10px;
+          animation: fabricFloat 2.5s ease-in-out infinite;
+          transform-origin: center;
+        }
+        .piece-2 {
+          top: 10px;
+          right: 10px;
+          animation: fabricFloat 2.5s ease-in-out infinite 0.8s;
+          transform-origin: center;
+        }
+        .piece-3 {
+          bottom: 10px;
+          left: 50%;
+          transform: translateX(-50%);
+          animation: fabricFloat 2.5s ease-in-out infinite 1.6s;
+          transform-origin: center;
+        }
+        .sewing-needle {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          animation: needleStitch 1.5s ease-in-out infinite;
+        }
+        .needle-body {
+          width: 2px;
+          height: 40px;
+          background: linear-gradient(to bottom, #c0c0c0, #808080);
+          border-radius: 1px;
+          position: relative;
+        }
+        .needle-eye {
+          position: absolute;
+          top: 5px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 6px;
+          height: 6px;
+          border: 1px solid #808080;
+          border-radius: 50%;
+          background: transparent;
+        }
+        .thread-line {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 80px;
+          height: 2px;
+        }
+        .thread-segment {
+          position: absolute;
+          width: 15px;
+          height: 2px;
+          background: #e43131;
+          border-radius: 1px;
+        }
+        .segment-1 {
+          left: 0;
+          animation: threadStitch 2s ease-in-out infinite;
+        }
+        .segment-2 {
+          left: 20px;
+          animation: threadStitch 2s ease-in-out infinite 0.5s;
+        }
+        .segment-3 {
+          left: 40px;
+          animation: threadStitch 2s ease-in-out infinite 1s;
+        }
+        .segment-4 {
+          left: 60px;
+          animation: threadStitch 2s ease-in-out infinite 1.5s;
+        }
+        .garment-outline {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          opacity: 0.3;
+        }
+        .shirt-outline {
+          position: relative;
+          animation: garmentForm 4s ease-in-out infinite;
+        }
+        .shirt-body {
+          width: 60px;
+          height: 80px;
+          border: 2px solid #e43131;
+          border-radius: 8px 8px 4px 4px;
+          background: transparent;
+          position: relative;
+        }
+        .shirt-sleeve {
+          position: absolute;
+          width: 25px;
+          height: 40px;
+          border: 2px solid #e43131;
+          border-radius: 12px;
+          background: transparent;
+          top: 5px;
+        }
+        .shirt-sleeve.left {
+          left: -20px;
+          animation: sleeveWave 3s ease-in-out infinite;
+        }
+        .shirt-sleeve.right {
+          right: -20px;
+          animation: sleeveWave 3s ease-in-out infinite 1.5s;
+        }
+        .shirt-collar {
+          position: absolute;
+          top: -5px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 30px;
+          height: 15px;
+          border: 2px solid #e43131;
+          border-bottom: none;
+          border-radius: 8px 8px 0 0;
+          background: transparent;
+        }
+        .fashion-elements {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+        }
+        .button {
+          position: absolute;
+          width: 6px;
+          height: 6px;
+          background: #e43131;
+          border-radius: 50%;
+          border: 1px solid #ff6b6b;
+          animation: buttonShine 2s ease-in-out infinite;
+        }
+        .button-1 {
+          top: 20%;
+          left: 20%;
+          animation-delay: 0s;
+        }
+        .button-2 {
+          top: 30%;
+          right: 20%;
+          animation-delay: 0.7s;
+        }
+        .button-3 {
+          bottom: 25%;
+          left: 30%;
+          animation-delay: 1.4s;
+        }
+        .zipper-line {
+          position: absolute;
+          top: 15%;
+          right: 15%;
+          width: 2px;
+          height: 50px;
+          background: repeating-linear-gradient(
+            to bottom,
+            #e43131 0px,
+            #e43131 3px,
+            transparent 3px,
+            transparent 6px
+          );
+          animation: zipperMove 3s ease-in-out infinite;
+        }
+        .loading-text {
+          font-size: 16px;
+          color: #666;
+          font-weight: 500;
+          margin: 0;
+          letter-spacing: 1px;
+          background: linear-gradient(45deg, #e43131, #ff6b6b, #e43131);
+          background-size: 200% 200%;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: textShimmer 3s ease-in-out infinite;
+        }
+        @keyframes fadeInScale {
+          0% {
+            opacity: 0;
+            transform: scale(0.8);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        @keyframes assemblyFloat {
+          0%, 100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-10px) rotate(2deg);
+          }
+        }
+        @keyframes fabricFloat {
+          0%, 100% {
+            transform: translateY(0px) rotate(0deg) scale(1);
+            opacity: 0.8;
+          }
+          50% {
+            transform: translateY(-8px) rotate(5deg) scale(1.1);
+            opacity: 1;
+          }
+        }
+        @keyframes patternShift {
+          0% {
+            background-position: 0 0;
+          }
+          100% {
+            background-position: 8px 8px;
+          }
+        }
+        @keyframes needleStitch {
+          0%, 100% {
+            transform: translate(-50%, -50%) translateY(0px);
+          }
+          25% {
+            transform: translate(-50%, -50%) translateY(-5px);
+          }
+          50% {
+            transform: translate(-50%, -50%) translateY(5px);
+          }
+          75% {
+            transform: translate(-50%, -50%) translateY(-3px);
+          }
+        }
+        @keyframes threadStitch {
+          0%, 100% {
+            opacity: 0.3;
+            transform: scaleX(0.5);
+          }
+          50% {
+            opacity: 1;
+            transform: scaleX(1.2);
+          }
+        }
+        @keyframes garmentForm {
+          0%, 100% {
+            opacity: 0.2;
+            transform: translate(-50%, -50%) scale(0.9);
+          }
+          50% {
+            opacity: 0.5;
+            transform: translate(-50%, -50%) scale(1.1);
+          }
+        }
+        @keyframes sleeveWave {
+          0%, 100% {
+            transform: rotate(0deg);
+          }
+          50% {
+            transform: rotate(10deg);
+          }
+        }
+        @keyframes buttonShine {
+          0%, 100% {
+            box-shadow: 0 0 5px rgba(228, 49, 49, 0.3);
+            transform: scale(1);
+          }
+          50% {
+            box-shadow: 0 0 15px rgba(228, 49, 49, 0.8);
+            transform: scale(1.3);
+          }
+        }
+        @keyframes zipperMove {
+          0%, 100% {
+            transform: translateY(0px);
+            opacity: 0.6;
+          }
+          50% {
+            transform: translateY(-5px);
+            opacity: 1;
+          }
+        }
+        @keyframes textShimmer {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
         }
         @media (max-width: 767px) {
           .mobile-categories-container :global(.swiper) {

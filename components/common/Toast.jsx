@@ -1,8 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 
-const Toast = ({ message, type = 'info', isVisible = true, duration = 3000, onClose }) => {
-  console.log('Toast component rendered with:', { message, type, isVisible, duration });
+const Toast = ({ message, type = 'info', isVisible = true, duration = 5000, onClose }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [show, setShow] = useState(false);
 

@@ -1,24 +1,117 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 export default function AccountSidebar() {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch user data when session is available
+  useEffect(() => {
+    console.log('[AccountSidebar] Session status:', status);
+    console.log('[AccountSidebar] Session data:', session);
+    
+    const fetchUserData = async () => {
+      if (session?.user) {
+        try {
+          console.log('[AccountSidebar] Fetching user data for:', session.user.email);
+          setLoading(true);
+          // First ensure user exists in Strapi
+          const response = await fetch('/api/user-management', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          console.log('[AccountSidebar] User management response status:', response.status);
+          
+          if (response.ok) {
+            const result = await response.json();
+            console.log('[AccountSidebar] User management result:', result);
+            setUserData(result.user);
+          } else {
+            console.error('[AccountSidebar] User management request failed:', response.status);
+          }
+        } catch (error) {
+          console.error('[AccountSidebar] Error fetching user data:', error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        console.log('[AccountSidebar] No session user found');
+        setLoading(false);
+      }
+    };
+
+    if (status !== 'loading') {
+      fetchUserData();
+    }
+  }, [session, status]);
+
+  // Helper function to get user display name
+  const getUserDisplayName = () => {
+    if (userData?.firstName || userData?.lastName) {
+      return `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+    }
+    return session?.user?.name || 'User';
+  };
+
+  // Helper function to get user email
+  const getUserEmail = () => {
+    return userData?.email || session?.user?.email || 'No email';
+  };
+
+  // Helper function to get user avatar
+  const getUserAvatar = () => {
+    let avatar;
+    
+    if (userData?.avatar && userData.avatar !== '') {
+      avatar = userData.avatar;
+    } else if (session?.user?.image) {
+      avatar = session.user.image;
+    } else {
+      avatar = '/images/avatar/user-account.jpg';
+    }
+    
+    // If it's a Google image, use our proxy route to bypass CORS
+    if (avatar && avatar.includes('googleusercontent.com')) {
+      avatar = `/api/proxy-avatar?url=${encodeURIComponent(avatar)}`;
+    }
+    
+    // Avatar URL resolved successfully
+    
+    return avatar;
+  };
   return (
     <div className="wrap-sidebar-account">
       <div className="sidebar-account">
         <div className="account-avatar">
           <div className="image">
-            <Image
-              alt=""
-              src="/images/avatar/user-account.jpg"
-              width={281}
-              height={280}
-            />
+            {loading ? (
+              <div style={{ width: 281, height: 280, backgroundColor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px' }}>
+                <span>Loading...</span>
+              </div>
+            ) : (
+              <img
+                alt="User Avatar"
+                src={getUserAvatar()}
+                onError={(e) => {
+                  e.target.src = '/images/avatar/user-account.jpg';
+                }}
+              />
+            )}
           </div>
-          <h6 className="mb_4">Tony Nguyen</h6>
-          <div className="body-text-1">traditionalalley.com.np</div>
+          <h6 className="mb_4">
+            {loading ? 'Loading...' : getUserDisplayName()}
+          </h6>
+          <div className="body-text-1">
+            {loading ? 'Loading...' : getUserEmail()}
+          </div>
         </div>
         <ul className="my-account-nav">
           <li>

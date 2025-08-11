@@ -3,6 +3,7 @@
 
 .wrap-slider {
     position: relative;
+    height: 100%; // Ensure full height
     img {
         width: 100%;
         height: 100%;
@@ -38,6 +39,7 @@
 .tf-slideshow {
     overflow: hidden;
     position: relative;
+    height: 803px; // Fixed height to prevent layout shifting
     .wrap-pagination {
         position: absolute;
         z-index: 10;
@@ -269,6 +271,9 @@
 .slider-video{
     .wrap-slider{
         display: flex;
+        width: 100%;
+        overflow: hidden;
+        position: relative;
     }
 }
 
@@ -282,6 +287,8 @@
     top: 0;
     left: 0;
     z-index: 1;
+    min-width: 100%;
+    min-height: 100%;
   }
 
   audio {

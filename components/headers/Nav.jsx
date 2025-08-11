@@ -1,39 +1,67 @@
 "use client";
 import Link from "next/link";
-import React from "react";
-import { usePathname } from "next/navigation";
+import React, { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { categoriesData } from "@/data/catnames"; // Import the categories data
 
 export default function Nav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [loadingLink, setLoadingLink] = useState(null);
+
+  const handleCategoryClick = (href, linkId) => {
+    setLoadingLink(linkId);
+    router.push(href);
+    // Reset loading state after navigation
+    setTimeout(() => setLoadingLink(null), 1000);
+  };
 
   const renderCategoryList = (categoryData) => {
     return (
       <div className="list-categories-inner">
         <ul>
-          {categoryData.map((category, index) => (
-            <li className="sub-categories2" key={index}>
-              <Link 
-                href={`/${category.slug ? category.slug : category.name.toLowerCase().replace(/\s+/g, '-')}`} 
-                className="categories-item"
-              >
-                <span className="inner-left">{category.name}</span>
-                <i className="icon icon-arrRight" />
-              </Link>
-              <ul className="list-categories-inner">
-                {category.subcategories.map((subcategory, subIndex) => (
-                  <li key={subIndex}>
-                    <Link 
-                      href={`/${category.slug ? category.slug : category.name.toLowerCase().replace(/\s+/g, '-')}/${subcategory.toLowerCase().replace(/\s+/g, '-')}`} 
-                      className="categories-item"
-                    >
-                      <span className="inner-left">{subcategory}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
+          {categoryData.map((category, index) => {
+            const categoryLinkId = `cat-${category.name.toLowerCase().replace(/\s+/g, '-')}`;
+            const categoryHref = `/${category.slug ? category.slug : category.name.toLowerCase().replace(/\s+/g, '-')}`;
+            
+            return (
+              <li className="sub-categories2" key={index}>
+                <div 
+                  className={`categories-item ${loadingLink === categoryLinkId ? 'loading' : ''}`}
+                  onClick={() => handleCategoryClick(categoryHref, categoryLinkId)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <span className="inner-left">{category.name}</span>
+                  {loadingLink === categoryLinkId ? (
+                    <div className="nav-loading-spinner"></div>
+                  ) : (
+                    <i className="icon icon-arrRight" />
+                  )}
+                </div>
+                <ul className="list-categories-inner">
+                  {category.subcategories.map((subcategory, subIndex) => {
+                    const subLinkId = `sub-${category.name}-${subcategory}`.toLowerCase().replace(/\s+/g, '-');
+                    const subHref = `/${category.slug ? category.slug : category.name.toLowerCase().replace(/\s+/g, '-')}/${subcategory.toLowerCase().replace(/\s+/g, '-')}`;
+                    
+                    return (
+                      <li key={subIndex}>
+                        <div 
+                          className={`categories-item ${loadingLink === subLinkId ? 'loading' : ''}`}
+                          onClick={() => handleCategoryClick(subHref, subLinkId)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <span className="inner-left">{subcategory}</span>
+                          {loadingLink === subLinkId && (
+                            <div className="nav-loading-spinner"></div>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </li>
+            );
+          })}
         </ul>
       </div>
     );
@@ -54,6 +82,34 @@ export default function Nav() {
           transform: translateX(3px);
           transition: all 0.3s ease;
         }
+        .categories-item.loading {
+          background-color: #f0f8ff;
+          opacity: 0.8;
+          pointer-events: none;
+        }
+        .categories-title.loading {
+          opacity: 0.8;
+          pointer-events: none;
+        }
+        .nav-loading-spinner {
+          display: inline-block;
+          width: 12px;
+          height: 12px;
+          border: 2px solid #f3f3f3;
+          border-top: 2px solid #e43131;
+          border-radius: 50%;
+          animation: navSpin 0.8s linear infinite;
+          margin-left: 8px;
+        }
+        @keyframes navSpin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .categories-title {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
       `}</style>
       
       <li className={`menu-item ${pathname === "/" ? "active" : ""} `}>
@@ -65,9 +121,14 @@ export default function Nav() {
       {/* Women Categories */}
       <li className={pathname.startsWith("/women") ? "active" : ""}>
         <div className="tf-list-categories">
-          <Link href="/women" className="categories-title">
+          <div 
+            className={`categories-title ${loadingLink === 'main-women' ? 'loading' : ''}`}
+            onClick={() => handleCategoryClick('/women', 'main-women')}
+            style={{ cursor: 'pointer' }}
+          >
             <span className="item-link">Women</span>
-          </Link>
+            {loadingLink === 'main-women' && <div className="nav-loading-spinner"></div>}
+          </div>
           {renderCategoryList(categoriesData.women)}
         </div>
       </li>
@@ -75,9 +136,14 @@ export default function Nav() {
       {/* Men Categories */}
       <li className={pathname.startsWith("/men") ? "active" : ""}>
         <div className="tf-list-categories">
-          <Link href="/men" className="categories-title">
+          <div 
+            className={`categories-title ${loadingLink === 'main-men' ? 'loading' : ''}`}
+            onClick={() => handleCategoryClick('/men', 'main-men')}
+            style={{ cursor: 'pointer' }}
+          >
             <span className="item-link">Men</span>
-          </Link>
+            {loadingLink === 'main-men' && <div className="nav-loading-spinner"></div>}
+          </div>
           {renderCategoryList(categoriesData.men)}
         </div>
       </li>
@@ -85,9 +151,14 @@ export default function Nav() {
       {/* Kids Categories */}
       <li className={pathname.startsWith("/kids") ? "active" : ""}>
         <div className="tf-list-categories">
-          <Link href="/kids" className="categories-title">
+          <div 
+            className={`categories-title ${loadingLink === 'main-kids' ? 'loading' : ''}`}
+            onClick={() => handleCategoryClick('/kids', 'main-kids')}
+            style={{ cursor: 'pointer' }}
+          >
             <span className="item-link">Kids</span>
-          </Link>
+            {loadingLink === 'main-kids' && <div className="nav-loading-spinner"></div>}
+          </div>
           {renderCategoryList(categoriesData.kids)}
         </div>
       </li>

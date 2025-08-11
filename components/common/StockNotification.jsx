@@ -7,11 +7,8 @@ import { useToast } from '@/context/ToastContext';
  */
 export const useStockNotifications = () => {
   const { showError, showWarning, showSuccess } = useToast();
-  
-  console.log('useStockNotifications - toast functions:', { showError: !!showError, showWarning: !!showWarning, showSuccess: !!showSuccess });
 
   const showStockError = (message, availableStock = null, productName = null) => {
-    console.log('showStockError called with:', { message, availableStock, productName });
     let displayMessage = message;
     
     // Enhance message with product name if available

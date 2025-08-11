@@ -1,10 +1,70 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 
 export default function Information() {
   const [passwordType, setPasswordType] = useState("password");
   const [confirmPasswordType, setConfirmPasswordType] = useState("password");
   const [newPasswordType, setNewPasswordType] = useState("password");
+  
+  const { data: session, status } = useSession();
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: ''
+  });
+
+  // Fetch user data when session is available
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (session?.user) {
+        try {
+          setLoading(true);
+          // First ensure user exists in Strapi
+          const response = await fetch('/api/user-management', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            setUserData(result.user);
+            
+            // Update form data with user information
+            setFormData({
+              firstName: result.user?.firstName || session.user?.name?.split(' ')[0] || '',
+              lastName: result.user?.lastName || session.user?.name?.split(' ').slice(1).join(' ') || '',
+              email: result.user?.email || session.user?.email || '',
+              phone: result.user?.phone || ''
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+
+    if (status !== 'loading') {
+      fetchUserData();
+    }
+  }, [session, status]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const togglePassword = () => {
     setPasswordType((prevType) =>
@@ -37,11 +97,13 @@ export default function Information() {
                   className=""
                   type="text"
                   placeholder="First Name*"
-                  name="text"
+                  name="firstName"
                   tabIndex={2}
-                  defaultValue="Tony"
+                  value={loading ? '' : formData.firstName}
+                  onChange={handleInputChange}
                   aria-required="true"
                   required
+                  disabled={loading}
                 />
               </fieldset>
               <fieldset className="">
@@ -49,11 +111,13 @@ export default function Information() {
                   className=""
                   type="text"
                   placeholder="Last Name*"
-                  name="text"
+                  name="lastName"
                   tabIndex={2}
-                  defaultValue="Nguyen"
+                  value={loading ? '' : formData.lastName}
+                  onChange={handleInputChange}
                   aria-required="true"
                   required
+                  disabled={loading}
                 />
               </fieldset>
             </div>
@@ -65,9 +129,11 @@ export default function Information() {
                   placeholder="Username or email address*"
                   name="email"
                   tabIndex={2}
-                  defaultValue="traditionalalley.com.np"
+                  value={loading ? '' : formData.email}
+                  onChange={handleInputChange}
                   aria-required="true"
                   required
+                  disabled={loading}
                 />
               </fieldset>
               <fieldset className="">
@@ -75,11 +141,13 @@ export default function Information() {
                   className=""
                   type="text"
                   placeholder="Phone*"
-                  name="text"
+                  name="phone"
                   tabIndex={2}
-                  defaultValue="(+12) 345 678 910"
+                  value={loading ? '' : formData.phone}
+                  onChange={handleInputChange}
                   aria-required="true"
                   required
+                  disabled={loading}
                 />
               </fieldset>
             </div>

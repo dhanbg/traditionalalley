@@ -26,9 +26,6 @@ export default function Context({ children }) {
   const { data: session } = useSession();
   const user = session?.user;
   const { showStockError, showAddToCartSuccess, showQuantityUpdateSuccess } = useStockNotifications();
-  
-  // Debug: Log if toast functions are available
-  console.log('Toast functions available:', { showStockError: !!showStockError, showAddToCartSuccess: !!showAddToCartSuccess });
   const [cartProducts, setCartProducts] = useState([]);
   const [wishList, setWishList] = useState([]);
   const [compareItem, setCompareItem] = useState([]);
@@ -223,7 +220,7 @@ export default function Context({ children }) {
         
         ensureUserExists();
       } else {
-        console.log(`✅ User creation already attempted for ${user.email} in this session`);
+        // User creation already attempted for this session
         setUserCreationAttempted(true);
       }
     } else {
@@ -392,7 +389,7 @@ export default function Context({ children }) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        console.log('💾 Saving cart selections to sessionStorage:', selectedCartItems);
+        // Saving cart selections to sessionStorage
         sessionStorage.setItem('selectedCartItems', JSON.stringify(selectedCartItems));
       } catch (error) {
         console.error('Error saving cart selections to sessionStorage:', error);
@@ -403,18 +400,12 @@ export default function Context({ children }) {
   // Clear selections when user logs in for the first time (new session)
   // This should only run once when the user first logs in, not on every page reload
   useEffect(() => {
-    console.log('🔍 User session effect running, user:', user ? user.email : 'null');
+    // User session effect running
     if (user) {
       const userSessionKey = `cartSelections_${user.id}`;
       const hasExistingSession = sessionStorage.getItem(userSessionKey) === 'true';
       
-      console.log('🔍 Checking user session:', {
-        userId: user.id,
-        email: user.email,
-        userSessionKey,
-        hasExistingSession,
-        currentSelections: selectedCartItems
-      });
+      // Checking user session
       
       // TEMPORARILY DISABLED: Only clear selections if this is truly a new login AND we don't have any saved selections
       if (!hasExistingSession) {
@@ -424,18 +415,18 @@ export default function Context({ children }) {
           const saved = sessionStorage.getItem('selectedCartItems');
           const savedSelections = saved ? JSON.parse(saved) : {};
           hasSavedSelections = Object.keys(savedSelections).length > 0;
-          console.log('🔄 Session check - saved selections:', savedSelections, 'has selections:', hasSavedSelections);
+          // Checking saved selections
         } catch (error) {
           console.error('Error checking saved selections:', error);
         }
         
         // TEMPORARILY DISABLED: Don't clear selections to test if this is the issue
-        console.log('🔄 New user session detected, but NOT clearing selections (temporarily disabled for debugging)');
+        // New user session detected, not clearing selections (temporarily disabled for debugging)
         
         // Set the session flag regardless
         sessionStorage.setItem(userSessionKey, 'true');
       } else {
-        console.log('✅ Existing user session found, keeping selections:', selectedCartItems);
+        // Existing user session found, keeping selections
       }
     } else {
       // User logged out - clear session flags

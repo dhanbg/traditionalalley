@@ -978,6 +978,9 @@
       }
     }
   }
+  .tf-slideshow {
+    height: 803px; // Large screen height
+  }
   .slider-padding,
   .header-fullwidth {
     padding-left: 40px;
@@ -992,6 +995,7 @@
     }
   }
   .tf-slideshow {
+    height: 600px; // Medium screen height
     .wrap-pagination {
       bottom: 40px;
     }
@@ -1374,6 +1378,18 @@
       img {
         max-width: 150px;
         box-shadow: var(--shadow1);
+      }
+    }
+  }
+}
+
+@media (max-width: 767px) {
+  .slider-video {
+    .wrap-slider {
+      video {
+        width: 100vw;
+        min-width: 100vw;
+        object-fit: cover;
       }
     }
   }

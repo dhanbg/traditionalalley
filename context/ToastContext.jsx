@@ -16,35 +16,22 @@ export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
   const removeToast = useCallback((id) => {
-    console.log('removeToast called with id:', id);
-    setToasts(prev => {
-      const filtered = prev.filter(toast => toast.id !== id);
-      console.log('Toasts after removal:', filtered);
-      return filtered;
-    });
+    setToasts(prev => prev.filter(toast => toast.id !== id));
   }, []);
 
   const showToast = useCallback((message, type = 'info', duration = 3000) => {
-    console.log('ToastContext showToast called with:', { message, type, duration });
     const id = Date.now().toString();
     const newToast = { id, message, type, duration, isVisible: true };
-    console.log('Creating toast:', newToast);
 
-    setToasts(prev => {
-      const newToasts = [...prev, newToast];
-      console.log('Updated toasts state:', newToasts);
-      return newToasts;
-    });
+    setToasts(prev => [...prev, newToast]);
 
     // Auto remove toast after duration + animation time
     setTimeout(() => {
-      console.log('Auto-removing toast with id:', id);
       removeToast(id);
     }, duration + 500);
   }, [removeToast]);
 
   const showError = useCallback((message, duration) => {
-    console.log('ToastContext showError called with:', { message, duration });
     showToast(message, 'error', duration);
   }, [showToast]);
 
@@ -68,7 +55,6 @@ export const ToastProvider = ({ children }) => {
     <ToastContext.Provider value={value}>
       {children}
       <div className="toast-container-wrapper">
-        {console.log('Rendering toasts:', toasts)}
         {toasts.map((toast, index) => (
           <div
             key={toast.id}
@@ -86,7 +72,7 @@ export const ToastProvider = ({ children }) => {
               duration={toast.duration}
               onClose={() => removeToast(toast.id)}
             />
-            {console.log('Rendering Toast component with:', { message: toast.message, type: toast.type, isVisible: toast.isVisible })}
+
           </div>
         ))}
       </div>

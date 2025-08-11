@@ -87,8 +87,8 @@ export default function Details1({ product, variants = [] }) {
     sizes: product.sizes || [],
     price: product.price || 0,
     oldPrice: product.oldPrice || null,
-    imgSrc: getBestImageUrl(product.imgSrc, 'medium') || '/logo.png',
-    imgHover: product.imgHover || product.imgSrc || '/logo.png',
+    imgSrc: processImageUrl(product.imgSrc) || getBestImageUrl(product.imgSrc, 'medium') || '/logo.png',
+    imgHover: processImageUrl(product.imgHover) || processImageUrl(product.imgSrc) || '/logo.png',
     gallery: processGalleryItems(product.gallery || [])
   };
 
@@ -151,7 +151,13 @@ export default function Details1({ product, variants = [] }) {
   }
 
   const [activeVariant, setActiveVariant] = useState(initialActive);
-  const [currentProduct, setCurrentProduct] = useState(safeProduct);
+  // Initialize currentProduct with properly processed images from the start
+  const [currentProduct, setCurrentProduct] = useState({
+    ...safeProduct,
+    imgSrc: processImageUrl(safeProduct.imgSrc) || safeProduct.imgSrc,
+    imgHover: processImageUrl(safeProduct.imgHover) || processImageUrl(safeProduct.imgSrc) || safeProduct.imgHover,
+    gallery: processGalleryItems(safeProduct.gallery || [])
+  });
   
   // Helper function to extract design name from variant
   const extractDesignFromVariant = (variant) => {
