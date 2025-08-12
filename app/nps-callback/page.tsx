@@ -489,11 +489,21 @@ const NPSCallbackContent = () => {
             try {
               await handleAutomaticUpdateStockAndDelete(user, clearPurchasedItemsFromCart);
               console.log("✅ Auto-update completed - proceeding to coupon logic");
+              console.log("🔍 [CRITICAL DEBUG] Line 491 executed - still in try block");
+              console.log("🔍 [CRITICAL DEBUG] About to exit try block and continue to line 496");
             } catch (autoUpdateError) {
               console.error("⚠️ Auto-update error (continuing):", autoUpdateError.message);
+              console.log("🔍 [CRITICAL DEBUG] In catch block - continuing execution");
             }
             
+            console.log("🔍 [CRITICAL DEBUG] Exited try-catch block - about to reach line 496");
+            
             setProcessingStatus("✅ Inventory updated and cart cleaned up!");
+            
+            // CRITICAL: Debug execution flow immediately after auto-update
+            console.log("🔍 [EXECUTION DEBUG] Line 496 completed - setProcessingStatus executed");
+            console.log("🔍 [EXECUTION DEBUG] About to proceed to coupon logic...");
+            console.log("🔍 [EXECUTION DEBUG] Current timestamp:", new Date().toISOString());
             
             // Step 2: Automatic Coupon Application (if coupon was used)
             console.log("🎫 Checking for automatic coupon application...");
