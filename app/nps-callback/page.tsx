@@ -226,8 +226,9 @@ const NPSCallbackContent = () => {
       });
       console.log(`🏁 [${debugId}] ===== AUTOMATIC UPDATE & DELETE PROCESS COMPLETED SUCCESSFULLY =====`);
       
-      // Mark as completed
+      // Mark as completed and reset processing flag
       autoUpdateCompletedRef.current = true;
+      processingRef.current = false;
       return true;
       
     } catch (error: any) {
@@ -255,8 +256,9 @@ const NPSCallbackContent = () => {
       console.warn(`⚠️ [${debugId}] Continuing with payment success despite update/delete error`);
       console.log(`🏁 [${debugId}] ===== AUTOMATIC UPDATE & DELETE PROCESS FAILED =====`);
       
-      // Mark as completed (even if failed, to prevent infinite retries)
+      // Mark as completed (even if failed, to prevent infinite retries) and reset processing flag
       autoUpdateCompletedRef.current = true;
+      processingRef.current = false;
       return false;
     }
   };
