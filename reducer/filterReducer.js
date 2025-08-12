@@ -1,7 +1,6 @@
 export const initialState = {
   price: [20, 300],
   availability: { id: "all", label: "All", value: null },
-  color: { name: "All", className: "", imgSrc: null },
   size: "All",
   activeFilterOnSale: false,
   collections: [],
@@ -17,8 +16,7 @@ export function reducer(state, action) {
     case "SET_PRICE":
       return { ...state, price: action.payload };
 
-    case "SET_COLOR":
-      return { ...state, color: action.payload };
+
 
     case "SET_SIZE":
       return { ...state, size: action.payload };
@@ -52,7 +50,6 @@ export function reducer(state, action) {
         ...state,
         price: [20, 300],
         availability: { id: "all", label: "All", value: null },
-        color: { name: "All", className: "", imgSrc: null },
         size: "All",
         collections: [],
         activeFilterOnSale: false,

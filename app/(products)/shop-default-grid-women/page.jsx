@@ -5,7 +5,9 @@ import Products from "@/components/products/Products";
 import Link from "next/link";
 import React, { Suspense } from "react";
 
-export default function page() {
+export default function page({ searchParams }) {
+  const collectionId = searchParams?.collectionId;
+  
   return (
     <>
       <Topbar6 bgColor="bg-main" />
@@ -34,7 +36,11 @@ export default function page() {
         </div>
       </div>
       <Suspense fallback={<div>Loading products...</div>}>
-        <Products categoryId={1} categoryTitle="Women" />
+        <Products 
+          categoryId={1} 
+          categoryTitle="Women" 
+          collectionId={collectionId}
+        />
       </Suspense>
       <Footer1 />
     </>

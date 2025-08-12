@@ -481,6 +481,8 @@ const NPSCallbackContent = () => {
         console.log("🔍 [PAYMENT STATUS DEBUG] isPaymentSuccessful:", isPaymentSuccessful);
         
         if (isPaymentSuccessful) {
+          let couponProcessingComplete = false;
+          
           try {
             // Step 1: Automatic Stock Update & Cart Cleanup using CURRENT cart data (no stale orderData)
             setProcessingStatus("🔄 Updating inventory and cleaning up cart...");
@@ -538,34 +540,43 @@ const NPSCallbackContent = () => {
               console.log("ℹ️ [IMMEDIATE COUPON] No coupon to apply automatically");
             }
             
-            // Step 3: Complete processing and set final status
+            // Mark coupon processing as complete
+            couponProcessingComplete = true;
             console.log("✅ All post-payment processing completed - ready for redirect");
             setProcessingStatus("✅ Payment processing complete!");
+            
+            // Step 3: Navigation ONLY after coupon processing is complete
+            console.log("🔄 Preparing redirect - finalStatus:", finalStatus);
+            setTimeout(() => {
+              console.log("🔄 Redirecting to success page...");
+              window.location.href = "/?payment=success";
+            }, 3000); // Give time to show order creation status
             
           } catch (orderError) {
             console.error("Error in post-payment processing:", orderError);
             setProcessingStatus("⚠️ Payment successful but failed to complete post-processing");
+            
+            // Still redirect on error, but after a longer delay
+            setTimeout(() => {
+              console.log("🔄 Redirecting to success page (after error)...");
+              window.location.href = "/?payment=success";
+            }, 5000);
           }
-        }
-        
-        // Step 4: Show success and redirect based on payment status (ONLY after all processing is complete)
-        console.log("🔄 Preparing redirect - finalStatus:", finalStatus);
-        if (finalStatus === "Success" || finalStatus === "SUCCESS" || finalStatus === "success") {
-          setTimeout(() => {
-            console.log("🔄 Redirecting to success page...");
-            window.location.href = "/?payment=success";
-          }, 3000); // Give time to show order creation status
-        } else if (finalStatus === "Fail" || finalStatus === "FAILED" || finalStatus === "fail") {
-          setTimeout(() => {
-            console.log("🔄 Redirecting to failed page...");
-            window.location.href = "/?payment=failed";
-          }, 3000);
         } else {
-          setProcessingStatus("⏳ Payment is being processed...");
-          setTimeout(() => {
-            console.log("🔄 Redirecting to pending page...");
-            window.location.href = "/?payment=pending";
-          }, 3000);
+          // Handle non-successful payments
+          console.log("🔄 Preparing redirect - finalStatus:", finalStatus);
+          if (finalStatus === "Fail" || finalStatus === "FAILED" || finalStatus === "fail") {
+            setTimeout(() => {
+              console.log("🔄 Redirecting to failed page...");
+              window.location.href = "/?payment=failed";
+            }, 3000);
+          } else {
+            setProcessingStatus("⏳ Payment is being processed...");
+            setTimeout(() => {
+              console.log("🔄 Redirecting to pending page...");
+              window.location.href = "/?payment=pending";
+            }, 3000);
+          }
         }
         
       } catch (error) {

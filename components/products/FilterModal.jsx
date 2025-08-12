@@ -3,7 +3,6 @@
 import {
   availabilityOptions as defaultAvailabilityOptions,
   categories,
-  colors as defaultColors,
   sizes as defaultSizes,
 } from "@/data/productFilterOptions";
 import RangeSlider from "react-range-slider-input";
@@ -20,9 +19,6 @@ export default function FilterModal({ allProps = {}, products = [], filterOption
     : [20, 300];
     
   // Ensure other properties exist
-  const color = allProps.color && allProps.color.name 
-    ? allProps.color 
-    : { name: "All", className: "" };
     
   const size = typeof allProps.size === 'string' 
     ? allProps.size 
@@ -43,11 +39,7 @@ export default function FilterModal({ allProps = {}, products = [], filterOption
     }
   };
   
-  const setColor = (value) => {
-    if (typeof allProps.setColor === 'function') {
-      allProps.setColor(value);
-    }
-  };
+
   
   const setSize = (value) => {
     if (typeof allProps.setSize === 'function') {
@@ -74,9 +66,6 @@ export default function FilterModal({ allProps = {}, products = [], filterOption
   };
   
   // Use dynamic data from API if available, fall back to static data
-  const colors = filterOptions && filterOptions.colors && Array.isArray(filterOptions.colors) && filterOptions.colors.length > 0 
-    ? filterOptions.colors 
-    : defaultColors;
     
   const sizes = filterOptions && filterOptions.sizes && Array.isArray(filterOptions.sizes) && filterOptions.sizes.length > 0 
     ? filterOptions.sizes 
@@ -190,34 +179,7 @@ export default function FilterModal({ allProps = {}, products = [], filterOption
               )}
             </div>
           </div>
-          <div className="widget-facet facet-color">
-            <h6 className="facet-title">Colors</h6>
-            <div className="facet-color-box">
-              {colors.map((colorOption, index) => (
-                <div
-                  onClick={() => setColor(colorOption)}
-                  key={index}
-                  className={`color-item color-check ${
-                    colorOption.name === color.name ? "active" : ""
-                  }`}
-                >
-                  {colorOption.imgSrc ? (
-                    <span 
-                      className="color color-image" 
-                      style={{ 
-                        backgroundImage: `url(${colorOption.imgSrc})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center'
-                      }}
-                    />
-                  ) : (
-                    <span className={`color ${colorOption.className}`} />
-                  )}
-                  {colorOption.name}
-                </div>
-              ))}
-            </div>
-          </div>
+
           <div className="widget-facet facet-fieldset">
             <h6 className="facet-title">Availability</h6>
             <div className="box-fieldset-item">

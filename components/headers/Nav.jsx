@@ -1,13 +1,73 @@
 "use client";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { categoriesData } from "@/data/catnames"; // Import the categories data
 
 export default function Nav() {
   const pathname = usePathname();
   const router = useRouter();
   const [loadingLink, setLoadingLink] = useState(null);
+  const [collections, setCollections] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch collections from backend
+  useEffect(() => {
+    const fetchCollections = async () => {
+      try {
+        const response = await fetch('/api/collections?populate=*');
+        if (response.ok) {
+          const data = await response.json();
+          setCollections(data.data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching collections:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCollections();
+  }, []);
+
+  // Transform collections into navigation structure
+  const getNavigationData = () => {
+    if (loading || !collections.length) {
+      return {
+        women: [],
+        men: [],
+        kids: []
+      };
+    }
+
+    // Filter collections by category
+    const womenCollections = collections.filter(collection => 
+      collection.category?.title?.toLowerCase() === 'women'
+    );
+    const menCollections = collections.filter(collection => 
+      collection.category?.title?.toLowerCase() === 'men'
+    );
+    const kidsCollections = collections.filter(collection => 
+      collection.category?.title?.toLowerCase() === 'kids'
+    );
+
+    return {
+      women: womenCollections.map(collection => ({
+        name: collection.name || 'Unnamed Collection',
+        slug: collection.slug || `collection-${collection.id}`,
+        subcategories: [] // Collections don't have subcategories in this structure
+      })),
+      men: menCollections.map(collection => ({
+        name: collection.name || 'Unnamed Collection',
+        slug: collection.slug || `collection-${collection.id}`,
+        subcategories: []
+      })),
+      kids: kidsCollections.map(collection => ({
+        name: collection.name || 'Unnamed Collection',
+        slug: collection.slug || `collection-${collection.id}`,
+        subcategories: []
+      }))
+    };
+  };
 
   const handleCategoryClick = (href, linkId) => {
     setLoadingLink(linkId);
@@ -16,49 +76,57 @@ export default function Nav() {
     setTimeout(() => setLoadingLink(null), 1000);
   };
 
-  const renderCategoryList = (categoryData) => {
+  const renderCollectionsList = (collectionsData) => {
+    if (loading) {
+      return (
+        <div className="list-categories-inner">
+          <ul>
+            <li className="sub-categories2">
+              <div className="categories-item loading">
+                <span className="inner-left">Loading...</span>
+                <div className="nav-loading-spinner"></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      );
+    }
+
+    if (!collectionsData.length) {
+      return (
+        <div className="list-categories-inner">
+          <ul>
+            <li className="sub-categories2">
+              <div className="categories-item">
+                <span className="inner-left">No collections available</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+      );
+    }
+
     return (
       <div className="list-categories-inner">
         <ul>
-          {categoryData.map((category, index) => {
-            const categoryLinkId = `cat-${category.name.toLowerCase().replace(/\s+/g, '-')}`;
-            const categoryHref = `/${category.slug ? category.slug : category.name.toLowerCase().replace(/\s+/g, '-')}`;
+          {collectionsData.map((collection, index) => {
+            const collectionLinkId = `collection-${collection.slug}`;
+            const collectionHref = `/collections/${collection.slug}`;
             
             return (
               <li className="sub-categories2" key={index}>
                 <div 
-                  className={`categories-item ${loadingLink === categoryLinkId ? 'loading' : ''}`}
-                  onClick={() => handleCategoryClick(categoryHref, categoryLinkId)}
+                  className={`categories-item ${loadingLink === collectionLinkId ? 'loading' : ''}`}
+                  onClick={() => handleCategoryClick(collectionHref, collectionLinkId)}
                   style={{ cursor: 'pointer' }}
                 >
-                  <span className="inner-left">{category.name}</span>
-                  {loadingLink === categoryLinkId ? (
+                  <span className="inner-left">{collection.name}</span>
+                  {loadingLink === collectionLinkId ? (
                     <div className="nav-loading-spinner"></div>
                   ) : (
                     <i className="icon icon-arrRight" />
                   )}
                 </div>
-                <ul className="list-categories-inner">
-                  {category.subcategories.map((subcategory, subIndex) => {
-                    const subLinkId = `sub-${category.name}-${subcategory}`.toLowerCase().replace(/\s+/g, '-');
-                    const subHref = `/${category.slug ? category.slug : category.name.toLowerCase().replace(/\s+/g, '-')}/${subcategory.toLowerCase().replace(/\s+/g, '-')}`;
-                    
-                    return (
-                      <li key={subIndex}>
-                        <div 
-                          className={`categories-item ${loadingLink === subLinkId ? 'loading' : ''}`}
-                          onClick={() => handleCategoryClick(subHref, subLinkId)}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          <span className="inner-left">{subcategory}</span>
-                          {loadingLink === subLinkId && (
-                            <div className="nav-loading-spinner"></div>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
               </li>
             );
           })}
@@ -118,8 +186,8 @@ export default function Nav() {
         </Link>
       </li>
 
-      {/* Women Categories */}
-      <li className={pathname.startsWith("/women") ? "active" : ""}>
+      {/* Women Collections */}
+      <li className={pathname.startsWith("/women") || pathname.startsWith("/collections") ? "active" : ""}>
         <div className="tf-list-categories">
           <div 
             className={`categories-title ${loadingLink === 'main-women' ? 'loading' : ''}`}
@@ -129,11 +197,11 @@ export default function Nav() {
             <span className="item-link">Women</span>
             {loadingLink === 'main-women' && <div className="nav-loading-spinner"></div>}
           </div>
-          {renderCategoryList(categoriesData.women)}
+          {renderCollectionsList(getNavigationData().women)}
         </div>
       </li>
 
-      {/* Men Categories */}
+      {/* Men Collections */}
       <li className={pathname.startsWith("/men") ? "active" : ""}>
         <div className="tf-list-categories">
           <div 
@@ -144,11 +212,11 @@ export default function Nav() {
             <span className="item-link">Men</span>
             {loadingLink === 'main-men' && <div className="nav-loading-spinner"></div>}
           </div>
-          {renderCategoryList(categoriesData.men)}
+          {renderCollectionsList(getNavigationData().men)}
         </div>
       </li>
 
-      {/* Kids Categories */}
+      {/* Kids Collections */}
       <li className={pathname.startsWith("/kids") ? "active" : ""}>
         <div className="tf-list-categories">
           <div 
@@ -159,7 +227,7 @@ export default function Nav() {
             <span className="item-link">Kids</span>
             {loadingLink === 'main-kids' && <div className="nav-loading-spinner"></div>}
           </div>
-          {renderCategoryList(categoriesData.kids)}
+          {renderCollectionsList(getNavigationData().kids)}
         </div>
       </li>
 

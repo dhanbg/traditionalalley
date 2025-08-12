@@ -1,11 +1,71 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { categoriesData } from "@/data/catnames";
 import { usePathname } from "next/navigation";
 
 export default function MobileMenu() {
   const pathname = usePathname();
+  const [collections, setCollections] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch collections from backend
+  useEffect(() => {
+    const fetchCollections = async () => {
+      try {
+        const response = await fetch('/api/collections?populate=*');
+        if (response.ok) {
+          const data = await response.json();
+          setCollections(data.data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching collections:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCollections();
+  }, []);
+
+  // Transform collections into navigation structure
+  const getNavigationData = () => {
+    if (loading || !collections.length) {
+      return {
+        women: [],
+        men: [],
+        kids: []
+      };
+    }
+
+    // Filter collections by category
+    const womenCollections = collections.filter(collection => 
+      collection.category?.title?.toLowerCase() === 'women'
+    );
+    const menCollections = collections.filter(collection => 
+      collection.category?.title?.toLowerCase() === 'men'
+    );
+    const kidsCollections = collections.filter(collection => 
+      collection.category?.title?.toLowerCase() === 'kids'
+    );
+
+    return {
+      women: womenCollections.map(collection => ({
+        name: collection.name || 'Unnamed Collection',
+        slug: collection.slug || `collection-${collection.id}`,
+        id: collection.id
+      })),
+      men: menCollections.map(collection => ({
+        name: collection.name || 'Unnamed Collection',
+        slug: collection.slug || `collection-${collection.id}`,
+        id: collection.id
+      })),
+      kids: kidsCollections.map(collection => ({
+        name: collection.name || 'Unnamed Collection',
+        slug: collection.slug || `collection-${collection.id}`,
+        id: collection.id
+      }))
+    };
+  };
   return (
     <div className="offcanvas offcanvas-start canvas-mb" id="mobileMenu">
       <span
@@ -49,41 +109,34 @@ export default function MobileMenu() {
                 </a>
                 <div id="dropdown-women" className="collapse">
                   <ul className="sub-nav-menu">
-                    {categoriesData.women.map((category, i) => (
-                      <li key={i}>
-                        <a
-                          href={`#sub-women-${i}`}
-                          className={`sub-nav-link collapsed`}
-                          data-bs-toggle="collapse"
-                          aria-expanded="true"
-                          aria-controls={`sub-women-${i}`}
-                        >
-                          <span>{category.name}</span>
-                          <span className="btn-open-sub" />
-                        </a>
-                        <div id={`sub-women-${i}`} className="collapse">
-                          <ul className="sub-nav-menu sub-menu-level-2">
-                            {category.subcategories.map((subcategory, j) => (
-                              <li key={j}>
-                                <Link
-                                  href={`/women/${subcategory
-                                    .toLowerCase()
-                                    .replace(/ /g, "-")}`}
-                                  className={`sub-nav-link ${
-                                    pathname.split("/")[2] ===
-                                    subcategory.toLowerCase().replace(/ /g, "-")
-                                      ? "active"
-                                      : ""
-                                  } `}
-                                >
-                                  {subcategory}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
+                    {loading ? (
+                      <li>
+                        <div className="sub-nav-link">
+                          <span>Loading collections...</span>
                         </div>
                       </li>
-                    ))}
+                    ) : getNavigationData().women.length > 0 ? (
+                      getNavigationData().women.map((collection, i) => (
+                        <li key={collection.id}>
+                          <Link
+                            href={`/collections/${collection.slug}`}
+                            className={`sub-nav-link ${
+                              pathname.includes(`/collections/${collection.slug}`)
+                                ? "active"
+                                : ""
+                            }`}
+                          >
+                            <span>{collection.name}</span>
+                          </Link>
+                        </li>
+                      ))
+                    ) : (
+                      <li>
+                        <div className="sub-nav-link">
+                          <span>No collections available</span>
+                        </div>
+                      </li>
+                    )}
                   </ul>
                 </div>
               </li>
@@ -104,41 +157,34 @@ export default function MobileMenu() {
                 </a>
                 <div id="dropdown-men" className="collapse">
                   <ul className="sub-nav-menu">
-                    {categoriesData.men.map((category, i) => (
-                      <li key={i}>
-                        <a
-                          href={`#sub-men-${i}`}
-                          className={`sub-nav-link collapsed`}
-                          data-bs-toggle="collapse"
-                          aria-expanded="true"
-                          aria-controls={`sub-men-${i}`}
-                        >
-                          <span>{category.name}</span>
-                          <span className="btn-open-sub" />
-                        </a>
-                        <div id={`sub-men-${i}`} className="collapse">
-                          <ul className="sub-nav-menu sub-menu-level-2">
-                            {category.subcategories.map((subcategory, j) => (
-                              <li key={j}>
-                                <Link
-                                  href={`/men/${subcategory
-                                    .toLowerCase()
-                                    .replace(/ /g, "-")}`}
-                                  className={`sub-nav-link ${
-                                    pathname.split("/")[2] ===
-                                    subcategory.toLowerCase().replace(/ /g, "-")
-                                      ? "active"
-                                      : ""
-                                  } `}
-                                >
-                                  {subcategory}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
+                    {loading ? (
+                      <li>
+                        <div className="sub-nav-link">
+                          <span>Loading collections...</span>
                         </div>
                       </li>
-                    ))}
+                    ) : getNavigationData().men.length > 0 ? (
+                      getNavigationData().men.map((collection, i) => (
+                        <li key={collection.id}>
+                          <Link
+                            href={`/collections/${collection.slug}`}
+                            className={`sub-nav-link ${
+                              pathname.includes(`/collections/${collection.slug}`)
+                                ? "active"
+                                : ""
+                            }`}
+                          >
+                            <span>{collection.name}</span>
+                          </Link>
+                        </li>
+                      ))
+                    ) : (
+                      <li>
+                        <div className="sub-nav-link">
+                          <span>No collections available</span>
+                        </div>
+                      </li>
+                    )}
                   </ul>
                 </div>
               </li>
@@ -159,41 +205,34 @@ export default function MobileMenu() {
                 </a>
                 <div id="dropdown-kids" className="collapse">
                   <ul className="sub-nav-menu">
-                    {categoriesData.kids.map((category, i) => (
-                      <li key={i}>
-                        <a
-                          href={`#sub-kids-${i}`}
-                          className={`sub-nav-link collapsed`}
-                          data-bs-toggle="collapse"
-                          aria-expanded="true"
-                          aria-controls={`sub-kids-${i}`}
-                        >
-                          <span>{category.name}</span>
-                          <span className="btn-open-sub" />
-                        </a>
-                        <div id={`sub-kids-${i}`} className="collapse">
-                          <ul className="sub-nav-menu sub-menu-level-2">
-                            {category.subcategories.map((subcategory, j) => (
-                              <li key={j}>
-                                <Link
-                                  href={`/kids/${subcategory
-                                    .toLowerCase()
-                                    .replace(/ /g, "-")}`}
-                                  className={`sub-nav-link ${
-                                    pathname.split("/")[2] ===
-                                    subcategory.toLowerCase().replace(/ /g, "-")
-                                      ? "active"
-                                      : ""
-                                  } `}
-                                >
-                                  {subcategory}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
+                    {loading ? (
+                      <li>
+                        <div className="sub-nav-link">
+                          <span>Loading collections...</span>
                         </div>
                       </li>
-                    ))}
+                    ) : getNavigationData().kids.length > 0 ? (
+                      getNavigationData().kids.map((collection, i) => (
+                        <li key={collection.id}>
+                          <Link
+                            href={`/collections/${collection.slug}`}
+                            className={`sub-nav-link ${
+                              pathname.includes(`/collections/${collection.slug}`)
+                                ? "active"
+                                : ""
+                            }`}
+                          >
+                            <span>{collection.name}</span>
+                          </Link>
+                        </li>
+                      ))
+                    ) : (
+                      <li>
+                        <div className="sub-nav-link">
+                          <span>No collections available</span>
+                        </div>
+                      </li>
+                    )}
                   </ul>
                 </div>
               </li>

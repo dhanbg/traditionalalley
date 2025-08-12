@@ -403,21 +403,29 @@ export const fetchFilterOptions = async (categoryTitle) => {
       };
     });
     
-    // Extract unique sizes
+    // Extract unique sizes from size_stocks (only sizes with available stock)
     const uniqueSizes = new Set();
     products.forEach(product => {
-      if (product && product.sizes && Array.isArray(product.sizes)) {
-        if (product.sizes.length > 0) {
-          if (typeof product.sizes[0] === 'string') {
-            product.sizes.forEach(size => {
-              if (size) uniqueSizes.add(size);
-            });
-          } else if (typeof product.sizes[0] === 'object') {
-            product.sizes.forEach(size => {
-              if (size && size.name) uniqueSizes.add(size.name);
+      // Check main product size_stocks
+      if (product && product.size_stocks && typeof product.size_stocks === 'object') {
+        Object.entries(product.size_stocks).forEach(([size, stock]) => {
+          if (stock > 0) { // Only include sizes with available stock
+            uniqueSizes.add(size);
+          }
+        });
+      }
+      
+      // Check product variants size_stocks
+      if (product && product.product_variants && Array.isArray(product.product_variants)) {
+        product.product_variants.forEach(variant => {
+          if (variant && variant.size_stocks && typeof variant.size_stocks === 'object') {
+            Object.entries(variant.size_stocks).forEach(([size, stock]) => {
+              if (stock > 0) { // Only include sizes with available stock
+                uniqueSizes.add(size);
+              }
             });
           }
-        }
+        });
       }
     });
     

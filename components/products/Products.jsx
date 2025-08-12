@@ -20,7 +20,7 @@ import { fetchProductsWithVariantsByCategory } from "@/utils/productVariantUtils
 // Default placeholder image
 const DEFAULT_IMAGE = '/logo.png';
 
-export default function Products({ parentClass = "flat-spacing", collection, categoryId, categoryTitle }) {
+export default function Products({ parentClass = "flat-spacing", collection, categoryId, categoryTitle, collectionId }) {
   const searchParams = useSearchParams();
   const [activeLayout, setActiveLayout] = useState(4);
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -32,7 +32,6 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
   const [loadedItems, setLoadedItems] = useState([]);
   const [filterOptions, setFilterOptions] = useState({
     brands: [],
-    colors: [],
     sizes: [],
     availabilityOptions: [
       { id: "inStock", label: "In stock", count: 0, value: true },
@@ -76,11 +75,125 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
       }
     };
 
-    // If categoryId and categoryTitle are provided, fetch all products for that category
-    if (categoryId && categoryTitle) {
+    // If categoryId and categoryTitle are provided, and no collectionId, fetch all products for that category
+    if (categoryId && categoryTitle && !collectionId) {
       fetchProductsByCategory();
     }
-  }, [categoryId, categoryTitle]);
+  }, [categoryId, categoryTitle, collectionId]);
+
+  // Fetch collection products by ID
+  useEffect(() => {
+    const fetchCollectionProductsById = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch the specific collection by ID using the existing collections API with filter
+        const response = await fetchDataFromApi(`/api/collections?filters[id][$eq]=${collectionId}&populate=*`);
+        
+        if (!response.data || response.data.length === 0) {
+          throw new Error('Collection not found');
+        }
+        
+        if (response.data) {
+          const collectionItem = response.data[0]; // Get the first (and should be only) collection
+          setCollectionData([collectionItem]);
+          
+          // Products are directly in the collection.products array
+          const products = collectionItem.products || [];
+          
+          if (products.length > 0) {
+            // Extract document IDs from products
+            const productDocumentIds = products.map(product => product.documentId).filter(Boolean);
+            
+            if (productDocumentIds.length > 0) {
+              // Fetch detailed product information for each product
+              const productPromises = productDocumentIds.map(documentId => 
+                fetchDataFromApi(PRODUCT_BY_DOCUMENT_ID_API(documentId))
+              );
+              
+              const productResponses = await Promise.all(productPromises);
+              
+              // Extract and transform product data
+              const transformedProducts = productResponses.map(response => {
+                if (!response.data || response.data.length === 0) return null;
+                
+                const product = response.data[0];
+                
+                // Extract image URLs with proper formatting
+                let imgSrc = getBestImageUrl(product.imgSrc, 'medium') || DEFAULT_IMAGE;
+                let imgHover = getBestImageUrl(product.imgHover, 'medium') || imgSrc;
+                
+
+                
+                // Extract gallery images
+                const gallery = Array.isArray(product.gallery) 
+                  ? product.gallery.map(img => {
+                      if (!img) return { id: 0, url: DEFAULT_IMAGE };
+                      
+                      let imageUrl = DEFAULT_IMAGE;
+                      if (img.formats && img.formats.medium) {
+                        imageUrl = getImageUrl(img.formats.medium.url);
+                      } else if (img.url) {
+                        imageUrl = getImageUrl(img.url);
+                      }
+                      
+                      imageUrl = imageUrl || DEFAULT_IMAGE;
+                      
+                      return {
+                        id: img.id || img.documentId || 0,
+                        url: imageUrl
+                      };
+                    }) 
+                  : [];
+                
+                const sizes = product.sizes || product.filterSizes || [];
+                
+                const transformedProduct = {
+                  ...product,
+                  id: product.id || product.documentId || Math.random().toString(36).substring(7),
+                  imgSrc,
+                  imgHover,
+                  gallery,
+
+                  sizes,
+                  title: product.title || "Untitled Product",
+                  price: product.price || 0,
+                  oldPrice: product.oldPrice || null,
+                  isOnSale: !!product.oldPrice,
+                  salePercentage: product.salePercentage || "25%"
+                };
+                
+                transformedProduct.inStock = calculateInStock(transformedProduct);
+                
+                return transformedProduct;
+              }).filter(Boolean);
+              
+              setProductDetails(transformedProducts);
+              dispatch({ type: "SET_FILTERED", payload: transformedProducts });
+              dispatch({ type: "SET_SORTED", payload: transformedProducts });
+            }
+          } else {
+            setProductDetails([]);
+            dispatch({ type: "SET_FILTERED", payload: [] });
+            dispatch({ type: "SET_SORTED", payload: [] });
+          }
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching collection products by ID:', error);
+        setProductDetails([]);
+        dispatch({ type: "SET_FILTERED", payload: [] });
+        dispatch({ type: "SET_SORTED", payload: [] });
+        setLoading(false);
+      }
+    };
+
+    // If collectionId is provided, fetch collection products by ID
+    if (collectionId) {
+      fetchCollectionProductsById();
+    }
+  }, [collectionId]);
 
   // Fetch collection by slug and get its products
   useEffect(() => {
@@ -154,23 +267,7 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
         // Handle hover image similarly
         let imgHover = getBestImageUrl(product.imgHover, 'medium') || imgSrc;
         
-        // Process colors to ensure they're in the correct format - convert string arrays to objects
-        let processedColors = null;
-        
-        if (Array.isArray(product.colors)) {
-          // If colors is a simple array of strings, convert to objects with color names
-          if (typeof product.colors[0] === 'string') {
-            processedColors = product.colors.map(color => ({
-              name: color,
-              bgColor: `bg-${color.toLowerCase().replace(/\s+/g, '-')}`,
-              // We don't have actual color images, so use the main product image
-              imgSrc: imgSrc
-            }));
-          } else {
-            // If colors is already an array of objects, use as is
-            processedColors = product.colors;
-          }
-        }
+
         
         // Extract gallery images if available
         const gallery = Array.isArray(product.gallery) 
@@ -203,7 +300,7 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
           imgSrc,
           imgHover,
           gallery,
-          colors: processedColors,
+
           sizes,
           // Make sure other required fields are present
           title: product.title || "Untitled Product",
@@ -235,7 +332,6 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
   const {
     price,
     availability,
-    color,
     size,
     collections,
 
@@ -252,23 +348,7 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
     ...state,
     setPrice: (value) => dispatch({ type: "SET_PRICE", payload: value }),
 
-    setColor: (value) => {
-      if (value && typeof value === 'object' && value.name) {
-        if (color && color.name === value.name) {
-          dispatch({ type: "SET_COLOR", payload: { name: "All", className: "", imgSrc: null } });
-        } else {
-          // Make sure we have all required properties
-          const colorPayload = {
-            name: value.name,
-            className: value.className || `bg-${value.name.toLowerCase().replace(/\s+/g, '-')}`,
-            imgSrc: value.imgSrc || null
-          };
-          dispatch({ type: "SET_COLOR", payload: colorPayload });
-        }
-      } else {
-        dispatch({ type: "SET_COLOR", payload: { name: "All", className: "", imgSrc: null } });
-      }
-    },
+
     
     setSize: (value) => {
       if (value === size) {
@@ -347,49 +427,34 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
           return false;
         }
     
-        // Filter by color
-        if (
-          state.color && 
-          state.color.name !== "All" &&
-          (!product.colors || !Array.isArray(product.colors))
-        ) {
-          return false;
-        }
-        
-        // Check if product color matches selected color
-        if (state.color && state.color.name !== "All" && Array.isArray(product.colors)) {
-          const colorMatch = product.colors.some(c => {
-            if (typeof c === 'string') {
-              return c === state.color.name;
-            } else if (c && typeof c === 'object' && c.name) {
-              return c.name === state.color.name;
-            }
-            return false;
-          });
-          
-          if (!colorMatch) return false;
-        }
+
     
-        // Filter by size
-        if (
-          state.size !== "All" &&
-          (!product.sizes || !Array.isArray(product.sizes))
-        ) {
-          return false;
-        }
-        
-        // Check if product size matches selected size
-        if (state.size !== "All" && Array.isArray(product.sizes)) {
-          const sizeMatch = product.sizes.some(s => {
-            if (typeof s === 'string') {
-              return s === state.size;
-            } else if (s && typeof s === 'object' && s.name) {
-              return s.name === state.size;
-            }
-            return false;
-          });
+        // Filter by size using size_stocks (only show products with available stock for selected size)
+        if (state.size !== "All") {
+          let sizeAvailable = false;
           
-          if (!sizeMatch) return false;
+          // Check main product size_stocks
+          if (product.size_stocks && typeof product.size_stocks === 'object') {
+            const stock = product.size_stocks[state.size];
+            if (stock && stock > 0) {
+              sizeAvailable = true;
+            }
+          }
+          
+          // Check product variants size_stocks if not found in main product
+          if (!sizeAvailable && product.product_variants && Array.isArray(product.product_variants)) {
+            for (const variant of product.product_variants) {
+              if (variant && variant.size_stocks && typeof variant.size_stocks === 'object') {
+                const stock = variant.size_stocks[state.size];
+                if (stock && stock > 0) {
+                  sizeAvailable = true;
+                  break;
+                }
+              }
+            }
+          }
+          
+          if (!sizeAvailable) return false;
         }
     
         // Filter by collections
@@ -538,18 +603,23 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
     loadFilterOptions();
   }, [categoryTitle]);
 
-  // Set the initial collection filter from URL parameters
+  // Set the initial collection filter from URL parameters or props
   useEffect(() => {
-    const collectionId = searchParams.get('collectionId');
-    if (collectionId) {
+    const urlCollectionId = searchParams.get('collectionId');
+    const propCollectionId = collectionId;
+    
+    // Use collectionId from props first, then fall back to URL params
+    const targetCollectionId = propCollectionId || urlCollectionId;
+    
+    if (targetCollectionId) {
       // Check if it's a valid number before setting
-      const id = parseInt(collectionId, 10);
+      const id = parseInt(targetCollectionId, 10);
       if (!isNaN(id)) {
         // Set the collection filter
         dispatch({ type: "SET_COLLECTIONS", payload: [id] });
       }
     }
-  }, [searchParams]);
+  }, [searchParams, collectionId]);
 
   return (
     <>
@@ -659,12 +729,7 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
               dispatch({ type: "SET_PRICE", payload: price });
             }
           },
-          color: state.color,
-          setColor: (color) => {
-            if (color && typeof color === 'object') {
-              dispatch({ type: "SET_COLOR", payload: color });
-            }
-          },
+
           size: state.size,
           setSize: (size) => {
             if (size) {

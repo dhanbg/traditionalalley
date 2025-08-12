@@ -4,7 +4,6 @@ import {
   availabilityOptions,
   brands,
   categories,
-  colors,
   sizes,
 } from "@/data/productFilterOptions";
 import { productMain } from "@/data/productsWomen";
@@ -83,23 +82,7 @@ export default function DropdownFilter({ allProps, setIsDDActive }) {
             </span>
           </div>
         </div>
-        <div className="widget-facet facet-color">
-          <h6 className="facet-title">Colors</h6>
-          <div className="facet-color-box">
-            {colors.map((color, index) => (
-              <div
-                onClick={() => allProps.setColor(color)}
-                key={index}
-                className={`color-item color-check ${
-                  color == allProps.color ? "active" : ""
-                }`}
-              >
-                <span className={`color ${color.className}`} />
-                {color.name}
-              </div>
-            ))}
-          </div>
-        </div>
+
         <div className="widget-facet facet-fieldset">
           <h6 className="facet-title">Availability</h6>
           <div className="box-fieldset-item">

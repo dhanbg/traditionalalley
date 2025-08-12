@@ -9,7 +9,7 @@ export default function FilterMeta({ allProps = {}, productLength = 0 }) {
   // Extract and provide safe defaults for filter properties
   const availability = allProps.availability || { id: "all", label: "All", value: null };
   const size = allProps.size || "All";
-  const color = allProps.color || { name: "All", className: "" };
+
   const collections = Array.isArray(allProps.collections) ? allProps.collections : [];
   const collectionObjects = Array.isArray(allProps.filterOptions?.collections) 
     ? allProps.filterOptions.collections 
@@ -28,11 +28,7 @@ export default function FilterMeta({ allProps = {}, productLength = 0 }) {
     }
   };
   
-  const setColor = (val) => {
-    if (typeof allProps.setColor === 'function') {
-      allProps.setColor(val);
-    }
-  };
+
   
   const removeCollection = (val) => {
     if (typeof allProps.removeCollection === 'function') {
@@ -81,29 +77,7 @@ export default function FilterMeta({ allProps = {}, productLength = 0 }) {
         ) : (
           ""
         )}
-        {color && color.name !== "All" ? (
-          <span
-            className="filter-tag color-tag"
-            onClick={() => setColor({ name: "All", className: "", imgSrc: null })}
-          >
-            {color.imgSrc ? (
-              <span 
-                className="color color-image" 
-                style={{ 
-                  backgroundImage: `url(${color.imgSrc})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center'
-                }}
-              />
-            ) : (
-              <span className={`color ${color.className || ""}`} />
-            )}
-            {color.name}
-            <span className="remove-tag icon-close" />
-          </span>
-        ) : (
-          ""
-        )}
+
 
         {collections && collections.length ? (
           <React.Fragment>
@@ -124,7 +98,6 @@ export default function FilterMeta({ allProps = {}, productLength = 0 }) {
       </div>
       {(availability && availability.id !== "all") ||
       size !== "All" ||
-      (color && color.name !== "All") ||
       (collections && collections.length) ? (
         <button
           id="remove-all"
