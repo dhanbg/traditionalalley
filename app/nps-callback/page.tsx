@@ -427,10 +427,41 @@ const NPSCallbackContent = () => {
         if (existingPayment && existingPayment.orderData) {
           orderData = existingPayment.orderData;
           console.log("📦 Found orderData in existing payment record:", orderData);
+          
+          // Enhanced orderData structure debugging
+          console.log("🔍 [ORDERDATA DEBUG] Complete orderData structure:", {
+            hasOrderData: !!orderData,
+            orderDataType: typeof orderData,
+            orderDataKeys: orderData ? Object.keys(orderData) : [],
+            hasOrderSummary: !!orderData?.orderSummary,
+            orderSummaryType: typeof orderData?.orderSummary,
+            orderSummaryKeys: orderData?.orderSummary ? Object.keys(orderData.orderSummary) : [],
+            couponCode: orderData?.orderSummary?.couponCode,
+            couponDiscount: orderData?.orderSummary?.couponDiscount,
+            hasRootCouponCode: !!orderData?.couponCode,
+            rootCouponCode: orderData?.couponCode,
+            hasRootCouponDiscount: !!orderData?.couponDiscount,
+            rootCouponDiscount: orderData?.couponDiscount,
+            fullOrderData: orderData
+          });
         } else if (userBag.orderData) {
           // Fallback to user bag orderData if available
           orderData = userBag.orderData;
           console.log("📦 Found orderData in user bag (fallback):", orderData);
+          
+          // Enhanced orderData structure debugging for fallback
+          console.log("🔍 [ORDERDATA DEBUG] Fallback orderData structure:", {
+            hasOrderData: !!orderData,
+            orderDataType: typeof orderData,
+            orderDataKeys: orderData ? Object.keys(orderData) : [],
+            hasOrderSummary: !!orderData?.orderSummary,
+            orderSummaryKeys: orderData?.orderSummary ? Object.keys(orderData.orderSummary) : [],
+            couponCode: orderData?.orderSummary?.couponCode,
+            couponDiscount: orderData?.orderSummary?.couponDiscount,
+            hasRootCouponCode: !!orderData?.couponCode,
+            rootCouponCode: orderData?.couponCode,
+            fullOrderData: orderData
+          });
         } else {
           console.log("⚠️ No orderData found in existing payment or user bag");
         }
@@ -502,11 +533,24 @@ const NPSCallbackContent = () => {
             console.log("🔍 [COUPON DEBUG] orderData structure:", {
               hasCouponCode: !!orderData?.orderSummary?.couponCode,
               couponCode: orderData?.orderSummary?.couponCode,
-              couponDiscount: orderData?.orderSummary?.couponDiscount
+              couponDiscount: orderData?.orderSummary?.couponDiscount,
+              hasRootCouponCode: !!orderData?.couponCode,
+              rootCouponCode: orderData?.couponCode,
+              rootCouponDiscount: orderData?.couponDiscount
             });
             
-            if (orderData?.orderSummary?.couponCode) {
-              console.log("🎫 [IMMEDIATE COUPON] Found coupon - applying NOW:", orderData.orderSummary.couponCode);
+            // Check for coupon code in multiple possible locations
+            const couponCode = orderData?.orderSummary?.couponCode || orderData?.couponCode;
+            const couponDiscount = orderData?.orderSummary?.couponDiscount || orderData?.couponDiscount;
+            
+            console.log("🔍 [COUPON DEBUG] Final coupon detection:", {
+              finalCouponCode: couponCode,
+              finalCouponDiscount: couponDiscount,
+              willProceed: !!couponCode
+            });
+            
+            if (couponCode) {
+              console.log("🎫 [IMMEDIATE COUPON] Found coupon - applying NOW:", couponCode);
               
               try {
                 setProcessingStatus("🎫 Applying coupon automatically...");
@@ -518,7 +562,7 @@ const NPSCallbackContent = () => {
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
-                    couponId: orderData.orderSummary.couponCode  // Send the coupon code as couponId
+                    couponId: couponCode  // Send the coupon code as couponId
                   })
                 });
                 
