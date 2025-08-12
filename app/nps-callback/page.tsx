@@ -1,7 +1,7 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useEffect, Suspense, useState } from "react";
+import { useEffect, Suspense, useState, useRef } from "react";
 import { fetchDataFromApi, updateUserBagWithPayment, updateProductStock, updateData, deleteData } from "@/utils/api";
 import { processPostPaymentStockAndCart } from "@/utils/postPaymentProcessing";
 const { generateLocalTimestamp } = require("@/utils/timezone");
@@ -15,10 +15,34 @@ const NPSCallbackContent = () => {
   const user = session?.user;
   const { clearPurchasedItemsFromCart, cartProducts, selectedCartItems } = useContextElement();
   const [isProcessing, setIsProcessing] = useState(true);
-  const [processingStatus, setProcessingStatus] = useState("Processing your payment...");
+  const [processingStatus, setProcessingStatus] = useState("🔍 Initializing payment verification...");
+  const [isProcessingCoupon, setIsProcessingCoupon] = useState(false);
+  const processingRef = useRef(false);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (isProcessingCoupon) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isProcessingCoupon]);
 
   // Production-safe automatic stock update and cart cleanup using CURRENT cart data with comprehensive debug logging
   const handleAutomaticUpdateStockAndDelete = async (user: any, clearPurchasedItemsFromCart: any) => {
+    if (processingRef.current) {
+      console.log("🚫 Double execution prevented");
+      return;
+    }
+
+    processingRef.current = true;
+
     const debugId = `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const startTime = Date.now();
     
@@ -241,6 +265,14 @@ const NPSCallbackContent = () => {
     console.log("User:", user?.id);
 
     const savePaymentData = async () => {
+      // Prevent double execution
+      if (processingRef.current) {
+        console.log("🚫 [EXECUTION GUARD] Double execution prevented");
+        return;
+      }
+      
+      processingRef.current = true;
+      console.log("🔒 [EXECUTION GUARD] Processing locked - navigation blocked");
       try {
         // Show user-friendly status updates
         if (status === "SUCCESS" || (isMock && status === "success")) {
@@ -530,6 +562,29 @@ const NPSCallbackContent = () => {
             
             // Step 2: IMMEDIATE Coupon Application (if coupon was used) - BEFORE any navigation
             console.log("🎫 [IMMEDIATE COUPON] Checking for coupon application...");
+            
+            // CRITICAL: Block all navigation during coupon processing
+            setIsProcessingCoupon(true);
+            console.log("🚫 [NAVIGATION GUARD] Coupon processing started - navigation BLOCKED");
+            
+            // Override any existing navigation attempts
+            const originalLocation = window.location;
+            const navigationBlocker = {
+              href: originalLocation.href,
+              replace: () => console.log("🚫 [NAVIGATION GUARD] Navigation blocked during coupon processing"),
+              assign: () => console.log("🚫 [NAVIGATION GUARD] Navigation blocked during coupon processing")
+            };
+            
+            try {
+              Object.defineProperty(window, 'location', {
+                value: navigationBlocker,
+                writable: false,
+                configurable: true
+              });
+            } catch (e) {
+              console.log("⚠️ Could not override window.location, but proceeding...");
+            }
+            
             console.log("🔍 [COUPON DEBUG] orderData structure:", {
               hasCouponCode: !!orderData?.orderSummary?.couponCode,
               couponCode: orderData?.orderSummary?.couponCode,
@@ -583,6 +638,21 @@ const NPSCallbackContent = () => {
             } else {
               console.log("ℹ️ [IMMEDIATE COUPON] No coupon to apply automatically");
             }
+            
+            // CRITICAL: Restore navigation and unlock
+            try {
+              Object.defineProperty(window, 'location', {
+                value: originalLocation,
+                writable: true,
+                configurable: true
+              });
+              console.log("✅ [NAVIGATION GUARD] Navigation restored after coupon processing");
+            } catch (e) {
+              console.log("⚠️ Could not restore window.location, using direct navigation");
+            }
+            
+            setIsProcessingCoupon(false);
+            console.log("✅ [NAVIGATION GUARD] Coupon processing complete - navigation UNLOCKED");
             
             // Mark coupon processing as complete
             couponProcessingComplete = true;
