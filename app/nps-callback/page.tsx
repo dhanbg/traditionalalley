@@ -600,30 +600,40 @@ const NPSCallbackContent = () => {
               rootCouponDiscount: orderData?.couponDiscount
             });
             
-            // Check for coupon code in multiple possible locations
+            // Check for coupon code and ID in multiple possible locations
             const couponCode = orderData?.orderSummary?.couponCode || orderData?.couponCode;
             const couponDiscount = orderData?.orderSummary?.couponDiscount || orderData?.couponDiscount;
+            const couponId = orderData?.orderSummary?.couponId || orderData?.couponId;
             
             console.log("🔍 [COUPON DEBUG] Final coupon detection:", {
               finalCouponCode: couponCode,
+              finalCouponId: couponId,
               finalCouponDiscount: couponDiscount,
               willProceed: !!couponCode
             });
             
             if (couponCode) {
-              console.log("🎫 [IMMEDIATE COUPON] Found coupon - applying NOW:", couponCode);
+              console.log("🎫 [IMMEDIATE COUPON] Found coupon - applying NOW:", couponCode, "(ID:", couponId, ")");
               
               try {
                 setProcessingStatus("🎫 Applying coupon automatically...");
                 
                 // Apply coupon using simplified approach (same as coupon-demo "Apply Directly")
+                // CRITICAL FIX: Use actual couponId, not couponCode
+                if (!couponId) {
+                  console.error("⚠️ [IMMEDIATE COUPON] No couponId found in orderData - cannot apply coupon");
+                  throw new Error("Coupon ID missing from order data");
+                }
+                
+                console.log("🗺️ [IMMEDIATE COUPON] Sending API request with couponId:", couponId);
+                
                 const couponResponse = await fetch('/api/coupons/apply', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
-                    couponId: couponCode  // Send the coupon code as couponId
+                    couponId: couponId  // Send the actual numeric coupon ID
                   })
                 });
                 

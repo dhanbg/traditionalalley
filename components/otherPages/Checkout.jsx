@@ -134,6 +134,7 @@ export default function Checkout() {
         subtotal: finalTotal,
         productDiscounts: totalDiscounts,
         couponCode: appliedCoupon?.code || null,
+        couponId: appliedCoupon?.id || null,
         couponDiscount: couponDiscount,
         totalDiscounts: totalDiscounts + couponDiscount,
         finalSubtotal: finalTotal,
