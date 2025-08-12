@@ -265,14 +265,20 @@ const NPSCallbackContent = () => {
     console.log("User:", user?.id);
 
     const savePaymentData = async () => {
-      // Prevent double execution
-      if (processingRef.current) {
-        console.log("🚫 [EXECUTION GUARD] Double execution prevented");
+      // Prevent double execution ONLY if we already have user and are processing
+      if (processingRef.current && user?.id) {
+        console.log("🚫 [EXECUTION GUARD] Double execution prevented - already processing with user");
+        return;
+      }
+      
+      // Allow execution if user is now available but wasn't before
+      if (!user?.id) {
+        console.log("⏳ [EXECUTION GUARD] User not available yet, waiting for authentication...");
         return;
       }
       
       processingRef.current = true;
-      console.log("🔒 [EXECUTION GUARD] Processing locked - navigation blocked");
+      console.log("🔒 [EXECUTION GUARD] Processing locked with user:", user.id);
       try {
         // Show user-friendly status updates
         if (status === "SUCCESS" || (isMock && status === "success")) {
