@@ -489,98 +489,53 @@ const NPSCallbackContent = () => {
             try {
               await handleAutomaticUpdateStockAndDelete(user, clearPurchasedItemsFromCart);
               console.log("✅ Auto-update completed - proceeding to coupon logic");
-              console.log("🔍 [CRITICAL DEBUG] Line 491 executed - still in try block");
-              console.log("🔍 [CRITICAL DEBUG] About to exit try block and continue to line 496");
             } catch (autoUpdateError) {
               console.error("⚠️ Auto-update error (continuing):", autoUpdateError.message);
-              console.log("🔍 [CRITICAL DEBUG] In catch block - continuing execution");
             }
-            
-            console.log("🔍 [CRITICAL DEBUG] Exited try-catch block - about to reach line 496");
             
             setProcessingStatus("✅ Inventory updated and cart cleaned up!");
             
-            // CRITICAL: Debug execution flow immediately after auto-update
-            console.log("🔍 [EXECUTION DEBUG] Line 496 completed - setProcessingStatus executed");
-            console.log("🔍 [EXECUTION DEBUG] About to proceed to coupon logic...");
-            console.log("🔍 [EXECUTION DEBUG] Current timestamp:", new Date().toISOString());
-            
-            // Step 2: Automatic Coupon Application (if coupon was used)
-            console.log("🎫 Checking for automatic coupon application...");
+            // Step 2: IMMEDIATE Coupon Application (if coupon was used) - BEFORE any navigation
+            console.log("🎫 [IMMEDIATE COUPON] Checking for coupon application...");
             console.log("🔍 [COUPON DEBUG] orderData structure:", {
-              hasOrderData: !!orderData,
-              orderDataType: typeof orderData,
-              orderDataKeys: orderData ? Object.keys(orderData) : null,
-              hasOrderSummary: orderData && !!orderData.orderSummary,
-              orderSummaryType: orderData && orderData.orderSummary ? typeof orderData.orderSummary : null,
-              orderSummaryKeys: orderData && orderData.orderSummary ? Object.keys(orderData.orderSummary) : null,
-              hasCouponCode: orderData && orderData.orderSummary && !!orderData.orderSummary.couponCode,
-              couponCode: orderData && orderData.orderSummary ? orderData.orderSummary.couponCode : null,
-              couponCodeType: orderData && orderData.orderSummary && orderData.orderSummary.couponCode ? typeof orderData.orderSummary.couponCode : null
+              hasCouponCode: !!orderData?.orderSummary?.couponCode,
+              couponCode: orderData?.orderSummary?.couponCode,
+              couponDiscount: orderData?.orderSummary?.couponDiscount
             });
             
-            if (orderData && orderData.orderSummary && orderData.orderSummary.couponCode) {
-              console.log("✅ [COUPON DEBUG] Coupon condition check passed - proceeding with coupon logic");
+            if (orderData?.orderSummary?.couponCode) {
+              console.log("🎫 [IMMEDIATE COUPON] Found coupon - applying NOW:", orderData.orderSummary.couponCode);
+              
               try {
                 setProcessingStatus("🎫 Applying coupon automatically...");
-                console.log("🎫 Automatic coupon application started for:", orderData.orderSummary.couponCode);
                 
-                // Find the coupon by code first
-                const validateResponse = await fetch('/api/coupons/validate', {
+                // Apply coupon using simplified approach (same as coupon-demo "Apply Directly")
+                const couponResponse = await fetch('/api/coupons/apply', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
-                    code: orderData.orderSummary.couponCode,
-                    orderAmount: orderData.orderSummary.finalSubtotal || orderData.orderSummary.subtotal,
-                    userId: user.id
+                    couponId: orderData.orderSummary.couponCode  // Send the coupon code as couponId
                   })
                 });
                 
-                if (validateResponse.ok) {
-                  const validateData = await validateResponse.json();
-                  
-                  if (validateData.valid && validateData.coupon) {
-                    // Apply the coupon
-                    const applyResponse = await fetch('/api/coupons/apply', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        couponId: validateData.coupon.id
-                        // Note: userId is automatically retrieved from session in the API endpoint
-                      })
-                    });
-                    
-                    if (applyResponse.ok) {
-                      const applyData = await applyResponse.json();
-                      if (applyData.success) {
-                        console.log("✅ Coupon applied automatically:", orderData.orderSummary.couponCode);
-                        setProcessingStatus("✅ Coupon applied successfully!");
-                      } else {
-                        console.warn("⚠️ Coupon application failed:", applyData.message);
-                        setProcessingStatus("⚠️ Coupon application failed but payment successful");
-                      }
-                    } else {
-                      console.warn("⚠️ Coupon apply API request failed");
-                      setProcessingStatus("⚠️ Coupon application failed but payment successful");
-                    }
-                  } else {
-                    console.warn("⚠️ Coupon validation failed:", validateData.message);
-                    setProcessingStatus("⚠️ Coupon validation failed but payment successful");
-                  }
+                const couponResult = await couponResponse.json();
+                console.log("🎫 [IMMEDIATE COUPON] Coupon application result:", couponResult);
+                
+                if (couponResult.success) {
+                  console.log("✅ [IMMEDIATE COUPON] Coupon applied successfully!", couponResult.message);
+                  setProcessingStatus("✅ Payment complete! Coupon usage updated.");
                 } else {
-                  console.warn("⚠️ Coupon validation API request failed");
+                  console.error("⚠️ [IMMEDIATE COUPON] Failed to apply coupon:", couponResult.message);
                   setProcessingStatus("⚠️ Coupon application error but payment successful");
                 }
               } catch (couponError) {
-                console.error("⚠️ Coupon application error:", couponError.message);
+                console.error("⚠️ [IMMEDIATE COUPON] Error applying coupon:", couponError);
                 setProcessingStatus("⚠️ Coupon application error but payment successful");
               }
             } else {
-              console.log("ℹ️ No coupon to apply automatically");
+              console.log("ℹ️ [IMMEDIATE COUPON] No coupon to apply automatically");
             }
             
             // Step 3: Complete processing and set final status
