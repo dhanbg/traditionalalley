@@ -308,7 +308,7 @@ const NPSCallbackContent = () => {
         return;
       }
       
-      processingRef.current = true;
+      processingRef.current = Date.now();
       console.log("🔒 [EXECUTION GUARD] Processing locked with user:", user.id);
       try {
         // Show user-friendly status updates
