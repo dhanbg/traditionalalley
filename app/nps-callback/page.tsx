@@ -18,6 +18,7 @@ const NPSCallbackContent = () => {
   const [processingStatus, setProcessingStatus] = useState("🔍 Initializing payment verification...");
   const [isProcessingCoupon, setIsProcessingCoupon] = useState(false);
   const processingRef = useRef(false);
+  const autoUpdateCompletedRef = useRef(false);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -36,9 +37,14 @@ const NPSCallbackContent = () => {
 
   // Production-safe automatic stock update and cart cleanup using CURRENT cart data with comprehensive debug logging
   const handleAutomaticUpdateStockAndDelete = async (user: any, clearPurchasedItemsFromCart: any) => {
+    if (autoUpdateCompletedRef.current) {
+      console.log("🚫 Auto-update already completed, skipping");
+      return true;
+    }
+
     if (processingRef.current) {
-      console.log("🚫 Double execution prevented");
-      return;
+      console.log("🚫 Auto-update already in progress, skipping");
+      return false;
     }
 
     processingRef.current = true;
@@ -220,6 +226,10 @@ const NPSCallbackContent = () => {
       });
       console.log(`🏁 [${debugId}] ===== AUTOMATIC UPDATE & DELETE PROCESS COMPLETED SUCCESSFULLY =====`);
       
+      // Mark as completed
+      autoUpdateCompletedRef.current = true;
+      return true;
+      
     } catch (error: any) {
       const errorTime = Date.now() - startTime;
       console.error(`❌ [${debugId}] CRITICAL ERROR in automatic update and delete operation:`);
@@ -244,6 +254,10 @@ const NPSCallbackContent = () => {
       // Don't throw error to prevent payment success from being affected
       console.warn(`⚠️ [${debugId}] Continuing with payment success despite update/delete error`);
       console.log(`🏁 [${debugId}] ===== AUTOMATIC UPDATE & DELETE PROCESS FAILED =====`);
+      
+      // Mark as completed (even if failed, to prevent infinite retries)
+      autoUpdateCompletedRef.current = true;
+      return false;
     }
   };
 
@@ -557,9 +571,16 @@ const NPSCallbackContent = () => {
             setProcessingStatus("🔄 Updating inventory and cleaning up cart...");
             
             // Ensure auto-update doesn't block coupon logic execution
+            let autoUpdateResult: boolean | undefined = undefined;
             try {
-              await handleAutomaticUpdateStockAndDelete(user, clearPurchasedItemsFromCart);
-              console.log("✅ Auto-update completed - proceeding to coupon logic");
+              autoUpdateResult = await handleAutomaticUpdateStockAndDelete(user, clearPurchasedItemsFromCart);
+              if (autoUpdateResult === true) {
+                console.log("✅ Auto-update completed successfully - proceeding to coupon logic");
+              } else if (autoUpdateResult === false) {
+                console.log("⚠️ Auto-update failed but continuing - proceeding to coupon logic");
+              } else {
+                console.log("🚫 Auto-update was skipped (already in progress) - proceeding to coupon logic");
+              }
             } catch (autoUpdateError) {
               console.error("⚠️ Auto-update error (continuing):", autoUpdateError.message);
             }
