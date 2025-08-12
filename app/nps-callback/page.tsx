@@ -17,7 +17,7 @@ const NPSCallbackContent = () => {
   const [isProcessing, setIsProcessing] = useState(true);
   const [processingStatus, setProcessingStatus] = useState("🔍 Initializing payment verification...");
   const [isProcessingCoupon, setIsProcessingCoupon] = useState(false);
-  const processingRef = useRef(false);
+  const processingRef = useRef<number | null>(null);
   const autoUpdateCompletedRef = useRef(false);
 
   useEffect(() => {
@@ -42,12 +42,18 @@ const NPSCallbackContent = () => {
       return true;
     }
 
-    if (processingRef.current) {
-      console.log("🚫 Auto-update already in progress, skipping");
+    // Timestamp-based lock that automatically expires after 30 seconds
+    const now = Date.now();
+    const lockExpiry = 30000; // 30 seconds
+    
+    if (processingRef.current && (now - processingRef.current < lockExpiry)) {
+      console.log(`🚫 Auto-update already in progress (${Math.round((now - processingRef.current) / 1000)}s ago), skipping`);
       return false;
     }
 
-    processingRef.current = true;
+    // Set timestamp-based lock
+    processingRef.current = now;
+    console.log(`🔒 Auto-update lock acquired at ${new Date(now).toISOString()}`);
 
     const debugId = `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const startTime = Date.now();
@@ -230,7 +236,7 @@ const NPSCallbackContent = () => {
       
       // Mark as completed and reset processing flag
       autoUpdateCompletedRef.current = true;
-      processingRef.current = false;
+      processingRef.current = null;
       return true;
       
     } catch (error: any) {
@@ -260,14 +266,14 @@ const NPSCallbackContent = () => {
       
       // Mark as completed (even if failed, to prevent infinite retries) and reset processing flag
       autoUpdateCompletedRef.current = true;
-      processingRef.current = false;
+      processingRef.current = null;
       return false;
     }
     } finally {
       // CRITICAL: Always reset processingRef no matter what happens
       if (processingRef.current) {
         console.log(`🔄 [${debugId || 'UNKNOWN'}] Resetting processingRef in finally block`);
-        processingRef.current = false;
+        processingRef.current = null;
       }
     }
   };
