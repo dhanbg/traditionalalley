@@ -52,6 +52,8 @@ const NPSCallbackContent = () => {
     const debugId = `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const startTime = Date.now();
     
+    try {
+    
     console.log(`🚀 [${debugId}] ===== AUTOMATIC UPDATE & DELETE PROCESS STARTED =====`);
     console.log(`🕐 [${debugId}] Start time: ${new Date().toISOString()}`);
     console.log(`👤 [${debugId}] User info:`, {
@@ -260,6 +262,13 @@ const NPSCallbackContent = () => {
       autoUpdateCompletedRef.current = true;
       processingRef.current = false;
       return false;
+    }
+    } finally {
+      // CRITICAL: Always reset processingRef no matter what happens
+      if (processingRef.current) {
+        console.log(`🔄 [${debugId || 'UNKNOWN'}] Resetting processingRef in finally block`);
+        processingRef.current = false;
+      }
     }
   };
 
