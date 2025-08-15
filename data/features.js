@@ -1,15 +1,15 @@
 export const iconboxItems = [
   {
     id: 1,
-    icon: "icon-return",
-    title: "14-Day Returns",
-    description: "Risk-free shopping with easy returns.",
+    icon: "icon-sealCheck",
+    title: "Quality Product",
+    description: "Extra protection for your purchases.",
   },
   {
     id: 2,
     icon: "icon-shipping",
-    title: "Free Shipping",
-    description: "No extra costs, just the price you see.",
+    title: "Global Delivery",
+    description: "Worldwide shipping to your doorstep.",
   },
   {
     id: 3,
@@ -19,8 +19,8 @@ export const iconboxItems = [
   },
   {
     id: 4,
-    icon: "icon-sealCheck",
-    title: "Member Discounts",
-    description: "Special prices for our loyal customers.",
+    icon: "custom-discount-icon",
+    title: "10% Discount",
+    description: "Special discount for your first order.",
   },
 ];

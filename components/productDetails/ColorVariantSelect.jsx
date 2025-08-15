@@ -216,7 +216,7 @@ export default function ColorVariantSelect({
           const colorDisplay = getColorDisplay(variant);
           return (
             <div
-              key={variant.id || index}
+              key={`variant-${variant.id}-${index}`}
               className={`color-variant-option ${isActive ? 'active' : ''}`}
               style={{ position: 'relative' }}
             >
@@ -367,4 +367,4 @@ export default function ColorVariantSelect({
       </div>
     </div>
   );
-} 
+}

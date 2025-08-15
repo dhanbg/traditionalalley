@@ -1,3 +1,4 @@
+import "../../globals.css"; // Import Tailwind CSS for order tracking styling
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import Topbar6 from "@/components/headers/Topbar6";

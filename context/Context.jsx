@@ -16,7 +16,7 @@ import {
   getSavedCurrencyPreference 
 } from "@/utils/currency";
 
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useCallback } from "react";
 const dataContext = React.createContext();
 export const useContextElement = () => {
   return useContext(dataContext);
@@ -28,6 +28,7 @@ export default function Context({ children }) {
   const { showStockError, showAddToCartSuccess, showQuantityUpdateSuccess } = useStockNotifications();
   const [cartProducts, setCartProducts] = useState([]);
   const [wishList, setWishList] = useState([]);
+  const [isWishlistLoading, setIsWishlistLoading] = useState(false);
   const [compareItem, setCompareItem] = useState([]);
   const [quickViewItem, setQuickViewItem] = useState(allProducts[0]);
   const [quickAddItem, setQuickAddItem] = useState(1);
@@ -38,15 +39,18 @@ export default function Context({ children }) {
     if (typeof window !== 'undefined') {
       try {
         const saved = sessionStorage.getItem('selectedCartItems');
-        console.log('🚀 Initial load - reading from sessionStorage:', saved);
         return saved ? JSON.parse(saved) : {};
       } catch (error) {
-        console.error('Error loading cart selections from sessionStorage:', error);
         return {};
       }
     }
     return {};
   });
+
+  // User state changes
+  useEffect(() => {
+    // User state effect logic here
+  }, [user, session]);
   const [isCartClearing, setIsCartClearing] = useState(false);
   const [cartClearedTimestamp, setCartClearedTimestamp] = useState(null);
   
@@ -130,7 +134,6 @@ export default function Context({ children }) {
       saveCurrencyPreference(currency, country);
       
     } catch (error) {
-      console.error('Failed to initialize currency:', error);
       // Fallback to USD
       setUserCountry('US');
       setUserCurrency('USD');
@@ -156,7 +159,7 @@ export default function Context({ children }) {
       saveCurrencyPreference(newCurrency, userCountry);
       
     } catch (error) {
-      console.error('Failed to set currency:', error);
+      // Handle currency setting error
     } finally {
       setIsLoadingCurrency(false);
     }
@@ -168,7 +171,6 @@ export default function Context({ children }) {
       setExchangeRate(rate);
       return rate;
     } catch (error) {
-      console.error('Failed to refresh exchange rate:', error);
       return exchangeRate;
     }
   };
@@ -186,8 +188,6 @@ export default function Context({ children }) {
       const hasAttemptedCreation = sessionStorage.getItem(userCreationKey) === 'true';
       
       if (!hasAttemptedCreation) {
-        console.log("User signed in:", user.email);
-        
         if (!cartLoadedOnce) {
           setIsCartLoading(true);
         }
@@ -199,7 +199,6 @@ export default function Context({ children }) {
             sessionStorage.setItem(userCreationKey, 'true');
             setUserCreationAttempted(true);
             
-            console.log(`🔍 Attempting user creation check for: ${user.email}`);
             const response = await fetch('/api/user-management', {
               method: 'POST',
               headers: {
@@ -208,10 +207,8 @@ export default function Context({ children }) {
             });
             
             const result = await response.json();
-            console.log(`✅ User management result:`, result);
             
           } catch (error) {
-            console.error('Error ensuring user exists:', error);
             // Reset the flag if there was an error so it can be retried
             sessionStorage.removeItem(userCreationKey);
             setUserCreationAttempted(false);
@@ -282,7 +279,7 @@ export default function Context({ children }) {
                   validIds.push(id);
                 }
               } catch (error) {
-                console.log(`Product ID ${id} is invalid, removing from compare list`);
+                // Product ID is invalid, removing from compare list
               }
             }
             
@@ -290,7 +287,7 @@ export default function Context({ children }) {
             localStorage.setItem('compareItems', JSON.stringify(validIds));
             setCompareItem(validIds);
           } catch (error) {
-            console.error("Error validating compare items:", error);
+            // Error validating compare items
           }
         };
         
@@ -300,7 +297,6 @@ export default function Context({ children }) {
         // Then validate in the background
         validateIds();
       } catch (error) {
-        console.error("Error loading compare items from localStorage:", error);
         // Clear localStorage if there's an error
         localStorage.removeItem('compareItems');
         setCompareItem([]);
@@ -326,10 +322,7 @@ export default function Context({ children }) {
       // Only clear selections if cart has actually loaded and is truly empty
       // Don't clear during initial load when cart products haven't loaded yet
       if (!isCartLoading && user) {
-        console.log('🧹 Cart is empty after loading, clearing selections');
         setSelectedCartItems({});
-      } else {
-        console.log('🔄 Cart appears empty but still loading or no user, keeping selections');
       }
     } else {
       // Remove selections for items that are no longer in the cart
@@ -350,23 +343,18 @@ export default function Context({ children }) {
   useEffect(() => {
     // Only restore selections if we have cart products and haven't restored yet
     if (cartProducts.length > 0 && !isCartLoading) {
-      console.log('🔄 Attempting to restore cart selections after cart load...');
-      
       // Get saved selections from sessionStorage
       let savedSelections = {};
       try {
         const saved = typeof window !== 'undefined' ? sessionStorage.getItem('selectedCartItems') : null;
         savedSelections = saved ? JSON.parse(saved) : {};
-        console.log('📦 Saved selections from sessionStorage:', savedSelections);
       } catch (error) {
-        console.error('Error loading cart selections from sessionStorage:', error);
         return;
       }
       
       // Filter out selections for items that are no longer in the cart
       const validSelections = {};
       const currentCartIds = cartProducts.map(p => p.id);
-      console.log('🛒 Current cart product IDs:', currentCartIds);
       
       Object.keys(savedSelections).forEach(itemId => {
         if (cartProducts.some(product => product.id === itemId)) {
@@ -374,12 +362,9 @@ export default function Context({ children }) {
         }
       });
       
-      console.log('✅ Valid selections to restore:', validSelections);
-      
       // Merge valid selections with current selections (preserve auto-selections)
       setSelectedCartItems(prev => {
         const merged = { ...prev, ...validSelections };
-        console.log('🔄 Merging cart selections - Previous:', prev, 'Valid:', validSelections, 'Merged:', merged);
         return merged;
       });
     }
@@ -392,7 +377,7 @@ export default function Context({ children }) {
         // Saving cart selections to sessionStorage
         sessionStorage.setItem('selectedCartItems', JSON.stringify(selectedCartItems));
       } catch (error) {
-        console.error('Error saving cart selections to sessionStorage:', error);
+        // Error saving cart selections to sessionStorage
       }
     }
   }, [selectedCartItems]);
@@ -417,7 +402,7 @@ export default function Context({ children }) {
           hasSavedSelections = Object.keys(savedSelections).length > 0;
           // Checking saved selections
         } catch (error) {
-          console.error('Error checking saved selections:', error);
+          // Error checking saved selections
         }
         
         // TEMPORARILY DISABLED: Don't clear selections to test if this is the issue
@@ -497,7 +482,7 @@ export default function Context({ children }) {
     if (isAddedToCartProducts(id)) {
       if (isModal) {
         // Still open the cart modal to show them the product is already there
-        openCartModal().catch(console.error);
+        openCartModal().catch(() => {});
       }
       return; // Exit function early
     }
@@ -564,7 +549,7 @@ export default function Context({ children }) {
         variantInfo: variantInfo
       };
       
-      console.log("Product data from allProducts:", productInfo);
+
       
       // Validate stock before adding to cart
       if (selectedSize) {
@@ -578,25 +563,20 @@ export default function Context({ children }) {
           );
           
           if (!stockValidation.success) {
-            console.warn('Stock validation failed:', stockValidation.error);
             // Show error message to user
             showStockError(stockValidation.error, stockValidation.availableStock, productToAdd.title);
             return; // Exit function early
           }
-          
-          console.log('Stock validation passed:', stockValidation.message);
         } catch (stockError) {
-          console.error('Stock validation error:', stockError);
+          // Stock validation error
           // Allow adding to cart if validation fails (fallback behavior)
         }
       }
       
       // Special case for Redezyyyy Shorts
       if (productToAdd.title && productToAdd.title.includes("Redezyyyy")) {
-        console.log("Adding Redezyyyy Shorts to cart - checking oldPrice:", productToAdd.oldPrice);
         if (!productToAdd.oldPrice) {
           productToAdd.oldPrice = 129.99;
-          console.log("Set oldPrice manually to 129.99");
         }
       }
     } else {
@@ -611,8 +591,7 @@ export default function Context({ children }) {
           productResponse = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${baseProductId}&populate=*`);
         }
         
-        // Log the full response to debug
-        console.log("Product response from API:", productResponse);
+
         
         // Handle different response formats
         let fetchedProduct = null;
@@ -627,7 +606,7 @@ export default function Context({ children }) {
         if (fetchedProduct) {
           const productData = fetchedProduct.attributes || fetchedProduct;
           
-          console.log("Product data from API:", productData);
+
           
           // Check if imgSrc is a relation or direct field
           let imgUrl = '/images/placeholder.png';
@@ -684,19 +663,15 @@ export default function Context({ children }) {
             variantInfo: variantInfo
           };
           
-          console.log("Created productToAdd:", productToAdd);
-          
           // Special case for Redezyyyy Shorts
           if (productToAdd.title && productToAdd.title.includes("Redezyyyy")) {
-            console.log("Adding Redezyyyy Shorts to cart - checking oldPrice:", productToAdd.oldPrice);
             if (!productToAdd.oldPrice) {
               productToAdd.oldPrice = 129.99;
-              console.log("Set oldPrice manually to 129.99");
             }
           }
         }
       } catch (fetchError) {
-        console.error("Error fetching product details:", fetchError);
+        // Error fetching product details
       }
     }
     
@@ -739,14 +714,12 @@ export default function Context({ children }) {
         
         // If the user doesn't exist in our system, they should be created by the user-management API first
         if (!currentUserData?.data || currentUserData.data.length === 0) {
-          console.warn(`⚠️ User data not found for ${user.email} (ID: ${user.id}). User should be created by user-management API first.`);
-          
           // Add to local cart only and let the user-management API create the user
           setCartProducts((pre) => [...pre, productToAdd]);
           
           if (isModal) {
             setCartRefreshKey(prev => prev + 1);
-            openCartModal().catch(console.error);
+            openCartModal().catch(() => {});
           }
           
           return;
@@ -759,19 +732,16 @@ export default function Context({ children }) {
         const currentUserAttrs = currentUser?.attributes || {};
         
         if (!currentUserId) {
-          console.error("Could not get current user ID");
           // Add to local cart only since we couldn't identify the user
           setCartProducts((pre) => [...pre, productToAdd]);
           
           if (isModal) {
             setCartRefreshKey(prev => prev + 1);
-            openCartModal().catch(console.error);
+            openCartModal().catch(() => {});
           }
           
           return;
         }
-        
-        console.log(`Found current user data with ID: ${currentUserId}`);
         
         // Check if user has a user-bag
         const userBagRelation = currentUserAttrs.user_bag;
@@ -793,17 +763,14 @@ export default function Context({ children }) {
             
             if (existingBags.data && existingBags.data.length > 0) {
               userBag = existingBags.data[0];
-              console.log(`Found existing user bag: ${userBag.id}`);
             }
           } catch (bagCheckError) {
-            console.error("Error checking for existing bags:", bagCheckError);
+            // Error checking for existing bags
           }
         }
         
         // Create a user-bag if none exists (this should be rare since user-management API creates bags)
         if (!userBag) {
-          console.log("No user bag found, creating a new one");
-          
           // Get user name from current user data
           const firstName = currentUserAttrs.firstName || user.name?.split(' ')[0] || "User";
           const lastName = currentUserAttrs.lastName || user.name?.split(' ').slice(1).join(' ') || "";
@@ -818,9 +785,8 @@ export default function Context({ children }) {
             
             const userBagData = await createData("/api/user-bags", userBagPayload);
             userBag = userBagData.data;
-            console.log(`Created new user bag: ${userBag.id}`);
           } catch (createBagError) {
-            console.error("Error creating user bag:", createBagError);
+            // Error creating user bag
           }
         }
         
@@ -863,7 +829,6 @@ export default function Context({ children }) {
               completeCartPayload.data.product = parseInt(productDocumentIdForBackend);
             }
           } catch (error) {
-            console.error("Error finding product by documentId:", error);
             if (!isNaN(parseInt(productDocumentIdForBackend))) {
               completeCartPayload.data.product = parseInt(productDocumentIdForBackend);
             }
@@ -883,12 +848,10 @@ export default function Context({ children }) {
           // Add selected size to the cart payload if available
           if (productToAdd.selectedSize) {
             completeCartPayload.data.size = productToAdd.selectedSize;
-            console.log("Adding size to cart payload:", productToAdd.selectedSize);
           }
           
           // Create cart entry
           const cartResponse = await createData("/api/carts", completeCartPayload);
-          console.log("Added to cart:", cartResponse);
           
           // Add cartId and cartDocumentId to the product object
           if (cartResponse?.data) {
@@ -904,18 +867,15 @@ export default function Context({ children }) {
             ...prev,
             [productToAdd.id]: true
           }));
-          console.log('🛒 Auto-selected newly added product:', productToAdd.title);
           
           // Show success notification
           showAddToCartSuccess(productToAdd.title, qty || 1, selectedSize);
           
           if (isModal) {
             setCartRefreshKey(prev => prev + 1);
-            openCartModal().catch(console.error);
+            openCartModal().catch(() => {});
           }
         } catch (createCartError) {
-          console.error("Error creating cart entry:", createCartError);
-          
           // Add to local cart even if server operation fails
           setCartProducts((pre) => [...pre, productToAdd]);
           
@@ -924,16 +884,13 @@ export default function Context({ children }) {
             ...prev,
             [productToAdd.id]: true
           }));
-          console.log('🛒 Auto-selected newly added product (server error):', productToAdd.title);
           
           if (isModal) {
             setCartRefreshKey(prev => prev + 1);
-            openCartModal().catch(console.error);
+            openCartModal().catch(() => {});
           }
         }
       } catch (error) {
-        console.error("Error in addProductToCart:", error);
-        
         // Add to local cart even if an error occurs
         setCartProducts((pre) => [...pre, productToAdd]);
         
@@ -942,11 +899,10 @@ export default function Context({ children }) {
           ...prev,
           [productToAdd.id]: true
         }));
-        console.log('🛒 Auto-selected newly added product (general error):', productToAdd.title);
         
         if (isModal) {
           setCartRefreshKey(prev => prev + 1);
-          openCartModal().catch(console.error);
+          openCartModal().catch(() => {});
         }
       }
     } else {
@@ -958,11 +914,10 @@ export default function Context({ children }) {
         ...prev,
         [productToAdd.id]: true
       }));
-      console.log('🛒 Auto-selected newly added product (local cart):', productToAdd.title);
       
       if (isModal) {
         setCartRefreshKey(prev => prev + 1);
-        openCartModal().catch(console.error);
+        openCartModal().catch(() => {});
       }
     }
   };
@@ -972,7 +927,6 @@ export default function Context({ children }) {
     const itemToUpdate = cartProducts.find(item => item.id == id || (item.documentId && item.documentId === id));
     
     if (!itemToUpdate) {
-      console.warn('Item not found in cart for quantity update:', id);
       return;
     }
     
@@ -984,14 +938,7 @@ export default function Context({ children }) {
       try {
         const quantityIncrease = newQuantity - itemToUpdate.quantity;
         
-        // Debug what's being passed to stock validation
-        console.log('🔍 Stock validation debug:', {
-          productId: itemToUpdate.baseProductId || itemToUpdate.documentId,
-          variantInfo: itemToUpdate.variantInfo,
-          variantDocumentId: itemToUpdate.variantInfo?.documentId,
-          isVariant: itemToUpdate.variantInfo?.isVariant,
-          selectedSize: itemToUpdate.selectedSize
-        });
+
         
         const stockValidation = await validateCartStock(
           itemToUpdate.baseProductId || itemToUpdate.documentId,
@@ -1002,15 +949,11 @@ export default function Context({ children }) {
         );
         
         if (!stockValidation.success) {
-          console.warn('Stock validation failed for quantity update:', stockValidation.error);
-          console.log('Calling showStockError with:', { error: stockValidation.error, availableStock: stockValidation.availableStock, title: itemToUpdate.title });
           showStockError(stockValidation.error, stockValidation.availableStock, itemToUpdate.title);
           return; // Exit function early
         }
         
-        console.log('Stock validation passed for quantity update:', stockValidation.message);
       } catch (stockError) {
-        console.error('Stock validation error during quantity update:', stockError);
         // Continue with update if validation fails (fallback behavior)
       }
     }
@@ -1137,7 +1080,6 @@ export default function Context({ children }) {
                 createPayload.data.product = parseInt(productDocumentIdForBackend);
               }
             } catch (error) {
-              console.error("Error finding product by documentId:", error);
               if (!isNaN(parseInt(productDocumentIdForBackend))) {
                 createPayload.data.product = parseInt(productDocumentIdForBackend);
               }
@@ -1192,7 +1134,7 @@ export default function Context({ children }) {
               }));
             }
           } catch (createError) {
-            console.error("❌ Error creating new cart item:", createError);
+            // Error creating new cart item
           }
           
           return;
@@ -1240,11 +1182,11 @@ export default function Context({ children }) {
               const errorText = await directResponse.text();
             }
           } catch (directError) {
-            console.error("❌ All update attempts failed:", directError);
+            // All update attempts failed
           }
         }
       } catch (error) {
-        console.error("❌ Error in backend update process:", error);
+        // Error in backend update process
       }
     };
     
@@ -1252,16 +1194,149 @@ export default function Context({ children }) {
     updateBackend();
   };
 
-  const addToWishlist = (id) => {
-    if (!wishList.includes(id)) {
-      setWishList((pre) => [...pre, id]);
-      openWistlistModal();
+  // Fetch wishlist from server
+  const fetchWishlistFromServer = useCallback(async () => {
+    if (!user?.id) return;
+    
+    console.log('🔄 fetchWishlistFromServer: Starting fetch for user:', user.id);
+    
+    try {
+      setIsWishlistLoading(true);
+      const response = await fetch(`/api/wishlists?userId=${encodeURIComponent(user.id)}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        console.log('📦 Raw wishlist data from server:', data);
+        
+        // Extract product IDs from the wishlist data
+        const productIds = data.data?.map(item => {
+          console.log('🔍 Processing wishlist item:', {
+            item,
+            productDocumentId: item.product?.documentId,
+            productId: item.product?.id,
+            directProductId: item.productId,
+            itemId: item.id,
+            hasVariant: !!(item.productVariant || item.product_variant),
+            sizes: item.sizes
+          });
+          
+          const baseId = item.product?.documentId || item.product?.id;
+          
+          // Generate the composite ID based on variant and size information
+          if (item.productVariant || item.product_variant) {
+            // This is a variant item - create composite ID
+            const variant = item.productVariant || item.product_variant;
+            const variantIdentifier = variant.documentId || variant.id;
+            const baseVariantId = `${baseId}-variant-${variantIdentifier}`;
+            const compositeId = item.sizes ? `${baseVariantId}-size-${item.sizes}` : baseVariantId;
+            
+            console.log('🎯 Found variant item, storing composite ID:', compositeId);
+            return [compositeId]; // Only store the composite ID for variants
+          } else if (item.sizes) {
+            // This is a main product with size - create size composite ID
+            const compositeId = `${baseId}-size-${item.sizes}`;
+            console.log('📏 Found sized main product, storing composite ID:', compositeId);
+            return [compositeId];
+          } else {
+            // This is a simple main product without variants or sizes
+            console.log('📝 Found simple main product, storing base ID:', baseId);
+            return [baseId];
+          }
+        }).flat().filter(Boolean) || [];
+        
+        console.log('📋 Final processed wishlist IDs:', productIds);
+        console.log('📋 Wishlist details to store:', data.data);
+        
+        // Store both the simple ID list and detailed data
+        setWishList(productIds);
+        setWishlistDetails(data.data || []);
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Failed to fetch wishlist:', response.status, errorText);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching wishlist:', error);
+    } finally {
+      setIsWishlistLoading(false);
+    }
+  }, [user?.id]);
+
+  const addToWishlist = async (wishlistId, variantInfo = null, selectedSize = null) => {
+    if (!user) {
+      return;
+    }
+    
+    // Check if this specific variant/size combination is already in wishlist
+    if (isAddedtoWishlist(wishlistId, variantInfo, selectedSize)) {
+      return; // Already in wishlist
+    }
+    
+    try {
+      // Extract base product ID from wishlistId for API call
+      let productId = wishlistId;
+      if (wishlistId.includes('-variant-')) {
+        productId = wishlistId.split('-variant-')[0];
+      } else if (wishlistId.includes('-size-')) {
+        productId = wishlistId.split('-size-')[0];
+      }
+      
+      // Add to server
+      const wishlistData = {
+        userId: user.id || user.authUserId,
+        productId: productId,
+        size: selectedSize,
+        variantInfo: variantInfo
+      };
+      
+      const response = await fetch('/api/wishlists', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(wishlistData)
+      });
+      
+      if (response.ok) {
+        // Refresh the entire wishlist from server to get the updated data
+        await fetchWishlistFromServer();
+        openWistlistModal();
+      } else {
+        // Server response failed
+      }
+    } catch (error) {
+      // Error adding to wishlist
     }
   };
 
-  const removeFromWishlist = (id) => {
-    if (wishList.includes(id)) {
-      setWishList((pre) => [...pre.filter((elm) => elm != id)]);
+  const removeFromWishlist = async (id) => {
+    if (!wishList.includes(id)) {
+      return; // Not in wishlist
+    }
+    
+    try {
+      // Find the wishlist item to get its ID
+      const response = await fetch(`/api/wishlists?userId=${encodeURIComponent(user.id)}`);
+      if (response.ok) {
+        const data = await response.json();
+        const wishlistItem = data.data?.find(item => 
+          (item.product?.documentId === id || item.product?.id === id)
+        );
+        
+        if (wishlistItem) {
+          // Remove from server
+          const deleteResponse = await fetch(`/api/wishlists?itemId=${wishlistItem.id}`, {
+            method: 'DELETE'
+          });
+          
+          if (deleteResponse.ok) {
+            // Remove from local state
+            setWishList((pre) => [...pre.filter((elm) => elm != id)]);
+          }
+        }
+      }
+    } catch (error) {
+      // Error removing from wishlist
     }
   };
   const addToCompareItem = async (id) => {
@@ -1355,11 +1430,94 @@ export default function Context({ children }) {
       return String(existingId) !== String(formattedId);
     }));
   };
-  const isAddedtoWishlist = (id) => {
-    if (wishList.includes(id)) {
-      return true;
+  // Store detailed wishlist data for better variant checking
+  const [wishlistDetails, setWishlistDetails] = useState([]);
+
+  const isAddedtoWishlist = (wishlistId, variantInfo = null, selectedSize = null) => {
+    console.log('🔍 isAddedtoWishlist DEBUG:', {
+      wishlistId,
+      variantInfo,
+      selectedSize,
+      userId: user?.id,
+      isWishlistLoading,
+      wishlistDetailsLength: wishlistDetails?.length,
+      wishListLength: wishList?.length
+    });
+    
+    // Return false if user is not authenticated or wishlist is still loading
+    if (!user?.id || isWishlistLoading) {
+      console.log('❌ isAddedtoWishlist: User not authenticated or wishlist loading');
+      return false;
     }
-    return false;
+    
+    // First, try exact ID matching (this handles the cart-style IDs)
+    if (wishlistDetails && wishlistDetails.length > 0) {
+      console.log('🔍 Checking wishlistDetails for exact match...');
+      
+      // Check if any wishlist item has a matching composite ID
+      const exactMatch = wishlistDetails.find(item => {
+        // Generate the same ID pattern for this wishlist item
+        const baseId = item.product?.documentId || item.product?.id;
+        let itemWishlistId;
+        
+        // Fix: Use productVariant instead of product_variant (API transforms the field name)
+        if (item.productVariant || item.product_variant) {
+          const variant = item.productVariant || item.product_variant;
+          const variantIdentifier = variant.documentId || variant.id;
+          const baseVariantId = `${baseId}-variant-${variantIdentifier}`;
+          itemWishlistId = item.sizes ? `${baseVariantId}-size-${item.sizes}` : baseVariantId;
+        } else {
+          itemWishlistId = item.sizes ? `${baseId}-size-${item.sizes}` : baseId;
+        }
+        
+        console.log('🔍 Comparing wishlist item:', {
+          itemBaseId: baseId,
+          itemWishlistId,
+          searchingForId: wishlistId,
+          itemHasVariant: !!(item.productVariant || item.product_variant),
+          itemSizes: item.sizes,
+          isMatch: itemWishlistId === wishlistId
+        });
+        
+        return itemWishlistId === wishlistId;
+      });
+      
+      if (exactMatch) {
+        console.log('✅ Found exact match in wishlistDetails');
+        return true;
+      }
+      console.log('❌ No exact match found in wishlistDetails');
+    }
+
+    // Fallback to simple ID checking for backward compatibility
+    // Only use this for exact matches, not for base product IDs when checking variants
+    const isExactMatch = wishList.some(id => 
+      id === wishlistId || id === wishlistId.toString()
+    );
+    
+    console.log('🔍 Simple ID check:', {
+      isExactMatch,
+      wishListIds: wishList,
+      wishListIdsDetailed: wishList.map(id => ({ id, type: typeof id, stringified: String(id) })),
+      searchingFor: wishlistId,
+      searchingForType: typeof wishlistId,
+      searchingForStringified: String(wishlistId)
+    });
+    
+    // If we're checking a composite ID (variant/size), don't fall back to simple matching
+    // This prevents main products from showing "In wishlist" when only variants are added
+    const wishlistIdStr = String(wishlistId || '');
+    const isCompositeId = wishlistIdStr.includes('-variant-') || wishlistIdStr.includes('-size-');
+    const shouldUseSimpleMatch = !isCompositeId && isExactMatch;
+    
+    console.log('🔍 Final decision:', {
+      wishlistIdStr,
+      isCompositeId,
+      shouldUseSimpleMatch,
+      finalResult: shouldUseSimpleMatch
+    });
+    
+    return shouldUseSimpleMatch;
   };
   const isAddedtoCompareItem = (id) => {
     // Convert numeric strings to actual numbers to ensure consistent comparison
@@ -1399,7 +1557,6 @@ export default function Context({ children }) {
           );
 
           if (!currentUserData?.data || currentUserData.data.length === 0) {
-            console.log("User data not found, cannot load cart");
             setCartProducts([]);
             setIsCartLoading(false);
             setCartLoadedOnce(true);
@@ -1410,40 +1567,19 @@ export default function Context({ children }) {
           const userDataId = userData.id;
           const userDocumentId = userData.documentId || userData.attributes?.documentId;
           
-          console.log("🔍 Loading cart for user:", {
-            userDataId,
-            userDocumentId,
-            email: userData.email || userData.attributes?.email,
-            authUserId: userData.authUserId || userData.attributes?.authUserId
-          });
-          
           // First, let's check what cart items exist in total
           const allCartsResponse = await fetchDataFromApi(`/api/carts?populate=*`);
-          console.log("📦 All cart items in backend:", allCartsResponse?.data?.map(item => ({
-            cartId: item.id,
-            cartDocumentId: item.documentId,
-            userDatumId: item.user_datum?.id || 'NULL',
-            userDatumDocumentId: item.user_datum?.documentId || 'NULL',
-            productTitle: item.product?.title || 'Unknown',
-            quantity: item.quantity
-          })));
           
           // Fetch user-specific carts from backend using documentId (more reliable than numeric ID)
           const cartResponse = await fetchDataFromApi(
             `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
           );
           
-          console.log(`🛒 Cart response for user ${userDataId}:`, cartResponse);
-          console.log("📊 Cart items found:", cartResponse?.data?.length || 0);
-          
           // AUTO-FIX: If no cart items found for user, check for orphaned items and link them
           if (cartResponse?.data?.length === 0 && allCartsResponse?.data?.length > 0) {
-            console.log("🔧 No cart items found for user, checking for orphaned items...");
             const orphanedCarts = allCartsResponse.data.filter(cart => !cart.user_datum?.id);
             
             if (orphanedCarts.length > 0) {
-              console.log(`🔗 Found ${orphanedCarts.length} orphaned cart items, attempting to link to user ${userDataId}`);
-              
               // Try to link orphaned carts to current user using documentIds
               for (const orphanedCart of orphanedCarts) {
                 try {
@@ -1453,26 +1589,20 @@ export default function Context({ children }) {
                     }
                   };
                   
-                  console.log(`🔗 Linking cart ${orphanedCart.documentId} to user ${userDocumentId}`);
                   const linkResult = await updateData(`/api/carts/${orphanedCart.documentId}`, linkPayload);
-                  console.log(`✅ Successfully linked cart ${orphanedCart.documentId}`);
                 } catch (linkError) {
-                  console.error(`❌ Failed to link cart ${orphanedCart.documentId}:`, linkError);
+                  // Failed to link cart
                 }
               }
               
               // Re-fetch cart data after linking
-              console.log("🔄 Re-fetching cart data after linking...");
               const updatedCartResponse = await fetchDataFromApi(
                 `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
               );
               
-              console.log("🔄 Updated cart response:", updatedCartResponse);
-              
               if (updatedCartResponse?.data?.length > 0) {
                 // Use the updated response
                 cartResponse.data = updatedCartResponse.data;
-                console.log(`✅ Successfully linked and loaded ${updatedCartResponse.data.length} cart items`);
               }
             }
           }
@@ -1514,7 +1644,6 @@ export default function Context({ children }) {
                     if (cartItem.variantInfo !== "[object Object]" && cartItem.variantInfo.trim() !== "") {
                       variantInfo = JSON.parse(cartItem.variantInfo);
                     } else {
-                      console.warn("Skipping invalid variantInfo string:", cartItem.variantInfo);
                       variantInfo = null;
                     }
                   }
@@ -1524,7 +1653,6 @@ export default function Context({ children }) {
                     if (variantInfo.isVariant && (variantInfo.documentId || variantInfo.variantId)) {
                       const variantIdentifier = variantInfo.documentId || variantInfo.variantId;
                       cartItemId = `${productAttrs.documentId || productId}-variant-${variantIdentifier}`;
-                      console.log('🔧 Reconstructed variant cart item ID:', cartItemId, 'from variantInfo:', variantInfo);
                     }
                     
                     // Use variant-specific title and image
@@ -1546,7 +1674,6 @@ export default function Context({ children }) {
                     }
                   }
                 } catch (parseError) {
-                  console.error("Error parsing variant info:", parseError, "Raw value:", cartItem.variantInfo);
                   variantInfo = null;
                 }
               }
@@ -1555,7 +1682,6 @@ export default function Context({ children }) {
               // This ensures that saved cart selections can be restored properly
               if (cartItem.size) {
                 cartItemId = `${cartItemId}-size-${cartItem.size}`;
-                console.log('🔧 Added size to cart item ID:', cartItemId);
               }
               
               const productCart = {
@@ -1579,16 +1705,13 @@ export default function Context({ children }) {
               
               // Special handling for Redezyyyy Shorts
               if (productCart.title && productCart.title.includes("Redezyyyy")) {
-                console.log("Found Redezyyyy Shorts in cart - checking oldPrice:", productCart.oldPrice);
                 if (!productCart.oldPrice) {
-                  console.log("Setting oldPrice to 129.00 for Redezyyyy Shorts");
                   productCart.oldPrice = 129.00;
                 }
               }
               
               return productCart;
               } catch (error) {
-                console.error("Error processing cart item:", error, cartItem);
                 return null; // Skip this item if there's an error
               }
             })
@@ -1599,20 +1722,16 @@ export default function Context({ children }) {
             const redezyyyyProduct = backendCarts.find(product => 
               product.title && product.title.includes("Redezyyyy"));
             if (redezyyyyProduct) {
-              console.log("Final check for Redezyyyy Shorts:", redezyyyyProduct);
               if (!redezyyyyProduct.oldPrice) {
                 redezyyyyProduct.oldPrice = 129.99;
-                console.log("Set oldPrice to 129.99 in final check");
               }
             }
             
-            console.log("Setting cart products:", backendCarts);
             setCartProducts(backendCarts);
           } else {
             setCartProducts([]);
           }
         } catch (error) {
-          console.error("Error loading cart from backend:", error);
           // Set empty cart on error to avoid UI issues
           setCartProducts([]);
         } finally {
@@ -1663,6 +1782,16 @@ export default function Context({ children }) {
     }, 0);
     setTotalPrice(subtotal);
   }, [cartProducts]);
+
+  // Fetch wishlist when user logs in
+  useEffect(() => {
+    if (user?.id) {
+      fetchWishlistFromServer();
+    } else {
+      setWishList([]);
+      setWishlistDetails([]);
+    }
+  }, [user?.id, fetchWishlistFromServer, session]);
 
   // Clear all localStorage data on component mount
   useEffect(() => {
@@ -1756,7 +1885,6 @@ export default function Context({ children }) {
       );
 
       if (!currentUserData?.data || currentUserData.data.length === 0) {
-        console.log("User data not found, cannot remove cart item");
         return;
       }
 
@@ -1814,20 +1942,17 @@ export default function Context({ children }) {
         } else {
         }
     } else {
-        console.log(`Context: No carts found in backend`);
+        // No carts found in backend
       }
     } catch (error) {
-      console.error("Context: Error deleting cart item from backend:", error);
+      // Error deleting cart item from backend
     }
   };
 
   // Test function to debug cart deletion - can be called from browser console
   const testCartDeletion = async () => {
     try {
-      console.log('🧪 TESTING CART DELETION PROCESS');
-      
       if (!user || !user.id) {
-        console.log('❌ No user found for testing');
         return;
       }
       
@@ -1837,128 +1962,83 @@ export default function Context({ children }) {
       );
       
       if (!currentUserData?.data || currentUserData.data.length === 0) {
-        console.log('❌ User data not found');
         return;
       }
       
       const userData = currentUserData.data[0];
       const userDocumentId = userData.documentId || userData.attributes?.documentId;
-      console.log('👤 User documentId:', userDocumentId);
       
       // Get cart items for this user
       const cartResponse = await fetchDataFromApi(
         `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
       );
       
-      console.log('🛒 Cart response:', cartResponse);
-      console.log('🛒 Cart items count:', cartResponse?.data?.length || 0);
-      
       if (cartResponse?.data?.length > 0) {
-        console.log('🛒 Cart items details:', JSON.stringify(cartResponse.data, null, 2));
-        
         // Try to delete the first cart item as a test
         const firstCartItem = cartResponse.data[0];
-        console.log('🧪 Testing deletion of first cart item:', {
-          id: firstCartItem.id,
-          documentId: firstCartItem.documentId,
-          productTitle: firstCartItem.product?.title
-        });
         
         try {
           const deleteResponse = await deleteData(`/api/carts/${firstCartItem.documentId}`);
-          console.log('✅ Test deletion successful:', deleteResponse);
           
           // Verify deletion
           const verifyResponse = await fetchDataFromApi(
             `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
           );
-          console.log('🔍 After deletion - remaining items:', verifyResponse?.data?.length || 0);
         } catch (deleteError) {
-          console.error('❌ Test deletion failed:', deleteError);
+          // Test deletion failed
         }
       } else {
-        console.log('ℹ️ No cart items found for testing');
+        // No cart items found for testing
       }
     } catch (error) {
-      console.error('❌ Test function error:', error);
+      // Test function error
     }
   };
   
   // Debug function to test cart deletion with detailed API logging
   const debugCartDeletion = async () => {
     try {
-      console.log('🔧 DEBUG: Starting detailed cart deletion test...');
-      
       if (!user || !user.id) {
-        console.log('❌ DEBUG: No user found');
         return { success: false, error: 'No user logged in' };
       }
       
-      console.log('👤 DEBUG: User info:', { id: user.id, email: user.email });
-      
       // Test API connectivity first
-      console.log('🔗 DEBUG: Testing API connectivity...');
       try {
         const testResponse = await fetchDataFromApi('/api/user-data?pagination[limit]=1');
-        console.log('✅ DEBUG: API connectivity test passed:', testResponse);
       } catch (apiError) {
-        console.error('❌ DEBUG: API connectivity test failed:', apiError);
         return { success: false, error: 'API connectivity failed', details: apiError };
       }
       
       // Get current user data
-      console.log('🔍 DEBUG: Fetching user data...');
       const currentUserData = await fetchDataFromApi(
         `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`
       );
       
-      console.log('📋 DEBUG: User data response:', currentUserData);
-      
       if (!currentUserData?.data || currentUserData.data.length === 0) {
-        console.log('❌ DEBUG: User data not found');
         return { success: false, error: 'User data not found' };
       }
       
       const userData = currentUserData.data[0];
       const userDocumentId = userData.documentId || userData.attributes?.documentId;
-      console.log('🆔 DEBUG: User documentId:', userDocumentId);
       
       // Get cart items for this user
-      console.log('🛒 DEBUG: Fetching cart items...');
       const cartQuery = `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`;
-      console.log('🔗 DEBUG: Cart query URL:', cartQuery);
       
       const cartResponse = await fetchDataFromApi(cartQuery);
-      console.log('📦 DEBUG: Cart response:', cartResponse);
       
       const cartItems = cartResponse?.data || [];
-      console.log(`🛒 DEBUG: Found ${cartItems.length} cart items`);
       
       if (cartItems.length === 0) {
-        console.log('ℹ️ DEBUG: No cart items to test deletion with');
         return { success: true, message: 'No cart items found' };
       }
       
       // Test deletion on the first cart item
       const testItem = cartItems[0];
-      console.log('🧪 DEBUG: Testing deletion on item:', {
-        id: testItem.id,
-        documentId: testItem.documentId,
-        productTitle: testItem.product?.title,
-        productId: testItem.product?.documentId
-      });
       
       // Test the delete API call
       const deleteUrl = `/api/carts/${testItem.documentId}`;
-      console.log('🔥 DEBUG: DELETE URL:', deleteUrl);
       
       try {
-        console.log('🚀 DEBUG: Making DELETE request...');
-        console.log('🔗 DEBUG: Full DELETE URL:', `${API_URL}${deleteUrl}`);
-        console.log('🔑 DEBUG: Using API token:', STRAPI_API_TOKEN ? 'Token present' : 'No token');
-        console.log('🔑 DEBUG: API_URL:', API_URL);
-        console.log('🔑 DEBUG: Token length:', STRAPI_API_TOKEN ? STRAPI_API_TOKEN.length : 0);
-        
         // Make a manual fetch to get more detailed response info
         const fullUrl = `${API_URL}${deleteUrl}`;
         const deleteOptions = {
@@ -1969,53 +2049,36 @@ export default function Context({ children }) {
           },
         };
         
-        console.log('📦 DEBUG: Request options:', deleteOptions);
-        
         const rawResponse = await fetch(fullUrl, deleteOptions);
-        console.log('📊 DEBUG: Response status:', rawResponse.status);
-        console.log('📊 DEBUG: Response statusText:', rawResponse.statusText);
-        console.log('📊 DEBUG: Response headers:', Object.fromEntries(rawResponse.headers.entries()));
         
         const responseText = await rawResponse.text();
-        console.log('📜 DEBUG: Raw response text:', responseText);
         
         let responseData;
         try {
           responseData = responseText ? JSON.parse(responseText) : null;
-          console.log('📊 DEBUG: Parsed response data:', responseData);
         } catch (parseError) {
-          console.log('⚠️ DEBUG: Response is not JSON:', parseError.message);
+          // Response is not JSON
         }
         
         if (!rawResponse.ok) {
-          console.error('❌ DEBUG: DELETE failed with status:', rawResponse.status);
-          console.error('❌ DEBUG: Error response:', responseData || responseText);
           return { success: false, error: `DELETE failed: ${rawResponse.statusText}`, details: responseData };
         }
         
-        console.log('✅ DEBUG: DELETE successful:', responseData || { success: true });
-        
         // Verify deletion
-        console.log('🔍 DEBUG: Verifying deletion...');
         const verifyResponse = await fetchDataFromApi(cartQuery);
         const remainingItems = verifyResponse?.data?.length || 0;
-        console.log(`📊 DEBUG: Remaining items after deletion: ${remainingItems}`);
         
         if (remainingItems < cartItems.length) {
-          console.log('🎉 DEBUG: Cart deletion test PASSED!');
           return { success: true, message: 'Cart deletion working correctly' };
         } else {
-          console.log('⚠️ DEBUG: Cart deletion test FAILED - item still exists');
           return { success: false, error: 'Item was not deleted' };
         }
         
       } catch (deleteError) {
-        console.error('❌ DEBUG: DELETE request failed:', deleteError);
         return { success: false, error: 'Delete request failed', details: deleteError };
       }
       
     } catch (error) {
-      console.error('❌ DEBUG: Test function error:', error);
       return { success: false, error: 'Test function failed', details: error };
     }
   };
@@ -2029,24 +2092,7 @@ export default function Context({ children }) {
   // Function to clear specific purchased items from cart (both frontend and backend)
   const clearPurchasedItemsFromCart = async (purchasedProducts) => {
     try {
-      console.log("🚨🚨🚨 CLEAR PURCHASED ITEMS FUNCTION CALLED 🚨🚨🚨");
-    console.log("=== STARTING PURCHASED ITEMS CLEAR PROCESS ===");
-    console.log("Purchased products to remove:", purchasedProducts?.length || 0);
-    console.log("Purchased products data:", JSON.stringify(purchasedProducts, null, 2));
-    console.log("Current cart products:", cartProducts.length);
-    console.log("User ID:", user?.id);
-    
-    // Debug: Show purchased product documentIds
-    if (purchasedProducts && purchasedProducts.length > 0) {
-      console.log("📋 Purchased product documentIds:", purchasedProducts.map(p => ({
-        documentId: p.documentId,
-        title: p.title,
-        productId: p.productId
-      })));
-    }
-      
       if (!purchasedProducts || purchasedProducts.length === 0) {
-        console.log("No purchased products provided, nothing to clear");
         return;
       }
       
@@ -2055,25 +2101,21 @@ export default function Context({ children }) {
       
       // If user is not logged in, only clear frontend
       if (!user?.id) {
-        console.log("No user logged in, clearing purchased items from frontend only");
         const remainingProducts = cartProducts.filter(cartProduct => {
           return !purchasedProducts.some(purchasedProduct => 
             cartProduct.documentId === purchasedProduct.documentId
           );
         });
         setCartProducts(remainingProducts);
-        console.log("✅ Frontend purchased items cleared");
         return;
       }
       
       // First, get the user's data to find their user_datum ID
-      console.log("🔍 Fetching user data to find user_datum ID...");
       const currentUserData = await fetchDataFromApi(
         `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`
       );
 
       if (!currentUserData?.data || currentUserData.data.length === 0) {
-        console.log("User data not found, clearing purchased items from frontend only");
         const remainingProducts = cartProducts.filter(cartProduct => {
           return !purchasedProducts.some(purchasedProduct => 
             cartProduct.documentId === purchasedProduct.documentId
@@ -2086,16 +2128,12 @@ export default function Context({ children }) {
       const userData = currentUserData.data[0];
       const userDocumentId = userData.documentId || userData.attributes?.documentId;
       
-      console.log("Found user document ID:", userDocumentId);
-      
       // Get cart items for this specific user
       const cartResponse = await fetchDataFromApi(
         `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
       );
       
       if (cartResponse?.data?.length > 0) {
-        console.log(`Found ${cartResponse.data.length} cart items in backend for user ${user.id}`);
-        
         // Filter cart items to find only the purchased ones
         const cartItemsToDelete = cartResponse.data.filter(cartItem => {
           // Get the product documentId from the cart item (actual Strapi structure)
@@ -2104,16 +2142,6 @@ export default function Context({ children }) {
           // Get cart item size and variant info (actual Strapi structure)
           const cartItemSize = cartItem.size;
           const cartItemVariantId = cartItem.variantInfo?.variantId;
-          
-          console.log(`🔍 Checking cart item:`, {
-            cartItemId: cartItem.id,
-            cartDocumentId: cartItem.documentId,
-            cartProductId: cartProductId,
-            cartItemSize: cartItemSize,
-            cartItemVariantId: cartItemVariantId,
-            cartProductTitle: cartItem.product?.title || 'Unknown',
-            variantInfo: cartItem.variantInfo
-          });
           
           const isMatch = purchasedProducts.some(purchasedProduct => {
             // Match by product documentId first
@@ -2145,31 +2173,13 @@ export default function Context({ children }) {
             
             const fullMatch = productMatch && sizeMatch && variantMatch;
             
-            if (fullMatch) {
-              console.log(`✅ Found specific match:`, {
-                productId: purchasedProduct.documentId,
-                purchasedSize: purchasedSize,
-                cartSize: cartItemSize,
-                purchasedVariant: purchasedVariantId,
-                cartVariant: cartItemVariantId
-              });
-            } else if (productMatch) {
-              console.log(`⚠️ Product matches but size/variant differs:`, {
-                productId: purchasedProduct.documentId,
-                purchasedSize: purchasedSize,
-                cartSize: cartItemSize,
-                sizeMatch: sizeMatch,
-                variantMatch: variantMatch
-              });
-            }
+            // Match found or not - no logging needed
             
             return fullMatch;
           });
           
           return isMatch;
         });
-        
-        console.log(`Found ${cartItemsToDelete.length} purchased items to delete from backend`);
         
         if (cartItemsToDelete.length > 0) {
           // Delete only the purchased cart items from backend using documentId
@@ -2178,48 +2188,29 @@ export default function Context({ children }) {
               // Get the cart item documentId (actual Strapi structure)
               const cartDocumentId = cartItem.documentId;
               
-              console.log(`🗑️ Attempting to delete cart item:`, {
-                cartItemId: cartItem.id,
-                cartDocumentId: cartDocumentId,
-                productTitle: cartItem.product?.title || 'Unknown',
-                size: cartItem.size,
-                variantInfo: cartItem.variantInfo
-              });
-              
               if (cartDocumentId) {
-                console.log(`🔥 Making DELETE request to: /api/carts/${cartDocumentId}`);
                 const deleteResponse = await deleteData(`/api/carts/${cartDocumentId}`);
-                console.log(`✅ DELETE response:`, deleteResponse);
-                console.log(`✅ Deleted purchased cart item with documentId: ${cartDocumentId}`);
               } else {
                 // Fallback to ID-based deletion
-                console.log(`🔥 Making DELETE request to: /api/carts/${cartItem.id}`);
                 const deleteResponse = await deleteData(`/api/carts/${cartItem.id}`);
-                console.log(`✅ DELETE response:`, deleteResponse);
-                console.log(`✅ Deleted purchased cart item with ID: ${cartItem.id}`);
               }
             } catch (error) {
-              console.error(`❌ Error deleting cart item ${cartItem.id}:`, error);
-              console.error(`❌ Full error details:`, JSON.stringify(error, null, 2));
               // Continue with other deletions even if one fails
             }
           });
           
           // Wait for all deletions to complete
           await Promise.allSettled(deletePromises);
-          console.log("🗑️ Backend purchased items deletion completed");
         }
         
         // Verify deletion by checking remaining cart items
-        console.log("🔍 Verifying purchased items deletion...");
         const verificationResponse = await fetchDataFromApi(
           `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
         );
         
         const remainingItems = verificationResponse?.data?.length || 0;
-        console.log(`✅ Verification complete: ${remainingItems} items remaining in backend cart`);
       } else {
-        console.log("No cart items found in backend for user:", user.id);
+        // No cart items found in backend
       }
       
       // Update frontend state to remove only purchased products (with specific matching)
@@ -2256,14 +2247,7 @@ export default function Context({ children }) {
           
           const fullMatch = productMatch && sizeMatch && variantMatch;
           
-          if (fullMatch) {
-            console.log(`🗑️ Frontend: Removing cart item:`, {
-              productId: cartProduct.documentId,
-              title: cartProduct.title,
-              size: cartSize,
-              variantId: cartVariantId
-            });
-          }
+          // Match found - item will be removed
           
           return fullMatch;
         });
@@ -2312,20 +2296,14 @@ export default function Context({ children }) {
         if (isMatched) {
           // Remove selection using the proper cart item ID (with size info)
           delete updatedSelectedItems[cartProduct.id];
-          console.log(`🗑️ Removed selection for cart item ID: ${cartProduct.id}`);
         }
       });
       
       setSelectedCartItems(updatedSelectedItems);
       
-      console.log("✅ Frontend purchased items cleared");
-      
       // Set timestamp to prevent cart reloading for a period
       setCartClearedTimestamp(Date.now());
-      
-      console.log("=== PURCHASED ITEMS CLEAR PROCESS COMPLETED ===");
     } catch (error) {
-      console.error("❌ Error clearing purchased items from cart:", error);
       // Even if backend clearing fails, try to clear frontend (with specific matching)
       const remainingProducts = cartProducts.filter(cartProduct => {
         return !purchasedProducts.some(purchasedProduct => {
@@ -2365,7 +2343,6 @@ export default function Context({ children }) {
     } finally {
       // Add a longer delay before resetting the clearing flag to prevent immediate reloading
       await new Promise(resolve => setTimeout(resolve, 3000));
-      console.log("🔓 Resetting cart clearing flag after 3 second delay");
       setIsCartClearing(false);
     }
   };
@@ -2373,123 +2350,83 @@ export default function Context({ children }) {
   // Function to clear all items from cart (both frontend and backend) - kept for backward compatibility
   const clearCart = async () => {
     try {
-      console.log("=== STARTING CART CLEAR PROCESS ===");
-      console.log("Current cart products:", cartProducts.length);
-      console.log("User ID:", user?.id);
-      
       // Set flag to prevent cart reloading during clearing process
       setIsCartClearing(true);
       
       // Clear the frontend state immediately for responsive UI
       setCartProducts([]);
       setSelectedCartItems({});
-      console.log("✅ Frontend cart state cleared");
       
       // If user is not logged in, no backend cleanup needed
       if (!user?.id) {
-        console.log("No user logged in, cart cleared from frontend only");
         return;
       }
       
       // First, get the user's data to find their user_datum ID
-      console.log("🔍 Fetching user data to find user_datum ID...");
       const currentUserData = await fetchDataFromApi(
         `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`
       );
 
       if (!currentUserData?.data || currentUserData.data.length === 0) {
-        console.log("❌ User data not found, cannot clear backend cart");
         return;
       }
 
       const userData = currentUserData.data[0];
       const userDocumentId = userData.documentId || userData.attributes?.documentId;
       
-      console.log("✅ Found user document ID:", userDocumentId);
-      console.log("🔍 Fetching cart items for deletion...");
-      
       // Get cart items for this specific user
       const cartResponse = await fetchDataFromApi(
         `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
       );
       
-      console.log("Cart response:", cartResponse);
-      
       if (cartResponse?.data?.length > 0) {
-        console.log(`🗑️ Found ${cartResponse.data.length} cart items in backend to delete for user ${user.id}`);
-        
         // Delete all cart items from backend using the same method as removeFromCart
         for (let i = 0; i < cartResponse.data.length; i++) {
           const cartItem = cartResponse.data[i];
           try {
-            console.log(`🗑️ [${i + 1}/${cartResponse.data.length}] Deleting cart item:`, {
-              id: cartItem.id,
-              documentId: cartItem.documentId,
-              attributes: cartItem.attributes
-            });
-            
             // Use the same deletion logic as removeFromCart
             const cartDocumentId = cartItem.attributes?.documentId;
             if (cartDocumentId) {
               try {
                 await deleteData(`/api/carts/${cartDocumentId}`);
-                console.log(`✅ [${i + 1}/${cartResponse.data.length}] Deleted cart item with documentId: ${cartDocumentId}`);
               } catch (documentIdError) {
                 // Fallback to ID-based deletion
                 await deleteData(`/api/carts/${cartItem.id}`);
-                console.log(`✅ [${i + 1}/${cartResponse.data.length}] Deleted cart item with ID: ${cartItem.id} (fallback)`);
               }
             } else {
               // Direct ID-based deletion
               await deleteData(`/api/carts/${cartItem.id}`);
-              console.log(`✅ [${i + 1}/${cartResponse.data.length}] Deleted cart item with ID: ${cartItem.id}`);
             }
           } catch (error) {
-            console.error(`❌ [${i + 1}/${cartResponse.data.length}] Error deleting cart item ${cartItem.id}:`, error);
             // Continue with other deletions even if one fails
           }
         }
         
-        console.log("✅ All cart item deletions attempted");
-        
         // Add a longer delay to ensure backend is fully updated
         await new Promise(resolve => setTimeout(resolve, 1000));
-        console.log("⏳ Waited 1000ms for backend to update");
         
         // Verify deletion by checking if any items remain
-        console.log("🔍 Verifying cart is empty...");
         const verificationResponse = await fetchDataFromApi(
           `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
         );
         
         if (verificationResponse?.data?.length > 0) {
-          console.warn(`⚠️ Warning: ${verificationResponse.data.length} cart items still exist after deletion!`);
-          console.log("Remaining items:", verificationResponse.data);
-          
           // Try to delete remaining items one more time
           for (const remainingItem of verificationResponse.data) {
             try {
               await deleteData(`/api/carts/${remainingItem.id}`);
-              console.log(`🔄 Retry deleted cart item with ID: ${remainingItem.id}`);
             } catch (retryError) {
-              console.error(`❌ Retry failed for cart item ${remainingItem.id}:`, retryError);
+              // Retry failed
             }
           }
-        } else {
-          console.log("✅ Verification complete: Cart is empty in backend");
         }
-        
-        console.log("Cart clearing completed for user:", user.id);
       } else {
-        console.log("ℹ️ No cart items found in backend for user:", user.id);
+        // No cart items found in backend
       }
       
       // Set timestamp to prevent cart reloading for a period
       setCartClearedTimestamp(Date.now());
-      
-      console.log("=== CART CLEAR PROCESS COMPLETED ===");
     } catch (error) {
-      console.error("❌ Error clearing cart:", error);
       // Even if backend clearing fails, keep the frontend cleared
       setCartProducts([]);
       setSelectedCartItems({});
@@ -2497,7 +2434,6 @@ export default function Context({ children }) {
     } finally {
       // Add a longer delay before resetting the clearing flag to prevent immediate reloading
       await new Promise(resolve => setTimeout(resolve, 3000));
-      console.log("🔓 Resetting cart clearing flag after 3 second delay");
       setIsCartClearing(false);
     }
   };
@@ -2582,7 +2518,6 @@ export default function Context({ children }) {
     Object.keys(sessionStorage).forEach(key => {
       if (key.startsWith('userCreated_')) {
         sessionStorage.removeItem(key);
-        console.log(`🧹 Cleared user creation flag: ${key}`);
       }
     });
     setUserCreationAttempted(false);
@@ -2599,6 +2534,8 @@ export default function Context({ children }) {
     removeFromWishlist,
     addToWishlist,
     isAddedtoWishlist,
+    fetchWishlistFromServer,
+    isWishlistLoading,
     quickViewItem,
     wishList,
     setQuickViewItem,

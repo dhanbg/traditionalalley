@@ -1,27 +1,78 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { fetchDataFromApi } from "@/utils/api";
-import { ORDER_DETAILS_API } from "@/utils/urls";
+import { USER_BAGS_API } from "@/utils/urls";
 import Image from "next/image";
 import Link from "next/link";
+import OrderStatusTracker from "./OrderStatusTracker";
 
-export default function OrderDetails({ orderId }) {
+export default function OrderDetails() {
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Extract orderId from URL parameters
+  const orderId = searchParams.get('orderId');
+  const ncmOrderId = searchParams.get('ncmOrderId');
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
-      if (!session?.user || !orderId) return;
+      if (!session?.user || !orderId) {
+        setLoading(false);
+        setError('Order ID not found in URL parameters');
+        return;
+      }
 
       try {
+        setError(null);
+        // Fetch user bags/orders and find the specific order by ID
         const response = await fetchDataFromApi(
-          `${ORDER_DETAILS_API}/${orderId}?filters[authUserId][$eq]=${session.user.id}`
+          `${USER_BAGS_API}?filters[user_datum][authUserId][$eq]=${session.user.id}&populate=*&sort=createdAt:desc`
         );
-        setOrder(response.data);
+        
+        if (response.data && Array.isArray(response.data)) {
+          // Find the specific order by matching the order ID
+          let foundOrder = null;
+          
+          response.data.forEach(bag => {
+            if (bag.user_orders && bag.user_orders.payments) {
+              bag.user_orders.payments.forEach(payment => {
+                const paymentOrderId = payment.merchantTxnId || payment.processId || `order-${Date.now()}`;
+                if (paymentOrderId === orderId) {
+                  foundOrder = {
+                    id: paymentOrderId,
+                    bagId: bag.id,
+                    bagName: bag.Name,
+                    createdAt: payment.timestamp || bag.createdAt,
+                    status: payment.status,
+                    amount: payment.amount,
+                    provider: payment.provider,
+                    orderData: payment.orderData,
+                    trackingInfo: bag.trackingInfo,
+                    gatewayReferenceNo: payment.gatewayReferenceNo,
+                    // Add NCM order ID if available
+                    ncmOrderId: ncmOrderId || (bag.trackingInfo?.ncmOrderId)
+                  };
+                }
+              });
+            }
+          });
+          
+          if (foundOrder) {
+            setOrder(foundOrder);
+          } else {
+            setError('Order not found or access denied');
+          }
+        } else {
+          setError('Order not found or access denied');
+        }
       } catch (error) {
         console.error("Error fetching order details:", error);
+        setError('Failed to fetch order details');
       } finally {
         setLoading(false);
       }
@@ -34,8 +85,32 @@ export default function OrderDetails({ orderId }) {
     return <div className="loading">Loading order details...</div>;
   }
 
+  if (error) {
+    return (
+      <div className="error-container">
+        <div className="error">
+          <h3>Unable to Load Order Details</h3>
+          <p>{error}</p>
+          <Link href="/my-account-orders" className="tf-btn btn-fill">
+            Back to Orders
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (!order) {
-    return <div className="error">Order not found</div>;
+    return (
+      <div className="error-container">
+        <div className="error">
+          <h3>Order Not Found</h3>
+          <p>The requested order could not be found.</p>
+          <Link href="/my-account-orders" className="tf-btn btn-fill">
+            Back to Orders
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -54,6 +129,9 @@ export default function OrderDetails({ orderId }) {
           <p><strong>Order Date:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
           <p><strong>Total Amount:</strong> ${order.totalAmount}</p>
           <p><strong>Payment Status:</strong> {order.paymentStatus}</p>
+          {order.ncmOrderId && (
+            <p><strong>NCM Order ID:</strong> {order.ncmOrderId}</p>
+          )}
         </div>
 
         <div className="shipping-info">
@@ -64,6 +142,9 @@ export default function OrderDetails({ orderId }) {
           <p>{order.shippingAddress?.country}</p>
         </div>
       </div>
+
+      {/* NCM Order Status Tracking */}
+      <OrderStatusTracker ncmOrderId={order.ncmOrderId} />
 
       <div className="order-items">
         <h3>Order Items</h3>

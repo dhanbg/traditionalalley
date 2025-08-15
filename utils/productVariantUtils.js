@@ -1,6 +1,93 @@
 import { fetchDataFromApi } from "./api";
 import { getBestImageUrl } from "./imageUtils";
 
+/**
+ * Check if the logged-in user has used the WELCOMETOTA coupon
+ * @param {string} userId - The user's ID or email
+ * @returns {Promise<{hasUsed: boolean, couponData: object|null}>} Object indicating if user has used the coupon and coupon details
+ */
+export async function checkWelcomeCouponUsage(userId) {
+  try {
+    // Fetch all coupons with populated data
+    const couponsResponse = await fetchDataFromApi('/api/coupons?populate=*');
+    
+    if (!couponsResponse.data || couponsResponse.data.length === 0) {
+      return { hasUsed: false, couponData: null };
+    }
+
+    // Find the WELCOMETOTA coupon
+    const welcomeCoupon = couponsResponse.data.find(coupon => 
+      coupon.code === 'WELCOMETOTA'
+    );
+
+    if (!welcomeCoupon) {
+      return { hasUsed: false, couponData: null };
+    }
+
+    // Check if the user has used this coupon
+    const hasUsedCoupon = welcomeCoupon.usedByUserData && 
+      welcomeCoupon.usedByUserData.some(userData => 
+        userData.userId === userId || userData.userEmail === userId
+      );
+
+    return {
+      hasUsed: hasUsedCoupon,
+      couponData: welcomeCoupon,
+      isActive: welcomeCoupon.isActive,
+      isValid: isValidCoupon(welcomeCoupon)
+    };
+  } catch (error) {
+    console.error('Error checking WELCOMETOTA coupon usage:', error);
+    return { hasUsed: false, couponData: null, error: error.message };
+  }
+}
+
+/**
+ * Check if a coupon is currently valid (active and within date range)
+ * @param {object} coupon - The coupon object
+ * @returns {boolean} True if coupon is valid
+ */
+function isValidCoupon(coupon) {
+  if (!coupon || !coupon.isActive) {
+    return false;
+  }
+
+  const now = new Date();
+  const validFrom = new Date(coupon.validFrom);
+  const validUntil = new Date(coupon.validUntil);
+
+  return now >= validFrom && now <= validUntil;
+}
+
+/**
+ * Get welcome coupon data for auto-selection if user hasn't used it
+ * @param {string} userId - The user's ID or email
+ * @returns {Promise<object|null>} Coupon data for auto-selection or null
+ */
+export async function getWelcomeCouponForAutoSelection(userId) {
+  try {
+    const couponCheck = await checkWelcomeCouponUsage(userId);
+    
+    // Return coupon data only if user hasn't used it and it's valid
+    if (!couponCheck.hasUsed && couponCheck.isValid && couponCheck.couponData) {
+      return {
+        code: couponCheck.couponData.code,
+        description: couponCheck.couponData.description,
+        discountType: couponCheck.couponData.discountType,
+        discountValue: couponCheck.couponData.discountValue,
+        minimumOrderAmount: couponCheck.couponData.minimumOrderAmount,
+        maximumDiscountAmount: couponCheck.couponData.maximumDiscountAmount,
+        autoSelected: true // Flag to indicate this was auto-selected
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error getting welcome coupon for auto-selection:', error);
+    return null;
+  }
+}
+
 const DEFAULT_IMAGE = '/logo.png';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
 
@@ -120,7 +207,7 @@ function transformProductForListing(rawProduct) {
   }
 
   return {
-    id: rawProduct.documentId,
+    id: rawProduct.id,
     documentId: rawProduct.documentId,
     title: rawProduct.title || "Untitled Product",
     price: rawProduct.price || 0,
@@ -181,7 +268,7 @@ function transformVariantForListing(rawVariant, parentProduct) {
     : `${parentProduct.title} (Variant)`;
 
   return {
-    id: rawVariant.documentId,
+    id: rawVariant.id,
     documentId: rawVariant.documentId,
     title: variantTitle,
     price: parentProduct.price || 0, // Use parent product price

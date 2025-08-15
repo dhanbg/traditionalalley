@@ -118,7 +118,7 @@ export default function Home() {
   return (
     <>
       {/* Payment Status Message */}
-      <Suspense fallback={<div>Loading payment status...</div>}>
+      <Suspense fallback={<div style={{display: 'none'}}>Loading payment status...</div>}>
         <PaymentMessageHandler />
       </Suspense>
       
@@ -130,10 +130,10 @@ export default function Home() {
       <MarqueeSection />
       {/* <BannerCollection /> */}
       <BannerCountdown />
-      <Testimonials3 />
+      {/* <Testimonials3 /> */}
       <ShopGram />
       <Features />
-      <Blogs />
+      {/* <Blogs /> */}
       <Footer1 hasPaddingBottom />
       
       {/* CSS for animation */}

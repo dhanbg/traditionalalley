@@ -108,7 +108,7 @@ export default function RelatedProducts({ product }) {
         setRelatedProducts(activeItems.slice(0, 8)); // Limit to 8 items
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching related products:', error);
+        // Error fetching related products - silently handle
         setLoading(false);
       }
     };

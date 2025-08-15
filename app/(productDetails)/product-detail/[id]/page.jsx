@@ -32,13 +32,7 @@ export default async function page({ params }) {
     // Transform API response to match the expected format
     product = transformProduct(rawProduct);
     
-    // Debug: Log the isActive values and size_stocks
-    console.log('🔍 Raw product data:', {
-      isActive: rawProduct.isActive,
-      size_stocks: rawProduct.size_stocks,
-      title: rawProduct.title
-    });
-    console.log('🔍 Transformed product isActive:', product.isActive);
+    // Check product availability
     
     // Block access to inactive products (isActive: false)
     if (product.isActive === false) {
@@ -104,9 +98,6 @@ export default async function page({ params }) {
       
     } catch (error) {
       // Silently handle variants not found - this is expected for products without variants
-      if (error.status !== 404) {
-        console.error('Error fetching variants:', error);
-      }
     }
     
     // Also check for products with the same productGroup (for existing setup)
@@ -118,9 +109,6 @@ export default async function page({ params }) {
         }
       } catch (error) {
         // Silently handle product group not found
-        if (error.status !== 404) {
-          console.error('Error fetching product group:', error);
-        }
       }
     }
     
@@ -265,13 +253,7 @@ function transformProduct(rawProduct) {
 function transformVariant(rawVariant) {
   if (!rawVariant) return null;
   
-  // Debug: Log the raw variant structure
-  console.log('🔍 Raw variant from API:', {
-    id: rawVariant.id,
-    documentId: rawVariant.documentId,
-    design: rawVariant.design,
-    title: rawVariant.title || 'No title'
-  });
+
   
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
   

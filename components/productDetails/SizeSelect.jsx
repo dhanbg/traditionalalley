@@ -43,7 +43,7 @@ function parseSizeStocks(sizeStocks) {
       }));
     }
   } catch (error) {
-    console.error('Error parsing size_stocks:', error);
+    // Error parsing size_stocks - return empty array
   }
   
   return [];

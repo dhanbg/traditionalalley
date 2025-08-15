@@ -115,7 +115,7 @@ export default function Collections() {
             centeredSlides={isMobile}
           >
             {categories.map((category, index) => (
-              <SwiperSlide key={category.id || index} className={isMobile ? "flex justify-center items-center" : ""}>
+              <SwiperSlide key={`category-${category.id}-${index}`} className={isMobile ? "flex justify-center items-center" : ""}>
                 <div
                   ref={el => cardRefs.current[index] = el}
                   data-index={index}

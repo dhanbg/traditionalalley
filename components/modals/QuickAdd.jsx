@@ -146,17 +146,7 @@ export default function QuickAdd() {
                           : "Compare"}
                       </span>
                     </a>
-                    <a
-                      onClick={handleWishlistClick}
-                      className="box-icon hover-tooltip text-caption-2 wishlist btn-icon-action"
-                    >
-                      <span className="icon icon-heart" />
-                      <span className="tooltip text-caption-2">
-                        {isAddedtoWishlist(item.id)
-                          ? "Already Wishlished"
-                          : "Wishlist"}
-                      </span>
-                    </a>
+
                   </div>
                   <a href="#" className="btn-style-3 text-btn-uppercase">
                     Buy it now

@@ -21,7 +21,8 @@ export default function Wishlist() {
             />
           </div>
           <div className="wrap">
-            <div className="tf-mini-cart-threshold">
+            {/* Free shipping threshold section hidden as requested */}
+            {/* <div className="tf-mini-cart-threshold">
               <div className="tf-progress-bar">
                 <span style={{ width: "50%" }}>
                   <div className="progress-car">
@@ -45,18 +46,18 @@ export default function Wishlist() {
                 Buy <span className="price fw-6">$75.00</span> more to enjoy{" "}
                 <span className="fw-6">Free Shipping</span>
               </div>
-            </div>
+            </div> */}
             <div className="tf-mini-cart-wrap">
               <div className="tf-mini-cart-main">
                 <div className="tf-mini-cart-sroll">
                   <div className="tf-mini-cart-items">
-                    {wishList.map((item) => (
-                      <div key={item.id} className="tf-mini-cart-item">
+                    {wishList.map((productId, index) => (
+                      <div key={`wishlist-item-${productId}-${index}`} className="tf-mini-cart-item">
                         <div className="tf-mini-cart-image">
-                          <Link href={`/product-detail/${item.id}`}>
+                          <Link href={`/product-detail/${productId}`}>
                             <Image
-                              alt="img"
-                              src={item.imgSrc}
+                              alt="Product image"
+                              src="/images/placeholder.jpg"
                               width={100}
                               height={100}
                             />
@@ -65,16 +66,16 @@ export default function Wishlist() {
                         <div className="tf-mini-cart-info">
                           <Link
                             className="title link"
-                            href={`/product-detail/${item.id}`}
+                            href={`/product-detail/${productId}`}
                           >
-                            {item.title}
+                            Product #{productId}
                           </Link>
-                          <div className="meta-variant">{item.color}</div>
-                          <div className="price fw-6">${item.price}</div>
+                          <div className="meta-variant"></div>
+                          <div className="price fw-6">View Details</div>
                         </div>
                         <div className="tf-mini-cart-remove">
                           <a
-                            onClick={() => removeFromWishlist(item.id)}
+                            onClick={() => removeFromWishlist(productId)}
                             className="remove-cart"
                           >
                             <i className="icon-delete" />

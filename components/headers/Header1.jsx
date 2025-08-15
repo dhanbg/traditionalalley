@@ -21,7 +21,7 @@ export default function Header1({ fullWidth = false }) {
       className={`header-default ${fullWidth ? "header-fullwidth" : ""} `}
     >
       <div className={fullWidth ? "" : "container"}>
-        <div className="row wrapper-header align-items-center">
+        <div className="row wrapper-header align-items-center" style={{ minHeight: '100px' }}>
           <div className="col-md-4 col-3 d-xl-none">
             <div className="d-flex align-items-center">
               <a
@@ -39,7 +39,7 @@ export default function Header1({ fullWidth = false }) {
           </div>
           <div className="col-xl-3 col-md-4 col-6">
             <Link href={`/`} className="logo-header">
-              <Image src="/logo.png" width={150} height={40} alt="Logo" />
+              <Image src="/logo.png" width={180} height={48} alt="Logo" style={{ width: '180px', height: '48px' }} />
             </Link>
           </div>
           <div className="col-xl-6 d-none d-xl-block">

@@ -113,6 +113,13 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
   }, []);
 
   const handleWishlistClick = (id) => {
+    console.log('🎯 ProductCard1 handleWishlistClick:', {
+      id,
+      productId: safeProduct.id,
+      documentId: safeProduct.documentId,
+      isInWishlist: isAddedtoWishlist(id),
+      user: user?.id
+    });
     if (!user) {
       signIn();
     } else {
@@ -306,21 +313,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
             <span className="icon icon-bag" />
             <span className="tooltip">{safeProduct.inStock ? 'Quick Add' : 'Out of Stock'}</span>
           </a>
-          <a
-            onClick={() => handleWishlistClick(safeProduct.id)}
-            className="box-icon bg_white wishlist btn-icon-action"
-          >
-            <span
-              className={`icon icon-heart ${
-                isAddedtoWishlist(safeProduct.id) ? "added" : ""
-              }`}
-            />
-            <span className="tooltip">
-              {isAddedtoWishlist(safeProduct.id)
-                ? "Already Wishlisted"
-                : "Add to Wishlist"}
-            </span>
-          </a>
+
           <a
             href="#compare"
             data-bs-toggle="offcanvas"

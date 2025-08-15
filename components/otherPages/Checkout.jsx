@@ -8,6 +8,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import NPSPaymentForm from "../payments/NPSPaymentForm";
 import DHLShippingForm from "../shipping/DHLShippingForm";
 import { fetchDataFromApi, updateData, updateUserBagWithPayment, createOrderRecord, updateProductStock, deleteData } from "@/utils/api";
+import { checkWelcomeCouponUsage, getWelcomeCouponForAutoSelection } from "@/utils/productVariantUtils";
 import { processPostPaymentStockAndCart } from "@/utils/postPaymentProcessing";
 import { useSession } from "next-auth/react";
 import PriceDisplay from "@/components/common/PriceDisplay";
@@ -54,23 +55,23 @@ const getThumbnailImageUrl = (imgSrc) => {
   return '/images/products/default-product.jpg';
 };
 
-const discounts = [
-  {
-    discount: "10% OFF",
-    details: "For all orders from 200$",
-    code: "Mo234231",
-  },
-  {
-    discount: "10% OFF",
-    details: "For all orders from 200$",
-    code: "Mo234231",
-  },
-  {
-    discount: "10% OFF",
-    details: "For all orders from 200$",
-    code: "Mo234231",
-  },
-];
+// const discounts = [
+//   {
+//     discount: "10% OFF",
+//     details: "For all orders from 200$",
+//     code: "Mo234231",
+//   },
+//   {
+//     discount: "10% OFF",
+//     details: "For all orders from 200$",
+//     code: "Mo234231",
+//   },
+//   {
+//     discount: "10% OFF",
+//     details: "For all orders from 200$",
+//     code: "Mo234231",
+//   },
+// ];
 export default function Checkout() {
   const [activeDiscountIndex, setActiveDiscountIndex] = useState(1);
   const { 
@@ -105,7 +106,7 @@ export default function Checkout() {
   const [couponLoading, setCouponLoading] = useState(false);
 
   // Add state for DHL shipping
-  const [shippingCost, setShippingCost] = useState(10); // Temporarily set to fixed Rs. 10
+  const [shippingCost, setShippingCost] = useState(0); // Will be set by actual DHL/NCM rates
   const [shippingRatesObtained, setShippingRatesObtained] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState('');
 
@@ -118,6 +119,8 @@ export default function Checkout() {
   const [nprExchangeRate, setNprExchangeRate] = useState(null);
 
   // Add state for combined update and delete operation
+
+
 
   // Function to construct orderData with fresh coupon state
   const constructOrderData = () => {
@@ -198,7 +201,7 @@ export default function Checkout() {
 
       // Additional metadata
       shippingPrice: shippingCost,
-      receiver_details: {
+      receiver_details: receiverDetails || {
         name: "Customer",
         email: user?.email || "Not provided",
         phone: "Not provided"
@@ -1194,6 +1197,55 @@ export default function Checkout() {
   // Calculate final total with coupon discount
   const finalTotal = Math.max(0, actualTotal - couponDiscount);
 
+  // Auto-apply WELCOMETOTA coupon if user hasn't used it
+  useEffect(() => {
+    const checkAndApplyWelcomeCoupon = async () => {
+      if (!user?.id || appliedCoupon) {
+        return; // Don't check if user not logged in or coupon already applied
+      }
+
+      try {
+        const welcomeCouponData = await getWelcomeCouponForAutoSelection(user.id);
+        
+        if (welcomeCouponData) {
+          console.log('🎫 Auto-applying WELCOMETOTA coupon for user:', user.id);
+          
+          // Auto-apply the coupon (don't set input field to keep it clean)
+          // setCouponCode(welcomeCouponData.code); // Commented out to keep input clean
+          
+          // Validate the coupon to get the discount amount
+          const response = await fetch(`${API_URL}/api/coupons/validate`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              code: welcomeCouponData.code,
+              orderAmount: actualTotal,
+              userId: user.id
+            }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.valid) {
+            setAppliedCoupon({
+              ...data.coupon,
+              autoSelected: true // Mark as auto-selected
+            });
+            setCouponDiscount(data.coupon.discountAmount);
+            setCouponError('');
+            console.log('✅ WELCOMETOTA coupon auto-applied successfully');
+          }
+        }
+      } catch (error) {
+        console.error('Error auto-applying WELCOMETOTA coupon:', error);
+      }
+    };
+
+    checkAndApplyWelcomeCoupon();
+  }, [user?.id, actualTotal]); // Re-run when user or total changes
+
   // Helper function to calculate NPR amount for NPS payments
   const calculateNPRAmount = async (usdAmount) => {
     try {
@@ -1418,8 +1470,9 @@ export default function Checkout() {
                   }, [])}
                   onRateCalculated={(rateInfo) => {
                     console.log('Rate calculated:', rateInfo);
-                    // Temporarily set fixed shipping cost of Rs. 10
-                    setShippingCost(10);
+                    // Use actual shipping rate from DHL/NCM calculation
+                    const actualShippingCost = parseFloat(rateInfo.price) || 0;
+                    setShippingCost(actualShippingCost);
                     setShippingRatesObtained(true);
                   }}
                   onReceiverChange={setReceiverDetails}
@@ -1427,10 +1480,34 @@ export default function Checkout() {
               </div>
               <div className="wrap">
                 {/* Discount Coupons Section */}
-                <div className="discount-section" style={{ marginTop: '40px', marginBottom: '20px', borderTop: '1px solid #eaeaea', paddingTop: '20px' }}>
-                  <h5 className="title" style={{ marginBottom: '15px' }}>Discount Coupons</h5>
+                <div className="discount-section" style={{ 
+                  marginTop: '40px', 
+                  marginBottom: '30px', 
+                  borderTop: '2px solid #f0f0f0', 
+                  paddingTop: '30px',
+                  background: 'linear-gradient(135deg, #fafbfc 0%, #f8f9fa 100%)',
+                  borderRadius: '12px',
+                  padding: '30px 24px',
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.04)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '24px' }} role="img" aria-label="discount">🎫</span>
+                    <h5 className="title" style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: '#2c3e50' }}>
+                      Discount Coupons
+                    </h5>
+                  </div>
+                  <p style={{ 
+                    margin: 0, 
+                    color: '#5a6c7d', 
+                    fontSize: '14px', 
+                    marginBottom: '20px',
+                    lineHeight: '1.5'
+                  }}>
+                    Have a promotional code? Apply it below to get instant savings on your order. 
+                    <span style={{ fontWeight: '600', color: '#495057' }}> Only one coupon per order.</span>
+                  </p>
                 <div className="sec-discount">
-                  <Swiper
+                  {/* <Swiper
                     dir="ltr"
                     className="swiper tf-sw-categories"
                     slidesPerView={2.25} // data-preview="2.25"
@@ -1480,76 +1557,125 @@ export default function Checkout() {
                         </div>{" "}
                       </SwiperSlide>
                     ))}
-                  </Swiper>
-                    <div className="ip-discount-code" style={{ marginTop: '15px', marginBottom: '10px' }}>
-                      <input 
-                        type="text" 
-                        placeholder="Add voucher discount" 
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value)}
-                        disabled={appliedCoupon || couponLoading}
-                        style={{ 
-                          borderRadius: '4px', 
-                          borderColor: couponError ? '#dc3545' : '#ddd',
-                          backgroundColor: appliedCoupon ? '#f8f9fa' : 'white'
-                        }} 
-                      />
-                      {!appliedCoupon ? (
-                        <button 
-                          className="tf-btn" 
-                          onClick={validateCoupon}
-                          disabled={couponLoading || !couponCode.trim()}
-                          style={{ marginLeft: '10px' }}
-                        >
-                          <span className="text">
-                            {couponLoading ? 'Validating...' : 'Apply Code'}
-                          </span>
-                        </button>
-                      ) : (
-                        <button 
-                          className="tf-btn" 
-                          onClick={removeCoupon}
-                          style={{ marginLeft: '10px', backgroundColor: '#dc3545' }}
-                        >
-                          <span className="text">Remove</span>
-                        </button>
-                      )}
+                  </Swiper> */}
+                    <div className="coupon-card" style={{ marginTop: '0px', marginBottom: '12px', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '16px', backgroundColor: '#fff' }}>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <input 
+                          type="text" 
+                          placeholder="Enter coupon code"
+                          aria-label="Coupon code"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (!appliedCoupon && !couponLoading && couponCode.trim()) validateCoupon(); } }}
+                          disabled={appliedCoupon || couponLoading}
+                          style={{ 
+                            flex: 1,
+                            borderRadius: '8px', 
+                            border: `1px solid ${couponError ? '#dc3545' : '#d1d5db'}`,
+                            padding: '12px 14px',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                            fontSize: '14px',
+                            backgroundColor: appliedCoupon ? '#f8f9fa' : 'white'
+                          }} 
+                        />
+                        {!appliedCoupon ? (
+                          <button 
+                            className="tf-btn" 
+                            onClick={validateCoupon}
+                            disabled={couponLoading || !couponCode.trim()}
+                            style={{ minWidth: '120px' }}
+                          >
+                            <span className="text">
+                              {couponLoading ? 'Validating…' : 'Apply'}
+                            </span>
+                          </button>
+                        ) : (
+                          <button 
+                            className="tf-btn" 
+                            onClick={removeCoupon}
+                            style={{ minWidth: '120px', backgroundColor: '#e03131' }}
+                          >
+                            <span className="text">Remove</span>
+                          </button>
+                        )}
+                      </div>
+                      <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
+                        💡 Tip: Coupon codes are not case sensitive.
+                      </div>
                     </div>
                     
                     {/* Coupon Error Message */}
                     {couponError && (
                       <div style={{ 
-                        color: '#dc3545', 
+                        color: '#b02a37', 
                         fontSize: '13px', 
-                        marginTop: '5px',
-                        marginBottom: '10px'
+                        marginTop: '0px',
+                        marginBottom: '10px',
+                        padding: '12px 14px',
+                        backgroundColor: '#fdecec',
+                        border: '1px solid #f5c2c7',
+                        borderRadius: '6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
                       }}>
-                        {couponError}
+                        <span role="img" aria-label="warning">⚠️</span>
+                        <span>{couponError}</span>
                       </div>
                     )}
                     
                     {/* Applied Coupon Success Message */}
                     {appliedCoupon && (
                       <div style={{ 
-                        color: '#28a745', 
                         fontSize: '13px', 
-                        marginTop: '5px',
-                        marginBottom: '10px',
-                        padding: '8px',
-                        backgroundColor: '#d4edda',
-                        borderRadius: '4px',
-                        border: '1px solid #c3e6cb'
+                        marginTop: '0px',
+                        marginBottom: '12px',
+                        padding: '14px 16px',
+                        backgroundColor: appliedCoupon.autoSelected ? '#e7f3ff' : '#e6ffed',
+                        borderRadius: '8px',
+                        border: appliedCoupon.autoSelected ? '1px solid #b3d9ff' : '1px solid #c3e6cb',
+                        color: appliedCoupon.autoSelected ? '#084298' : '#0f5132'
                       }}>
-                        ✓ Coupon "{appliedCoupon.code}" applied! 
-                        {appliedCoupon.discountType === 'percentage' 
-                          ? `${appliedCoupon.discountValue}% discount` 
-                          : `$${appliedCoupon.discountValue} discount`
-                        }
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                          <span role="img" aria-label="party">🎉</span>
+                          <strong>{appliedCoupon.autoSelected ? 'Welcome discount automatically applied!' : 'Coupon applied'}</strong>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{
+                            background: '#111', 
+                            color: '#fff', 
+                            padding: '4px 10px', 
+                            borderRadius: '20px', 
+                            fontSize: '12px', 
+                            fontWeight: '600',
+                            letterSpacing: '0.05em'
+                          }}>{appliedCoupon.code}</span>
+                          <span>—</span>
+                          <span style={{ fontWeight: '600' }}>
+                            {appliedCoupon.discountType === 'percentage' 
+                              ? `${appliedCoupon.discountValue}% off`
+                              : `$${appliedCoupon.discountValue} off`}
+                          </span>
+                        </div>
+                        {typeof couponDiscount === 'number' && couponDiscount > 0 && (
+                          <div style={{ marginTop: '8px', fontSize: '12px', opacity: 0.85, fontWeight: '500' }}>
+                            💰 You are saving <PriceDisplay price={couponDiscount} className="text-button" size="normal" /> on this order.
+                          </div>
+                        )}
+                        {appliedCoupon.autoSelected && (
+                          <div style={{ marginTop: '8px' }}>
+                            <small style={{ fontSize: '11px', opacity: 0.8 }}>
+                              This is a one-time welcome offer. You can remove it if you prefer to use a different coupon.
+                            </small>
+                          </div>
+                        )}
                       </div>
                     )}
                     
-                    <p style={{ fontSize: '13px', color: '#666', marginTop: '5px' }}>
-                      Discount codes may have minimum order requirements
+                    <p style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
+                      ℹ️ Some coupons require a minimum order value or may be limited to certain products.
                     </p>
                 </div>
                   

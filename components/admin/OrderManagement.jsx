@@ -240,7 +240,8 @@ const OrderManagement = () => {
           const newTrackingInfo = {
             status: 'Created',
             success: true,
-            merchantTxnId: payment.merchantTxnId, 
+            merchantTxnId: payment.merchantTxnId,
+            gatewayReferenceNo: payment.gatewayReferenceNo,
             shipmentTrackingNumber: shipmentData.shipmentTrackingNumber,
             trackingUrl: shipmentData.trackingUrl,
             pickupConfirmationNumber: shipmentData.pickupConfirmationNumber,

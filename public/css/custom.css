@@ -322,3 +322,14 @@
   will-change: transform;
   transform: translateZ(0);
 } 
+
+/* Custom discount icon */
+.icon.custom-discount-icon {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  background-image: url('/discount-icon.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}

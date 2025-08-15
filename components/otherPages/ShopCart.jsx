@@ -396,13 +396,13 @@ export default function ShopCart() {
                       ))}
                     </tbody>
                   </table>
-                  <div className="ip-discount-code">
+                  {/* <div className="ip-discount-code">
                     <input type="text" placeholder="Add voucher discount" />
                     <button className="tf-btn">
                       <span className="text">Apply Code</span>
                     </button>
-                  </div>
-                  <div className="group-discount">
+                  </div> */}
+                  {/* <div className="group-discount">
                     {discounts.map((item, index) => (
                       <div
                         key={index}
@@ -432,7 +432,7 @@ export default function ShopCart() {
                         </div>
                       </div>
                     ))}
-                  </div>
+                  </div> */}
                 </form>
               ) : (
                 <div className="empty-cart text-center">

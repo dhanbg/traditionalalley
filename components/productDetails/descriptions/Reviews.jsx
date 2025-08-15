@@ -40,7 +40,7 @@ export default function Reviews({ product }) {
           setAverageRating(response.data.length > 0 ? (totalRating / response.data.length).toFixed(1) : 0);
         }
       } catch (error) {
-        console.error("Error fetching reviews:", error);
+        // Error fetching reviews - silently handle
       } finally {
         setLoading(false);
       }

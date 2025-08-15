@@ -128,17 +128,7 @@ export default function ProductsCards6({ product }) {
                 ? "Already Added"
                 : "Add To cart"}
             </a>
-            <a
-              onClick={() => addToWishlist(safeProduct.id)}
-              className="box-icon wishlist btn-icon-action"
-            >
-              <span className="icon icon-heart" />
-              <span className="tooltip">
-                {isAddedtoWishlist(safeProduct.id)
-                  ? "Already Wishlished"
-                  : "Wishlist"}
-              </span>
-            </a>
+
             <a
               href="#compare"
               data-bs-toggle="offcanvas"
