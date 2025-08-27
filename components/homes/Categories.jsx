@@ -91,8 +91,15 @@ export default function Collections() {
     };
   }, [categories]);
 
+  // Use negative margins to pull Categories closer to Hero - aggressive fix
+  const heroGapStyle = {
+    marginTop: isMobile ? '-20px' : '0px', // Pull up on mobile to reduce gap
+    paddingTop: isMobile ? '30px' : '80px', // Compensate with smaller padding
+    paddingBottom: isMobile ? '60px' : '80px'
+  };
+
   return (
-    <section className="flat-spacing">
+    <section className="flat-spacing hero-categories-gap" style={heroGapStyle}>
       <div className={`container ${isMobile ? "px-0" : ""}`}>
         <div className="heading-section-2 wow fadeInUp text-center">
           <h3 className="heading">Explore Categories</h3>
@@ -550,6 +557,43 @@ export default function Collections() {
             background-position: 0% 50%;
           }
         }
+        /* IMPORTANT: Override global flat-spacing with higher specificity */
+        section.flat-spacing.hero-categories-gap {
+          margin-top: 0 !important;
+        }
+        
+        /* Desktop: maintain original spacing */
+        @media (min-width: 769px) {
+          section.flat-spacing.hero-categories-gap {
+            padding-top: 80px !important;
+            padding-bottom: 80px !important;
+          }
+        }
+        
+        /* Mobile: override global styles with !important */
+        @media (max-width: 768px) {
+          section.flat-spacing.hero-categories-gap {
+            /* Force consistent 50px spacing on ALL mobile devices */
+            padding-top: 50px !important;
+            padding-bottom: 60px !important;
+            min-height: auto !important;
+          }
+        }
+        
+        /* Additional mobile overrides to be absolutely sure */
+        @media screen and (max-width: 768px) {
+          .hero-categories-gap.flat-spacing {
+            padding-top: 50px !important;
+          }
+        }
+        
+        /* Force for very specific mobile breakpoints */
+        @media only screen and (max-device-width: 768px) {
+          section.hero-categories-gap {
+            padding-top: 50px !important;
+          }
+        }
+        
         @media (max-width: 767px) {
           .mobile-categories-container :global(.swiper) {
             width: 100%;

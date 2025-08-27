@@ -77,10 +77,15 @@ const ShippingAnalytics = ({ tabId, dateFilter }) => {
   const [selectedRate, setSelectedRate] = useState(null);
   const [dhlLoading, setDhlLoading] = useState(false);
   const [dhlError, setDhlError] = useState('');
-  const [countries, setCountries] = useState([]);
   const [cities, setCities] = useState([]);
   const [loadingCities, setLoadingCities] = useState(false);
   const [isCustomCity, setIsCustomCity] = useState(false);
+  const [csvLoading, setCsvLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [importProgress, setImportProgress] = useState(0);
+  const [showInternationalRates, setShowInternationalRates] = useState(false);
 
   const getAutomaticShippingDate = () => {
     const now = new Date();
@@ -110,22 +115,10 @@ const ShippingAnalytics = ({ tabId, dateFilter }) => {
           }
         }
       }));
-      loadCountries();
     }
   }, [showDHLForm]);
 
-  const loadCountries = async () => {
-    try {
-      const response = await axios.get('/api/countries');
-      if (response.data.success) {
-        const sortedCountries = [...response.data.data].sort((a, b) => a.name.localeCompare(b.name));
-        setCountries(sortedCountries);
-      }
-    } catch (error) {
-      console.error('Failed to load countries:', error);
-      setDhlError('Failed to load countries list');
-    }
-  };
+
 
   const loadCities = async (countryCode) => {
     try {
@@ -247,6 +240,512 @@ const ShippingAnalytics = ({ tabId, dateFilter }) => {
     document.body.removeChild(link);
   };
 
+  // CSV Export Functions
+  const fetchShippingRates = async () => {
+    try {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/shipping-rates?populate=*&pagination[pageSize]=1000`, {
+        headers: {
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`
+        }
+      });
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Error fetching shipping rates:', error);
+      throw error;
+    }
+  };
+
+  const convertToCSV = (data) => {
+    if (!data || data.length === 0) return '';
+    
+    const headers = [
+         'Country Code',
+         'Country Name', 
+         'Service Type',
+         'Weight Limit (kg)',
+         'From 0 to 0.5 kg (NPR)',
+         'From 0.5 to 1 kg (NPR)',
+         'From 1 to 1.5 kg (NPR)',
+         'From 1.5 to 2 kg (NPR)',
+         'From 2 to 2.5 kg (NPR)',
+         'From 2.5 to 3 kg (NPR)',
+         'From 3 to 3.5 kg (NPR)',
+         'From 3.5 to 4 kg (NPR)',
+         'From 4 to 4.5 kg (NPR)',
+         'From 4.5 to 5 kg (NPR)',
+         'From 5 to 5.5 kg (NPR)',
+         'From 5.5 to 6 kg (NPR)',
+         'From 6 to 6.5 kg (NPR)',
+         'From 6.5 to 7 kg (NPR)',
+         'From 7 to 7.5 kg (NPR)',
+         'From 7.5 to 8 kg (NPR)',
+         'From 8 to 8.5 kg (NPR)',
+         'From 8.5 to 9 kg (NPR)',
+         'From 9 to 9.5 kg (NPR)',
+         'From 9.5 to 10 kg (NPR)',
+         'From 10 to 20 kg (NPR)',
+         'From 20 to 30 kg (NPR)',
+         'From 30 to 50 kg (NPR)',
+         'From 50 to 100 kg (NPR)',
+         'Effective From'
+       ];
+    
+    const csvContent = [headers.join(',')];
+    
+    data.forEach(rate => {
+       const row = [
+           rate.country_code || '',
+           rate.country_name || '',
+           rate.service_type || '',
+           rate.weight_limit || '',
+           rate.from_0_to_0_5 || '',
+           rate.from_0_5_to_1 || '',
+           rate.from_1_to_1_5 || '',
+           rate.from_1_5_to_2 || '',
+           rate.from_2_to_2_5 || '',
+           rate.from_2_5_to_3 || '',
+           rate.from_3_to_3_5 || '',
+           rate.from_3_5_to_4 || '',
+           rate.from_4_to_4_5 || '',
+           rate.from_4_5_to_5 || '',
+           rate.from_5_to_5_5 || '',
+           rate.from_5_5_to_6 || '',
+           rate.from_6_to_6_5 || '',
+           rate.from_6_5_to_7 || '',
+           rate.from_7_to_7_5 || '',
+           rate.from_7_5_to_8 || '',
+           rate.from_8_to_8_5 || '',
+           rate.from_8_5_to_9 || '',
+           rate.from_9_to_9_5 || '',
+           rate.from_9_5_to_10 || '',
+           rate.from_10_to_20 || '',
+           rate.from_20_to_30 || '',
+           rate.from_30_to_50 || '',
+           rate.from_50_to_100 || '',
+           rate.effective_from || ''
+         ];
+       csvContent.push(row.join(','));
+     });
+    
+    return csvContent.join('\n');
+  };
+
+  const downloadCSV = (csvContent, filename) => {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleExportCSV = async () => {
+    setCsvLoading(true);
+    try {
+      const shippingRates = await fetchShippingRates();
+      const csvContent = convertToCSV(shippingRates);
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `shipping-rates-${timestamp}.csv`;
+      downloadCSV(csvContent, filename);
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      alert('Failed to export shipping rates. Please try again.');
+    } finally {
+      setCsvLoading(false);
+    }
+  };
+
+  const deleteAllShippingRates = async () => {
+    try {
+      console.log('Starting delete process...');
+      console.log('API URL:', process.env.NEXT_PUBLIC_API_URL);
+      console.log('Token exists:', !!process.env.NEXT_PUBLIC_STRAPI_API_TOKEN);
+      
+      // First fetch all shipping rates to get their IDs
+      const shippingRates = await fetchShippingRates();
+      console.log('Found shipping rates to delete:', shippingRates.length);
+      console.log('Sample rate structure:', shippingRates[0]);
+      
+      if (shippingRates.length === 0) {
+        console.log('No shipping rates to delete');
+        return 0;
+      }
+      
+      // Try bulk delete first
+      try {
+        console.log('Attempting bulk delete for all', shippingRates.length, 'rates...');
+        const documentIds = shippingRates.map(rate => rate.documentId);
+        
+        const bulkResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/shipping-rates/bulk-delete`, {
+          documentIds
+        }, {
+          headers: {
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('Bulk delete completed successfully:', bulkResponse.data);
+        return bulkResponse.data.deletedCount;
+        
+      } catch (bulkError) {
+        console.warn('Bulk delete failed, falling back to concurrent individual deletes:', bulkError.message);
+        
+        // Fallback to concurrent individual deletes with batching for better performance
+        const BATCH_SIZE = 15; // Process 15 items concurrently for optimal performance
+        const errors = [];
+        let deletedCount = 0;
+        
+        console.log(`Processing ${shippingRates.length} rates in batches of ${BATCH_SIZE}...`);
+        
+        for (let i = 0; i < shippingRates.length; i += BATCH_SIZE) {
+          const batch = shippingRates.slice(i, i + BATCH_SIZE);
+          const batchNumber = Math.floor(i/BATCH_SIZE) + 1;
+          const totalBatches = Math.ceil(shippingRates.length/BATCH_SIZE);
+          
+          console.log(`Processing batch ${batchNumber}/${totalBatches} (${batch.length} items)`);
+          
+          const batchPromises = batch.map(async (rate, index) => {
+            try {
+              const response = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/shipping-rates/${rate.documentId}`, {
+                headers: {
+                  'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`
+                }
+              });
+              console.log(`✓ Deleted rate ${i + index + 1}/${shippingRates.length}: ${rate.documentId}`);
+              return { success: true, documentId: rate.documentId };
+            } catch (error) {
+              console.error(`✗ Failed to delete rate ${i + index + 1}/${shippingRates.length}: ${rate.documentId}`, error.response?.data || error.message);
+              return {
+                success: false,
+                documentId: rate.documentId,
+                error: error.response?.data || error.message
+              };
+            }
+          });
+          
+          const batchResults = await Promise.all(batchPromises);
+          
+          batchResults.forEach(result => {
+            if (result.success) {
+              deletedCount++;
+            } else {
+              errors.push({
+                documentId: result.documentId,
+                error: result.error
+              });
+            }
+          });
+          
+          console.log(`Batch ${batchNumber} completed. Progress: ${deletedCount + errors.length}/${shippingRates.length}`);
+        }
+        
+        console.log(`Concurrent delete process completed. Deleted: ${deletedCount}, Errors: ${errors.length}`);
+        if (errors.length > 0) {
+          console.error('Delete errors:', errors);
+        }
+        
+        return deletedCount;
+      }
+    } catch (error) {
+      console.error('Error in deleteAllShippingRates:', error);
+      console.error('Error details:', error.response?.data);
+      throw error;
+    }
+  };
+
+  const handleDeleteAllRates = async () => {
+    const confirmed = window.confirm(
+      '⚠️ WARNING: This will permanently delete ALL shipping rates!\n\nThis action cannot be undone. Are you sure you want to continue?'
+    );
+    
+    if (!confirmed) return;
+    
+    setDeleteLoading(true);
+    try {
+      console.log('🗑️ Starting delete all rates process...');
+      const deletedCount = await deleteAllShippingRates();
+      console.log(`✅ Delete process completed. Deleted ${deletedCount} rates.`);
+      alert(`✅ Successfully deleted ${deletedCount} shipping rates.`);
+    } catch (error) {
+      console.error('Error deleting all shipping rates:', error);
+      alert('❌ Failed to delete shipping rates. Please try again.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const parseCSV = (csvText) => {
+    const lines = csvText.trim().split('\n');
+    if (lines.length < 2) {
+      throw new Error('CSV file must contain at least a header row and one data row');
+    }
+
+    const headers = lines[0].split(',').map(header => header.trim().replace(/"/g, ''));
+    const expectedHeaders = [
+      'Country Code', 'Country Name', 'Service Type', 'Weight Limit (kg)',
+      'From 0 to 0.5 kg (NPR)', 'From 0.5 to 1 kg (NPR)', 'From 1 to 1.5 kg (NPR)',
+      'From 1.5 to 2 kg (NPR)', 'From 2 to 2.5 kg (NPR)', 'From 2.5 to 3 kg (NPR)',
+      'From 3 to 3.5 kg (NPR)', 'From 3.5 to 4 kg (NPR)', 'From 4 to 4.5 kg (NPR)',
+      'From 4.5 to 5 kg (NPR)', 'From 5 to 5.5 kg (NPR)', 'From 5.5 to 6 kg (NPR)',
+      'From 6 to 6.5 kg (NPR)', 'From 6.5 to 7 kg (NPR)', 'From 7 to 7.5 kg (NPR)',
+      'From 7.5 to 8 kg (NPR)', 'From 8 to 8.5 kg (NPR)', 'From 8.5 to 9 kg (NPR)',
+      'From 9 to 9.5 kg (NPR)', 'From 9.5 to 10 kg (NPR)', 'From 10 to 20 kg (NPR)',
+      'From 20 to 30 kg (NPR)', 'From 30 to 50 kg (NPR)', 'From 50 to 100 kg (NPR)',
+      'Effective From'
+    ];
+    
+    // Validate required headers (first 4 are mandatory)
+    const requiredHeaders = expectedHeaders.slice(0, 4);
+    const missingHeaders = requiredHeaders.filter(expected => !headers.includes(expected));
+    if (missingHeaders.length > 0) {
+      throw new Error(`Missing required headers: ${missingHeaders.join(', ')}`);
+    }
+
+    const shippingRates = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(value => value.trim().replace(/"/g, ''));
+      
+      if (values.length !== headers.length) {
+        console.warn(`Skipping row ${i + 1}: Column count mismatch`);
+        continue;
+      }
+
+      const rate = {};
+      headers.forEach((header, index) => {
+        switch (header) {
+          case 'Country Code':
+            rate.country_code = values[index];
+            break;
+          case 'Country Name':
+            rate.country_name = values[index];
+            break;
+          case 'Service Type':
+            rate.service_type = values[index];
+            break;
+          case 'Weight Limit (kg)':
+            rate.weight_limit = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 0 to 0.5 kg (NPR)':
+            rate.from_0_to_0_5 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 0.5 to 1 kg (NPR)':
+            rate.from_0_5_to_1 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 1 to 1.5 kg (NPR)':
+            rate.from_1_to_1_5 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 1.5 to 2 kg (NPR)':
+            rate.from_1_5_to_2 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 2 to 2.5 kg (NPR)':
+            rate.from_2_to_2_5 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 2.5 to 3 kg (NPR)':
+            rate.from_2_5_to_3 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 3 to 3.5 kg (NPR)':
+            rate.from_3_to_3_5 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 3.5 to 4 kg (NPR)':
+            rate.from_3_5_to_4 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 4 to 4.5 kg (NPR)':
+            rate.from_4_to_4_5 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 4.5 to 5 kg (NPR)':
+            rate.from_4_5_to_5 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 5 to 5.5 kg (NPR)':
+            rate.from_5_to_5_5 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 5.5 to 6 kg (NPR)':
+            rate.from_5_5_to_6 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 6 to 6.5 kg (NPR)':
+            rate.from_6_to_6_5 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 6.5 to 7 kg (NPR)':
+            rate.from_6_5_to_7 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 7 to 7.5 kg (NPR)':
+            rate.from_7_to_7_5 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 7.5 to 8 kg (NPR)':
+            rate.from_7_5_to_8 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 8 to 8.5 kg (NPR)':
+            rate.from_8_to_8_5 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 8.5 to 9 kg (NPR)':
+            rate.from_8_5_to_9 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 9 to 9.5 kg (NPR)':
+            rate.from_9_to_9_5 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 9.5 to 10 kg (NPR)':
+            rate.from_9_5_to_10 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 10 to 20 kg (NPR)':
+            rate.from_10_to_20 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 20 to 30 kg (NPR)':
+            rate.from_20_to_30 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 30 to 50 kg (NPR)':
+            rate.from_30_to_50 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'From 50 to 100 kg (NPR)':
+            rate.from_50_to_100 = values[index].trim() === '' ? null : (parseFloat(values[index]) || null);
+            break;
+          case 'Effective From':
+            rate.effective_from = values[index] || null;
+            break;
+        }
+      });
+
+      // Validate required fields - only check for basic required fields
+      // Allow entries with partial rate data (some empty cells are OK)
+      if (rate.country_code && rate.country_name && rate.service_type) {
+        // Clean up the rate object - remove undefined fields but keep null values for empty cells
+        const cleanedRate = {};
+        Object.keys(rate).forEach(key => {
+          if (rate[key] !== undefined) {
+            cleanedRate[key] = rate[key];
+          }
+        });
+        shippingRates.push(cleanedRate);
+      } else {
+        console.warn(`Skipping row ${i + 1}: Missing required basic data (country_code, country_name, or service_type)`);
+      }
+    }
+
+    return shippingRates;
+  };
+
+  const bulkImportShippingRates = async (shippingRates) => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+    
+    if (!token) {
+      throw new Error('API token not found');
+    }
+
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+
+    for (let i = 0; i < shippingRates.length; i++) {
+      const rate = shippingRates[i];
+      setImportProgress(Math.round(((i + 1) / shippingRates.length) * 100));
+      
+      try {
+        const response = await fetch(`${apiUrl}/api/shipping-rates`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            data: rate
+          }),
+        });
+
+        if (response.ok) {
+          successCount++;
+          console.log(`Successfully imported rate ${i + 1}:`, rate);
+        } else {
+          errorCount++;
+          const errorData = await response.text();
+          console.error(`Failed to import rate ${i + 1}:`, errorData);
+          errors.push(`Row ${i + 1}: ${errorData}`);
+        }
+      } catch (error) {
+        errorCount++;
+        console.error(`Error importing rate ${i + 1}:`, error);
+        errors.push(`Row ${i + 1}: ${error.message}`);
+      }
+
+      // Small delay to prevent overwhelming the API
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    return { successCount, errorCount, errors };
+  };
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file && file.type === 'text/csv') {
+      setSelectedFile(file);
+    } else {
+      alert('Please select a valid CSV file.');
+      event.target.value = '';
+    }
+  };
+
+  const handleImportCSV = async () => {
+    if (!selectedFile) {
+      alert('Please select a CSV file first.');
+      return;
+    }
+
+    setImportLoading(true);
+    setImportProgress(0);
+    
+    try {
+      const csvText = await selectedFile.text();
+      const shippingRates = parseCSV(csvText);
+      
+      if (shippingRates.length === 0) {
+        alert('No valid shipping rates found in the CSV file.');
+        return;
+      }
+
+      const confirmed = window.confirm(
+        `Found ${shippingRates.length} shipping rates to import.\n\nDo you want to proceed with the import?`
+      );
+      
+      if (!confirmed) return;
+
+      const result = await bulkImportShippingRates(shippingRates);
+      
+      let message = `Import completed!\n\n`;
+      message += `✅ Successfully imported: ${result.successCount} rates\n`;
+      if (result.errorCount > 0) {
+        message += `❌ Failed to import: ${result.errorCount} rates\n\n`;
+        if (result.errors.length > 0) {
+          message += `Errors:\n${result.errors.slice(0, 5).join('\n')}`;
+          if (result.errors.length > 5) {
+            message += `\n... and ${result.errors.length - 5} more errors`;
+          }
+        }
+      }
+      
+      alert(message);
+      
+      // Refresh the shipping data if any imports were successful
+      if (result.successCount > 0) {
+        await fetchShippingData();
+      }
+      
+    } catch (error) {
+      console.error('Error importing CSV:', error);
+      alert(`❌ Import failed: ${error.message}`);
+    } finally {
+      setImportLoading(false);
+      setImportProgress(0);
+      setSelectedFile(null);
+      // Reset file input
+      const fileInput = document.getElementById('csv-file-input');
+      if (fileInput) fileInput.value = '';
+    }
+  };
+
   const fetchShippingData = useCallback(async () => {
     if (typeof window === 'undefined') throw new Error('Component must run on client side');
       const data = await fetchAnalyticsData(['userBags', 'carts']);
@@ -343,6 +842,20 @@ const ShippingAnalytics = ({ tabId, dateFilter }) => {
               ✅ Address Validation • 🌍 193 Countries • 🏙️ 1,500+ Cities
             </div>
             <button
+              onClick={() => setShowInternationalRates(!showInternationalRates)}
+              className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center space-x-2 ${
+                showInternationalRates 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
+              }`}
+            >
+              <span>🌍</span>
+              <span>International Rates</span>
+              <span className={`transform transition-transform ${
+                showInternationalRates ? 'rotate-180' : ''
+              }`}>▼</span>
+            </button>
+            <button
               onClick={() => setShowDHLForm(!showDHLForm)}
               className={`px-6 py-3 rounded-lg font-medium transition-all ${
                 showDHLForm 
@@ -355,6 +868,84 @@ const ShippingAnalytics = ({ tabId, dateFilter }) => {
           </div>
         </div>
       </div>
+
+      {/* International Rates Section */}
+      {showInternationalRates && (
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6 border-l-4 border-blue-500">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <button
+              onClick={handleExportCSV}
+              disabled={csvLoading}
+              className="px-4 py-3 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 disabled:bg-green-300 disabled:cursor-not-allowed transition-all flex items-center justify-center space-x-2"
+            >
+              {csvLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Exporting...</span>
+                </>
+              ) : (
+                <>
+                  <span>📊</span>
+                  <span>Export Shipping Rates CSV</span>
+                </>
+              )}
+            </button>
+            
+            <button
+              onClick={handleDeleteAllRates}
+              disabled={deleteLoading}
+              className="px-4 py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 disabled:bg-red-300 disabled:cursor-not-allowed transition-all flex items-center justify-center space-x-2"
+            >
+              {deleteLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <>
+                  <span>🗑️</span>
+                  <span>Delete All Rates</span>
+                </>
+              )}
+            </button>
+            
+            <div className="flex flex-col space-y-2">
+              <input
+                id="csv-file-input"
+                type="file"
+                accept=".csv"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <label
+                htmlFor="csv-file-input"
+                className="px-4 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 cursor-pointer transition-all flex items-center justify-center space-x-2"
+              >
+                <span>📁</span>
+                <span>{selectedFile ? (selectedFile.name.length > 15 ? selectedFile.name.substring(0, 15) + '...' : selectedFile.name) : 'Select CSV File'}</span>
+              </label>
+            </div>
+            
+            <button
+              onClick={handleImportCSV}
+              disabled={importLoading || !selectedFile}
+              className="px-4 py-3 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 disabled:bg-purple-300 disabled:cursor-not-allowed transition-all flex items-center justify-center space-x-2"
+            >
+              {importLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Importing... {importProgress}%</span>
+                </>
+              ) : (
+                <>
+                  <span>📥</span>
+                  <span>Import CSV</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* DHL Shipping Form */}
       {showDHLForm && (
@@ -954,4 +1545,4 @@ const ShippingAnalytics = ({ tabId, dateFilter }) => {
   );
 };
 
-export default ShippingAnalytics; 
+export default ShippingAnalytics;

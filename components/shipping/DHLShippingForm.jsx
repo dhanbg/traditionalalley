@@ -43,6 +43,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
   const [formData, setFormData] = useState({
     plannedShippingDate: '',
     productCode: 'P',
+    serviceType: 'Economy',
     isCustomsDeclarable: true,
     declaredValue: 0,
     declaredValueCurrency: 'USD',
@@ -72,12 +73,19 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
   const [selectedRate, setSelectedRate] = useState(null);
   const [dhlLoading, setDhlLoading] = useState(false);
   const [dhlError, setDhlError] = useState('');
-  const [countries, setCountries] = useState([]);
-  const [cities, setCities] = useState([]);
-  const [loadingCities, setLoadingCities] = useState(false);
-  const [isCustomCity, setIsCustomCity] = useState(false);
+
+  // Shipping rates from /api/shipping-rates endpoint
+  const [shippingRates, setShippingRates] = useState([]);
+  const [loadingShippingRates, setLoadingShippingRates] = useState(false);
+  const [shippingRatesError, setShippingRatesError] = useState('');
+
   const [branches, setBranches] = useState([]);
   const [loadingBranches, setLoadingBranches] = useState(false);
+  const [countries, setCountries] = useState([]);
+  const [loadingCountries, setLoadingCountries] = useState(false);
+  const [countriesError, setCountriesError] = useState('');
+  const [availableServiceTypes, setAvailableServiceTypes] = useState(['Economy', 'Express']);
+  const [loadingServiceTypes, setLoadingServiceTypes] = useState(false);
 
   // Responsive helper
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
@@ -108,9 +116,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
           date: invoiceDate,
         }
       }
-    }));
-    loadCountries();
-  }, []);
+    }));  }, []);
 
   useEffect(() => {
     if (isCheckoutMode && typeof onReceiverChange === 'function') {
@@ -119,11 +125,11 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         companyName: formData.recipient.companyName || "",
         email: formData.recipient.email || "",
         phone: formData.recipient.phone || "",
-        countryCode: formData.recipient.countryCode || "",
+        countryCode: getActualCountryCode(formData.recipient.countryCode) || "",
         address: {
           addressLine1: formData.destinationAddress.addressLine1 || "",
           cityName: formData.destinationAddress.cityName || "",
-          countryCode: formData.destinationAddress.countryCode || "",
+          countryCode: getActualCountryCode(formData.destinationAddress.countryCode) || "",
           postalCode: formData.destinationAddress.postalCode || ""
         }
       });
@@ -142,53 +148,200 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
   }, [initialPackages]);
 
   useEffect(() => {
-    if (formData.destinationAddress.countryCode === 'NP') {
+    const actualCountryCode = getActualCountryCode(formData.destinationAddress.countryCode);
+    if (actualCountryCode === 'NP') {
       loadBranches();
     }
   }, [formData.destinationAddress.countryCode]);
 
-  const loadCountries = async () => {
-    try {
-      const response = await axios.get('/api/countries');
-      if (response.data.success) {
-        const sortedCountries = [...response.data.data].sort((a, b) => a.name.localeCompare(b.name));
-        setCountries(sortedCountries);
-      }
-    } catch (error) {
-      console.error('Failed to load countries:', error);
-      setDhlError('Failed to load countries list');
-    }
-  };
+  useEffect(() => {
+    loadCountries();
+  }, []);
 
-  const loadCities = async (countryCode) => {
-    try {
-      setLoadingCities(true);
-      const response = await axios.get(`/api/cities?country=${countryCode}`);
-      if (response.data.success) setCities(response.data.data);
-    } catch (error) {
-      console.error('Failed to load cities:', error);
-    } finally {
-      setLoadingCities(false);
-    }
-  };
+
+
+
 
   const loadBranches = async () => {
     try {
       setLoadingBranches(true);
-      const response = await axios.get('/api/ncm/branches');
+      const response = await axios.get('/api/ncm/branches', {
+        timeout: 15000 // 15 second timeout
+      });
       if (response.data.success) {
         setBranches(response.data.branches);
+      } else {
+        console.warn('NCM branches API returned unsuccessful response:', response.data.message);
+        // Set empty branches array as fallback
+        setBranches([]);
       }
     } catch (error) {
       console.error('Failed to load branches:', error);
+      // Set empty branches array as fallback
+      setBranches([]);
+      
+      // Don't show error to user for branch loading failures
+      // as this is not critical for the main functionality
     } finally {
       setLoadingBranches(false);
     }
   };
 
+  // API Configuration
+  const API_BASE_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
+  const API_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+
+  // Helper function to extract actual country code from unique identifier
+  const getActualCountryCode = (uniqueId) => {
+    if (!uniqueId) return '';
+    // If it's already a country code (for backward compatibility)
+    if (uniqueId.length === 2 && !uniqueId.includes('-')) {
+      return uniqueId;
+    }
+    // Extract country code from unique identifier (format: "ES-spain" or "ES-canary-island")
+    return uniqueId.split('-')[0];
+  };
+
+  const loadCountries = async () => {
+    try {
+      setLoadingCountries(true);
+      setCountriesError('');
+      
+      // First, get the total count to determine number of pages
+      const initialResponse = await fetch(`${API_BASE_URL}/api/shipping-rates?populate=*&pagination[pageSize]=25`, {
+        headers: {
+          'Authorization': `Bearer ${API_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!initialResponse.ok) {
+        throw new Error(`HTTP error! status: ${initialResponse.status}`);
+      }
+      
+      const initialData = await initialResponse.json();
+      const totalPages = initialData.meta.pagination.pageCount;
+      
+      // Fetch all pages
+      const allCountries = new Set();
+      
+      for (let page = 1; page <= totalPages; page++) {
+        const response = await fetch(`${API_BASE_URL}/api/shipping-rates?populate=*&pagination[page]=${page}&pagination[pageSize]=25`, {
+          headers: {
+            'Authorization': `Bearer ${API_TOKEN}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Extract unique countries with unique identifiers
+        data.data.forEach(item => {
+          if (item.country_name && item.country_code) {
+            allCountries.add(JSON.stringify({
+              name: item.country_name,
+              code: item.country_code,
+              uniqueId: `${item.country_code}-${item.country_name.replace(/\s+/g, '-').toLowerCase()}`
+            }));
+          }
+        });
+      }
+      
+      // Convert back to array and sort
+      const countriesArray = Array.from(allCountries)
+        .map(item => JSON.parse(item))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      
+      // Add Nepal as a hardcoded option if not already present
+      const nepalExists = countriesArray.some(country => country.code === 'NP');
+      if (!nepalExists) {
+        countriesArray.push({
+          name: 'Nepal',
+          code: 'NP',
+          uniqueId: 'NP-nepal'
+        });
+        // Re-sort after adding Nepal
+        countriesArray.sort((a, b) => a.name.localeCompare(b.name));
+      }
+      
+      setCountries(countriesArray);
+    } catch (error) {
+      console.error('Failed to load countries:', error);
+      setCountriesError('Failed to load countries. Please refresh the page to try again.');
+    } finally {
+      setLoadingCountries(false);
+    }
+  };
+
+  const loadServiceTypes = async (countryCode, uniqueId = null) => {
+    if (!countryCode) {
+      setAvailableServiceTypes(['Economy', 'Express']);
+      return;
+    }
+
+    try {
+      setLoadingServiceTypes(true);
+      
+      const response = await fetch(`${API_BASE_URL}/api/shipping-rates?filters[country_code][$eq]=${countryCode}&populate=*`, {
+        headers: {
+          'Authorization': `Bearer ${API_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Extract unique service types for this country
+      const serviceTypes = new Set();
+      data.data.forEach(item => {
+        if (item.service_type) {
+          serviceTypes.add(item.service_type);
+        }
+      });
+      
+      let availableTypes = Array.from(serviceTypes);
+      
+      // Special handling for Canary Islands - only Express service available
+      if (uniqueId && uniqueId.includes('canary-island')) {
+        availableTypes = availableTypes.filter(type => 
+          type.toLowerCase().includes('express')
+        );
+        // Ensure at least Express is available for Canary Islands
+        if (availableTypes.length === 0) {
+          availableTypes = ['Express'];
+        }
+      }
+      
+      setAvailableServiceTypes(availableTypes);
+      
+      // Auto-select service type if only one is available
+      if (availableTypes.length === 1) {
+        handleInputChange('', 'serviceType', availableTypes[0]);
+      } else if (availableTypes.length > 1 && !availableTypes.includes(formData.serviceType)) {
+        // Reset to first available if current selection is not available
+        handleInputChange('', 'serviceType', availableTypes[0]);
+      }
+      
+    } catch (error) {
+      console.error('Failed to load service types:', error);
+      // Fallback to both options if API fails
+      setAvailableServiceTypes(['Economy', 'Express']);
+    } finally {
+      setLoadingServiceTypes(false);
+    }
+  };
+
   const getNCMRates = async () => {
     // For NCM, we need pickup branch (origin) and destination branch
-    const pickupBranch = 'TINKUNE'; // Default pickup branch - you may want to make this configurable
+    const pickupBranch = 'SATDOBATO'; // Default pickup branch - you may want to make this configurable
     const destinationBranch = formData.destinationAddress.cityName; // This contains the selected branch name
     
     try {
@@ -232,6 +385,25 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         };
         
         setRates(ncmRate);
+        
+        // Calculate total weight for display
+        const totalWeight = formData.packages.reduce((total, pkg) => {
+          return total + (parseFloat(pkg.weight) || 0) * (parseInt(pkg.quantity) || 1);
+        }, 0);
+        
+        // Format NCM rate for shipping rates display (to show in "Available Shipping Rates" section)
+        const ncmShippingRate = {
+          service_type: `${pickupBranch} ${destinationBranch}`,
+          country_name: '',
+          country_code: 'NP',
+          weight_limit: 25, // NCM weight limit as mentioned by user
+          base_rate: response.data.charge,
+          additional_rate: 0,
+          weight_threshold: totalWeight,
+          isNCM: true
+        };
+        
+        setShippingRates([ncmShippingRate]);
         
         // Set selected rate for pricing display
         setSelectedRate({
@@ -281,6 +453,153 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
     }
   };
 
+  // Function to fetch shipping rates from /api/shipping-rates endpoint
+  const fetchShippingRates = async (countryCode, serviceType, totalWeight) => {
+    try {
+      setLoadingShippingRates(true);
+      setShippingRatesError('');
+      
+      console.log('Fetching shipping rates:', { countryCode, serviceType, totalWeight });
+      
+      const response = await axios.get('/api/shipping-rates', {
+        params: {
+          populate: '*'
+        }
+      });
+      
+      if (response.data && response.data.data) {
+        // Filter rates based on country code and service type
+        const filteredRates = response.data.data.filter(rate => {
+          const matchesCountry = rate.country_code === countryCode;
+          const matchesService = rate.service_type.toLowerCase() === serviceType.toLowerCase();
+          // Handle null weight_limit (means no weight restriction)
+          const withinWeightLimit = rate.weight_limit === null || totalWeight <= rate.weight_limit;
+          
+          return matchesCountry && matchesService && withinWeightLimit;
+        });
+        
+        console.log('Filtered shipping rates:', filteredRates);
+        setShippingRates(filteredRates);
+        
+        // Calculate shipping cost based on weight
+        if (filteredRates.length > 0) {
+          const rate = filteredRates[0]; // Use first matching rate
+          const shippingCost = calculateShippingCost(rate, totalWeight);
+          
+          // Notify parent component with calculated rate
+          if (onRateCalculated) {
+            onRateCalculated({
+              price: shippingCost,
+              currency: 'NPR',
+              productName: `${rate.service_type} to ${rate.country_name}`,
+              rateDetails: rate,
+              totalWeight: totalWeight
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching shipping rates - Full Error:', error);
+      console.error('Error fetching shipping rates - Details:', {
+        errorType: typeof error,
+        errorConstructor: error.constructor?.name,
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        config: error.config ? {
+          url: error.config.url,
+          method: error.config.method,
+          params: error.config.params
+        } : null,
+        stack: error.stack,
+        hasResponse: !!error.response,
+        hasRequest: !!error.request,
+        errorKeys: Object.keys(error || {})
+      });
+      setShippingRatesError('Failed to fetch shipping rates');
+    } finally {
+      setLoadingShippingRates(false);
+    }
+  };
+
+  // Function to calculate shipping cost based on weight and rate structure
+  const calculateShippingCost = (rate, weight) => {
+    // Handle NCM rates - they have a flat rate structure
+    if (rate.isNCM) {
+      return rate.base_rate || 0;
+    }
+    
+    // Weight ranges mapping for regular DHL rates
+    const weightRanges = [
+      { min: 0, max: 0.5, field: 'from_0_to_0_5' },
+      { min: 0.5, max: 1, field: 'from_0_5_to_1' },
+      { min: 1, max: 1.5, field: 'from_1_to_1_5' },
+      { min: 1.5, max: 2, field: 'from_1_5_to_2' },
+      { min: 2, max: 2.5, field: 'from_2_to_2_5' },
+      { min: 2.5, max: 3, field: 'from_2_5_to_3' },
+      { min: 3, max: 3.5, field: 'from_3_to_3_5' },
+      { min: 3.5, max: 4, field: 'from_3_5_to_4' },
+      { min: 4, max: 4.5, field: 'from_4_to_4_5' },
+      { min: 4.5, max: 5, field: 'from_4_5_to_5' },
+      { min: 5, max: 5.5, field: 'from_5_to_5_5' },
+      { min: 5.5, max: 6, field: 'from_5_5_to_6' },
+      { min: 6, max: 6.5, field: 'from_6_to_6_5' },
+      { min: 6.5, max: 7, field: 'from_6_5_to_7' },
+      { min: 7, max: 7.5, field: 'from_7_to_7_5' },
+      { min: 7.5, max: 8, field: 'from_7_5_to_8' },
+      { min: 8, max: 8.5, field: 'from_8_to_8_5' },
+      { min: 8.5, max: 9, field: 'from_8_5_to_9' },
+      { min: 9, max: 9.5, field: 'from_9_to_9_5' },
+      { min: 9.5, max: 10, field: 'from_9_5_to_10' }
+    ];
+    
+    // Find the appropriate weight range
+    for (const range of weightRanges) {
+      if (weight > range.min && weight < range.max) {
+        return rate[range.field] || 0;
+      }
+      // Handle exact boundary weights (e.g., 1.5kg should use the higher bracket)
+      if (weight === range.max && range.max !== 10) {
+        // Find the next range for boundary weights
+        const nextRangeIndex = weightRanges.findIndex(r => r.min === range.max);
+        if (nextRangeIndex !== -1) {
+          return rate[weightRanges[nextRangeIndex].field] || 0;
+        }
+      }
+      // Handle exact minimum weights (e.g., 1.0kg should use the 1-1.5kg bracket)
+      if (weight === range.min && range.min > 0) {
+        return rate[range.field] || 0;
+      }
+    }
+    
+    // Handle weight of exactly 0 (use first range)
+    if (weight === 0) {
+      return rate['from_0_to_0_5'] || 0;
+    }
+    
+    // Handle weights above 10kg
+    if (weight === 10) {
+      return rate.from_10_to_20 || 0;
+    } else if (weight > 10 && weight < 20) {
+      return rate.from_10_to_20 || 0;
+    } else if (weight === 20) {
+      return rate.from_20_to_30 || 0;
+    } else if (weight > 20 && weight < 30) {
+      return rate.from_20_to_30 || 0;
+    } else if (weight === 30) {
+      return rate.from_30_to_50 || 0;
+    } else if (weight > 30 && weight < 50) {
+      return rate.from_30_to_50 || 0;
+    } else if (weight === 50) {
+      return rate.from_50_to_100 || 0;
+    } else if (weight > 50 && weight <= 100) {
+      return rate.from_50_to_100 || 0;
+    }
+    
+    return 0; // Default fallback
+  };
+
   const handleInputChange = (section, field, value, index = null) => {
     setFormData(prev => {
       if (section === 'packages' && index !== null) {
@@ -328,70 +647,46 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
   };
 
   const isFormValid = () => {
-    const { destinationAddress, shipper, recipient, packages } = formData;
-    const isNepal = destinationAddress.countryCode === 'NP';
+    const { destinationAddress, serviceType } = formData;
     
-    // For Nepal (NCM), postal code is not required
-    const addressValid = isNepal 
-      ? destinationAddress.countryCode && destinationAddress.cityName && destinationAddress.addressLine1
-      : destinationAddress.countryCode && destinationAddress.cityName && destinationAddress.addressLine1 && destinationAddress.postalCode;
+    // Only check for country, city, and service type (except for Nepal)
+    const countryValid = destinationAddress.countryCode && destinationAddress.countryCode.trim() !== '';
+    const cityValid = destinationAddress.cityName && destinationAddress.cityName.trim() !== '';
+    const actualCountryCode = getActualCountryCode(destinationAddress.countryCode);
+    const serviceTypeValid = actualCountryCode === 'NP' || (serviceType && serviceType.trim() !== '');
     
-    return addressValid &&
-           shipper.fullName && shipper.email && shipper.phone && 
-           recipient.fullName && recipient.email && recipient.phone &&
-           packages.length && packages.every(pkg => pkg.weight && pkg.description && pkg.declaredValue);
+    return countryValid && cityValid && serviceTypeValid;
   };
 
   const getRates = async () => {
-    // Switch between NCM and DHL based on destination country
-    if (formData.destinationAddress.countryCode === 'NP') {
-      return getNCMRates();
-    }
-    
-    // Original DHL logic for non-Nepal destinations
     try {
-      setDhlLoading(true);
-      setDhlError('');
-      console.log('DHL Rate Request Payload:', formData);
-      const response = await axios.post('/api/dhl/rates', formData);
-      setRates(response.data);
+      // Get country code and service type from form
+      const actualCountryCode = getActualCountryCode(formData.destinationAddress.countryCode);
+      const selectedServiceType = formData.serviceType || 'Economy';
       
-      // Store the first rate as selected rate for pricing display
-      if (response.data && response.data.success && response.data.data.products && response.data.data.products.length > 0) {
-        const firstProduct = response.data.data.products[0];
-        const billingPrice = firstProduct.totalPrice.find(p => p.currencyType === 'BILLC');
-        if (billingPrice) {
-          console.log('🔍 DHL Rate Currency Debug:', {
-            currency: billingPrice.priceCurrency,
-            price: billingPrice.price,
-            currencyType: billingPrice.currencyType
-          });
-          setSelectedRate({
-            price: billingPrice.price,
-            currency: billingPrice.priceCurrency
-          });
-          
-          // Notify parent component if callback exists
-          if (onRateCalculated) {
-            onRateCalculated({
-              price: billingPrice.price,
-              currency: billingPrice.priceCurrency,
-              productName: firstProduct.productName,
-              deliveryDate: firstProduct.deliveryCapabilities.estimatedDeliveryDateAndTime,
-              transitDays: firstProduct.deliveryCapabilities.totalTransitDays
-            });
-          }
-        }
-      }
-    } catch (error) {
-      if (error.response) {
-        console.error('DHL Rate Error Response:', error.response.data);
-        setDhlError(error.response.data?.message || error.response.data?.error || 'Failed to get rates');
+      // Calculate total weight from packages
+      const totalWeight = formData.packages.reduce((total, pkg) => {
+        return total + (parseFloat(pkg.weight) || 0) * (parseInt(pkg.quantity) || 1);
+      }, 0);
+      
+      console.log('Getting rates for:', {
+        countryCode: actualCountryCode,
+        serviceType: selectedServiceType,
+        totalWeight: totalWeight
+      });
+      
+      // Check if destination is Nepal - use NCM rates
+      if (actualCountryCode === 'NP') {
+        console.log('Using NCM rates for Nepal delivery');
+        await getNCMRates();
       } else {
-        setDhlError('Failed to get rates');
+        // Use the shipping rates API for international destinations
+        await fetchShippingRates(actualCountryCode, selectedServiceType, totalWeight);
       }
-    } finally {
-      setDhlLoading(false);
+      
+    } catch (error) {
+      console.error('Error in getRates:', error);
+      setDhlError('Failed to get shipping rates');
     }
   };
 
@@ -438,15 +733,22 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
   };
 
   return (
-    <div style={{
-      background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-      padding: '2rem',
-      borderRadius: '1rem',
-      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      border: '1px solid #e2e8f0',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
+    <>
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+      <div style={{
+        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+        padding: '2rem',
+        borderRadius: '1rem',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        border: '1px solid #e2e8f0',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
       {/* Background decorations */}
       <div style={{
         position: 'absolute',
@@ -588,13 +890,16 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
               <select
                 value={formData.destinationAddress.countryCode}
                 onChange={(e) => {
-                  handleInputChange('destinationAddress', 'countryCode', e.target.value);
+                  const selectedUniqueId = e.target.value;
+                  const selectedCountry = countries.find(country => country.uniqueId === selectedUniqueId);
+                  const actualCountryCode = selectedCountry ? selectedCountry.code : selectedUniqueId;
+                  
+                  handleInputChange('destinationAddress', 'countryCode', selectedUniqueId);
                   handleInputChange('destinationAddress', 'cityName', '');
                   handleInputChange('destinationAddress', 'postalCode', '');
-                  setIsCustomCity(false);
-                  const callingCode = countryCallingCodes[e.target.value] || '';
+                  const callingCode = countryCallingCodes[actualCountryCode] || '';
                   handleInputChange('recipient', 'countryCode', callingCode);
-                  if (e.target.value) loadCities(e.target.value);
+                  loadServiceTypes(actualCountryCode, selectedUniqueId);
                 }}
                     style={{
                       width: '100%',
@@ -611,13 +916,78 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                     onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               >
                 <option value="">Select Country</option>
-                {countries.map((country) => (
-                  <option key={country.code} value={country.code}>{country.name}</option>
-                ))}
+                {loadingCountries ? (
+                  <option disabled>Loading countries...</option>
+                ) : (
+                  countries.map((country, index) => (
+                    <option key={`${country.uniqueId}-${index}`} value={country.uniqueId}>
+                      {country.name}
+                    </option>
+                  ))
+                )}
               </select>
+              {countriesError && (
+                <div style={{
+                  color: '#dc2626',
+                  fontSize: '0.875rem',
+                  marginTop: '0.5rem'
+                }}>
+                  {countriesError}
+                </div>
+              )}
             </div>
 
-            {formData.destinationAddress.countryCode === 'NP' ? (
+            {getActualCountryCode(formData.destinationAddress.countryCode) !== 'NP' && (
+              <div>
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                  marginBottom: '0.5rem'
+                }}>
+                  <span style={{ marginRight: '0.5rem' }}>📦</span>
+                  Service Type *
+                </label>
+                <select
+                  value={formData.serviceType}
+                  onChange={(e) => handleInputChange('', 'serviceType', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '1rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '0.75rem',
+                    fontSize: '1rem',
+                    background: 'white',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    transition: 'all 0.2s'
+                  }}
+                  required
+                  disabled={loadingServiceTypes || availableServiceTypes.length === 1}
+                  onFocus={(e) => e.target.style.borderColor = '#eab308'}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                >
+                  {loadingServiceTypes ? (
+                    <option value="">Loading service types...</option>
+                  ) : availableServiceTypes.length === 1 ? (
+                    availableServiceTypes[0] === 'Economy' ? (
+                      <option value="Economy">Economy (Express Not Available) - Auto Selected</option>
+                    ) : (
+                      <option value="Express">Express (Economy Not Available) - Auto Selected</option>
+                    )
+                  ) : (
+                    availableServiceTypes.map((serviceType) => (
+                      <option key={serviceType} value={serviceType}>
+                        {serviceType}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+            )}
+
+            {getActualCountryCode(formData.destinationAddress.countryCode) === 'NP' ? (
               <div>
                 <label style={{
                   display: 'flex',
@@ -667,58 +1037,6 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                   <span style={{ marginRight: '0.5rem' }}>🏙️</span>
                   City *
                 </label>
-                <select
-                  value={isCustomCity ? 'custom' : formData.destinationAddress.cityName}
-                  onChange={(e) => {
-                    if (e.target.value === 'custom') {
-                      setIsCustomCity(true);
-                      handleInputChange('destinationAddress', 'cityName', '');
-                    } else {
-                      setIsCustomCity(false);
-                      const selectedCity = cities.find(city => city.name === e.target.value);
-                      if (selectedCity) {
-                        handleInputChange('destinationAddress', 'cityName', selectedCity.name);
-                        if (selectedCity.postal) {
-                          handleInputChange('destinationAddress', 'postalCode', selectedCity.postal);
-                        }
-                      } else {
-                        handleInputChange('destinationAddress', 'cityName', e.target.value);
-                      }
-                    }
-                  }}
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '0.75rem',
-                    fontSize: '1rem',
-                    background: 'white',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                    transition: 'all 0.2s'
-                  }}
-                  required
-                  disabled={loadingCities}
-                >
-                  <option value="">{loadingCities ? 'Loading cities...' : 'Select City'}</option>
-                  {cities.map((city, index) => (
-                    <option key={index} value={city.name}>
-                      {city.name} {city.postal && `(${city.postal})`}
-                    </option>
-                  ))}
-                  <option value="custom">🏙️ Enter custom city</option>
-                </select>
-              </div>
-            )}
-
-            {isCustomCity && (
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
-                  color: '#374151',
-                  marginBottom: '0.5rem'
-                }}>Custom City Name *</label>
                 <input
                   type="text"
                   placeholder="Enter city name"
@@ -1083,7 +1401,180 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                 <span style={{ fontSize: '1.5rem' }}>📦</span>
                 {dhlLoading ? 'Getting Rates...' : 'Get Shipping Rates'}
           </button>
+          </div>
 
+          {/* Display Shipping Rates */}
+          {shippingRates && shippingRates.length > 0 && (
+            <div style={{
+              marginTop: '2rem',
+              padding: '1.5rem',
+              background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+              borderRadius: '1rem',
+              border: '1px solid #0ea5e9',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                marginBottom: '1rem'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2.5rem',
+                  height: '2.5rem',
+                  background: 'linear-gradient(45deg, #0ea5e9, #0284c7)',
+                  borderRadius: '50%',
+                  fontSize: '1.125rem',
+                  color: 'white'
+                }}>
+                  💰
+                </div>
+                <h3 style={{
+                  fontSize: '1.25rem',
+                  fontWeight: 700,
+                  color: '#0c4a6e',
+                  margin: 0
+                }}>
+                  Available Shipping Rates
+                </h3>
+              </div>
+              
+              {shippingRates.map((rate, index) => {
+                const totalWeight = formData.packages.reduce((total, pkg) => {
+                  return total + (parseFloat(pkg.weight) || 0) * (parseInt(pkg.quantity) || 1);
+                }, 0);
+                const shippingCost = calculateShippingCost(rate, totalWeight);
+                
+                return (
+                  <div key={index} style={{
+                    padding: '1rem',
+                    background: 'white',
+                    borderRadius: '0.75rem',
+                    border: '1px solid #e0f2fe',
+                    marginBottom: index < shippingRates.length - 1 ? '1rem' : '0',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '0.5rem'
+                    }}>
+                      <div>
+                        <h4 style={{
+                          fontSize: '1.125rem',
+                          fontWeight: 600,
+                          color: '#0c4a6e',
+                          margin: '0 0 0.25rem 0'
+                        }}>
+                          {rate.service_type}
+                        </h4>
+                        <p style={{
+                          fontSize: '0.875rem',
+                          color: '#64748b',
+                          margin: 0
+                        }}>
+                          Weight: {totalWeight}kg • Country: {rate.country_code}
+                        </p>
+                      </div>
+                      <div style={{
+                        textAlign: 'right'
+                      }}>
+                        <div style={{
+                          fontSize: '1.5rem',
+                          fontWeight: 700,
+                          color: '#0ea5e9'
+                        }}>
+                          NPR {shippingCost.toLocaleString()}
+                        </div>
+                        <div style={{
+                          fontSize: '0.75rem',
+                          color: '#64748b'
+                        }}>
+                          Weight limit: {rate.weight_limit}kg
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Loading state for shipping rates */}
+          {loadingShippingRates && (
+            <div style={{
+              marginTop: '2rem',
+              padding: '2rem',
+              textAlign: 'center',
+              background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+              borderRadius: '1rem',
+              border: '1px solid #e2e8f0'
+            }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                fontSize: '1.125rem',
+                fontWeight: 600,
+                color: '#475569'
+              }}>
+                <div style={{
+                  width: '1.5rem',
+                  height: '1.5rem',
+                  border: '2px solid #e2e8f0',
+                  borderTop: '2px solid #3b82f6',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+                Fetching shipping rates...
+              </div>
+            </div>
+          )}
+
+          {/* Error state for shipping rates */}
+          {shippingRatesError && (
+            <div style={{
+              marginTop: '2rem',
+              padding: '1rem',
+              background: 'linear-gradient(45deg, #fef2f2, #fee2e2)',
+              border: '1px solid #fecaca',
+              borderRadius: '0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem'
+            }}>
+              <div style={{
+                flexShrink: 0,
+                width: '2rem',
+                height: '2rem',
+                background: '#ef4444',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '0.875rem'
+              }}>
+                ❌
+              </div>
+              <div>
+                <strong style={{ fontWeight: 600, color: '#991b1b' }}>Shipping Rates Error:</strong>
+                <span style={{ color: '#b91c1c', marginLeft: '0.5rem' }}>{shippingRatesError}</span>
+              </div>
+            </div>
+          )}
+
+          <div style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : (window.innerWidth >= 640 ? 'row' : 'column'),
+            gap: isMobile ? '0.75rem' : '1rem',
+            width: '100%',
+            marginTop: '2rem'
+          }}>
               {rates && rates.length > 0 && (
               <button
                 onClick={createShipment}
@@ -1128,6 +1619,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         </div>
       </div>
     </div>
+    </>
   );
 };
 

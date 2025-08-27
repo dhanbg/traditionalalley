@@ -2500,10 +2500,13 @@
     }
   }
   .tf-slideshow {
+    height: 600px; // Fixed height on mobile for consistency
+    min-height: 500px; // Minimum height fallback
+    max-height: 650px; // Cap maximum height
     .wrap-slider {
-      height: 400px;
+      height: 100%; // Take full container height
       &.h-600 {
-        height: 600px;
+        height: 100%;
       }
     }
     .title-display {

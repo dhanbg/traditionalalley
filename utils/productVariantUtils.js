@@ -24,11 +24,39 @@ export async function checkWelcomeCouponUsage(userId) {
       return { hasUsed: false, couponData: null };
     }
 
+    // Debug: Log the usedByUserData to see what's there
+    console.log('🔍 DEBUG: welcomeCoupon.usedByUserData:', welcomeCoupon.usedByUserData);
+    console.log('🔍 DEBUG: Current userId:', userId);
+    
     // Check if the user has used this coupon
     const hasUsedCoupon = welcomeCoupon.usedByUserData && 
-      welcomeCoupon.usedByUserData.some(userData => 
-        userData.userId === userId || userData.userEmail === userId
-      );
+      welcomeCoupon.usedByUserData.some(userData => {
+        console.log('🔍 DEBUG: Checking userData with ALL fields:', JSON.stringify(userData, null, 2));
+        console.log('🔍 DEBUG: Object.keys(userData):', Object.keys(userData));
+        console.log('🔍 DEBUG: userData.userId === userId?', userData.userId === userId);
+        console.log('🔍 DEBUG: userData.userEmail === userId?', userData.userEmail === userId);
+        
+        // Check all possible fields that might contain the user identifier
+        console.log('🔍 DEBUG: Checking possible user identifier fields:');
+        console.log('  - userData.id:', userData.id);
+        console.log('  - userData.documentId:', userData.documentId);
+        console.log('  - userData.email:', userData.email);
+        console.log('  - userData.authId:', userData.authId);
+        console.log('  - userData.googleId:', userData.googleId);
+        console.log('  - userData.providerId:', userData.providerId);
+        
+        // Fix: Check authUserId (contains Google auth ID) and email instead of non-existent userId/userEmail
+        const matchesAuthId = userData.authUserId === userId;
+        const matchesEmail = userData.email === userId;
+        
+        console.log('🔍 DEBUG: Fixed field checks:');
+        console.log('  - userData.authUserId === userId?', matchesAuthId);
+        console.log('  - userData.email === userId?', matchesEmail);
+        
+        return matchesAuthId || matchesEmail;
+      });
+    
+    console.log('🔍 DEBUG: Final hasUsedCoupon result:', hasUsedCoupon);
 
     return {
       hasUsed: hasUsedCoupon,
@@ -66,10 +94,20 @@ function isValidCoupon(coupon) {
  */
 export async function getWelcomeCouponForAutoSelection(userId) {
   try {
+    console.log('🔍 DEBUG: Checking welcome coupon for auto-selection, userId:', userId);
     const couponCheck = await checkWelcomeCouponUsage(userId);
+    
+    console.log('🔍 DEBUG: Coupon check result:', {
+      hasUsed: couponCheck.hasUsed,
+      isValid: couponCheck.isValid,
+      isActive: couponCheck.isActive,
+      hasCouponData: !!couponCheck.couponData,
+      couponCode: couponCheck.couponData?.code
+    });
     
     // Return coupon data only if user hasn't used it and it's valid
     if (!couponCheck.hasUsed && couponCheck.isValid && couponCheck.couponData) {
+      console.log('✅ DEBUG: Returning coupon data for auto-selection');
       return {
         code: couponCheck.couponData.code,
         description: couponCheck.couponData.description,
@@ -81,6 +119,7 @@ export async function getWelcomeCouponForAutoSelection(userId) {
       };
     }
     
+    console.log('❌ DEBUG: Not returning coupon data - conditions not met');
     return null;
   } catch (error) {
     console.error('Error getting welcome coupon for auto-selection:', error);

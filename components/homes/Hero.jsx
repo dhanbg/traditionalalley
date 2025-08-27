@@ -1,7 +1,11 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade, Pagination } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/effect-fade";
+import "swiper/css/pagination";
+import "swiper/css/autoplay";
 import Image from "next/image";
 import Link from "next/link";
 import { fetchDataFromApi } from "@/utils/api";
@@ -12,17 +16,48 @@ export default function Hero() {
   const [slides, setSlides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileDetected, setMobileDetected] = useState(false);
   const videoRefs = useRef([]);
   const slideTimeoutRef = useRef(null);
   const swiperRef = useRef(null);
 
+  // Hook to detect mobile screen size
+  const checkMobile = useCallback(() => {
+    const width = window.innerWidth;
+    const newIsMobile = width <= 768;
+    setIsMobile(newIsMobile);
+    setMobileDetected(true);
+  }, []);
+
   useEffect(() => {
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, [checkMobile]);
+
+  useEffect(() => {
+    // Only fetch slides after mobile detection is complete
+    if (!mobileDetected) {
+
+      return;
+    }
+
     const fetchSlides = async () => {
       try {
         if (typeof window !== "undefined") {
-          const data = await fetchDataFromApi("/api/hero-slides?populate=*");
+          // Use Next.js API route with direct fetch
+          const response = await fetch("/api/hero-slides?populate=*");
+          const data = await response.json();
+          
           const transformedSlides = data.data.map((item) => {
-            const media = item.media;
+            // Select media based on screen size
+            const selectedMedia = isMobile && item.mobileMedia ? item.mobileMedia : item.media;
+            
+            const media = selectedMedia;
             let mediaUrl = "";
             let mediaType = "image";
             let fallbackImageUrl = "";
@@ -61,10 +96,34 @@ export default function Hero() {
             
             // Debug logging for video URLs
             if (mediaType === 'video') {
-              console.log('🎥 Video slide detected:');
-              console.log('Original mediaUrl:', mediaUrl);
-              console.log('Constructed videoSrc:', result.videoSrc);
-              console.log('Media object:', media);
+              console.log('\n🎥 VIDEO SLIDE DETECTED:');
+              console.log('📱 Screen type:', isMobile ? 'Mobile' : 'Desktop');
+              console.log('🎯 Selected media:', selectedMedia === item.mobileMedia ? 'mobileMedia' : 'media');
+              console.log('🔗 Original mediaUrl:', mediaUrl);
+              console.log('📹 Constructed videoSrc:', result.videoSrc);
+              console.log('📦 Media object:', media);
+              console.log('🔍 FINAL RESULT:', {
+                isMobile,
+                hasMobileMedia: !!item.mobileMedia,
+                selectedMobileMedia: selectedMedia === item.mobileMedia,
+                videoSrc: result.videoSrc
+              });
+            }
+            
+            // Additional comprehensive logging for all media types
+            console.log(`\n🎬 RENDERING SLIDE ${data.data.indexOf(item)}:`);
+            console.log('📱 Current isMobile:', isMobile);
+            console.log('🎯 selectedMedia === item.mobileMedia:', selectedMedia === item.mobileMedia);
+            console.log('📹 Final imgSrc:', result.imgSrc);
+            console.log('📹 Final videoSrc:', result.videoSrc);
+            console.log('🔗 Original selectedMedia URL:', selectedMedia?.url);
+            console.log('📱 Available mobileMedia URL:', item.mobileMedia?.url);
+            console.log('🖥️ Available desktop media URL:', item.media?.url);
+            
+            if (selectedMedia === item.mobileMedia) {
+              console.log('✅ CONFIRMED: Using MOBILE media for slide', data.data.indexOf(item));
+            } else {
+              console.log('ℹ️ CONFIRMED: Using DESKTOP media for slide', data.data.indexOf(item));
             }
             
             return result;
@@ -89,7 +148,7 @@ export default function Hero() {
         clearTimeout(slideTimeoutRef.current);
       }
     };
-  }, []);
+  }, [isMobile, mobileDetected]); // Re-fetch when isMobile changes or mobile detection completes
 
   // Handle video/audio play/pause on slide change
   const handleSlideChange = (swiper) => {
@@ -149,24 +208,30 @@ export default function Hero() {
     handleVideoEnd();
   };
 
-  // CSS for animated transition
+  // CSS for animated transition - Removed dark loading effect
   const blurStyle = {
-    filter: loading || !imageLoaded ? "blur(10px)" : "blur(0px)",
-    transition: "filter 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
-    opacity: loading ? 0.7 : 1,
-    transform: loading ? "scale(1.05)" : "scale(1)",
+    filter: !imageLoaded ? "blur(5px)" : "blur(0px)",
+    transition: "filter 0.3s ease-in-out",
+    opacity: !imageLoaded ? 0.9 : 1,
+    transform: "scale(1)", // Removed scaling effect
   };
 
   const contentStyle = {
-    opacity: loading || !imageLoaded ? 0 : 1,
+    opacity: !imageLoaded ? 0.8 : 1, // Only fade based on image load, not loading state
     position: 'absolute',
     top: '50%',
     transform: 'translateY(-50%)',
-    transition: 'opacity 0.8s ease, transform 0.8s ease'
+    transition: 'opacity 0.3s ease' // Faster transition
+  };
+
+  // Force consistent bottom spacing from Hero component side
+  const heroWrapperStyle = {
+    marginBottom: isMobile ? '0px' : '0px', // Remove any default margins
+    paddingBottom: '0px' // Ensure no bottom padding
   };
 
   return (
-    <section className="tf-slideshow slider-default slider-position slider-effect-fade">
+    <section className="tf-slideshow slider-default slider-position slider-effect-fade" style={heroWrapperStyle}>
       <Swiper
         effect="fade"
         spaceBetween={0}
@@ -194,37 +259,9 @@ export default function Hero() {
               }, 500);
             }}
       >
-        {loading ? (
-          <SwiperSlide>
-            <div className="wrap-slider">
-              <div style={{ 
-                width: "100%", 
-                height: "803px", 
-                backgroundColor: "#f5f5f5",
-                backgroundImage: "linear-gradient(110deg, #f5f5f5 30%, #e9e9e9 50%, #f5f5f5 70%)",
-                backgroundSize: "200% 100%",
-                animation: "shimmer 2s infinite linear"
-              }}></div>
-              <style jsx>{`
-                @keyframes shimmer {
-                  0% { background-position: 200% 0; }
-                  100% { background-position: -200% 0; }
-                }
-              `}</style>
-            </div>
-          </SwiperSlide>
-        ) : (
-          slides.map((slide, index) => {
-            // Debug logging for each slide
-            console.log(`🔍 Slide ${index}:`, {
-              mediaType: slide.mediaType,
-              hasVideoSrc: !!slide.videoSrc,
-              videoSrc: slide.videoSrc,
-              slide: slide
-            });
-            
+        {slides.map((slide, index) => {
             return (
-            <SwiperSlide key={index}>
+              <SwiperSlide key={index}>
               <div className="wrap-slider" style={blurStyle}>
                 {slide.mediaType === 'video' && slide.videoSrc ? (
                   <>
@@ -232,13 +269,17 @@ export default function Hero() {
                       ref={(el) => (videoRefs.current[index] = el)}
                       width={1920}
                       height={803}
+                      autoPlay
                       muted
                       playsInline
+                      loop
+                      preload="metadata"
                       poster={slide.poster || slide.imgSrc}
                       style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover',
+                        objectFit: isMobile ? 'contain' : 'cover',
+                        backgroundColor: 'transparent', // Removed black background
                       }}
                       onLoadedData={() => setImageLoaded(true)}
                       onEnded={onVideoEnded}
@@ -342,9 +383,8 @@ export default function Hero() {
                 </div>
               </div>
             </SwiperSlide>
-            );
-          })
-        )}
+          )
+        })}
       </Swiper>
       <div className="wrap-pagination">
         <div className="container">

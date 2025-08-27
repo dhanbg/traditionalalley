@@ -1,0 +1,13 @@
+Country Code,Country Name,Service Type,Weight From (kg),Weight To (kg),Rate (NPR),Rate Per Kg (NPR),Weight Limit (kg)
+US,United States,Standard,0,1,1500,,
+US,United States,Express,0,1,2500,,
+IN,India,Standard,0,1,800,,
+IN,India,Express,0,1,1200,,
+GB,United Kingdom,Standard,0,1,1800,,
+GB,United Kingdom,Express,0,1,2800,,
+CA,Canada,Standard,0,1,1600,,
+CA,Canada,Express,0,1,2600,,
+AU,Australia,Standard,0,1,2000,,
+AU,Australia,Express,0,1,3000,,
+JP,Japan,Economy,10,20,,1050,28
+DE,Germany,Economy,5,15,,950,25

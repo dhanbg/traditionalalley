@@ -2,31 +2,70 @@
 .paymentMethods {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 20px;
+  gap: 16px;
+  margin-top: 24px;
 }
 
 .paymentMethodCard {
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 16px;
-  transition: all 0.2s ease;
+  position: relative;
+  border: 2px solid #e8ecf0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.paymentMethodCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .paymentMethodCard:hover {
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  border-color: #667eea;
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+  transform: translateY(-2px);
+}
+
+.paymentMethodCard:hover::before {
+  opacity: 1;
 }
 
 .paymentMethodCard.disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+}
+
+.paymentMethodCard.disabled:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-color: #e8ecf0;
+}
+
+.paymentMethodCard.disabled::before {
+  opacity: 0 !important;
 }
 
 .paymentMethodCard.selected {
-  border-color: #007bff;
-  background-color: rgba(0, 123, 255, 0.05);
+  border-color: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.25);
+}
+
+.paymentMethodCard.selected::before {
+  opacity: 1;
+  background: linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
 }
 
 .paymentMethodCard input[type="radio"] {
@@ -41,20 +80,98 @@
 .paymentMethodHeader {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 500;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 15px;
+  position: relative;
 }
 
 .paymentIcon {
   font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(102, 126, 234, 0.1);
+  transition: all 0.3s ease;
+}
+
+.paymentMethodCard.selected .paymentIcon {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
 }
 
 .lockIcon {
   margin-left: auto;
+  font-size: 16px;
+  opacity: 0.7;
 }
 
 .errorMessage {
-  margin-top: 8px;
-  color: #ff0000;
+  margin-top: 10px;
+  color: #ef4444;
   font-size: 13px;
+  font-weight: 500;
+  padding: 6px 10px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 6px;
+  border-left: 3px solid #ef4444;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .paymentMethods {
+    gap: 12px;
+    margin-top: 20px;
+  }
+  
+  .paymentMethodCard {
+    padding: 12px 14px;
+    border-radius: 8px;
+  }
+  
+  .paymentMethodHeader {
+    gap: 10px;
+    font-size: 14px;
+  }
+  
+  .paymentIcon {
+    font-size: 18px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+  }
+  
+  .lockIcon {
+    font-size: 14px;
+  }
+  
+  .errorMessage {
+    font-size: 12px;
+    padding: 5px 8px;
+    margin-top: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .paymentMethods {
+    gap: 10px;
+  }
+  
+  .paymentMethodCard {
+    padding: 10px 12px;
+  }
+  
+  .paymentMethodHeader {
+    gap: 8px;
+    font-size: 13px;
+  }
+  
+  .paymentIcon {
+    font-size: 16px;
+    width: 24px;
+    height: 24px;
+  }
 }

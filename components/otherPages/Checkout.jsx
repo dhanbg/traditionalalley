@@ -1214,28 +1214,41 @@ export default function Checkout() {
           // setCouponCode(welcomeCouponData.code); // Commented out to keep input clean
           
           // Validate the coupon to get the discount amount
-          const response = await fetch(`${API_URL}/api/coupons/validate`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              code: welcomeCouponData.code,
-              orderAmount: actualTotal,
-              userId: user.id
-            }),
-          });
-
-          const data = await response.json();
-
-          if (response.ok && data.valid) {
-            setAppliedCoupon({
-              ...data.coupon,
-              autoSelected: true // Mark as auto-selected
+          try {
+            const response = await fetch(`${API_URL}/api/coupons/validate`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                code: welcomeCouponData.code,
+                orderAmount: actualTotal,
+                userId: user.id
+              }),
             });
-            setCouponDiscount(data.coupon.discountAmount);
-            setCouponError('');
-            console.log('✅ WELCOMETOTA coupon auto-applied successfully');
+
+            const data = await response.json();
+
+            if (response.ok && data.valid) {
+              setAppliedCoupon({
+                ...data.coupon,
+                autoSelected: true // Mark as auto-selected
+              });
+              setCouponDiscount(data.coupon.discountAmount);
+              setCouponError('');
+              console.log('✅ WELCOMETOTA coupon auto-applied successfully');
+            } else {
+              // Handle specific error cases gracefully
+              const errorMessage = data.error?.message || data.error || 'Unknown error';
+              if (errorMessage.includes('already used')) {
+                console.log('ℹ️ User has already used WELCOMETOTA coupon - skipping auto-application');
+              } else {
+                console.log('ℹ️ WELCOMETOTA coupon not applicable:', errorMessage);
+              }
+            }
+          } catch (fetchError) {
+            // Silently handle fetch errors for auto-application
+            console.log('ℹ️ Could not auto-apply WELCOMETOTA coupon - user may have already used it');
           }
         }
       } catch (error) {
@@ -1770,19 +1783,63 @@ export default function Checkout() {
                 </div>
               </div>
               <div className="wrap">
-                <h5 className="title">Choose payment Option:</h5>
+                <div style={{
+                  marginBottom: '24px',
+                  padding: '20px',
+                  background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                  borderRadius: '12px',
+                  border: '1px solid #e2e8f0'
+                }}>
+                  <h5 className="title" style={{
+                    margin: '0 0 8px 0',
+                    fontSize: '20px',
+                    fontWeight: '700',
+                    color: '#1e293b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}>
+                    <span style={{
+                      fontSize: '24px',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text'
+                    }}>💳</span>
+                    Choose Payment Option
+                  </h5>
+                  <p style={{
+                    margin: '0',
+                    fontSize: '14px',
+                    color: '#64748b',
+                    fontWeight: '500'
+                  }}>
+                    Select your preferred payment method to complete your order
+                  </p>
+                </div>
                 <form
                   className="form-payment"
                   onSubmit={(e) => e.preventDefault()}
+                  style={{
+                    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                    padding: '24px',
+                    borderRadius: '12px',
+                    border: '1px solid #e2e8f0',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                  }}
                 >
                   <div className={styles.paymentMethods}>
-                    <div className={`${styles.paymentMethodCard} ${selectedPaymentMethod === 'cod' ? styles.selected : ''}`}>
+                    <div 
+                      className={`${styles.paymentMethodCard} ${selectedPaymentMethod === 'cod' ? styles.selected : ''}`}
+                      onClick={() => setSelectedPaymentMethod('cod')}
+                    >
                       <input
                         type="radio"
                         name="payment-method"
                         id="cod-method"
                         checked={selectedPaymentMethod === 'cod'}
                         onChange={() => setSelectedPaymentMethod('cod')}
+                        style={{ display: 'none' }}
                       />
                       <div className={styles.paymentMethodHeader}>
                         <span className={styles.paymentIcon}>💰</span>
@@ -1790,7 +1847,10 @@ export default function Checkout() {
                       </div>
                     </div>
 
-                    <div className={`${styles.paymentMethodCard} ${!shippingRatesObtained ? styles.disabled : ''} ${selectedPaymentMethod === 'nps' ? styles.selected : ''}`}>
+                    <div 
+                      className={`${styles.paymentMethodCard} ${!shippingRatesObtained ? styles.disabled : ''} ${selectedPaymentMethod === 'nps' ? styles.selected : ''}`}
+                      onClick={() => shippingRatesObtained && setSelectedPaymentMethod('nps')}
+                    >
                       <input
                         type="radio"
                         name="payment-method"
@@ -1798,6 +1858,7 @@ export default function Checkout() {
                         checked={selectedPaymentMethod === 'nps'}
                         onChange={() => shippingRatesObtained && setSelectedPaymentMethod('nps')}
                         disabled={!shippingRatesObtained}
+                        style={{ display: 'none' }}
                       />
                       <div className={styles.paymentMethodHeader}>
                         <span className={styles.paymentIcon}>🏦</span>
@@ -1814,8 +1875,8 @@ export default function Checkout() {
                     </div>
                   </div>
                   
-                  {/* Payment button container with fixed height to prevent jumping */}
-                  <div style={{ marginTop: '20px', minHeight: '45px' }}>
+                  {/* Payment button section */}
+                  <div style={{ marginTop: '24px' }}>
                     {selectedPaymentMethod === 'nps' && (
                       nprExchangeRate ? (
                         <NPSPaymentForm 
@@ -1865,8 +1926,52 @@ export default function Checkout() {
                           className="tf-btn btn-reset"
                           onClick={handleCashPaymentOrder}
                           disabled={isProcessingOrder}
+                          style={{
+                            background: isProcessingOrder 
+                              ? 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)' 
+                              : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                            border: 'none',
+                            borderRadius: '10px',
+                            padding: '14px 28px',
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            color: 'white',
+                            boxShadow: isProcessingOrder 
+                              ? 'none' 
+                              : '0 4px 12px rgba(16, 185, 129, 0.3)',
+                            transition: 'all 0.3s ease',
+                            cursor: isProcessingOrder ? 'not-allowed' : 'pointer',
+                            transform: isProcessingOrder ? 'none' : 'translateY(0)',
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px'
+                          }}
+                          onMouseOver={(e) => {
+                            if (!isProcessingOrder) {
+                              e.target.style.transform = 'translateY(-2px)';
+                              e.target.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
+                            }
+                          }}
+                          onMouseOut={(e) => {
+                            if (!isProcessingOrder) {
+                              e.target.style.transform = 'translateY(0)';
+                              e.target.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
+                            }
+                          }}
                         >
-                          {isProcessingOrder ? 'Processing Order...' : 'Place Order (Cash on Delivery)'}
+                          {isProcessingOrder ? (
+                            <>
+                              <span>⏳</span>
+                              <span>Processing Order...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>💰</span>
+                              <span>Place Order (Cash on Delivery)</span>
+                            </>
+                          )}
                         </button>
                       </label>
                     )}

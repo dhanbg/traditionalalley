@@ -692,3 +692,33 @@ export const updateProductStock = async (purchasedProducts) => {
     results: updateResults
   };
 };
+
+// Create order record in Strapi user_orders collection
+export const createOrderRecord = async (orderData, userId) => {
+  try {
+    const response = await fetch(`${API_URL}/api/user-orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${STRAPI_API_TOKEN}`
+      },
+      body: JSON.stringify({
+        data: {
+          ...orderData,
+          userId: userId,
+          createdAt: new Date().toISOString()
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error creating order record:', error);
+    throw error;
+  }
+};

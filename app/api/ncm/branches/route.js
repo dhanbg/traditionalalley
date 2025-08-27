@@ -8,13 +8,19 @@ export async function GET() {
 
     // Using direct NCM API URL since it's publicly accessible for branch list
 
-    // Fetch branches from NCM API using the production URL
+    // Fetch branches from NCM API using the production URL with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
     const response = await fetch('https://portal.nepalcanmove.com/api/v1/branchlist', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
-      }
+      },
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error('NCM API request failed:', response.status, response.statusText);
@@ -83,9 +89,26 @@ export async function GET() {
 
   } catch (error) {
     console.error('Error fetching NCM branches:', error);
+    
+    // Handle different types of errors
+    let errorMessage = 'Internal server error';
+    let statusCode = 500;
+    
+    if (error.name === 'AbortError') {
+      errorMessage = 'NCM API request timed out. Please try again later.';
+      statusCode = 408; // Request Timeout
+    } else if (error.code === 'UND_ERR_CONNECT_TIMEOUT') {
+      errorMessage = 'Connection to NCM API timed out. Please try again later.';
+      statusCode = 408;
+    } else if (error.message && error.message.includes('fetch')) {
+      errorMessage = 'Unable to connect to NCM API. Please check your internet connection.';
+      statusCode = 503; // Service Unavailable
+    }
+    
     return NextResponse.json({
       success: false,
-      message: 'Internal server error'
-    }, { status: 500 });
+      message: errorMessage,
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    }, { status: statusCode });
   }
 }
