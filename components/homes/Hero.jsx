@@ -272,7 +272,6 @@ export default function Hero() {
                       autoPlay
                       muted
                       playsInline
-                      loop
                       preload="metadata"
                       poster={slide.poster || slide.imgSrc}
                       style={{
