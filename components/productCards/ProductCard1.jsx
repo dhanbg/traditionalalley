@@ -38,7 +38,7 @@ function getStrapiSmallImage(imageObj) {
   return DEFAULT_IMAGE;
 }
 
-export default function ProductCard1({ product, gridClass = "", index = 0 }) {
+export default function ProductCard1({ product, gridClass = "", index = 0, onRemoveFromWishlist = null }) {
   
   // Ensure product has valid image properties
   const safeProduct = {
@@ -610,6 +610,35 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
           </ul>
         )}
       </div>
+      
+      {/* Remove from Wishlist Button */}
+      {onRemoveFromWishlist && (
+        <div className="remove-from-wishlist-wrapper mt-3">
+          <button 
+            className="btn btn-outline-danger btn-sm w-100 d-flex align-items-center justify-content-center gap-2"
+            onClick={(e) => {
+              console.log('🔴 Remove button clicked!');
+              console.log('🔴 Product:', safeProduct.title);
+              console.log('🔴 Product wishlistId:', safeProduct.wishlistId);
+              console.log('🔴 onRemoveFromWishlist function:', typeof onRemoveFromWishlist);
+              
+              e.preventDefault();
+              e.stopPropagation();
+              
+              if (typeof onRemoveFromWishlist === 'function') {
+                console.log('🔴 Calling onRemoveFromWishlist...');
+                onRemoveFromWishlist();
+              } else {
+                console.error('🔴 onRemoveFromWishlist is not a function:', onRemoveFromWishlist);
+              }
+            }}
+            title="Remove from Wishlist"
+          >
+            <i className="far fa-trash-alt"></i>
+            Remove from Wishlist
+          </button>
+        </div>
+      )}
     </div>
   );
 }

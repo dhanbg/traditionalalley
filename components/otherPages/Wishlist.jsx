@@ -15,6 +15,12 @@ export default function Wishlist() {
 
   // Transform wishlist data to match ProductCard1 expected format
   const transformWishlistData = (wishlistItem) => {
+    console.log('🔄 Transforming wishlist item:', {
+      id: wishlistItem.id,
+      documentId: wishlistItem.documentId,
+      productTitle: wishlistItem.product?.title
+    });
+    
     const product = wishlistItem.product;
     const variantInfo = wishlistItem.variantInfo;
     
@@ -55,8 +61,8 @@ export default function Wishlist() {
         return imgSrc;
       })(),
       images: product.images || [],
-      // Include wishlist specific data
-      wishlistId: wishlistItem.id,
+      // Include wishlist specific data - using documentId for Strapi operations
+      wishlistId: wishlistItem.documentId || wishlistItem.id,
       selectedSize: wishlistItem.sizes,
       selectedVariant: variantInfo,
       productVariant: wishlistItem.productVariant
@@ -112,19 +118,44 @@ export default function Wishlist() {
   };
 
   const removeFromWishlist = async (wishlistId) => {
+    console.log('🗑️ removeFromWishlist called with wishlistId:', wishlistId);
+    console.log('🗑️ Current items before removal:', items.length);
+    console.log('🗑️ Items with wishlistIds:', items.map(item => ({ title: item.title, wishlistId: item.wishlistId })));
+    
     try {
-      const response = await fetch(`/api/wishlists?itemId=${wishlistId}`, {
+      const apiUrl = `/api/wishlists?itemId=${wishlistId}`;
+      console.log('🗑️ Making DELETE request to:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
         method: 'DELETE'
       });
       
+      console.log('🗑️ DELETE response status:', response.status);
+      console.log('🗑️ DELETE response ok:', response.ok);
+      
       if (response.ok) {
+        console.log('✅ Successfully removed from server, updating local state');
+        console.log('🗑️ Filtering out item with wishlistId:', wishlistId);
+        
         // Remove item from local state
-        setItems(prevItems => prevItems.filter(item => item.wishlistId !== wishlistId));
+        setItems(prevItems => {
+          const filteredItems = prevItems.filter(item => item.wishlistId !== wishlistId);
+          console.log('🗑️ Items after filter:', filteredItems.length);
+          console.log('🗑️ Removed item details:', prevItems.find(item => item.wishlistId === wishlistId));
+          return filteredItems;
+        });
       } else {
-        console.error('Failed to remove item from wishlist');
+        const errorText = await response.text();
+        console.error('❌ Failed to remove item from wishlist:');
+        console.error('  - Status:', response.status);
+        console.error('  - Response:', errorText);
       }
     } catch (err) {
-      console.error('Error removing from wishlist:', err);
+      console.error('❌ Error removing from wishlist:', {
+        message: err.message,
+        stack: err.stack,
+        wishlistId
+      });
     }
   };
 
