@@ -325,7 +325,11 @@ function transformVariantForListing(rawVariant, parentProduct) {
     category: parentProduct.collection?.category?.title || null,
     collection: parentProduct.collection?.title || null,
     design: rawVariant.design,
-    variantId: rawVariant.documentId
+    variantId: rawVariant.documentId,
+    // Add main product reference so getMainProductId can find it
+    product: {
+      documentId: parentProduct.documentId
+    }
   };
 }
 

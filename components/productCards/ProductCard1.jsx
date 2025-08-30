@@ -39,12 +39,6 @@ function getStrapiSmallImage(imageObj) {
 }
 
 export default function ProductCard1({ product, gridClass = "", index = 0 }) {
-  // Debug logging for size_stocks
-  console.log('🔍 ProductCard1 Debug:', {
-    title: product.title,
-    size_stocks: product.size_stocks,
-    has_size_stocks: product.size_stocks && Object.keys(product.size_stocks).length > 0
-  });
   
   // Ensure product has valid image properties
   const safeProduct = {
@@ -155,16 +149,95 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
 
 
 
+  // Helper function to get main product ID from variant product
+  const getMainProductId = (product) => {
+    if (!product) return null;
+    
+    // First, check if this product has a main product reference (for variants)
+    // Variant products should have a 'product' field that references the main product
+    if (product.product && (product.product.documentId || product.product.id)) {
+      return product.product.documentId || product.product.id;
+    }
+    
+    // Check if this product has a main_product field (alternative structure)
+    if (product.main_product && (product.main_product.documentId || product.main_product.id)) {
+      return product.main_product.documentId || product.main_product.id;
+    }
+    
+    // Fallback: check if this is a variant product by looking for variant patterns in ID
+    const productId = product.documentId || product.id;
+    if (!productId) return null;
+    
+    // Ensure productId is a string before calling .includes()
+    const productIdStr = String(productId);
+    
+    if (productIdStr.includes('-variant-') || productIdStr.includes('variant')) {
+      // Try to extract main product ID from variant ID patterns
+      const parts = productIdStr.split('-variant-');
+      if (parts.length > 1) {
+        return parts[0]; // Return the part before '-variant-'
+      }
+    }
+    
+    // Check if this is a variant by checking the title contains '(Variant)'
+    if (product.title && product.title.includes('(Variant)')) {
+      console.log('🔍 Found variant by title, but no main product reference:', {
+        variantId: productId,
+        title: product.title
+      });
+      // This is a variant but we can't determine main product ID
+      // Return the current ID as fallback
+    }
+    
+    // If no variant pattern found, this is likely the main product
+    return productId;
+  };
+
   const handleCartClick = () => {
     if (!user) {
       signIn();
     } else {
-      // Create unique cart ID that includes size information if applicable
-      let cartId = safeProduct.documentId || safeProduct.id;
-      if (hasAvailableSizes && selectedSize) {
-        cartId = `${cartId}-size-${selectedSize}`;
+      // Get current product ID and main product ID for variant detection
+      const currentProductId = safeProduct.documentId || safeProduct.id;
+      const mainProductId = getMainProductId(safeProduct);
+      const isVariant = mainProductId !== currentProductId;
+      
+      // Create unique cart ID using consistent pattern like Details1
+      let uniqueCartId;
+      let variantInfo = null;
+      
+      if (isVariant) {
+        // For variants: use main product ID + variant ID pattern
+        const baseVariantId = `${mainProductId}-variant-${currentProductId}`;
+        uniqueCartId = hasAvailableSizes && selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
+        
+        // Create variant info matching Details1 structure
+        variantInfo = {
+          id: currentProductId, // Use variant's documentId as the variant identifier
+          documentId: currentProductId,
+          title: safeProduct.title,
+          imgSrc: safeProduct.imgSrc,
+          imgSrcObject: safeProduct.imgSrc // Preserve original image object
+        };
+        
+        console.log('🛒 Adding variant to cart:', { 
+          uniqueCartId, 
+          isVariant, 
+          variantInfo,
+          selectedSize 
+        });
+      } else {
+        // For main products: use documentId for consistency
+        uniqueCartId = hasAvailableSizes && selectedSize ? `${currentProductId}-size-${selectedSize}` : currentProductId;
+        
+        console.log('🛒 Adding main product to cart:', { 
+          uniqueCartId, 
+          isVariant: false, 
+          selectedSize 
+        });
       }
-      addProductToCart(cartId, 1, true, null, selectedSize);
+      
+      addProductToCart(uniqueCartId, 1, true, variantInfo, selectedSize);
     }
   };
 
@@ -192,7 +265,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
       }}
     >
       <div className="card-product-wrapper">
-        <Link href={`/product-detail/${safeProduct.documentId || safeProduct.id}`} className="product-img">
+        <Link href={`/product-detail/${getMainProductId(safeProduct) || safeProduct.id}${(getMainProductId(safeProduct) !== (safeProduct.documentId || safeProduct.id)) ? `?variant=${safeProduct.documentId || safeProduct.id}` : ''}`} className="product-img">
           <Image
             className="lazyload img-product"
             src={currentImage && currentImage !== "" ? currentImage : DEFAULT_IMAGE}
@@ -407,14 +480,32 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
           <div className="list-btn-main">
             <a
               className={`btn-main-product ${
-                (hasAvailableSizes && !selectedSize) && !isAddedToCartProducts(safeProduct.id)
+                (hasAvailableSizes && !selectedSize)
                   ? 'disabled' 
                   : ''
               }`}
               onClick={() => {
-                // Check if already added to cart
-                if (user && isAddedToCartProducts(safeProduct.id)) {
-                  return; // Already in cart, do nothing
+                // Get variant info for cart checking
+                const currentProductId = safeProduct.documentId || safeProduct.id;
+                const mainProductId = getMainProductId(safeProduct);
+                const isVariant = mainProductId !== currentProductId;
+                
+                // Check if already added to cart with proper variant logic
+                if (user) {
+                  if (hasAvailableSizes && selectedSize) {
+                    // Check with size and variant info
+                    const productDocumentId = isVariant ? mainProductId : currentProductId;
+                    const variantId = isVariant ? currentProductId : null;
+                    if (isProductSizeInCart(productDocumentId, selectedSize, variantId)) {
+                      return; // Already in cart, do nothing
+                    }
+                  } else if (!hasAvailableSizes) {
+                    // Check without size but with variant info
+                    const cartIdToCheck = isVariant ? `${mainProductId}-variant-${currentProductId}` : currentProductId;
+                    if (isAddedToCartProducts(cartIdToCheck)) {
+                      return; // Already in cart, do nothing
+                    }
+                  }
                 }
                 
                 // For products with sizes, require size selection
@@ -432,11 +523,17 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
               }}
             >
               {(() => {
+                // Get variant info for cart checking
+                const currentProductId = safeProduct.documentId || safeProduct.id;
+                const mainProductId = getMainProductId(safeProduct);
+                const isVariant = mainProductId !== currentProductId;
+                
                 // Check if already added to cart (for selected size if applicable)
                 if (user && hasAvailableSizes && selectedSize) {
-                  // Check if this specific size is in cart using the proper function
-                  const productDocumentId = safeProduct.documentId || safeProduct.id;
-                  const isThisSizeInCart = isProductSizeInCart(productDocumentId, selectedSize);
+                  // For variants, use the main product ID and variant ID for checking
+                  const productDocumentId = isVariant ? mainProductId : currentProductId;
+                  const variantId = isVariant ? currentProductId : null;
+                  const isThisSizeInCart = isProductSizeInCart(productDocumentId, selectedSize, variantId);
                   if (isThisSizeInCart) {
                     return "Already Added";
                   }
@@ -444,8 +541,12 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
                 }
                 
                 // Check if product without sizes is in cart
-                if (user && !hasAvailableSizes && isAddedToCartProducts(safeProduct.id)) {
-                  return "Already Added";
+                if (user && !hasAvailableSizes) {
+                  // For variants, construct the proper cart ID to check
+                  const cartIdToCheck = isVariant ? `${mainProductId}-variant-${currentProductId}` : currentProductId;
+                  if (isAddedToCartProducts(cartIdToCheck)) {
+                    return "Already Added";
+                  }
                 }
                 
                 // Check if need to select size
@@ -461,8 +562,8 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
         )}
       </div>
       <div className="card-product-info">
-        <Link href={`/product-detail/${safeProduct.id}`} className="title link">
-          {safeProduct.title}
+        <Link href={`/product-detail/${getMainProductId(safeProduct) || safeProduct.id}${(getMainProductId(safeProduct) !== (safeProduct.documentId || safeProduct.id)) ? `?variant=${safeProduct.documentId || safeProduct.id}` : ''}`} className="title link">
+          {safeProduct.title ? safeProduct.title.replace(' (Variant)', '').replace(/ - [^-]+$/, '') : 'Product'}
         </Link>
         <PriceDisplay 
           price={safeProduct.price}

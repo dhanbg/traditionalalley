@@ -17,7 +17,7 @@ import { PRODUCT_REVIEWS_API } from "../../../utils/urls";
 import { fetchDataFromApi } from "../../../utils/api";
 import PriceDisplay from "@/components/common/PriceDisplay";
 
-export default function Details1({ product, variants = [] }) {
+export default function Details1({ product, variants = [], preferredVariantId = null }) {
   // Helper function to process image URLs consistently
   const processImageUrl = (imgData) => {
     if (!imgData) return '/logo.png';
@@ -140,7 +140,30 @@ export default function Details1({ product, variants = [] }) {
                        variant.id === `current-${safeProduct.id}` || 
                        variant.id === `current-${safeProduct.documentId}`
     }));
-    initialActive = allOptions.find(v => v.isCurrentProduct) || allOptions[0];
+    
+    // Priority-based variant selection:
+    // 1. First, try to find the preferred variant from URL
+    if (preferredVariantId) {
+      console.log('🔍 Looking for preferred variant:', preferredVariantId);
+      const preferredVariant = allOptions.find(v => 
+        v.documentId === preferredVariantId ||
+        v.id === preferredVariantId ||
+        v.id === `current-${preferredVariantId}` ||
+        (typeof v.id === 'string' && v.id.includes(preferredVariantId))
+      );
+      
+      if (preferredVariant) {
+        console.log('✅ Found preferred variant:', preferredVariant);
+        initialActive = preferredVariant;
+      } else {
+        console.log('⚠️ Preferred variant not found, falling back to current product');
+      }
+    }
+    
+    // 2. If no preferred variant found, fall back to current product variant
+    if (!initialActive) {
+      initialActive = allOptions.find(v => v.isCurrentProduct) || allOptions[0];
+    }
   } else if (safeProduct.color) {
     // If no variants but main product has a color, create a single option
     allOptions = [{ 
