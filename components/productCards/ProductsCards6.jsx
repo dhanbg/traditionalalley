@@ -210,6 +210,12 @@ export default function ProductsCards6({ product }) {
                   if (hasAvailableSizes && selectedSize) {
                     cartId = `${cartId}-size-${selectedSize}`;
                   }
+                  
+                  // Check if this exact cart ID is already in cart
+                  if (isAddedToCartProducts(cartId)) {
+                    return; // Already in cart, do nothing
+                  }
+                  
                   addProductToCart(cartId, 1, true, null, selectedSize);
                 }}
                 className={`btn-main-product ${
@@ -221,20 +227,23 @@ export default function ProductsCards6({ product }) {
               >
                 {(() => {
                 
-                // Check if already added to cart (for selected size if applicable)
-                if (user && hasAvailableSizes && selectedSize) {
-                  // Check if this specific size is in cart using the proper function
-                  const productDocumentId = safeProduct.documentId || safeProduct.id;
-                  const isThisSizeInCart = isProductSizeInCart(productDocumentId, selectedSize);
-                  if (isThisSizeInCart) {
+                // Check if already added to cart using the same logic as onClick
+                if (user) {
+                  // Create the same unique cart ID that would be used when adding to cart
+                  let cartIdToCheck = safeProduct.documentId || safeProduct.id;
+                  if (hasAvailableSizes && selectedSize) {
+                    cartIdToCheck = `${cartIdToCheck}-size-${selectedSize}`;
+                  }
+                  
+                  // Check if this exact cart ID is already in cart
+                  if (isAddedToCartProducts(cartIdToCheck)) {
                     return "Already Added";
                   }
-                  return `Add ${selectedSize} to cart`;
-                }
-                
-                // Check if product without sizes is in cart
-                if (user && !hasAvailableSizes && isAddedToCartProducts(safeProduct.id)) {
-                  return "Already Added";
+                  
+                  // Return appropriate text based on size selection
+                  if (hasAvailableSizes && selectedSize) {
+                    return `Add ${selectedSize} to cart`;
+                  }
                 }
                 
                 // Check if need to select size

@@ -493,19 +493,21 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
                 
                 // Check if already added to cart with proper variant logic
                 if (user) {
-                  if (hasAvailableSizes && selectedSize) {
-                    // Check with size and variant info
-                    const productDocumentId = isVariant ? mainProductId : currentProductId;
-                    const variantId = isVariant ? currentProductId : null;
-                    if (isProductSizeInCart(productDocumentId, selectedSize, variantId)) {
-                      return; // Already in cart, do nothing
-                    }
-                  } else if (!hasAvailableSizes) {
-                    // Check without size but with variant info
-                    const cartIdToCheck = isVariant ? `${mainProductId}-variant-${currentProductId}` : currentProductId;
-                    if (isAddedToCartProducts(cartIdToCheck)) {
-                      return; // Already in cart, do nothing
-                    }
+                  // Create the same unique cart ID that would be used when adding to cart
+                  let uniqueCartIdToCheck;
+                  
+                  if (isVariant) {
+                    // For variants: use main product ID + variant ID pattern
+                    const baseVariantId = `${mainProductId}-variant-${currentProductId}`;
+                    uniqueCartIdToCheck = hasAvailableSizes && selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
+                  } else {
+                    // For main products: use documentId for consistency
+                    uniqueCartIdToCheck = hasAvailableSizes && selectedSize ? `${currentProductId}-size-${selectedSize}` : currentProductId;
+                  }
+                  
+                  // Check if this exact cart ID is already in cart
+                  if (isAddedToCartProducts(uniqueCartIdToCheck)) {
+                    return; // Already in cart, do nothing
                   }
                 }
                 
@@ -529,24 +531,28 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
                 const mainProductId = getMainProductId(safeProduct);
                 const isVariant = mainProductId !== currentProductId;
                 
-                // Check if already added to cart (for selected size if applicable)
-                if (user && hasAvailableSizes && selectedSize) {
-                  // For variants, use the main product ID and variant ID for checking
-                  const productDocumentId = isVariant ? mainProductId : currentProductId;
-                  const variantId = isVariant ? currentProductId : null;
-                  const isThisSizeInCart = isProductSizeInCart(productDocumentId, selectedSize, variantId);
-                  if (isThisSizeInCart) {
+                // Check if already added to cart using the same logic as onClick
+                if (user) {
+                  // Create the same unique cart ID that would be used when adding to cart
+                  let uniqueCartIdToCheck;
+                  
+                  if (isVariant) {
+                    // For variants: use main product ID + variant ID pattern
+                    const baseVariantId = `${mainProductId}-variant-${currentProductId}`;
+                    uniqueCartIdToCheck = hasAvailableSizes && selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
+                  } else {
+                    // For main products: use documentId for consistency
+                    uniqueCartIdToCheck = hasAvailableSizes && selectedSize ? `${currentProductId}-size-${selectedSize}` : currentProductId;
+                  }
+                  
+                  // Check if this exact cart ID is already in cart
+                  if (isAddedToCartProducts(uniqueCartIdToCheck)) {
                     return "Already Added";
                   }
-                  return `Add ${selectedSize} to cart`;
-                }
-                
-                // Check if product without sizes is in cart
-                if (user && !hasAvailableSizes) {
-                  // For variants, construct the proper cart ID to check
-                  const cartIdToCheck = isVariant ? `${mainProductId}-variant-${currentProductId}` : currentProductId;
-                  if (isAddedToCartProducts(cartIdToCheck)) {
-                    return "Already Added";
+                  
+                  // Return appropriate text based on size selection
+                  if (hasAvailableSizes && selectedSize) {
+                    return `Add ${selectedSize} to cart`;
                   }
                 }
                 

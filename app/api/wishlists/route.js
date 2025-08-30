@@ -29,7 +29,7 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Server configuration error: STRAPI_TOKEN missing' }, { status: 500 });
     }
 
-    const apiUrl = `${STRAPI_URL}/api/wishlists?populate=*&filters[user_datum][authUserId][$eq]=${userId}`;
+    const apiUrl = `${STRAPI_URL}/api/wishlists?populate[product][populate]=*&populate[product_variant][populate]=*&populate[user_datum][populate]=*&filters[user_datum][authUserId][$eq]=${userId}`;
     console.log('🔗 Fetching from:', apiUrl);
 
     // Fetch wishlist items for the specific user
@@ -63,22 +63,60 @@ export async function GET(request) {
     console.log('📊 Number of wishlist items:', data.data?.length || 0);
     
     // Transform the data to a more usable format
-    const transformedData = data.data?.map(item => ({
-      id: item.id,
-      documentId: item.documentId,
-      sizes: item.sizes,
-      variantInfo: item.variantInfo,
-      product: {
-        ...item.product,
-        // Ensure image URLs are properly formatted
-        images: item.product.images?.map(img => 
-          img.url.startsWith('http') ? img.url : `${STRAPI_URL}${img.url}`
-        ) || []
-      },
-      productVariant: item.product_variant,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt
-    })) || [];
+    const transformedData = data.data?.map(item => {
+      // Helper function to format image URL
+      const formatImageUrl = (imageObj) => {
+        if (!imageObj) return null;
+        if (typeof imageObj === 'string') {
+          return imageObj.startsWith('http') ? imageObj : `${STRAPI_URL}${imageObj}`;
+        }
+        if (imageObj.url) {
+          return imageObj.url.startsWith('http') ? imageObj.url : `${STRAPI_URL}${imageObj.url}`;
+        }
+        return null;
+      };
+
+      // Handle variant image fallback logic
+      let productImgSrc = formatImageUrl(item.product.imgSrc);
+      let productImages = item.product.images?.map(img => formatImageUrl(img)).filter(Boolean) || [];
+      
+      // If this is a variant and the main product has no image, try to get image from variant
+      if (item.product_variant && (!productImgSrc || productImgSrc === '/images/placeholder.jpg')) {
+        const variantImgSrc = formatImageUrl(item.product_variant.imgSrc);
+        if (variantImgSrc && variantImgSrc !== '/images/placeholder.jpg') {
+          productImgSrc = variantImgSrc;
+        }
+        
+        // Also check variant gallery for images
+        if (item.product_variant.gallery && Array.isArray(item.product_variant.gallery)) {
+          const variantImages = item.product_variant.gallery.map(img => formatImageUrl(img)).filter(Boolean);
+          if (variantImages.length > 0) {
+            productImages = [...variantImages, ...productImages];
+            // Use first variant image as main image if no main image exists
+            if (!productImgSrc || productImgSrc === '/images/placeholder.jpg') {
+              productImgSrc = variantImages[0];
+            }
+          }
+        }
+      }
+
+      return {
+        id: item.id,
+        documentId: item.documentId,
+        sizes: item.sizes,
+        variantInfo: item.variantInfo,
+        product: {
+          ...item.product,
+          // Use the processed image with variant fallback
+          imgSrc: productImgSrc,
+          // Use the processed images array with variant images
+          images: productImages
+        },
+        productVariant: item.product_variant,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt
+      };
+    }) || [];
 
     return NextResponse.json({
       data: transformedData,

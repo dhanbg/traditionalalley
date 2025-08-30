@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSession, signIn } from "next-auth/react";
 
 export default function Wishlist() {
-  const { wishList, addProductToCart, removeFromWishlist, user } =
+  const { wishList, addProductToCart, removeFromWishlist, user, wishlistDetails } =
     useContextElement();
   const { data: session } = useSession();
 
@@ -51,38 +51,78 @@ export default function Wishlist() {
               <div className="tf-mini-cart-main">
                 <div className="tf-mini-cart-sroll">
                   <div className="tf-mini-cart-items">
-                    {wishList.map((productId, index) => (
-                      <div key={`wishlist-item-${productId}-${index}`} className="tf-mini-cart-item">
-                        <div className="tf-mini-cart-image">
-                          <Link href={`/product-detail/${productId}`}>
-                            <Image
-                              alt="Product image"
-                              src="/images/placeholder.jpg"
-                              width={100}
-                              height={100}
-                            />
-                          </Link>
-                        </div>
-                        <div className="tf-mini-cart-info">
-                          <Link
-                            className="title link"
-                            href={`/product-detail/${productId}`}
-                          >
-                            Product #{productId}
-                          </Link>
-                          <div className="meta-variant"></div>
-                          <div className="price fw-6">View Details</div>
-                        </div>
-                        <div className="tf-mini-cart-remove">
-                          <a
-                            onClick={() => removeFromWishlist(productId)}
-                            className="remove-cart"
-                          >
+                    {wishlistDetails?.map((item, index) => {
+                      const productId = item.product?.documentId || item.product?.id;
+                      const productTitle = item.product?.title || `Product #${productId}`;
+                      const productPrice = item.product?.price;
+                      
+                      // Get the best image source
+                      let imageSrc = "/images/placeholder.jpg";
+                      if (item.variantInfo?.imgSrc) {
+                        imageSrc = item.variantInfo.imgSrc;
+                      } else if (item.product?.imgSrc) {
+                        imageSrc = item.product.imgSrc;
+                      } else if (item.product?.images?.[0]) {
+                        imageSrc = typeof item.product.images[0] === 'string' 
+                          ? item.product.images[0] 
+                          : item.product.images[0].url;
+                      }
+                      
+                      return (
+                        <div key={`wishlist-item-${item.id}-${index}`} className="tf-mini-cart-item">
+                          <div className="tf-mini-cart-image">
+                            <Link href={`/product-detail/${productId}`}>
+                              <Image
+                                alt={productTitle}
+                                src={imageSrc}
+                                width={100}
+                                height={100}
+                              />
+                            </Link>
+                          </div>
+                          <div className="tf-mini-cart-info">
+                            <Link
+                              className="title link"
+                              href={`/product-detail/${productId}`}
+                            >
+                              {productTitle}
+                            </Link>
+                            <div className="meta-variant">
+                              {item.sizes && <span>Size: {item.sizes}</span>}
+                              {item.variantInfo?.title && <span>Variant: {item.variantInfo.title}</span>}
+                            </div>
+                            <div className="price fw-6">
+                              {productPrice ? `$${productPrice}` : 'View Details'}
+                            </div>
+                          </div>
+                          <div className="tf-mini-cart-remove">
+                            <a
+                              onClick={() => {
+                                // Generate the same composite ID used in the wishlist
+                                const baseId = item.product?.documentId || item.product?.id;
+                                let compositeId = baseId;
+                                
+                                if (item.productVariant || item.product_variant) {
+                                  const variant = item.productVariant || item.product_variant;
+                                  const variantIdentifier = variant.documentId || variant.id;
+                                  compositeId = `${baseId}-variant-${variantIdentifier}`;
+                                  if (item.sizes) {
+                                    compositeId = `${compositeId}-size-${item.sizes}`;
+                                  }
+                                } else if (item.sizes) {
+                                  compositeId = `${baseId}-size-${item.sizes}`;
+                                }
+                                
+                                removeFromWishlist(compositeId);
+                              }}
+                              className="remove-cart"
+                            >
                             <i className="icon-delete" />
                           </a>
                         </div>
                       </div>
-                    ))}
+                    );
+                    }) || []}
                   </div>
                   {!wishList.length && (
                     <div className="tf-mini-cart-bottom">

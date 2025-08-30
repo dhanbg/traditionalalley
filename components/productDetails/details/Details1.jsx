@@ -490,6 +490,11 @@ export default function Details1({ product, variants = [], preferredVariantId = 
         uniqueCartId = selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
       }
       
+      // Check if this exact item is already in cart before adding
+      if (isAddedToCartProducts(uniqueCartId)) {
+        return; // Already in cart, do nothing
+      }
+      
       addProductToCart(uniqueCartId, quantity, true, variantInfo, selectedSize);
     }
   };
@@ -856,17 +861,21 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                           >
                             <span>
                               {user && (() => {
-                                // Check if current product+size combination is in cart
-                                if (!selectedSize) {
-                                  // If no size is selected, don't show as added
-                                  return "Add to cart";
+                                // Check if current product+size combination is in cart using same logic as handleCartClick
+                                const baseId = safeProduct.documentId || safeProduct.id;
+                                let uniqueCartIdToCheck;
+                                
+                                if (activeVariant && !activeVariant.isCurrentProduct) {
+                                  // For variants: include variant documentId and size for consistency
+                                  const variantIdentifier = activeVariant.documentId || activeVariant.id;
+                                  const baseVariantId = `${baseId}-variant-${variantIdentifier}`;
+                                  uniqueCartIdToCheck = selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
+                                } else {
+                                  // For main products: use documentId for consistency and include size in ID
+                                  uniqueCartIdToCheck = selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
                                 }
                                 
-                                // Use the new cart checking function
-                                const productDocumentId = safeProduct.documentId;
-                                const variantId = (activeVariant && !activeVariant.isCurrentProduct) ? activeVariant.id : null;
-                                const isInCart = isProductSizeInCart(productDocumentId, selectedSize, variantId);
-                                
+                                const isInCart = isAddedToCartProducts(uniqueCartIdToCheck);
                                 return isInCart ? "Added" : "Add to cart";
                               })() || "Add to cart"}
                             </span>

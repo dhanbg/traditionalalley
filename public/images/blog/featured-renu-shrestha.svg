@@ -1,0 +1,31 @@
+<svg width="900" height="601" viewBox="0 0 900 601" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="buzzGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B4513;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#D2691E;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F4A460;stop-opacity:1" />
+    </linearGradient>
+    <pattern id="traditionalPattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <rect width="40" height="40" fill="none" stroke="#8B4513" stroke-width="1" opacity="0.3"/>
+      <circle cx="20" cy="20" r="3" fill="#8B4513" opacity="0.4"/>
+    </pattern>
+  </defs>
+  
+  <rect width="900" height="601" fill="url(#buzzGradient)"/>
+  <rect width="900" height="601" fill="url(#traditionalPattern)"/>
+  
+  <!-- Traditional Alley Brand Elements -->
+  <rect x="50" y="50" width="800" height="501" fill="none" stroke="#8B4513" stroke-width="3" opacity="0.6"/>
+  
+  <!-- Title Area -->
+  <rect x="100" y="150" width="700" height="120" fill="rgba(255,255,255,0.9)" rx="10"/>
+  <text x="450" y="200" text-anchor="middle" font-family="serif" font-size="32" font-weight="bold" fill="#8B4513">Renu Shrestha</text>
+  <text x="450" y="240" text-anchor="middle" font-family="serif" font-size="24" fill="#D2691E">Traditional Alley</text>
+  
+  <!-- Decorative Elements -->
+  <circle cx="200" cy="400" r="60" fill="none" stroke="#8B4513" stroke-width="2" opacity="0.5"/>
+  <circle cx="700" cy="400" r="60" fill="none" stroke="#8B4513" stroke-width="2" opacity="0.5"/>
+  
+  <!-- Source Attribution -->
+  <text x="450" y="550" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#8B4513" opacity="0.8">The Buzz Nepal</text>
+</svg>

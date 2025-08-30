@@ -197,75 +197,16 @@ export const blogPosts5 = [
 export const blogPosts6 = [
   {
     id: 21,
-    imgSrc: "/images/blog/blog-grid-1.jpg",
-    date: "February 28, 2024",
-    author: "Themesflat",
-    title: "How Technology is Transforming the Industry",
+    imgSrc: "/images/blog/dhaka-revival-thumbnail.jpg",
+    date: "February 17, 2025",
+    author: "Kathmandu Post",
+    title: "The revival of Nepali Dhaka",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In sed vulputate massa.",
-  },
-  {
-    id: 22,
-    imgSrc: "/images/blog/blog-grid-2.jpg",
-    date: "February 28, 2024",
-    author: "Themesflat",
-    title: "The Future of Fashion How Technology Transforms the Industry",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In sed vulputate massa.",
-  },
-  {
-    id: 23,
-    imgSrc: "/images/blog/blog-grid-3.jpg",
-    date: "February 28, 2024",
-    author: "Themesflat",
-    title: "From Concept to Closet The Journey of Sustainable Fashion",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In sed vulputate massa.",
-  },
-  {
-    id: 24,
-    imgSrc: "/images/blog/blog-grid-4.jpg",
-    date: "February 28, 2024",
-    author: "Themesflat",
-    title: "Unlocking Style Potential Personalization in Fashion Retail",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In sed vulputate massa.",
-  },
-  {
-    id: 25,
-    imgSrc: "/images/blog/blog-grid-5.jpg",
-    date: "February 28, 2024",
-    author: "Themesflat",
-    title: "Fashion Forward Embracing Diversity and Inclusion in Design",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In sed vulputate massa.",
-  },
-  {
-    id: 26,
-    imgSrc: "/images/blog/blog-grid-6.jpg",
-    date: "February 28, 2024",
-    author: "Themesflat",
-    title: "The Ultimate Guide: Dressing Stylishly with Minimal Effort",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In sed vulputate massa.",
-  },
-  {
-    id: 27,
-    imgSrc: "/images/blog/blog-grid-7.jpg",
-    date: "February 28, 2024",
-    author: "Themesflat",
-    title: "How to Transition Your Wardrobe from Day to Night",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In sed vulputate massa.",
-  },
-  {
-    id: 28,
-    imgSrc: "/images/blog/blog-grid-8.jpg",
-    date: "February 28, 2024",
-    author: "Themesflat",
-    title: "Embracing Change: The Role of AI in the Fashion Industry",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In sed vulputate massa.",
+      "Traditional Alley featured in major coverage about how Dhaka fabric is transforming from cultural heritage to modern fashion, with designers making it accessible to today's youth.",
+    externalUrl: "https://kathmandupost.com/fashion/2025/02/17/the-revival-of-nepali-dhaka",
+    isExternal: true,
+    source: "Kathmandu Post",
+    excerpt: "If there's one fabric that can be associated with Nepal's fashion identity, it is Dhaka. Traditional Alley is among the brands making this heritage fabric more accessible and trendy for modern consumers."
   },
 ];
 

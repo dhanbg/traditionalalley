@@ -34,8 +34,26 @@ export default function Wishlist() {
       hsCode: product.hsCode,
       size_stocks: product.size_stocks,
       isActive: product.isActive,
-      // Handle images - prioritize variant image if available
-      imgSrc: variantInfo?.imgSrc || getImageUrl(product.images?.[0]) || '/images/placeholder.jpg',
+      // Enhanced image fallback logic for variants
+      imgSrc: (() => {
+        let imgSrc = '/images/placeholder.jpg';
+        
+        if (variantInfo?.imgSrc) {
+          imgSrc = variantInfo.imgSrc;
+        } else if (product.imgSrc) {
+          imgSrc = getImageUrl(product.imgSrc);
+        } else if (product.images?.[0]) {
+          imgSrc = getImageUrl(product.images[0]);
+        } else if (item.productVariant?.imgSrc) {
+           // Fallback to variant's own image if available
+           imgSrc = getImageUrl(item.productVariant.imgSrc);
+         } else if (item.productVariant?.gallery?.[0]) {
+           // Fallback to variant's gallery image if available
+           imgSrc = getImageUrl(item.productVariant.gallery[0]);
+        }
+        
+        return imgSrc;
+      })(),
       images: product.images || [],
       // Include wishlist specific data
       wishlistId: wishlistItem.id,

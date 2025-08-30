@@ -18,25 +18,17 @@ export default function page() {
         <div className="container-full">
           <div className="row">
             <div className="col-12">
-              <h3 className="heading text-center">Blog Default</h3>
+              <h3 className="heading text-center">Blogs</h3>
               <ul className="breadcrumbs d-flex align-items-center justify-content-center">
                 <li>
                   <Link className="link" href={`/`}>
-                    Homepage
+                    Home
                   </Link>
                 </li>
                 <li>
                   <i className="icon-arrRight" />
                 </li>
-                <li>
-                  <a className="link" href="#">
-                    Blog
-                  </a>
-                </li>
-                <li>
-                  <i className="icon-arrRight" />
-                </li>
-                <li>Blog List</li>
+                <li>Blogs</li>
               </ul>
             </div>
           </div>
