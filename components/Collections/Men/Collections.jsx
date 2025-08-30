@@ -113,7 +113,7 @@ export default function Collections() {
                         src={collection.image}
                         width={468}
                         height={624}
-                        style={{ height: "300px", objectFit: "cover" }}
+                        style={{ objectFit: "cover" }}
                         priority={index === 0}
                       />
                     </Link>

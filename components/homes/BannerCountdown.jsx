@@ -437,7 +437,7 @@ export default function BannerCountdown() {
   // Show loading state
   if (loading) {
     return (
-      <section className="bg-surface flat-spacing flat-countdown-banner" style={{ marginBottom: '100px' }}>
+      <section className="bg-surface flat-countdown-banner">
         <div className="container">
           <div className="row align-items-center">
             <div className="col-12 text-center">

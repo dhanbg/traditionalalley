@@ -17,8 +17,10 @@ export const metadata = {
   description: "Traditional Alley - Product Detail Page",
 };
 
-export default async function page({ params }) {
+export default async function page({ params, searchParams }) {
   const { id } = await params;
+  const resolvedSearchParams = await searchParams;
+  const preferredVariantId = resolvedSearchParams?.variant || null;
   
   // Fetch product by documentId with variants
   const timestamp = Date.now();
@@ -141,7 +143,7 @@ export default async function page({ params }) {
       <Topbar6 bgColor="bg-main" />
       <Header1 />
       <Breadcumb product={product} />
-      {product && <Details1 product={product} variants={variants} />}
+      {product && <Details1 product={product} variants={variants} preferredVariantId={preferredVariantId} />}
       <Descriptions1 product={product} />
       <RelatedProducts product={product} />
       <Footer1 hasPaddingBottom />

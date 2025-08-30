@@ -139,8 +139,8 @@
     .main-header{
         .wrapper-header{
             min-height: auto;
-            padding-top: 22px;
-            padding-bottom: 22px;
+            padding-top: 10px;
+            padding-bottom: 10px;
         }
 
     }
@@ -490,8 +490,6 @@
 }
 .box-nav-ul {
     .menu-item {
-
-        padding:28px 0px;
         &:hover {
             >
             .sub-menu {
@@ -1327,7 +1325,7 @@ header {
   height: 30px !important;
   object-fit: cover;
   vertical-align: middle;
-  margin-top: 6px !important;
+  margin-top: 2px !important;
   margin-bottom: 0 !important;
   box-shadow: none !important;
 }

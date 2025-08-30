@@ -12,11 +12,24 @@ export default function page({ searchParams }) {
     <>
       <Topbar6 bgColor="bg-main" />
       <Header1 />
-      <div
-        className="page-title"
-        style={{ backgroundImage: "url(/images/section/page-title.jpg)" }}
-      >
-        <div className="container-full">
+    <div
+          className="page-title"
+          style={{ 
+            backgroundImage: "url(/images/section/page-title.jpg)",
+            height: "250px",
+            minHeight: "250px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+        >
+          <div className="container" style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100%"
+          }}>
           <div className="row">
             <div className="col-12">
               <h3 className="heading text-center">Women</h3>

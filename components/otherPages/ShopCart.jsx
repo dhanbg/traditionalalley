@@ -38,15 +38,61 @@ const shippingOptions = [
   }
 ];
 
-// Function to get thumbnail image URL from product image object
+// Function to get small format image URL from product image object
 const getThumbnailImageUrl = (imgSrc) => {
-  // If it's already a string URL, return as is
+  // If it's already a string URL, check if we can convert it to small format
   if (typeof imgSrc === 'string') {
+    // If it contains medium_ or large_, replace with small_
+    if (imgSrc.includes('/medium_') || imgSrc.includes('/large_')) {
+      return imgSrc.replace(/\/(medium|large)_/, '/small_');
+    }
+    // If it's a regular upload URL without size prefix, add small_ prefix
+    if (imgSrc.includes('/uploads/') && !imgSrc.includes('/small_') && !imgSrc.includes('/medium_') && !imgSrc.includes('/large_') && !imgSrc.includes('/thumbnail_')) {
+      return imgSrc.replace('/uploads/', '/uploads/small_');
+    }
     return imgSrc;
   }
   
-  // Use utility function to get best image URL
-  return getBestImageUrl(imgSrc, 'thumbnail') || '/images/products/default-product.jpg';
+  // If it's an object with formats, prioritize small format
+  if (imgSrc && typeof imgSrc === 'object') {
+    // Prioritize small format for better performance in cart
+    if (imgSrc.formats && imgSrc.formats.small && imgSrc.formats.small.url) {
+      return imgSrc.formats.small.url.startsWith('http') 
+        ? imgSrc.formats.small.url 
+        : `${API_URL}${imgSrc.formats.small.url}`;
+    }
+    // Fallback to thumbnail if small not available
+    else if (imgSrc.formats && imgSrc.formats.thumbnail && imgSrc.formats.thumbnail.url) {
+      return imgSrc.formats.thumbnail.url.startsWith('http') 
+        ? imgSrc.formats.thumbnail.url 
+        : `${API_URL}${imgSrc.formats.thumbnail.url}`;
+    }
+    // Fallback to medium if neither small nor thumbnail available
+    else if (imgSrc.formats && imgSrc.formats.medium && imgSrc.formats.medium.url) {
+      return imgSrc.formats.medium.url.startsWith('http') 
+        ? imgSrc.formats.medium.url 
+        : `${API_URL}${imgSrc.formats.medium.url}`;
+    }
+    // Fallback to original URL with small_ prefix added
+    else if (imgSrc.url) {
+      let originalUrl = imgSrc.url.startsWith('http') 
+        ? imgSrc.url 
+        : `${API_URL}${imgSrc.url}`;
+      
+      // Try to convert original URL to small format
+      if (originalUrl.includes('/medium_') || originalUrl.includes('/large_')) {
+        return originalUrl.replace(/\/(medium|large)_/, '/small_');
+      }
+      // If it's a regular upload URL, add small_ prefix
+      else if (originalUrl.includes('/uploads/') && !originalUrl.includes('/small_') && !originalUrl.includes('/medium_') && !originalUrl.includes('/large_') && !originalUrl.includes('/thumbnail_')) {
+        return originalUrl.replace('/uploads/', '/uploads/small_');
+      }
+      return originalUrl;
+    }
+  }
+  
+  // Return fallback image if nothing works
+  return '/images/products/default-product.jpg';
 };
 
 export default function ShopCart() {
@@ -316,13 +362,9 @@ export default function ShopCart() {
                                 href={`/product-detail/${elm.documentId || elm.baseProductId}`}
                                 className="cart-title link"
                               >
-                                {elm.title}
+                                {elm.title ? elm.title.replace(' (Variant)', '').replace(/ - [^-]+$/, '') : 'Product'}
                               </Link>
-                              {elm.variantInfo && elm.variantInfo.isVariant && (
-                                <div className="text-caption-2 text-secondary mb-2">
-                                  Title: {elm.variantInfo.title}
-                                </div>
-                              )}
+
                               {elm.selectedSize && (
                                 <div className="text-caption-2 text-secondary mb-2">
                                   Size: {elm.selectedSize}

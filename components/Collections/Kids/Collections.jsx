@@ -75,7 +75,7 @@ export default function Collections() {
               {loading ? (
                 <SwiperSlide>
                   <div className="collection-circle hover-img">
-                    <div className="img-style radius-12 d-flex align-items-center justify-content-center" style={{height: '624px', backgroundColor: '#f5f5f5'}}>
+                    <div className="img-style radius-12 d-flex align-items-center justify-content-center" style={{backgroundColor: '#f5f5f5'}}>
                       <span>Loading collections...</span>
                     </div>
                   </div>
@@ -100,6 +100,7 @@ export default function Collections() {
                             src={collectionImage}
                             width={468}
                             height={624}
+                            style={{ objectFit: "cover" }}
                           />
                         </Link>
                         <div className="collection-content text-center">
@@ -117,7 +118,7 @@ export default function Collections() {
               ) : (
                 <SwiperSlide>
                   <div className="collection-circle hover-img">
-                    <div className="img-style radius-12 d-flex align-items-center justify-content-center" style={{height: '624px', backgroundColor: '#f5f5f5'}}>
+                    <div className="img-style radius-12 d-flex align-items-center justify-content-center" style={{backgroundColor: '#f5f5f5'}}>
                       <span>No collections available</span>
                     </div>
                   </div>

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { fetchAnalyticsData, safeGet, handleApiError } from '../../lib/api-utils';
 import { filterPaymentsByDate, filterProductsByDate } from '../../lib/date-utils';
+import { calculateInStock } from '../../utils/stockUtils';
 import useCachedData from '../../hooks/useCachedData';
 
 const OverviewCards = ({ tabId, dateFilter }) => {
@@ -102,17 +103,20 @@ const OverviewCards = ({ tabId, dateFilter }) => {
         revenue: data.revenue 
       }));
 
-    // Check for low stock products (assuming inStock field indicates availability)
+    // Check for low stock products using size_stocks calculation
     const lowStockProducts = productsData
       .filter(product => {
-        const inStock = safeGet(product, 'inStock', true);
-        return !inStock; // Show products that are out of stock
+        const isInStock = calculateInStock(product);
+        return !isInStock; // Show products that are out of stock
       })
       .slice(0, 5)
-      .map(product => ({
-        name: safeGet(product, 'title', 'Unknown Product'),
-        stock: safeGet(product, 'inStock', false) ? 'In Stock' : 'Out of Stock'
-      }));
+      .map(product => {
+        const isInStock = calculateInStock(product);
+        return {
+          name: safeGet(product, 'title', 'Unknown Product'),
+          stock: isInStock ? 'In Stock' : 'Out of Stock'
+        };
+      });
 
     // Recent orders from filtered payments
     const recentOrders = filteredPayments
@@ -493,4 +497,4 @@ const OverviewCards = ({ tabId, dateFilter }) => {
   );
 };
 
-export default OverviewCards; 
+export default OverviewCards;

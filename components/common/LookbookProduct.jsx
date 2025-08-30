@@ -4,7 +4,7 @@ import Link from "next/link";
 import React from "react";
 import { useContextElement } from "@/context/Context";
 export default function LookbookProduct({ product, styleClass = "style-row" }) {
-  const { setQuickViewItem } = useContextElement();
+
   return (
     <div className={`loobook-product ${styleClass} `}>
       <div className="img-style">
@@ -20,14 +20,12 @@ export default function LookbookProduct({ product, styleClass = "style-row" }) {
           </Link>
           <div className="price text-button">${product.price.toFixed(2)}</div>
         </div>
-        <a
-          href="#quickView"
-          onClick={() => setQuickViewItem(product)}
-          data-bs-toggle="modal"
+        <Link
+          href={`/product-detail/${product.id}`}
           className="btn-lookbook btn-line"
         >
-          Quick View
-        </a>
+          View Product
+        </Link>
       </div>
     </div>
   );

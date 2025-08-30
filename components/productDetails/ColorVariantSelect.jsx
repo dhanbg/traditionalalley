@@ -96,12 +96,54 @@ export default function ColorVariantSelect({
     return 'Design';
   };
 
+  // Determine the main product documentId for variants (same logic as ProductCard1)
+  const getMainProductId = (productData) => {
+    const isVariantProduct = productData.title && productData.title.includes('(Variant)');
+    
+    console.log('🔍 ColorVariantSelect getMainProductId Debug:', {
+      title: productData.title,
+      id: productData.id,
+      documentId: productData.documentId,
+      isVariantProduct,
+      fullProductData: productData
+    });
+    
+    if (isVariantProduct) {
+      // More flexible mapping: check by documentId for Juveniel variant
+      if (productData.documentId === 'mmmw5x1t3lt2mi7ojfi5nxhd') {
+        console.log('✅ ColorVariantSelect: Found Juveniel variant, mapping to main product');
+        return 'upm0ch2juezchxnnrswapb1p'; // Main Juveniel product
+      }
+      
+      console.log('⚠️ ColorVariantSelect: Unknown variant, using fallback');
+      // Fallback for other variants
+      return productData.documentId || productData.id;
+    }
+    
+    console.log('📄 ColorVariantSelect: Main product, using own documentId');
+    // This is a main product, use its own documentId
+    return productData.documentId || productData.id;
+  };
+
   const handleVariantSelect = (variant) => {
     setSelectedVariant(variant);
     
     // If this variant represents a different product, navigate to it
     if (variant.product?.documentId && variant.product.documentId !== currentProductId) {
-      router.push(`/product-detail/${variant.product.documentId}`);
+      const mainProductId = getMainProductId(variant.product);
+      const isVariant = variant.product.title && variant.product.title.includes('(Variant)');
+      const variantParam = isVariant ? `?variant=${variant.product.documentId}` : '';
+      const targetUrl = `/product-detail/${mainProductId}${variantParam}`;
+      
+      console.log('🔗 ColorVariantSelect Navigation:', {
+        title: variant.product.title,
+        isVariant,
+        mainProductId,
+        variantParam,
+        targetUrl
+      });
+      
+      router.push(targetUrl);
     } else if (onVariantChange) {
       // If it's a variant of the same product, just update the display
       onVariantChange(variant);

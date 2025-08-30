@@ -30,8 +30,8 @@ export default function Context({ children }) {
   const [wishList, setWishList] = useState([]);
   const [isWishlistLoading, setIsWishlistLoading] = useState(false);
   const [compareItem, setCompareItem] = useState([]);
-  const [quickViewItem, setQuickViewItem] = useState(allProducts[0]);
-  const [quickAddItem, setQuickAddItem] = useState(1);
+
+
   const [totalPrice, setTotalPrice] = useState(0);
   const [cartRefreshKey, setCartRefreshKey] = useState(0);
   // Initialize selectedCartItems from sessionStorage for session persistence
@@ -2536,11 +2536,8 @@ export default function Context({ children }) {
     isAddedtoWishlist,
     fetchWishlistFromServer,
     isWishlistLoading,
-    quickViewItem,
     wishList,
-    setQuickViewItem,
-    quickAddItem,
-    setQuickAddItem,
+   
     addToCompareItem,
     isAddedtoCompareItem,
     removeFromCompareItem,

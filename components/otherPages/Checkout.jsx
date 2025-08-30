@@ -17,37 +17,56 @@ import styles from './Checkout.module.css'; // Import CSS module for Checkout co
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
 
-// Function to get thumbnail image URL from product image object
+// Function to get small format image URL from product image object
 const getThumbnailImageUrl = (imgSrc) => {
-  // If it's already a string URL, return as is
+  // If it's already a string URL, check if we can convert it to small format
   if (typeof imgSrc === 'string') {
+    // If it contains medium_ or large_, replace with small_
+    if (imgSrc.includes('/medium_') || imgSrc.includes('/large_')) {
+      return imgSrc.replace(/\/(medium|large)_/, '/small_');
+    }
+    // If it's a regular upload URL without size prefix, add small_ prefix
+    if (imgSrc.includes('/uploads/') && !imgSrc.includes('/small_') && !imgSrc.includes('/medium_') && !imgSrc.includes('/large_') && !imgSrc.includes('/thumbnail_')) {
+      return imgSrc.replace('/uploads/', '/uploads/small_');
+    }
     return imgSrc;
   }
   
-  // If it's an object with formats, try to get thumbnail
+  // If it's an object with formats, prioritize small format
   if (imgSrc && typeof imgSrc === 'object') {
-    if (imgSrc.formats && imgSrc.formats.thumbnail && imgSrc.formats.thumbnail.url) {
-      return imgSrc.formats.thumbnail.url.startsWith('http') 
-        ? imgSrc.formats.thumbnail.url 
-        : `${API_URL}${imgSrc.formats.thumbnail.url}`;
-    }
-    // Fallback to small if thumbnail not available
-    else if (imgSrc.formats && imgSrc.formats.small && imgSrc.formats.small.url) {
+    // Prioritize small format for better performance in cart
+    if (imgSrc.formats && imgSrc.formats.small && imgSrc.formats.small.url) {
       return imgSrc.formats.small.url.startsWith('http') 
         ? imgSrc.formats.small.url 
         : `${API_URL}${imgSrc.formats.small.url}`;
     }
-    // Fallback to medium if small not available
+    // Fallback to thumbnail if small not available
+    else if (imgSrc.formats && imgSrc.formats.thumbnail && imgSrc.formats.thumbnail.url) {
+      return imgSrc.formats.thumbnail.url.startsWith('http') 
+        ? imgSrc.formats.thumbnail.url 
+        : `${API_URL}${imgSrc.formats.thumbnail.url}`;
+    }
+    // Fallback to medium if neither small nor thumbnail available
     else if (imgSrc.formats && imgSrc.formats.medium && imgSrc.formats.medium.url) {
       return imgSrc.formats.medium.url.startsWith('http') 
         ? imgSrc.formats.medium.url 
         : `${API_URL}${imgSrc.formats.medium.url}`;
     }
-    // Fallback to original URL
+    // Fallback to original URL with small_ prefix added
     else if (imgSrc.url) {
-      return imgSrc.url.startsWith('http') 
+      let originalUrl = imgSrc.url.startsWith('http') 
         ? imgSrc.url 
         : `${API_URL}${imgSrc.url}`;
+      
+      // Try to convert original URL to small format
+      if (originalUrl.includes('/medium_') || originalUrl.includes('/large_')) {
+        return originalUrl.replace(/\/(medium|large)_/, '/small_');
+      }
+      // If it's a regular upload URL, add small_ prefix
+      else if (originalUrl.includes('/uploads/') && !originalUrl.includes('/small_') && !originalUrl.includes('/medium_') && !originalUrl.includes('/large_') && !originalUrl.includes('/thumbnail_')) {
+        return originalUrl.replace('/uploads/', '/uploads/small_');
+      }
+      return originalUrl;
     }
   }
   
@@ -1989,67 +2008,29 @@ export default function Checkout() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
                   <h5 className="title" style={{ 
                     position: 'relative',
-                    display: 'inline-block',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
                     marginBottom: '0',
-                    background: 'linear-gradient(90deg, #25D366 0%, #181818 100%)',
-                    color: 'white',
+                    background: 'linear-gradient(90deg, #f7d2ca 0%, #e8b4a0 100%)',
+                    color: '#333',
                     padding: '8px 15px',
                     borderRadius: '4px',
                     boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                   }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        d="M16.5078 10.8734V6.36686C16.5078 5.17166 16.033 4.02541 15.1879 3.18028C14.3428 2.33514 13.1965 1.86035 12.0013 1.86035C10.8061 1.86035 9.65985 2.33514 8.81472 3.18028C7.96958 4.02541 7.49479 5.17166 7.49479 6.36686V10.8734M4.11491 8.62012H19.8877L21.0143 22.1396H2.98828L4.11491 8.62012Z"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                     Shopping Cart
                   </h5>
                   
-                  {/* Combined Update Stock & Delete Button */}
-                  {selectedProducts.length > 0 && (
-                    <div style={{ marginBottom: '16px' }}>
-                      <button
-                        onClick={handleUpdateStockAndDelete}
-                        disabled={isProcessingUpdateAndDelete}
-                        style={{
-                          background: isProcessingUpdateAndDelete ? '#ccc' : 'linear-gradient(90deg, #6f42c1 0%, #e83e8c 100%)',
-                          color: 'white',
-                          border: 'none',
-                          padding: '8px 16px',
-                          borderRadius: '6px',
-                          fontSize: '14px',
-                          fontWeight: '500',
-                          cursor: isProcessingUpdateAndDelete ? 'not-allowed' : 'pointer',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                          transition: 'all 0.2s ease',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          width: '100%',
-                          justifyContent: 'center'
-                        }}
-                        onMouseOver={(e) => {
-                          if (!isProcessingUpdateAndDelete) {
-                            e.target.style.transform = 'translateY(-1px)';
-                            e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
-                          }
-                        }}
-                        onMouseOut={(e) => {
-                          if (!isProcessingUpdateAndDelete) {
-                            e.target.style.transform = 'translateY(0)';
-                            e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-                          }
-                        }}
-                      >
-                        {isProcessingUpdateAndDelete ? (
-                          <>
-                            <span>⏳</span>
-                            <span>Processing...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>🔄</span>
-                            <span>Update Stock & Delete ({selectedProducts.length})</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
+
                 </div>
                 <div className="checkout-summary-vertical" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
                   <div className="d-flex align-items-center justify-content-between text-button">

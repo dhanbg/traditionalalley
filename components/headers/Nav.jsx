@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 export default function Nav() {
   const pathname = usePathname();
   const router = useRouter();
-  const [loadingLink, setLoadingLink] = useState(null);
+
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,12 +69,7 @@ export default function Nav() {
     };
   };
 
-  const handleCategoryClick = (href, linkId) => {
-    setLoadingLink(linkId);
-    router.push(href);
-    // Reset loading state after navigation
-    setTimeout(() => setLoadingLink(null), 1000);
-  };
+
 
   const renderCollectionsList = (collectionsData) => {
     if (loading) {
@@ -115,18 +110,10 @@ export default function Nav() {
             
             return (
               <li className="sub-categories2" key={index}>
-                <div 
-                  className={`categories-item ${loadingLink === collectionLinkId ? 'loading' : ''}`}
-                  onClick={() => handleCategoryClick(collectionHref, collectionLinkId)}
-                  style={{ cursor: 'pointer' }}
-                >
+                <Link href={collectionHref} className="categories-item">
                   <span className="inner-left">{collection.name}</span>
-                  {loadingLink === collectionLinkId ? (
-                    <div className="nav-loading-spinner"></div>
-                  ) : (
-                    <i className="icon icon-arrRight" />
-                  )}
-                </div>
+                  <i className="icon icon-arrRight" />
+                </Link>
               </li>
             );
           })}
@@ -150,29 +137,8 @@ export default function Nav() {
           transform: translateX(3px);
           transition: all 0.3s ease;
         }
-        .categories-item.loading {
-          background-color: #f0f8ff;
-          opacity: 0.8;
-          pointer-events: none;
-        }
-        .categories-title.loading {
-          opacity: 0.8;
-          pointer-events: none;
-        }
-        .nav-loading-spinner {
-          display: inline-block;
-          width: 12px;
-          height: 12px;
-          border: 2px solid #f3f3f3;
-          border-top: 2px solid #e43131;
-          border-radius: 50%;
-          animation: navSpin 0.8s linear infinite;
-          margin-left: 8px;
-        }
-        @keyframes navSpin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
+
+
         .categories-title {
           display: flex;
           align-items: center;
@@ -189,13 +155,8 @@ export default function Nav() {
       {/* Women Collections */}
       <li className={pathname.startsWith("/women") || pathname.startsWith("/collections") ? "active" : ""}>
         <div className="tf-list-categories">
-          <div 
-            className={`categories-title ${loadingLink === 'main-women' ? 'loading' : ''}`}
-            onClick={() => handleCategoryClick('/women', 'main-women')}
-            style={{ cursor: 'pointer' }}
-          >
-            <span className="item-link">Women</span>
-            {loadingLink === 'main-women' && <div className="nav-loading-spinner"></div>}
+          <div className="categories-title">
+            <Link href="/women" className="item-link">Women</Link>
           </div>
           {renderCollectionsList(getNavigationData().women)}
         </div>
@@ -204,13 +165,8 @@ export default function Nav() {
       {/* Men Collections */}
       <li className={pathname.startsWith("/men") ? "active" : ""}>
         <div className="tf-list-categories">
-          <div 
-            className={`categories-title ${loadingLink === 'main-men' ? 'loading' : ''}`}
-            onClick={() => handleCategoryClick('/men', 'main-men')}
-            style={{ cursor: 'pointer' }}
-          >
-            <span className="item-link">Men</span>
-            {loadingLink === 'main-men' && <div className="nav-loading-spinner"></div>}
+          <div className="categories-title">
+            <Link href="/men" className="item-link">Men</Link>
           </div>
           {renderCollectionsList(getNavigationData().men)}
         </div>
@@ -219,13 +175,8 @@ export default function Nav() {
       {/* Kids Collections */}
       <li className={pathname.startsWith("/kids") ? "active" : ""}>
         <div className="tf-list-categories">
-          <div 
-            className={`categories-title ${loadingLink === 'main-kids' ? 'loading' : ''}`}
-            onClick={() => handleCategoryClick('/kids', 'main-kids')}
-            style={{ cursor: 'pointer' }}
-          >
-            <span className="item-link">Kids</span>
-            {loadingLink === 'main-kids' && <div className="nav-loading-spinner"></div>}
+          <div className="categories-title">
+            <Link href="/kids" className="item-link">Kids</Link>
           </div>
           {renderCollectionsList(getNavigationData().kids)}
         </div>

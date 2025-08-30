@@ -39,7 +39,7 @@
 .tf-slideshow {
     overflow: hidden;
     position: relative;
-    height: 803px; // Fixed height to prevent layout shifting
+    /* height: 610px; */ // Fixed height to prevent layout shifting
     .wrap-pagination {
         position: absolute;
         z-index: 10;

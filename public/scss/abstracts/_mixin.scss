@@ -109,3 +109,114 @@
     bottom  : 0;
     position: absolute;
 }
+
+// Modern Animation Mixins
+@mixin smooth-transition($properties: all, $duration: 0.3s, $easing: ease) {
+    -webkit-transition: $properties $duration $easing;
+    -moz-transition: $properties $duration $easing;
+    -ms-transition: $properties $duration $easing;
+    -o-transition: $properties $duration $easing;
+    transition: $properties $duration $easing;
+}
+
+@mixin cubic-bezier-transition($properties: all, $duration: 0.3s) {
+    -webkit-transition: $properties $duration cubic-bezier(0.4, 0, 0.2, 1);
+    -moz-transition: $properties $duration cubic-bezier(0.4, 0, 0.2, 1);
+    -ms-transition: $properties $duration cubic-bezier(0.4, 0, 0.2, 1);
+    -o-transition: $properties $duration cubic-bezier(0.4, 0, 0.2, 1);
+    transition: $properties $duration cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@mixin bounce-transition($properties: transform, $duration: 0.3s) {
+    -webkit-transition: $properties $duration cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    -moz-transition: $properties $duration cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    -ms-transition: $properties $duration cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    -o-transition: $properties $duration cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    transition: $properties $duration cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@mixin hover-lift($lift: -4px, $shadow: 0 10px 25px rgba(0, 0, 0, 0.15)) {
+    @include cubic-bezier-transition(transform, 0.3s);
+    @include cubic-bezier-transition(box-shadow, 0.3s);
+    
+    &:hover {
+        transform: translateY($lift);
+        box-shadow: $shadow;
+    }
+}
+
+@mixin hover-scale($scale: 1.05) {
+    @include cubic-bezier-transition(transform, 0.3s);
+    
+    &:hover {
+        transform: scale($scale);
+    }
+}
+
+@mixin hover-glow($color: var(--primary), $intensity: 0.4) {
+    @include smooth-transition(box-shadow, 0.3s);
+    
+    &:hover {
+        box-shadow: 0 0 20px rgba($color, $intensity);
+    }
+}
+
+@mixin micro-interaction($scale: 0.95) {
+    @include bounce-transition(transform, 0.2s);
+    
+    &:active {
+        transform: scale($scale);
+    }
+}
+
+@mixin focus-ring($color: var(--primary), $opacity: 0.3) {
+    @include smooth-transition(box-shadow, 0.2s);
+    
+    &:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba($color, $opacity);
+    }
+}
+
+@mixin fade-in-animation($duration: 0.6s, $delay: 0s) {
+    opacity: 0;
+    animation: fadeInUp $duration ease-out $delay forwards;
+}
+
+@mixin stagger-animation($max-children: 8, $delay-increment: 0.1s) {
+    > * {
+        opacity: 0;
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+    
+    @for $i from 1 through $max-children {
+        > *:nth-child(#{$i}) {
+            animation-delay: #{$i * $delay-increment};
+        }
+    }
+}
+
+@mixin loading-spinner($size: 20px, $border-width: 2px, $color: var(--main)) {
+    width: $size;
+    height: $size;
+    border: $border-width solid rgba($color, 0.2);
+    border-top: $border-width solid $color;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@mixin shimmer-effect($bg-color: #f0f0f0, $shimmer-color: #e0e0e0) {
+    background: linear-gradient(90deg, $bg-color 25%, $shimmer-color 50%, $bg-color 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+// Keyframes for shimmer effect
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}

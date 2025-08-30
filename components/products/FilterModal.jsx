@@ -6,6 +6,7 @@ import {
   sizes as defaultSizes,
 } from "@/data/productFilterOptions";
 import RangeSlider from "react-range-slider-input";
+import { calculateInStock } from "@/utils/stockUtils";
 
 export default function FilterModal({ allProps = {}, products = [], filterOptions = {} }) {
   // Safety check for allProps
@@ -90,7 +91,7 @@ export default function FilterModal({ allProps = {}, products = [], filterOption
 
   // Calculate product counts based on the actual products from the API
   const getAvailabilityCount = (option) => {
-    return products.filter(el => el.inStock === option.value).length;
+    return products.filter(el => calculateInStock(el) === option.value).length;
   };
 
   const getCollectionCount = (collection) => {

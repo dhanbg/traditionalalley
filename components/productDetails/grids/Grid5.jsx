@@ -117,7 +117,7 @@ export default function Grid5({
     }, options);
 
     // Observe all items
-    const elements = document.querySelectorAll(".item-scroll-quickview");
+    const elements = document.querySelectorAll(".item-scroll-product");
     elements.forEach((el) => observer.observe(el));
     observerRef.current = observer;
 
@@ -129,13 +129,13 @@ export default function Grid5({
     };
   }, []);
   return (
-    <div className="tf-quick-view-image">
-      <div className="wrap-quick-view wrapper-scroll-quickview">
+    <div className="tf-product-image">
+      <div className="wrap-product-view wrapper-scroll-product">
         {finalItems.map((link, index) => (
           <a
             href={link.href}
             target={link.target}
-            className="quickView-item item-scroll-quickview"
+            className="product-item item-scroll-product"
             data-scroll={link.scroll}
             data-pswp-width={`${link.width}px`}
             data-pswp-height={`${link.height}px`}

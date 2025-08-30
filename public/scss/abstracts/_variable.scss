@@ -6,34 +6,102 @@ $fontIcon: "icomoon";
 
 :root{
     
-    // color
+    // Enhanced color palette
     --primary: #E43131;
+    --primary-light: #F56565;
+    --primary-dark: #C53030;
+    --primary-50: #FEF2F2;
+    --primary-100: #FEE2E2;
+    --primary-500: #EF4444;
+    --primary-600: #DC2626;
+    --primary-700: #B91C1C;
+    
     --main: #181818;
-    --secondary: #4D4E4F;
-    --secondary-2:#A0A0A0;
+    --main-light: #2D3748;
+    --main-dark: #0F0F0F;
+    --main-50: #F7FAFC;
+    --main-100: #EDF2F7;
+    --main-200: #E2E8F0;
+    --main-300: #CBD5E0;
+    --main-400: #A0AEC0;
+    --main-500: #718096;
+    --main-600: #4A5568;
+    --main-700: #2D3748;
+    --main-800: #1A202C;
+    --main-900: #171923;
+    
+    --secondary: #4A5568;
+    --secondary-light: #718096;
+    --secondary-dark: #2D3748;
+    --secondary-2: #A0AEC0;
+    
     --white: #FFFFFF;
-    --surface: #F7F7F7;
-    --critical: #F03E3E;
-    --warning: #9391E1;
-    --success:#3DAB25;
-    --yellow: #F0A750;
-    --line: #E9E9E9;
-    --pink: #EC749D;
-    --blue: #0C74D6;
-
-    // rgba color
-    --main-rgba-1: rgba(0, 0, 0, 0.16);
-    --main-rgba-2: rgba(0, 0, 0, 0.15);
-    --gradient:linear-gradient(87deg, #FBF1F1 3.59%, #F4F1FA 95.02%);
-
-    --rgba-primary: rgba(228, 49, 49, 0.1);
-
-    --bg-scrollbar-track: #f1f1f1;
-    --bg-scrollbar-thumb: #c1c1c1;
-
-    --shadow1: 0px 10px 25px 0px #2B344A1F;
-    --shadow2: 0px 5px 18px 5px #40485726;
-    --backdrop: rgba(24, 24, 24, 0.2);
+    --surface: #F8FAFC;
+    --surface-light: #FAFBFC;
+    --surface-dark: #F1F5F9;
+    
+    --critical: #E53E3E;
+    --critical-light: #FC8181;
+    --critical-dark: #C53030;
+    
+    --warning: #D69E2E;
+    --warning-light: #F6E05E;
+    --warning-dark: #B7791F;
+    
+    --success: #38A169;
+    --success-light: #68D391;
+    --success-dark: #2F855A;
+    
+    --yellow: #D69E2E;
+    --line: #E2E8F0;
+    --line-light: #F7FAFC;
+    --line-dark: #CBD5E0;
+    
+    --pink: #ED64A6;
+    --blue: #3182CE;
+    
+    // Enhanced rgba colors
+    --main-rgba-1: rgba(24, 24, 24, 0.08);
+    --main-rgba-2: rgba(24, 24, 24, 0.12);
+    --main-rgba-3: rgba(24, 24, 24, 0.16);
+    --main-rgba-4: rgba(24, 24, 24, 0.24);
+    
+    --primary-rgba-1: rgba(228, 49, 49, 0.08);
+    --primary-rgba-2: rgba(228, 49, 49, 0.12);
+    --primary-rgba-3: rgba(228, 49, 49, 0.16);
+    --primary-rgba-4: rgba(228, 49, 49, 0.24);
+    
+    --white-rgba-1: rgba(255, 255, 255, 0.08);
+    --white-rgba-2: rgba(255, 255, 255, 0.12);
+    --white-rgba-3: rgba(255, 255, 255, 0.16);
+    --white-rgba-4: rgba(255, 255, 255, 0.24);
+    
+    // Enhanced gradients
+    --gradient: linear-gradient(135deg, #F8FAFC 0%, #EDF2F7 100%);
+    --gradient-primary: linear-gradient(135deg, #E43131 0%, #C53030 100%);
+    --gradient-surface: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+    --gradient-dark: linear-gradient(135deg, #2D3748 0%, #1A202C 100%);
+    
+    // Enhanced shadows
+    --shadow-xs: 0 1px 2px 0 rgba(24, 24, 24, 0.05);
+    --shadow-sm: 0 1px 3px 0 rgba(24, 24, 24, 0.1), 0 1px 2px 0 rgba(24, 24, 24, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(24, 24, 24, 0.1), 0 2px 4px -1px rgba(24, 24, 24, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(24, 24, 24, 0.1), 0 4px 6px -2px rgba(24, 24, 24, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(24, 24, 24, 0.1), 0 10px 10px -5px rgba(24, 24, 24, 0.04);
+    --shadow-2xl: 0 25px 50px -12px rgba(24, 24, 24, 0.25);
+    
+    // Legacy shadows (for compatibility)
+    --shadow1: var(--shadow-lg);
+    --shadow2: var(--shadow-xl);
+    
+    --backdrop: rgba(24, 24, 24, 0.4);
+    --backdrop-light: rgba(24, 24, 24, 0.2);
+    --backdrop-dark: rgba(24, 24, 24, 0.6);
+    
+    // Enhanced scrollbar
+    --bg-scrollbar-track: var(--surface);
+    --bg-scrollbar-thumb: var(--main-300);
+    --bg-scrollbar-thumb-hover: var(--main-400);
     
 }
 

@@ -21,9 +21,22 @@ export default function page() {
         {/* page-title */}
         <div
           className="page-title"
-          style={{ backgroundImage: "url(/images/section/page-title.jpg)" }}
+          style={{ 
+            backgroundImage: "url(/images/section/page-title.jpg)",
+            height: "250px",
+            minHeight: "250px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
         >
-          <div className="container-full">
+          <div className="container" style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100%"
+          }}>
             <div className="row">
               <div className="col-12">
                 <h3 className="heading text-center">My Account</h3>
@@ -69,4 +82,4 @@ export default function page() {
       <Footer1 />
     </>
   );
-} 
+}

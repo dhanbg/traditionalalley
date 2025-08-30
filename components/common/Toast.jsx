@@ -51,196 +51,86 @@ const Toast = ({ message, type = 'info', isVisible = true, duration = 5000, onCl
     }
   };
 
+  const toastStyles = {
+    position: 'relative',
+    zIndex: 9999,
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    background: type === 'error' ? 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)' :
+                type === 'warning' ? 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)' :
+                type === 'success' ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' : 'white',
+    borderRadius: '12px',
+    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05)',
+    minWidth: '320px',
+    maxWidth: '400px',
+    overflow: 'hidden',
+    borderLeft: `4px solid ${type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : type === 'success' ? '#10b981' : '#6b7280'}`,
+    transform: isAnimating ? 'translateX(0)' : 'translateX(100%)',
+    opacity: isAnimating ? 1 : 0
+  };
+
+  const contentStyles = {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '16px',
+    gap: '12px'
+  };
+
+  const iconWrapperStyles = {
+    flexShrink: 0,
+    width: '20px',
+    height: '20px',
+    color: type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : type === 'success' ? '#10b981' : '#6b7280'
+  };
+
+  const messageStyles = {
+    flex: 1,
+    margin: 0,
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#374151',
+    lineHeight: '1.4'
+  };
+
+  const progressStyles = {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '3px',
+    background: 'rgba(0, 0, 0, 0.1)',
+    overflow: 'hidden'
+  };
+
+  const progressBarStyles = {
+    height: '100%',
+    background: type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : type === 'success' ? '#10b981' : '#6b7280',
+    animation: `toast-progress ${duration}ms linear forwards`,
+    transformOrigin: 'left'
+  };
+
   return (
     <>
-      <div className="toast-container toast-show" style={{ 
-        position: 'relative',
-        background: 'red',
-        color: 'white',
-        padding: '10px',
-        margin: '10px 0',
-        borderRadius: '4px',
-        border: '2px solid black',
-        zIndex: 99999
-      }}>
-        <div style={{ padding: '10px', fontSize: '14px' }}>
-          <strong>TOAST: {type.toUpperCase()}</strong>
-          <br />
-          {message}
-          <br />
-          <button onClick={handleClose} style={{ marginTop: '5px', padding: '2px 8px' }}>
-            Close
-          </button>
+      <div style={toastStyles}>
+        <div style={contentStyles}>
+          <div style={iconWrapperStyles}>
+            {getIcon()}
+          </div>
+          <div>
+            <p style={messageStyles}>{message}</p>
+          </div>
+        </div>
+        <div style={progressStyles}>
+          <div style={progressBarStyles}></div>
         </div>
       </div>
 
-      <style jsx>{`
-        .toast-container {
-          position: relative;
-          z-index: 9999;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          transform: translateX(100%);
-          opacity: 0;
-        }
-
-        .toast-show {
-          transform: translateX(0);
-          opacity: 1;
-        }
-
-        .toast-hide {
-          transform: translateX(100%);
-          opacity: 0;
-        }
-
-        .toast {
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
-          min-width: 320px;
-          max-width: 400px;
-          overflow: hidden;
-          border-left: 4px solid;
-        }
-
-        .toast-error {
-          border-left-color: #ef4444;
-        }
-
-        .toast-warning {
-          border-left-color: #f59e0b;
-        }
-
-        .toast-success {
-          border-left-color: #10b981;
-        }
-
-        .toast-content {
-          display: flex;
-          align-items: flex-start;
-          padding: 16px;
-          gap: 12px;
-        }
-
-        .toast-icon-wrapper {
-          flex-shrink: 0;
-          width: 24px;
-          height: 24px;
-        }
-
-        .toast-icon {
-          width: 100%;
-          height: 100%;
-        }
-
-        .toast-error .toast-icon {
-          color: #ef4444;
-        }
-
-        .toast-warning .toast-icon {
-          color: #f59e0b;
-        }
-
-        .toast-success .toast-icon {
-          color: #10b981;
-        }
-
-        .toast-message {
-          flex: 1;
-          margin-right: 8px;
-        }
-
-        .toast-message p {
-          margin: 0;
-          font-size: 14px;
-          line-height: 1.5;
-          color: #374151;
-          font-weight: 500;
-        }
-        
-        .toast-message .stock-info {
-          font-size: 12px;
-          color: #6b7280;
-          margin-top: 4px;
-        }
-
-        .toast-close-btn {
-          flex-shrink: 0;
-          width: 20px;
-          height: 20px;
-          background: none;
-          border: none;
-          color: #9ca3af;
-          cursor: pointer;
-          border-radius: 4px;
-          transition: all 0.2s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .toast-close-btn:hover {
-          color: #6b7280;
-          background: #f3f4f6;
-        }
-
-        .toast-close-btn svg {
-          width: 16px;
-          height: 16px;
-        }
-
-        .toast-progress {
-          height: 3px;
-          background: #f3f4f6;
-          overflow: hidden;
-        }
-
-        .toast-progress-bar {
-          height: 100%;
-          width: 100%;
-          transform-origin: left;
-          animation: toast-progress ${duration}ms linear forwards;
-        }
-
-        .toast-progress-error {
-          background: #ef4444;
-        }
-
-        .toast-progress-warning {
-          background: #f59e0b;
-        }
-
-        .toast-progress-success {
-          background: #10b981;
-        }
-
+      <style>{`
         @keyframes toast-progress {
           from {
             transform: scaleX(1);
           }
           to {
             transform: scaleX(0);
-          }
-        }
-
-        @media (max-width: 480px) {
-          .toast-container {
-            top: 10px;
-            right: 10px;
-            left: 10px;
-          }
-
-          .toast {
-            min-width: auto;
-            max-width: none;
-          }
-
-          .toast-content {
-            padding: 14px;
-          }
-
-          .toast-message p {
-            font-size: 13px;
           }
         }
       `}</style>

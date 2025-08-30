@@ -6,6 +6,7 @@ import ColorVariantSelect from "@/components/productDetails/ColorVariantSelect";
 import SizeSelect, { getStockIndicatorForSize } from "@/components/productDetails/SizeSelect";
 import QuantitySelect from "@/components/productDetails/QuantitySelect";
 import { getBestImageUrl } from "@/utils/imageUtils";
+import { calculateInStock } from "@/utils/stockUtils";
 import Image from "next/image";
 import { useContextElement } from "@/context/Context";
 import { useSession, signIn } from "next-auth/react";
@@ -508,7 +509,7 @@ export default function Details1({ product, variants = [] }) {
         imgSrc: processImageUrl(variant.imgSrc),
         imgHover: processImageUrl(variant.imgHover) || processImageUrl(variant.imgSrc),
         gallery: processGalleryItems(variant.gallery && variant.gallery.length > 0 ? variant.gallery : safeProduct.gallery),
-        inStock: variant.inStock,
+        inStock: calculateInStock(variant),
         quantity: variant.quantity
       });
       // Update active color (extract from color image or variant info)
@@ -880,41 +881,7 @@ export default function Details1({ product, variants = [] }) {
                             })()}
                           </span>
                         </a>
-                        {/* Wishlist button - only show when out of stock */}
-                        {isOutOfStock && (
-                          <a
-                            onClick={wishlistLoading ? null : handleWishlistClick}
-                            className={`box-icon hover-tooltip text-caption-2 wishlist btn-icon-action ${
-                              isInWishlist ? 'active' : ''
-                            } ${
-                              wishlistLoading ? 'loading' : ''
-                            }`}
-                            style={{ 
-                              height: "46px", 
-                              display: "flex", 
-                              alignItems: "center", 
-                              justifyContent: "center",
-                              opacity: wishlistLoading ? 0.6 : 1,
-                              cursor: wishlistLoading ? 'not-allowed' : 'pointer',
-                              backgroundColor: isInWishlist ? '#dc3545' : '',
-                              color: isInWishlist ? 'white' : ''
-                            }}
-                          >
-                            {wishlistLoading ? (
-                              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" style={{ width: '16px', height: '16px' }} />
-                            ) : (
-                              <span className={`icon ${isInWishlist ? 'icon-heart-fill' : 'icon-heart'}`} />
-                            )}
-                            <span className="tooltip text-caption-2">
-                              {(() => {
-                                if (wishlistLoading) return "Adding to wishlist...";
-                                if (!user) return "Login to add to wishlist";
-                                if (isInWishlist) return "Already in wishlist";
-                                return "Add to wishlist (Out of stock)";
-                              })()}
-                            </span>
-                          </a>
-                        )}
+
                         <button 
                           onClick={() => setShowCustomOrderForm(true)}
                           className="btn-style-1 text-btn-uppercase fw-6"
@@ -927,9 +894,18 @@ export default function Details1({ product, variants = [] }) {
                             minWidth: "140px",
                             padding: "0 25px",
                             whiteSpace: "nowrap",
-                            marginLeft: "10px"
+                            marginLeft: "10px",
+                            backgroundColor: "var(--main)",
+                            color: "var(--white)",
+                            border: "1px solid var(--main)",
+                            fontWeight: "600",
+                            position: "relative",
+                            overflow: "visible"
                           }}
+                          aria-label="Request Custom Order - Always Available"
+                          title="Click to request a custom order for this product"
                         >
+                          <span style={{ marginRight: "8px" }}>✨</span>
                           Custom Order
                         </button>
                       </div>
@@ -938,8 +914,7 @@ export default function Details1({ product, variants = [] }) {
                     <div className="tf-product-info-help">
                       <div className="tf-product-info-extra-link">
                         <a
-                          href="#delivery_return"
-                          data-bs-toggle="modal"
+                          href="#"
                           className="tf-product-extra-icon"
                         >
                           <div className="icon">
@@ -950,8 +925,7 @@ export default function Details1({ product, variants = [] }) {
                           </p>
                         </a>
                         <a
-                          href="#ask_question"
-                          data-bs-toggle="modal"
+                          href="#"
                           className="tf-product-extra-icon"
                         >
                           <div className="icon">
@@ -960,8 +934,7 @@ export default function Details1({ product, variants = [] }) {
                           <p className="text-caption-1">Ask A Question</p>
                         </a>
                         <a
-                          href="#share_social"
-                          data-bs-toggle="modal"
+                          href="#"
                           className="tf-product-extra-icon"
                         >
                           <div className="icon">
@@ -1054,16 +1027,6 @@ export default function Details1({ product, variants = [] }) {
                         </p>
                       </li>
                     </ul>
-                    <div className="tf-product-info-guranteed">
-                      <div className="text-title">Guranteed safe checkout:</div>
-                      <div className="tf-payment">
-                        <img
-                          alt="NPS"
-                          src="/nps.png"
-                          className="w-16 h-8 object-contain"
-                        />
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>

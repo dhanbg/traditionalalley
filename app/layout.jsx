@@ -10,8 +10,8 @@ import { useEffect, useState } from "react";
 import Context from "@/context/Context";
 import { ToastProvider } from "@/context/ToastContext";
 import CartModal from "@/components/modals/CartModal";
-import QuickView from "@/components/modals/QuickView";
-import QuickAdd from "@/components/modals/QuickAdd";
+
+
 import Compare from "@/components/modals/Compare";
 import MobileMenu from "@/components/modals/MobileMenu";
 // import NewsLetterModal from "@/components/modals/NewsLetterModal";
@@ -21,6 +21,7 @@ import Wishlist from "@/components/modals/Wishlist";
 import DemoModal from "@/components/modals/DemoModal";
 import Categories from "@/components/modals/Categories";
 import ScrollTop from "@/components/common/ScrollTop";
+import LoadingBar from "@/components/common/LoadingBar";
 import { SessionProvider } from "next-auth/react";
 
 export default function RootLayout({ children }) {
@@ -163,10 +164,11 @@ export default function RootLayout({ children }) {
       <body className="preload-wrapper popup-loader" suppressHydrationWarning={true}>
         <ToastProvider>
           <Context>
+            <LoadingBar />
             <div id="wrapper">{children}</div>
           <CartModal />
-          <QuickView />
-          <QuickAdd />
+
+  
           <Compare />
           <MobileMenu />
 

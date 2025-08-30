@@ -47,7 +47,7 @@ export const products = [
     oldPrice: 98.0,
     imgSrc: "/images/products/womens/women-29.jpg",
     imgHover: "/images/products/womens/women-30.jpg",
-    addToCart: "Quick Add",
+
     sizes: ["S", "M", "L", "XL"],
     countdown: 1007500,
     colors: [
@@ -325,7 +325,7 @@ export const products7 = [
     oldPrice: 98.0,
     imgSrc: "/images/products/mens/men-7.jpg",
     imgHover: "/images/products/mens/men-8.jpg",
-    addToCart: "Quick Add",
+
     sizes: ["S", "M", "L", "XL"],
     countdown: 1007500,
     colors: [
@@ -534,7 +534,7 @@ export const products42 = [
     price: 89.99,
     oldPrice: 98.0,
 
-    addToCart: "Quick Add",
+
     sizes: ["S", "M", "L", "XL"],
     countdown: 1007500,
     colors: [
@@ -1856,7 +1856,7 @@ export const products8 = [
     title: "Intense Hydration Cream",
     price: 89.99,
     oldPrice: 98.0,
-    addToCart: "Quick Add",
+
     sizes: ["S", "M", "L", "XL"],
     countdown: 1007500,
     imgSrc: "/images/products/beauty-cosmetic/beauty25.jpg",
@@ -2100,7 +2100,7 @@ export const products12 = [
   {
     id: 53,
     title: "Product Name",
-    addToCart: "Quick Add",
+
     sizes: ["S", "M", "L", "XL"],
     countdown: 1007500,
     imgSrc: "/images/products/furniture/furniture32.jpg",
@@ -2435,7 +2435,7 @@ export const products15 = [
     oldPrice: 98.0,
     imgSrc: "/images/products/jewelry/jewelry-6.jpg",
     imgHover: "/images/products/jewelry/jewelry-7.jpg",
-    addToCart: "Quick Add",
+
     sizes: ["S", "M", "L", "XL"],
     countdown: 1007500,
     colors: [
@@ -2688,7 +2688,7 @@ export const products18 = [
     price: 89.99,
     imgSrc: "/images/products/activewear/activewear-5.jpg",
     imgHover: "/images/products/activewear/activewear-6.jpg",
-    addToCart: "Quick Add",
+
     sizes: ["S", "M", "L", "XL"],
     countdown: 1007500,
     colors: [
@@ -3127,7 +3127,7 @@ export const products24 = [
   },
   {
     id: 137,
-    addToCart: "Quick Add",
+
     sizes: ["S", "M", "L", "XL"],
     countdown: 1007500,
     imgSrc: "/images/products/sock/sock-5.jpg",
@@ -3196,7 +3196,7 @@ export const products25 = [
   },
   {
     id: 141,
-    addToCart: "Quick Add",
+
     sizes: ["S", "M", "L", "XL"],
     countdown: 1007500,
     imgSrc: "/images/products/sock/sock-11.jpg",
@@ -3361,7 +3361,7 @@ export const products27 = [
     title: "EcoCamp All-Weather Shelter",
     oldPrice: 98.0,
     price: 79.99,
-    addToCart: "Quick Add",
+
     sizes: ["S", "M", "L", "XL"],
     countdown: 1007500,
     colors: [

@@ -224,10 +224,14 @@ export default function Hero() {
     transition: 'opacity 0.3s ease' // Faster transition
   };
 
-  // Force consistent bottom spacing from Hero component side
+  // Force consistent spacing and height from Hero component side
   const heroWrapperStyle = {
     marginBottom: isMobile ? '0px' : '0px', // Remove any default margins
-    paddingBottom: '0px' // Ensure no bottom padding
+    paddingBottom: '0px', // Ensure no bottom padding
+    height: isMobile ? '70vh' : '90vh', // Increased height to prevent cutting top content
+    minHeight: isMobile ? '500px' : '700px', // Increased minimum height
+    position: 'relative',
+    overflow: 'visible' // Changed from hidden to visible to prevent cutting content
   };
 
   return (
@@ -239,6 +243,7 @@ export default function Hero() {
         loop={slides.length > 1} // Enable loop only if there are enough slides
         modules={[EffectFade, Autoplay, Pagination]}
         autoplay={false}
+        style={{ height: '100%' }} // Ensure Swiper fills the parent container
         pagination={{
           clickable: true,
           el: ".spd55",
@@ -262,7 +267,7 @@ export default function Hero() {
         {slides.map((slide, index) => {
             return (
               <SwiperSlide key={index}>
-              <div className="wrap-slider" style={blurStyle}>
+              <div className="wrap-slider" style={{...blurStyle, height: '100%'}}>
                 {slide.mediaType === 'video' && slide.videoSrc ? (
                   <>
                     <video
@@ -277,7 +282,8 @@ export default function Hero() {
                       style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: isMobile ? 'contain' : 'cover',
+                        objectFit: 'cover',
+                        objectPosition: isMobile ? 'center bottom' : 'center center',
                         backgroundColor: 'transparent', // Removed black background
                       }}
                       onLoadedData={() => setImageLoaded(true)}
@@ -351,6 +357,12 @@ export default function Hero() {
                     height={803}
                     quality={100}
                     priority={index === 0 || slide.imgSrc.includes('p2_2215d1f166.jpg')}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      objectPosition: isMobile ? 'center bottom' : 'center center'
+                    }}
                     onLoad={() => setImageLoaded(true)}
                   />
                 )}

@@ -19,9 +19,22 @@ export default function ShoppingCartPage() {
       <CartLoadingGuard>
         <div
           className="page-title"
-          style={{ backgroundImage: "url(/images/section/page-title.jpg)" }}
+          style={{ 
+            backgroundImage: "url(/images/section/page-title.jpg)",
+            height: "250px",
+            minHeight: "250px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
         >
-          <div className="container">
+          <div className="container" style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100%"
+          }}>
             <h3 className="heading text-center">Shopping Cart</h3>
             <ul className="breadcrumbs d-flex align-items-center justify-content-center">
               <li>

@@ -25,7 +25,6 @@ export const useStockNotifications = () => {
       }
     }
     
-    console.log('Calling showError with:', displayMessage);
     showError(displayMessage, 5000); // Show for 5 seconds
   };
 

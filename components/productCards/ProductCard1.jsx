@@ -7,6 +7,7 @@ import PriceDisplay from "../common/PriceDisplay";
 import { useContextElement } from "@/context/Context";
 import { useSession, signIn } from "next-auth/react";
 import { getImageUrl } from "@/utils/imageUtils";
+import { calculateInStock } from "@/utils/stockUtils";
 
 // Default placeholder image
 const DEFAULT_IMAGE = '/logo.png';
@@ -38,12 +39,53 @@ function getStrapiSmallImage(imageObj) {
 }
 
 export default function ProductCard1({ product, gridClass = "", index = 0 }) {
+  // Debug logging for size_stocks
+  console.log('🔍 ProductCard1 Debug:', {
+    title: product.title,
+    size_stocks: product.size_stocks,
+    has_size_stocks: product.size_stocks && Object.keys(product.size_stocks).length > 0
+  });
+  
   // Ensure product has valid image properties
   const safeProduct = {
     ...product,
     imgSrc: getStrapiSmallImage(product.imgSrc) || DEFAULT_IMAGE,
     imgHover: getStrapiSmallImage(product.imgHover) || getStrapiSmallImage(product.imgSrc) || DEFAULT_IMAGE
   };
+  
+  // Parse size_stocks data for size selection
+  const parseSizeStocks = (sizeStocks) => {
+    if (!sizeStocks) return [];
+    
+    try {
+      let parsedData;
+      if (typeof sizeStocks === 'string') {
+        parsedData = JSON.parse(sizeStocks);
+      } else {
+        parsedData = sizeStocks;
+      }
+      
+      if (typeof parsedData === 'object' && !Array.isArray(parsedData)) {
+        // Format: {"S": 10, "M": 5, "L": 0, ...}
+        return Object.entries(parsedData).map(([size, quantity]) => ({
+          id: `values-${size.toLowerCase()}`,
+          value: size,
+          quantity: typeof quantity === 'number' ? quantity : 0,
+          disabled: (typeof quantity === 'number' ? quantity : 0) === 0
+        }));
+      }
+    } catch (error) {
+      console.error('Error parsing size_stocks:', error);
+    }
+    
+    return [];
+  };
+
+  const availableSizes = parseSizeStocks(safeProduct.size_stocks);
+  const hasAvailableSizes = availableSizes.length > 0;
+  
+  // Calculate if product is in stock based on size_stocks
+  const isInStock = calculateInStock(safeProduct);
   
   // Double-check that imgSrc and imgHover are valid strings and not empty
   if (!safeProduct.imgSrc || safeProduct.imgSrc === "") {
@@ -72,18 +114,17 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
   
   const [currentImage, setCurrentImage] = useState(safeProduct.imgSrc);
   const [inView, setInView] = useState(false);
+  const [showSizeSelection, setShowSizeSelection] = useState(false);
+  const [selectedSize, setSelectedSize] = useState('');
   const cardRef = useRef(null);
 
   const {
-    setQuickAddItem,
-    addToWishlist,
-    isAddedtoWishlist,
     addToCompareItem,
     isAddedtoCompareItem,
-    setQuickViewItem,
+
     addProductToCart,
     isAddedToCartProducts,
-    removeFromWishlist,
+    isProductSizeInCart,
     user
   } = useContextElement();
   const { data: session } = useSession();
@@ -112,26 +153,18 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
     };
   }, []);
 
-  const handleWishlistClick = (id) => {
-    console.log('🎯 ProductCard1 handleWishlistClick:', {
-      id,
-      productId: safeProduct.id,
-      documentId: safeProduct.documentId,
-      isInWishlist: isAddedtoWishlist(id),
-      user: user?.id
-    });
-    if (!user) {
-      signIn();
-    } else {
-      addToWishlist(id);
-    }
-  };
+
 
   const handleCartClick = () => {
     if (!user) {
       signIn();
     } else {
-      addProductToCart(safeProduct.id);
+      // Create unique cart ID that includes size information if applicable
+      let cartId = safeProduct.documentId || safeProduct.id;
+      if (hasAvailableSizes && selectedSize) {
+        cartId = `${cartId}-size-${selectedSize}`;
+      }
+      addProductToCart(cartId, 1, true, null, selectedSize);
     }
   };
 
@@ -145,9 +178,18 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
 
   return (
     <div
-      ref={cardRef}
-      className={`card-product ${gridClass} ${inView ? "animate-in" : ""} ${!safeProduct.inStock ? "out-of-stock" : ""}`}
+      className={`card-product ${gridClass} ${inView ? "animate-in" : ""} ${!isInStock ? "out-of-stock" : ""}`}
       style={{ animationDelay: `${index * 0.12 + 0.1}s` }}
+      ref={cardRef}
+      onMouseEnter={() => {
+        if (hasAvailableSizes) {
+          setShowSizeSelection(true);
+        }
+      }}
+      onMouseLeave={() => {
+        setShowSizeSelection(false);
+        setSelectedSize(''); // Reset selection when mouse leaves
+      }}
     >
       <div className="card-product-wrapper">
         <Link href={`/product-detail/${safeProduct.documentId || safeProduct.id}`} className="product-img">
@@ -267,17 +309,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
             <span className="on-sale-item">-{safeProduct.price && safeProduct.oldPrice ? discountPercentage : safeProduct.salePercentage}%</span>
           </div>
         )}
-        {safeProduct.sizes && (
-          <div className="variant-wrap size-list">
-            <ul className="variant-box">
-              {safeProduct.sizes.map((size) => (
-                <li key={size} className="size-item">
-                  {size}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+
         {safeProduct.countdown && (
           <div className="variant-wrap countdown-wrap">
             <div className="variant-box">
@@ -298,62 +330,135 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
         ) : (
           ""
         )}
-        {!safeProduct.inStock && (
-          <div className="out-of-stock-wrap">
-            <span className="out-of-stock-badge">OUT OF STOCK</span>
+        {!isInStock && (
+          <div className="out-of-stock-notice" style={{
+            position: 'absolute',
+            top: '8px',
+            left: '8px',
+            right: '8px',
+            zIndex: 15,
+            backgroundColor: 'rgba(220, 53, 69, 0.9)',
+            color: 'white',
+            padding: '6px 12px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            fontWeight: '600',
+            textAlign: 'center',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}>
+            Out of Stock
           </div>
         )}
-        <div className="list-product-btn">
-          <a
-            href={safeProduct.inStock ? "#quick_add" : "#"}
-            data-bs-toggle={safeProduct.inStock ? "modal" : ""}
-            className={`box-icon bg_white quick-add tf-btn-loading ${!safeProduct.inStock ? 'disabled' : ''}`}
-            onClick={safeProduct.inStock ? () => setQuickAddItem(safeProduct.id) : (e) => e.preventDefault()}
-          >
-            <span className="icon icon-bag" />
-            <span className="tooltip">{safeProduct.inStock ? 'Quick Add' : 'Out of Stock'}</span>
-          </a>
-
-          <a
-            href="#compare"
-            data-bs-toggle="offcanvas"
-            aria-controls="compare"
-            onClick={() => handleCompareClick(safeProduct.id)}
-            className="box-icon bg_white compare btn-icon-action"
-          >
-            <span
-              className={`icon icon-gitDiff ${
-                isAddedtoCompareItem(safeProduct.id) ? "added" : ""
+        {/* Size Selection on Hover - Top Right */}
+        {hasAvailableSizes && showSizeSelection && isInStock && (
+          <div className="size-selection-hover-clean" style={{
+            position: 'absolute',
+            top: '8px',
+            right: '8px',
+            zIndex: 10
+          }}>
+            <div className="size-buttons-clean" style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              alignItems: 'center'
+            }}>
+              {availableSizes.map((size) => (
+                <button
+                  key={size.id}
+                  className={`size-btn-clean ${
+                    size.disabled ? 'disabled' : ''
+                  } ${
+                    selectedSize === size.value ? 'selected' : ''
+                  }`}
+                  onClick={() => !size.disabled && setSelectedSize(size.value)}
+                  disabled={size.disabled}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    minWidth: '32px',
+                    minHeight: '32px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: selectedSize === size.value ? '1px solid #1f2937' : '1px solid #d1d5db',
+                    background: selectedSize === size.value ? '#1f2937' : '#ffffff',
+                    color: selectedSize === size.value ? '#ffffff' : '#374151',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    cursor: size.disabled ? 'not-allowed' : 'pointer',
+                    opacity: size.disabled ? 0.6 : 1,
+                    transition: 'all 0.2s ease',
+                    padding: '0',
+                    margin: '0',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  {size.value}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {isInStock && (
+          <div className="list-btn-main">
+            <a
+              className={`btn-main-product ${
+                (hasAvailableSizes && !selectedSize) && !isAddedToCartProducts(safeProduct.id)
+                  ? 'disabled' 
+                  : ''
               }`}
-            />
-            <span className="tooltip">
-              {isAddedtoCompareItem(safeProduct.id)
-                ? "Already Compared"
-                : "Add to Compare"}
-            </span>
-          </a>
-          <a
-            href="#quick_view"
-            onClick={() => setQuickViewItem(safeProduct)}
-            data-bs-toggle="modal"
-            className="box-icon bg_white quickview tf-btn-loading"
-          >
-            <span className="icon icon-view" />
-            <span className="tooltip">Quick View</span>
-          </a>
-        </div>
-        <div className="list-btn-main">
-          <a
-            className={`btn-main-product ${!safeProduct.inStock ? 'disabled out-of-stock-btn' : ''}`}
-            onClick={safeProduct.inStock ? handleCartClick : (e) => e.preventDefault()}
-          >
-            {!safeProduct.inStock 
-              ? "OUT OF STOCK"
-              : user && isAddedToCartProducts(safeProduct.id)
-              ? "Already Added"
-              : "ADD TO CART"}
-          </a>
-        </div>
+              onClick={() => {
+                // Check if already added to cart
+                if (user && isAddedToCartProducts(safeProduct.id)) {
+                  return; // Already in cart, do nothing
+                }
+                
+                // For products with sizes, require size selection
+                if (hasAvailableSizes && !selectedSize) {
+                  return;
+                }
+                
+                // Add to cart
+                handleCartClick();
+              }}
+              style={{
+                cursor: (hasAvailableSizes && !selectedSize) && !isAddedToCartProducts(safeProduct.id)
+                  ? 'not-allowed' 
+                  : 'pointer'
+              }}
+            >
+              {(() => {
+                // Check if already added to cart (for selected size if applicable)
+                if (user && hasAvailableSizes && selectedSize) {
+                  // Check if this specific size is in cart using the proper function
+                  const productDocumentId = safeProduct.documentId || safeProduct.id;
+                  const isThisSizeInCart = isProductSizeInCart(productDocumentId, selectedSize);
+                  if (isThisSizeInCart) {
+                    return "Already Added";
+                  }
+                  return `Add ${selectedSize} to cart`;
+                }
+                
+                // Check if product without sizes is in cart
+                if (user && !hasAvailableSizes && isAddedToCartProducts(safeProduct.id)) {
+                  return "Already Added";
+                }
+                
+                // Check if need to select size
+                if (hasAvailableSizes && !selectedSize) {
+                  return "Choose Size First";
+                }
+                
+                // Default case
+                return "Add to cart";
+              })()} 
+            </a>
+          </div>
+        )}
       </div>
       <div className="card-product-info">
         <Link href={`/product-detail/${safeProduct.id}`} className="title link">

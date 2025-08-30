@@ -124,15 +124,17 @@ export default function Home() {
       
       {/* <Topbar /> */}
       <Header1 />
-      <Hero />
-      <Collections />
-      <Products />
       <MarqueeSection />
+      <Hero />
+      {/* <Collections /> */}
+      {/* <Products /> */}
       {/* <BannerCollection /> */}
-      <BannerCountdown />
+      <div style={{ marginTop: '60px' }}>
+        <BannerCountdown />
+      </div>
       {/* <Testimonials3 /> */}
       <ShopGram />
-      <Features />
+      {/* <Features /> */}
       {/* <Blogs /> */}
       <Footer1 hasPaddingBottom />
       

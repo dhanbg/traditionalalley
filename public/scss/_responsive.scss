@@ -255,6 +255,8 @@
   }
   .page-title {
     padding: 68px 0 90px;
+    min-height: 280px;
+    height: 280px;
   }
   .breadcrumbs-default {
     padding: 60px 0px 80px;
@@ -978,9 +980,7 @@
       }
     }
   }
-  .tf-slideshow {
-    height: 803px; // Large screen height
-  }
+
   .slider-padding,
   .header-fullwidth {
     padding-left: 40px;
@@ -995,7 +995,6 @@
     }
   }
   .tf-slideshow {
-    height: 600px; // Medium screen height
     .wrap-pagination {
       bottom: 40px;
     }
@@ -2343,35 +2342,7 @@
   .modal-shopping-cart .modal-content {
     max-width: min(500px, 90vw) !important;
   }
-  .modal-quick-view .modal-content {
-    max-width: min(500px, 90vw) !important;
-    flex-direction: column;
-    overflow-y: auto !important;
-    .tf-quick-view-image {
-      width: 100%;
-      display: block;
-      .wrap-quick-view {
-        padding: 15px;
-        display: flex;
-        direction: ltr;
-        height: unset;
-        .quickView-item {
-          width: 200px;
-          flex-shrink: 0;
-          border-radius: 0;
-          &:not(:last-child) {
-            margin-bottom: 0;
-            margin-right: 15px;
-          }
-        }
-      }
-    }
-    .wrap {
-      overflow: unset;
-      height: unset;
-      padding: 20px 15px;
-    }
-  }
+
   .form-sticky-atc {
     .tf-sticky-atc-product {
       display: none;

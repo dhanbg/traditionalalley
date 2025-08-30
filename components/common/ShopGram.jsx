@@ -7,7 +7,7 @@ import { Pagination } from "swiper/modules";
 import { fetchDataFromApi } from "@/utils/api";
 import { API_URL } from "@/utils/urls";
 
-export default function ShopGram({ parentClass = "flat-spacing" }) {
+export default function ShopGram({ parentClass = "" }) {
   const [instagramPosts, setInstagramPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 

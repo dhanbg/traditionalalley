@@ -86,6 +86,11 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
   const [countriesError, setCountriesError] = useState('');
   const [availableServiceTypes, setAvailableServiceTypes] = useState(['Economy', 'Express']);
   const [loadingServiceTypes, setLoadingServiceTypes] = useState(false);
+  
+  // Branch search functionality
+  const [branchSearchTerm, setBranchSearchTerm] = useState('');
+  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
+  const [filteredBranches, setFilteredBranches] = useState([]);
 
   // Responsive helper
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
@@ -157,6 +162,25 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
   useEffect(() => {
     loadCountries();
   }, []);
+
+  // Filter branches based on search term
+  useEffect(() => {
+    if (branches.length > 0) {
+      const filtered = branches.filter(branch => 
+        branch.name.toLowerCase().includes(branchSearchTerm.toLowerCase()) ||
+        branch.district.toLowerCase().includes(branchSearchTerm.toLowerCase()) ||
+        (branch.region && branch.region.toLowerCase().includes(branchSearchTerm.toLowerCase()))
+      );
+      setFilteredBranches(filtered);
+    }
+  }, [branches, branchSearchTerm]);
+
+  // Update branch search term when cityName changes from other sources
+  useEffect(() => {
+    if (formData.destinationAddress.cityName && !branchSearchTerm) {
+      setBranchSearchTerm(formData.destinationAddress.cityName);
+    }
+  }, [formData.destinationAddress.cityName]);
 
 
 
@@ -646,6 +670,30 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
     });
   };
 
+  // Handle branch search input changes
+  const handleBranchSearchChange = (value) => {
+    setBranchSearchTerm(value);
+    setShowBranchDropdown(true);
+    handleInputChange('destinationAddress', 'cityName', value);
+  };
+
+  // Handle branch selection from dropdown
+  const handleBranchSelect = (branch) => {
+    setBranchSearchTerm(branch.name);
+    setShowBranchDropdown(false);
+    handleInputChange('destinationAddress', 'cityName', branch.name);
+  };
+
+  // Handle input focus and blur for dropdown visibility
+  const handleBranchInputFocus = () => {
+    setShowBranchDropdown(true);
+  };
+
+  const handleBranchInputBlur = () => {
+    // Delay hiding dropdown to allow for clicks
+    setTimeout(() => setShowBranchDropdown(false), 200);
+  };
+
   const isFormValid = () => {
     const { destinationAddress, serviceType } = formData;
     
@@ -988,7 +1036,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
             )}
 
             {getActualCountryCode(formData.destinationAddress.countryCode) === 'NP' ? (
-              <div>
+              <div style={{ position: 'relative' }}>
                 <label style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -1000,9 +1048,13 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                   <span style={{ marginRight: '0.5rem' }}>🏢</span>
                   Destination Branch *
                 </label>
-                <select
-                  value={formData.destinationAddress.cityName}
-                  onChange={(e) => handleInputChange('destinationAddress', 'cityName', e.target.value)}
+                <input
+                  type="text"
+                  placeholder={loadingBranches ? 'Loading branches...' : 'Type to search branches...'}
+                  value={branchSearchTerm}
+                  onChange={(e) => handleBranchSearchChange(e.target.value)}
+                  onFocus={handleBranchInputFocus}
+                  onBlur={handleBranchInputBlur}
                   style={{
                     width: '100%',
                     padding: '1rem',
@@ -1015,14 +1067,65 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                   }}
                   required
                   disabled={loadingBranches}
-                >
-                  <option value="">{loadingBranches ? 'Loading branches...' : 'Select Branch'}</option>
-                  {branches.map((branch, index) => (
-                    <option key={index} value={branch.name}>
-                      {`${branch.name} - ${branch.district}, ${branch.region.split(' - ')[1] || branch.region}`}
-                    </option>
-                  ))}
-                </select>
+                />
+                {/* Dropdown for filtered branches */}
+                {showBranchDropdown && filteredBranches.length > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    background: 'white',
+                    border: '2px solid #e5e7eb',
+                    borderTop: 'none',
+                    borderRadius: '0 0 0.75rem 0.75rem',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    zIndex: 1000
+                  }}>
+                    {filteredBranches.map((branch, index) => (
+                      <div
+                        key={index}
+                        onClick={() => handleBranchSelect(branch)}
+                        style={{
+                          padding: '0.75rem 1rem',
+                          cursor: 'pointer',
+                          borderBottom: index < filteredBranches.length - 1 ? '1px solid #f3f4f6' : 'none',
+                          transition: 'background-color 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f9fafb'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
+                      >
+                        <div style={{ fontWeight: 600, color: '#1f2937' }}>{branch.name}</div>
+                        <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                          {branch.district}, {branch.region.split(' - ')[1] || branch.region}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* Show message when no branches match search */}
+                {showBranchDropdown && branchSearchTerm && filteredBranches.length === 0 && branches.length > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    background: 'white',
+                    border: '2px solid #e5e7eb',
+                    borderTop: 'none',
+                    borderRadius: '0 0 0.75rem 0.75rem',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    padding: '1rem',
+                    textAlign: 'center',
+                    color: '#6b7280',
+                    fontSize: '0.875rem',
+                    zIndex: 1000
+                  }}>
+                    No branches found matching "{branchSearchTerm}"
+                  </div>
+                )}
               </div>
             ) : (
               <div>

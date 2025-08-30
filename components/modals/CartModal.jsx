@@ -33,6 +33,7 @@ export default function CartModal() {
   const [isModalInert, setIsModalInert] = useState(true);
   const router = useRouter();
   const [isAgreed, setIsAgreed] = useState(false);
+  const [isViewCartLoading, setIsViewCartLoading] = useState(false);
 
   const removeItem = (id, cartDocumentId) => {
     // Find the item in the cart to confirm it exists before removing
@@ -77,8 +78,13 @@ export default function CartModal() {
 
   // Handle View Cart navigation
   const handleViewCart = () => {
+    setIsViewCartLoading(true);
     closeCartModal();
     router.push('/shopping-cart');
+    // Reset loading state after a short delay to allow navigation to complete
+    setTimeout(() => {
+      setIsViewCartLoading(false);
+    }, 1500);
   };
 
   // Handle Checkout navigation
@@ -604,8 +610,25 @@ export default function CartModal() {
                       <button 
                         className="tf-button-2 style-1"
                         onClick={allCartProducts.length > 0 ? handleViewCart : handleContinueShopping}
+                        disabled={isViewCartLoading}
+                        data-navigation={allCartProducts.length > 0 ? "view-cart" : "continue-shopping"}
+                        style={{
+                          ...(allCartProducts.length > 0 ? { background: '#f7d2ca', color: '#333' } : {}),
+                          opacity: isViewCartLoading ? 0.7 : 1,
+                          cursor: isViewCartLoading ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px'
+                        }}
                       >
-                        {allCartProducts.length > 0 ? 'View Full Cart' : 'Start Shopping'}
+                        {isViewCartLoading && allCartProducts.length > 0 && (
+                          <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" style={{ width: '16px', height: '16px' }} />
+                        )}
+                        {allCartProducts.length > 0 
+                          ? (isViewCartLoading ? 'Loading...' : 'View Full Cart') 
+                          : 'Start Shopping'
+                        }
                       </button>
                             </div>
                   ) : (
@@ -614,67 +637,62 @@ export default function CartModal() {
 
                         return (
                         <div className="tf-mini-cart-item" key={i}>
-                            <div className="tf-mini-cart-image">
-                            <Link href={`/product-detail/${elm.documentId || elm.baseProductId}`}>
-                              <img
-                                className="lazyload"
-                                alt={elm.title}
-                                src={elm.variantInfo?.imgSrc || elm.imgSrc}
-                              />
-                            </Link>
+                            <div className="tf-mini-cart-image-section">
+                              <div className="tf-mini-cart-image">
+                              <Link href={`/product-detail/${elm.documentId || elm.baseProductId}`}>
+                                <img
+                                  className="lazyload"
+                                  alt={elm.title}
+                                  src={elm.variantInfo?.imgSrc || elm.imgSrc}
+                                />
+                              </Link>
+                              </div>
+                              {elm.selectedSize && (
+                                <div className="size-info" style={{ 
+                                  fontSize: '12px', 
+                                  color: '#666', 
+                                  marginTop: '4px',
+                                  textAlign: 'center'
+                                }}>
+                                  <span className="size-label" style={{ fontWeight: '500' }}>Size:</span>
+                                  <span className="size-value" style={{ marginLeft: '6px' }}>{elm.selectedSize}</span>
+                                  </div>
+                              )}
                             </div>
                           <div className="tf-mini-cart-info">
-                            <div className="name">
-                                  <Link
-                                className="link text-line-clamp-2"
-                                href={`/product-detail/${elm.documentId || elm.baseProductId}`}
-                                  >
-                                {elm.title}
-                                  </Link>
-                                </div>
-                            {elm.variantInfo && elm.variantInfo.isVariant && (
-                              <div className="variant-info" style={{ 
-                                fontSize: '12px', 
-                                color: '#666', 
-                                marginBottom: '4px' 
-                              }}>
-                                <span className="variant-label" style={{ fontWeight: '500' }}>Title:</span>
-                                <span className="variant-value" style={{ marginLeft: '6px' }}>{elm.variantInfo.title}</span>
-                              </div>
-                            )}
-                            {elm.selectedSize && (
-                              <div className="size-info" style={{ 
-                                fontSize: '12px', 
-                                color: '#666', 
-                                marginBottom: '4px' 
-                              }}>
-                                <span className="size-label" style={{ fontWeight: '500' }}>Size:</span>
-                                <span className="size-value" style={{ marginLeft: '6px' }}>{elm.selectedSize}</span>
-                                </div>
-                            )}
-                            <div className="tf-mini-cart-controls">
+                            <div className="name-and-quantity">
+                              <div className="name">
+                                    <Link
+                                  className="link text-line-clamp-2"
+                                  href={`/product-detail/${elm.documentId || elm.baseProductId}`}
+                                    >
+                                  {elm.title ? elm.title.replace(' (Variant)', '').replace(/ - [^-]+$/, '') : 'Product'}
+                                    </Link>
+                                  </div>
                               <div className="quantity-display-wrapper">
                                 <span className="quantity-label">Qty:</span>
                                 <span className="quantity-value">{elm.quantity}</span>
                               </div>
-                              <div className="price-display">
-                                <PriceDisplay 
-                                  price={elm.price * elm.quantity}
-                                  className="item-total-price"
-                                    size="small"
-                                  />
-                                </div>
-                              <button
-                                type="button"
-                                className="remove-btn"
-                                onClick={() => removeItem(elm.id, elm.cartDocumentId)}
-                                aria-label="Remove item"
-                              >
-                                <i className="icon-close"></i>
-                              </button>
-                              </div>
                             </div>
                           </div>
+                          <div className="tf-mini-cart-right-section">
+                            <div className="price-display">
+                              <PriceDisplay 
+                                price={elm.price * elm.quantity}
+                                className="item-total-price"
+                                size="small"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              className="remove-btn"
+                              onClick={() => removeItem(elm.id, elm.cartDocumentId)}
+                              aria-label="Remove item"
+                            >
+                              <i className="icon-close"></i>
+                            </button>
+                          </div>
+                        </div>
                         );
                       })}
                     </div>
@@ -701,8 +719,23 @@ export default function CartModal() {
                           <button
                         className="tf-button-2 style-2 w-100"
                             onClick={handleViewCart}
+                        disabled={isViewCartLoading}
+                        data-navigation="view-cart"
+                        style={{ 
+                          background: '#f7d2ca', 
+                          color: '#333',
+                          opacity: isViewCartLoading ? 0.7 : 1,
+                          cursor: isViewCartLoading ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px'
+                        }}
                       >
-                        View Cart
+                        {isViewCartLoading && (
+                          <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" style={{ width: '16px', height: '16px' }} />
+                        )}
+                        {isViewCartLoading ? 'Loading...' : 'View Cart'}
                           </button>
                           <button
                         className="tf-button-2 style-1 w-100"
@@ -837,77 +870,89 @@ export default function CartModal() {
         
         .tf-mini-cart-item {
           display: flex;
+          align-items: flex-start;
           gap: 16px;
           padding: 20px 24px;
           border-bottom: 1px solid var(--cart-border-color);
-          transition: background-color 0.3s ease;
+          transition: background-color 0.2s ease;
         }
         
         .tf-mini-cart-item:hover {
           background-color: var(--cart-bg-light);
         }
         
-        .tf-mini-cart-image {
-          width: 80px;
-          height: 80px;
+        .tf-mini-cart-item:last-child {
+          border-bottom: none;
+        }
+        
+        .tf-mini-cart-image-section {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
           flex-shrink: 0;
+        }
+        
+        .tf-mini-cart-image {
+          width: 60px;
+          height: 90px;
           border-radius: 8px;
           overflow: hidden;
-          border: 1px solid var(--cart-border-color);
+          flex-shrink: 0;
+          background: var(--cart-bg-light);
         }
         
         .tf-mini-cart-image img {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.3s ease;
-        }
-        
-        .tf-mini-cart-image:hover img {
-          transform: scale(1.05);
+          object-position: center;
         }
         
         .tf-mini-cart-info {
           flex: 1;
+          min-width: 0;
+        }
+        
+        .name-and-quantity {
           display: flex;
-          flex-direction: column;
-          gap: 8px;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 8px;
         }
         
         .tf-mini-cart-info .name {
-          margin: 0;
+          flex: 1;
+          min-width: 0;
         }
         
         .tf-mini-cart-info .name .link {
+          font-size: 14px;
+          font-weight: 500;
           color: var(--cart-text-color);
           text-decoration: none;
-          font-weight: 500;
-          font-size: 14px;
           line-height: 1.4;
-          transition: color 0.3s ease;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
         
         .tf-mini-cart-info .name .link:hover {
           color: var(--cart-primary-color);
         }
         
-        .variant-info {
-          display: flex;
-          gap: 4px;
-          font-size: 12px;
-          color: var(--cart-text-secondary);
+        .size-info {
+          margin-bottom: 8px;
         }
         
-        .variant-label {
-          font-weight: 500;
-        }
-        
-        .tf-mini-cart-controls {
+        .tf-mini-cart-right-section {
           display: flex;
-          align-items: center;
-          justify-content: space-between;
+          flex-direction: column;
+          align-items: flex-end;
           gap: 12px;
-          margin-top: auto;
+          flex-shrink: 0;
+          min-width: 80px;
         }
         
         .quantity-display-wrapper {
@@ -916,8 +961,11 @@ export default function CartModal() {
           gap: 4px;
           padding: 6px 12px;
           background: var(--cart-bg-light);
-          border-radius: 6px;
+          border-radius: 4px;
           border: 1px solid var(--cart-border-color);
+          width: fit-content;
+          max-width: 70px;
+          flex-shrink: 0;
         }
         
         .quantity-label {
@@ -935,13 +983,14 @@ export default function CartModal() {
         }
         
         .price-display {
-          flex: 1;
-          text-align: center;
+          text-align: right;
+          margin-bottom: 8px;
         }
         
         .item-total-price {
           font-weight: 600;
           color: var(--cart-primary-color);
+          font-size: 16px;
         }
         
         .remove-btn {
@@ -1069,18 +1118,43 @@ export default function CartModal() {
             font-size: 13px;
           }
           
-          .tf-mini-cart-controls {
-            flex-direction: column;
-            align-items: stretch;
+          .tf-mini-cart-right-section {
+            min-width: 70px;
             gap: 8px;
+          }
+          
+          .name-and-quantity {
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-start;
           }
           
           .quantity-display-wrapper {
             align-self: flex-start;
+            max-width: 65px;
+            padding: 5px 10px;
+          }
+          
+          .tf-mini-cart-image-section {
+            align-items: center;
+          }
+          
+          .tf-mini-cart-image {
+            width: 50px;
+            height: 75px;
           }
           
           .price-display {
-            text-align: left;
+            text-align: right;
+          }
+          
+          .item-total-price {
+            font-size: 14px;
+          }
+          
+          .remove-btn {
+            padding: 6px;
+            font-size: 12px;
           }
           
           .tf-mini-cart-bottom-wrap {
