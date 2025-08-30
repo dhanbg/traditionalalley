@@ -217,7 +217,8 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
           documentId: currentProductId,
           title: safeProduct.title,
           imgSrc: safeProduct.imgSrc,
-          imgSrcObject: safeProduct.imgSrc // Preserve original image object
+          imgSrcObject: safeProduct.imgSrc, // Preserve original image object
+          isVariant: true // Add this flag so cart modal can identify variants
         };
         
         console.log('🛒 Adding variant to cart:', { 
