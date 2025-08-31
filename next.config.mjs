@@ -27,6 +27,13 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      // Dynamic hostname based on NEXT_PUBLIC_API_URL
+      ...(process.env.NEXT_PUBLIC_API_URL ? [{
+        protocol: process.env.NEXT_PUBLIC_API_URL.startsWith('https') ? 'https' : 'http',
+        hostname: new URL(process.env.NEXT_PUBLIC_API_URL).hostname,
+        port: new URL(process.env.NEXT_PUBLIC_API_URL).port || '',
+        pathname: '/**',
+      }] : []),
     ],
   },
   sassOptions: {

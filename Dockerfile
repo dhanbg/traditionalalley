@@ -12,9 +12,11 @@ COPY . .
 # Accept build-time environment variables for NEXT_PUBLIC_*
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_STRAPI_API_TOKEN
+ARG ENABLE_PRODUCTION_DEBUG
 # These are automatically picked up by Next.js at build time if referenced in the code
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_STRAPI_API_TOKEN=$NEXT_PUBLIC_STRAPI_API_TOKEN
+ENV ENABLE_PRODUCTION_DEBUG=$ENABLE_PRODUCTION_DEBUG
 RUN npm run build
 
 # Production image

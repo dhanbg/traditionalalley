@@ -1,7 +1,12 @@
 /**
  * Debug utilities for tracking API calls and environment variables in production
- * Only active in development mode for security
+ * Active in development mode by default, or in production when ENABLE_PRODUCTION_DEBUG=true
  */
+
+// Check if debugging should be enabled
+const isDebugEnabled = () => {
+  return process.env.NODE_ENV === 'development' || process.env.ENABLE_PRODUCTION_DEBUG === 'true';
+};
 
 // Environment debug information
 export const getEnvironmentDebug = () => {
@@ -17,7 +22,7 @@ export const getEnvironmentDebug = () => {
 
 // API call debugger
 export const debugApiCall = (endpoint, method = 'GET', options = {}) => {
-  if (process.env.NODE_ENV !== 'development') return;
+  if (!isDebugEnabled()) return;
   
   const debugInfo = {
     endpoint,
@@ -40,7 +45,7 @@ export const debugApiCall = (endpoint, method = 'GET', options = {}) => {
 
 // API response debugger
 export const debugApiResponse = (endpoint, response, data = null, error = null) => {
-  if (process.env.NODE_ENV !== 'development') return;
+  if (!isDebugEnabled()) return;
   
   const debugInfo = {
     endpoint,
@@ -95,7 +100,7 @@ export const debugMediaUrl = (mediaItem, baseUrl) => {
 
 // Component mount debugger
 export const debugComponentMount = (componentName, props = {}) => {
-  if (process.env.NODE_ENV !== 'development') return;
+  if (!isDebugEnabled()) return;
   
   const debugInfo = {
     component: componentName,
@@ -159,7 +164,7 @@ export const checkProductionReadiness = () => {
 
 // Debug panel component helper
 export const createDebugPanel = (title, debugData, backgroundColor = '#f8f9fa') => {
-  if (process.env.NODE_ENV !== 'development' || !debugData) return null;
+  if (!isDebugEnabled() || !debugData) return null;
   
   return {
     style: {
