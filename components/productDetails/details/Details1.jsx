@@ -63,10 +63,37 @@ export default function Details1({ product, variants = [], preferredVariantId = 
       const processedItem = { ...item };
       
       // Get the best available image URL (prefer large, fall back to medium, then small, then original)
-      const bestImageUrl = getBestImageUrl(item, 'large') || 
-                         getBestImageUrl(item, 'medium') || 
-                         getBestImageUrl(item, 'small') || 
-                         getBestImageUrl(item);
+      let bestImageUrl = null;
+      
+      // Try different formats in order of preference
+      if (item.formats) {
+        if (item.formats.large?.url) {
+          bestImageUrl = item.formats.large.url;
+        } else if (item.formats.medium?.url) {
+          bestImageUrl = item.formats.medium.url;
+        } else if (item.formats.small?.url) {
+          bestImageUrl = item.formats.small.url;
+        } else if (item.formats.thumbnail?.url) {
+          bestImageUrl = item.formats.thumbnail.url;
+        }
+      }
+      
+      // Fall back to main URL if no formats available
+      if (!bestImageUrl && item.url) {
+        bestImageUrl = item.url;
+      }
+      
+      // Only process the URL once through getBestImageUrl if we have a URL
+      if (bestImageUrl) {
+        // Check if it's already a complete URL
+        if (bestImageUrl.startsWith('http')) {
+          bestImageUrl = bestImageUrl;
+        } else {
+          // Only add API_URL if it's a relative URL
+          const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
+          bestImageUrl = `${API_URL}${bestImageUrl}`;
+        }
+      }
       
       // Update the URL if we found a valid one
       if (bestImageUrl) {

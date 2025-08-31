@@ -275,10 +275,11 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
               if (!img) return { id: 0, url: DEFAULT_IMAGE };
               
               let imageUrl = DEFAULT_IMAGE;
-              if (img.formats && img.formats.medium) {
-                imageUrl = getImageUrl(img.formats.medium.url);
+              if (img.formats && img.formats.medium && img.formats.medium.url) {
+                const mediumUrl = img.formats.medium.url;
+                imageUrl = mediumUrl.startsWith('http') ? mediumUrl : getImageUrl(mediumUrl);
               } else if (img.url) {
-                imageUrl = getImageUrl(img.url);
+                imageUrl = img.url.startsWith('http') ? img.url : getImageUrl(img.url);
               }
               
               // Ensure gallery image URL is never an empty string

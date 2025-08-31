@@ -434,7 +434,7 @@ export default function BannerCountdown() {
     
     // Limit to maximum 3 images
     const images = offerData.banner_image.slice(0, 3).map(image => ({
-      url: `${process.env.NEXT_PUBLIC_API_URL}${image.url}`,
+      url: image.url.startsWith('http') ? image.url : `${process.env.NEXT_PUBLIC_API_URL}${image.url}`,
       alternativeText: image.alternativeText || "banner"
     }));
     

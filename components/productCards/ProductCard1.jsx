@@ -17,22 +17,24 @@ function getStrapiSmallImage(imageObj) {
   
   // Handle string URLs directly
   if (typeof imageObj === 'string') {
-    return getImageUrl(imageObj) || DEFAULT_IMAGE;
+    return imageObj.startsWith('http') ? imageObj : (getImageUrl(imageObj) || DEFAULT_IMAGE);
   }
   
   // Handle Strapi image objects with formats
   if (imageObj.formats && imageObj.formats.small && imageObj.formats.small.url) {
-    return getImageUrl(imageObj.formats.small.url);
+    const smallUrl = imageObj.formats.small.url;
+    return smallUrl.startsWith('http') ? smallUrl : getImageUrl(smallUrl);
   }
   
   // Handle objects with direct url property
   if (imageObj.url) {
-    return getImageUrl(imageObj.url);
+    return imageObj.url.startsWith('http') ? imageObj.url : getImageUrl(imageObj.url);
   }
   
   // Handle Strapi data structure with data.attributes
   if (imageObj.data && imageObj.data.attributes && imageObj.data.attributes.url) {
-    return getImageUrl(imageObj.data.attributes.url);
+    const attrUrl = imageObj.data.attributes.url;
+    return attrUrl.startsWith('http') ? attrUrl : getImageUrl(attrUrl);
   }
   
   return DEFAULT_IMAGE;
