@@ -6,6 +6,8 @@ import { debugApiCall, debugApiResponse, debugComponentMount, checkProductionRea
 // Remove the constant assignment to fix environment variable access
 
 export default function BannerCountdown() {
+  console.log('🚀🚀🚀 BannerCountdown component is mounting!');
+  console.log('🔥 BannerCountdown: Component function called');
   const [offerData, setOfferData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -375,8 +377,14 @@ export default function BannerCountdown() {
         const data = await response.json();
         const debugResponseInfo = debugApiResponse(endpoint, response, data);
         
+        console.log('🔍 OFFER API RESPONSE:');
+        console.log('📊 Total offers received:', data.data?.length || 0);
+        console.log('📦 Raw offers data:', data.data);
+        
         // Get the first active offer
         const activeOffer = data.data.find(offer => offer.isActive);
+        console.log('🎯 Active offer found:', activeOffer);
+        console.log('🖼️ Active offer banner_image:', activeOffer?.banner_image);
         
         setDebugInfo({
           success: true,
@@ -425,19 +433,35 @@ export default function BannerCountdown() {
 
   // Get banner images URLs (max 3 images)
   const getBannerImages = () => {
+    console.log('🖼️ getBannerImages called');
+    console.log('📦 offerData:', offerData);
+    console.log('🎯 offerData?.banner_image:', offerData?.banner_image);
+    
     if (!offerData?.banner_image || offerData.banner_image.length === 0) {
+      console.log('⚠️ No banner images found, using fallback');
       return [{
         url: "/images/banner/img-countdown1.png",
         alternativeText: "banner"
       }]; // fallback
     }
     
-    // Limit to maximum 3 images
-    const images = offerData.banner_image.slice(0, 3).map(image => ({
-      url: image.url.startsWith('http') ? image.url : `${process.env.NEXT_PUBLIC_API_URL}${image.url}`,
-      alternativeText: image.alternativeText || "banner"
-    }));
+    console.log('📊 Banner images count:', offerData.banner_image.length);
     
+    // Limit to maximum 3 images
+    const images = offerData.banner_image.slice(0, 3).map((image, index) => {
+      const processedUrl = image.url.startsWith('http') ? image.url : `${process.env.NEXT_PUBLIC_API_URL}${image.url}`;
+      console.log(`🖼️ Processing image ${index + 1}:`);
+      console.log(`  - Original URL: ${image.url}`);
+      console.log(`  - Processed URL: ${processedUrl}`);
+      console.log(`  - Alternative text: ${image.alternativeText || "banner"}`);
+      
+      return {
+        url: processedUrl,
+        alternativeText: image.alternativeText || "banner"
+      };
+    });
+    
+    console.log('✅ Final processed images:', images);
     return images;
   };
 
@@ -477,6 +501,7 @@ export default function BannerCountdown() {
 
   // Show loading state
   if (loading) {
+    console.log('⏳ BannerCountdown: Still loading...');
     return (
       <section className="bg-surface flat-countdown-banner">
         <div className="container">
@@ -489,6 +514,11 @@ export default function BannerCountdown() {
       </section>
     );
   }
+  
+  console.log('🎯 BannerCountdown: Rendering component');
+  console.log('📦 Current offerData:', offerData);
+  console.log('❌ Current error:', error);
+  console.log('🔍 Current debugInfo:', debugInfo);
 
   // Debug Panel Component
   const DebugPanel = () => {
@@ -537,15 +567,25 @@ export default function BannerCountdown() {
 
   // Show error state or fallback to default content
   if (error || !offerData) {
+    console.log('🚫 BannerCountdown: No offer data or error - rendering fallback content');
+    console.log('❌ Error:', error);
+    console.log('📦 OfferData:', offerData);
+    
+    // Use fallback images when no offer data
+    const fallbackImages = [{
+      url: "/images/banner/img-countdown1.png",
+      alternativeText: "banner"
+    }];
+    
     return (
       <section className="bg-surface" style={{ marginBottom: '60px' }}>
-        <div className={`banner-countdown-responsive ${getBannerImages().length > 2 ? 'three-images' : ''}`}>
-          {getBannerImages().length > 2 ? (
+        <div className={`banner-countdown-responsive ${fallbackImages.length > 2 ? 'three-images' : ''}`}>
+          {fallbackImages.length > 2 ? (
             // Layout for 3+ images: images on left, content + timer centered on right
             <>
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <div className="banner-img" style={{ display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'center', maxWidth: '100%', overflow: 'hidden' }}>
-                  {getBannerImages().map((image, index) => (
+                  {fallbackImages.map((image, index) => (
                     <div key={index} style={{ flex: 1, display: 'flex', justifyContent: 'center', maxWidth: '300px' }}>
                       <Image
                         className="lazyload"
@@ -585,7 +625,7 @@ export default function BannerCountdown() {
                          flexShrink: 0,
                          padding: '2px'
                        }}>
-                         <span style={{ fontSize: '14px', lineHeight: '0.9', textAlign: 'center', margin: '0' }}>{offerData.discount_percentage}%</span>
+                         <span style={{ fontSize: '14px', lineHeight: '0.9', textAlign: 'center', margin: '0' }}>50%</span>
                           <span style={{ fontSize: '7px', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', margin: '0', marginTop: '1px' }}>OFF</span>
                        </div>
                        <span>Limited-Time Deals On!</span>
@@ -624,7 +664,7 @@ export default function BannerCountdown() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <div className="banner-img" style={{ display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'center', maxWidth: '100%', overflow: 'hidden' }}>
-                  {getBannerImages().map((image, index) => (
+                  {fallbackImages.map((image, index) => (
                     <div key={index} style={{ flex: 1, display: 'flex', justifyContent: 'center', maxWidth: '300px' }}>
                       <Image
                         className="lazyload"
@@ -662,24 +702,36 @@ export default function BannerCountdown() {
           <>
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <div className="banner-img" style={{ display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'center', maxWidth: '100%', overflow: 'hidden' }}>
-                {getBannerImages().map((image, index) => (
-                   <div key={index} style={{ flex: 1, display: 'flex', justifyContent: 'center', maxWidth: '300px' }}>
-                    <Image
-                       className="lazyload"
-                       data-src={image.url}
-                       alt={image.alternativeText}
-                       src={image.url}
-                       width={607}
-                       height={655}
-                       style={{ 
-                         width: '100%',
-                         height: '350px',
-                         objectFit: 'cover',
-                         borderRadius: '8px'
-                       }}
-                    />
-                  </div>
-                ))}
+                {(() => {
+                  const bannerImages = getBannerImages();
+                  console.log('🎨 RENDERING BANNER IMAGES:');
+                  console.log('📊 Images to render:', bannerImages.length);
+                  console.log('🖼️ Images array:', bannerImages);
+                  
+                  return bannerImages.map((image, index) => {
+                    console.log(`🖼️ Rendering image ${index + 1}: ${image.url}`);
+                    return (
+                      <div key={index} style={{ flex: 1, display: 'flex', justifyContent: 'center', maxWidth: '300px' }}>
+                        <Image
+                          className="lazyload"
+                          data-src={image.url}
+                          alt={image.alternativeText}
+                          src={image.url}
+                          width={607}
+                          height={655}
+                          style={{ 
+                            width: '100%',
+                            height: '350px',
+                            objectFit: 'cover',
+                            borderRadius: '8px'
+                          }}
+                          onLoad={() => console.log(`✅ Image ${index + 1} loaded successfully: ${image.url}`)}
+                          onError={(e) => console.error(`❌ Image ${index + 1} failed to load: ${image.url}`, e)}
+                        />
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
