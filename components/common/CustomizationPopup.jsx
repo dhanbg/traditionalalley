@@ -160,7 +160,7 @@ const CustomizationPopup = () => {
                 e.target.style.transform = 'translateY(0)';
               }}
             >
-              <span style={{ fontSize: '18px' }}>📱</span>
+              <img src="/whatsapp.svg" alt="WhatsApp" style={{ width: '20px', height: '20px', backgroundColor: 'white', borderRadius: '3px', padding: '2px' }} />
               Contact on WhatsApp
             </button>
 

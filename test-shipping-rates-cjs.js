@@ -2,7 +2,7 @@ const axios = require('axios');
 require('dotenv').config();
 
 // Configuration
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://admin.traditionalalley.com.np";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:1337";
 const STRAPI_API_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
 
 // Test data for shipping rates

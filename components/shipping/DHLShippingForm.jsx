@@ -549,9 +549,19 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
 
   // Function to calculate shipping cost based on weight and rate structure
   const calculateShippingCost = (rate, weight) => {
-    // Handle NCM rates - they have a flat rate structure
+    // Handle NCM rates - they have an incremental rate structure
     if (rate.isNCM) {
-      return rate.base_rate || 0;
+      const baseRate = rate.base_rate || 0;
+      
+      // For weights up to 2kg, use base rate
+      if (weight <= 2) {
+        return baseRate;
+      }
+      
+      // For weights 3kg and above, add base rate for each additional kg
+      // Example: 3kg = 2 * baseRate, 4kg = 3 * baseRate, etc.
+      const additionalKg = Math.ceil(weight) - 2; // Round up to next kg for additional weight
+      return baseRate + (additionalKg * baseRate);
     }
     
     // Weight ranges mapping for regular DHL rates

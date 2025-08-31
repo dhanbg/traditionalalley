@@ -8,7 +8,7 @@ export const slides = [
   },
   {
     // Test video slide with the problematic video
-    videoSrc: "http://localhost:1337/uploads/Whats_App_Video_2025_08_08_at_12_33_40_4dd31815_f71724b27a.mp4",
+    videoSrc: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337'}/uploads/Whats_App_Video_2025_08_08_at_12_33_40_4dd31815_f71724b27a.mp4`,
     imgSrc: "/images/slider/slider-women2.jpg",
     mediaType: "video",
     alt: "test-video",

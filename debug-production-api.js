@@ -14,7 +14,7 @@ const https = require('https');
 const http = require('http');
 const { URL } = require('url');
 
-const PRODUCTION_URL = process.argv[2] || 'https://admin.traditionalalley.com.np';
+const PRODUCTION_URL = process.argv[2] || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
 
 function makeRequest(url, options = {}) {
   return new Promise((resolve, reject) => {

@@ -10,6 +10,9 @@ import { PRODUCT_BY_DOCUMENT_ID_API, API_URL } from "@/utils/urls";
 import { getImageUrl } from "@/utils/imageUtils";
 import { useRouter } from "next/navigation";
 import PriceDisplay from "@/components/common/PriceDisplay";
+import { useCartImagePreloader } from "@/hooks/useCartImagePreloader";
+import imagePreloader from "@/utils/imagePreloader";
+import FallbackImage from "@/components/common/FallbackImage";
 
 export default function CartModal() {
   const {
@@ -34,6 +37,19 @@ export default function CartModal() {
   const router = useRouter();
   const [isAgreed, setIsAgreed] = useState(false);
   const [isViewCartLoading, setIsViewCartLoading] = useState(false);
+  
+  // Initialize image preloader for cart modal
+  const modalImagePreloader = useCartImagePreloader(serverCartProducts, {
+    autoPreload: true,
+    delay: 100,
+    preloadOptions: {
+      timeout: 6000,
+      crossOrigin: 'anonymous'
+    },
+    onComplete: (stats) => {
+      console.log(`🖼️ Cart modal images preloaded: ${stats.successful}/${stats.total}`);
+    }
+  });
 
   const removeItem = (id, cartDocumentId) => {
     // Find the item in the cart to confirm it exists before removing
@@ -640,10 +656,19 @@ export default function CartModal() {
                             <div className="tf-mini-cart-image-section">
                               <div className="tf-mini-cart-image">
                               <Link href={`/product-detail/${elm.documentId || elm.baseProductId}`}>
-                                <img
-                                  className="lazyload"
-                                  alt={elm.title}
-                                  src={elm.variantInfo?.imgSrc || elm.imgSrc}
+                                <FallbackImage
+                                   src={elm.variantInfo?.imgSrc || elm.imgSrc}
+                                   alt={elm.title}
+                                   width={60}
+                                   height={90}
+                                   preload={true}
+                                   fallbackSrc="/images/placeholder.svg"
+                                  style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover",
+                                    objectPosition: "center",
+                                  }}
                                 />
                               </Link>
                               </div>
@@ -660,19 +685,17 @@ export default function CartModal() {
                               )}
                             </div>
                           <div className="tf-mini-cart-info">
-                            <div className="name-and-quantity">
-                              <div className="name">
-                                    <Link
-                                  className="link text-line-clamp-2"
-                                  href={`/product-detail/${elm.documentId || elm.baseProductId}`}
-                                    >
-                                  {elm.title ? elm.title.replace(' (Variant)', '').replace(/ - [^-]+$/, '') : 'Product'}
-                                    </Link>
-                                  </div>
-                              <div className="quantity-display-wrapper">
-                                <span className="quantity-label">Qty:</span>
-                                <span className="quantity-value">{elm.quantity}</span>
-                              </div>
+                            <div className="name">
+                                  <Link
+                                className="link text-line-clamp-2"
+                                href={`/product-detail/${elm.documentId || elm.baseProductId}`}
+                                  >
+                                {elm.title ? elm.title.replace(' (Variant)', '').replace(/ - [^-]+$/, '') : 'Product'}
+                                  </Link>
+                                </div>
+                            <div className="quantity-display-wrapper">
+                              <span className="quantity-label">Qty:</span>
+                              <span className="quantity-value">{elm.quantity}</span>
                             </div>
                           </div>
                           <div className="tf-mini-cart-right-section">
@@ -913,11 +936,7 @@ export default function CartModal() {
           min-width: 0;
         }
         
-        .name-and-quantity {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 12px;
+        .tf-mini-cart-info .name {
           margin-bottom: 8px;
         }
         
@@ -1123,14 +1142,7 @@ export default function CartModal() {
             gap: 8px;
           }
           
-          .name-and-quantity {
-            flex-direction: column;
-            gap: 8px;
-            align-items: flex-start;
-          }
-          
           .quantity-display-wrapper {
-            align-self: flex-start;
             max-width: 65px;
             padding: 5px 10px;
           }

@@ -134,7 +134,7 @@ export default function DebugHero() {
                   <p><strong>Source:</strong> {effectiveIsMobile && slide.mobileMedia ? 'Mobile Media' : 'Desktop Media'}</p>
                   <p><strong>URL:</strong> {selectedMedia?.url || 'None'}</p>
                   <p><strong>MIME:</strong> {selectedMedia?.mime || 'None'}</p>
-                  <p><strong>Full URL:</strong> {selectedMedia?.url ? `http://localhost:1337${selectedMedia.url}` : 'None'}</p>
+                  <p><strong>Full URL:</strong> {selectedMedia?.url ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337'}${selectedMedia.url}` : 'None'}</p>
                 </div>
                 
                 {selectedMedia && selectedMedia.mime?.startsWith('video/') && (
@@ -145,7 +145,7 @@ export default function DebugHero() {
                       className="max-w-full h-auto"
                       style={{ maxHeight: '300px' }}
                     >
-                      <source src={`http://localhost:1337${selectedMedia.url}`} type={selectedMedia.mime} />
+                      <source src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337'}${selectedMedia.url}`} type={selectedMedia.mime} />
                       Your browser does not support the video tag.
                     </video>
                   </div>

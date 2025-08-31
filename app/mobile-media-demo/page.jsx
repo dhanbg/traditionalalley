@@ -22,7 +22,7 @@ export default function MobileMediaDemo() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:1337/api/hero-slides?populate=*');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337'}/api/hero-slides?populate=*`);
         const data = await response.json();
         setApiData(data);
         console.log('API Response:', data);
@@ -41,13 +41,13 @@ export default function MobileMediaDemo() {
       return {
         type: 'mobile',
         media: slide.mobileMedia,
-        url: `http://localhost:1337${slide.mobileMedia.url}`
+        url: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337'}${slide.mobileMedia.url}`
       };
     }
     return {
       type: 'desktop',
       media: slide.media,
-      url: `http://localhost:1337${slide.media.url}`
+      url: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337'}${slide.media.url}`
     };
   };
 
