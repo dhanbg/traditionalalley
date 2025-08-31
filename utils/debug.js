@@ -10,7 +10,7 @@ const isDebugEnabled = () => {
 
 // Environment debug information
 export const getEnvironmentDebug = () => {
-  return {
+  const debugInfo = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_STRAPI_API_TOKEN: process.env.NEXT_PUBLIC_STRAPI_API_TOKEN ? '[PRESENT]' : '[MISSING]',
     NODE_ENV: process.env.NODE_ENV,
@@ -18,12 +18,15 @@ export const getEnvironmentDebug = () => {
     userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'Server',
     url: typeof window !== 'undefined' ? window.location.href : 'Server'
   };
+  
+  // Always log to console for production debugging
+  console.log('🔍 Environment Debug:', debugInfo);
+  
+  return debugInfo;
 };
 
 // API call debugger
 export const debugApiCall = (endpoint, method = 'GET', options = {}) => {
-  if (!isDebugEnabled()) return;
-  
   const debugInfo = {
     endpoint,
     method,
@@ -36,17 +39,21 @@ export const debugApiCall = (endpoint, method = 'GET', options = {}) => {
         Authorization: options.headers?.Authorization ? '[PRESENT]' : '[MISSING]'
       }
     },
-    environment: getEnvironmentDebug()
+    environment: {
+      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+      NODE_ENV: process.env.NODE_ENV
+    }
   };
   
+  // Always log to console for production debugging
   console.log(`🔍 API Debug - ${method} ${endpoint}:`, debugInfo);
-  return debugInfo;
+  
+  // Return debug info for UI panels only if debug is enabled
+  return isDebugEnabled() ? debugInfo : null;
 };
 
 // API response debugger
 export const debugApiResponse = (endpoint, response, data = null, error = null) => {
-  if (!isDebugEnabled()) return;
-  
   const debugInfo = {
     endpoint,
     status: response?.status,
@@ -65,6 +72,7 @@ export const debugApiResponse = (endpoint, response, data = null, error = null) 
   const logLevel = error ? 'error' : response?.ok ? 'log' : 'warn';
   const emoji = error ? '🚨' : response?.ok ? '✅' : '⚠️';
   
+  // Always log to console for production debugging
   console[logLevel](`${emoji} API Response - ${endpoint}:`, debugInfo);
   
   if (data && Array.isArray(data.data)) {
@@ -75,7 +83,8 @@ export const debugApiResponse = (endpoint, response, data = null, error = null) 
     });
   }
   
-  return debugInfo;
+  // Return debug info for UI panels only if debug is enabled
+  return isDebugEnabled() ? debugInfo : null;
 };
 
 // Media URL debugger
@@ -100,17 +109,21 @@ export const debugMediaUrl = (mediaItem, baseUrl) => {
 
 // Component mount debugger
 export const debugComponentMount = (componentName, props = {}) => {
-  if (!isDebugEnabled()) return;
-  
   const debugInfo = {
     component: componentName,
     props: Object.keys(props),
-    environment: getEnvironmentDebug(),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: {
+      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+      NODE_ENV: process.env.NODE_ENV
+    }
   };
   
+  // Always log to console for production debugging
   console.log(`🔧 Component Mount - ${componentName}:`, debugInfo);
-  return debugInfo;
+  
+  // Return debug info for UI panels only if debug is enabled
+  return isDebugEnabled() ? debugInfo : null;
 };
 
 // Network connectivity debugger

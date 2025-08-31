@@ -10,7 +10,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { fetchDataFromApi } from "@/utils/api";
 import { getImageUrl } from "@/utils/imageUtils";
-import { slides as staticSlides } from "@/data/heroSlides"; 
+import { slides as staticSlides } from "@/data/heroSlides";
+import { debugApiCall, debugApiResponse, debugComponentMount } from "@/utils/debug"; 
 
 export default function Hero() {
   const [slides, setSlides] = useState([]);
@@ -40,22 +41,54 @@ export default function Hero() {
   }, [checkMobile]);
 
   useEffect(() => {
+    debugComponentMount('Hero');
+    
     // Only fetch slides after mobile detection is complete
     if (!mobileDetected) {
-
       return;
     }
 
     const fetchSlides = async () => {
       try {
         if (typeof window !== "undefined") {
+          const endpoint = "/api/hero-slides?populate=*";
+          
+          // Debug API call
+          debugApiCall(endpoint, 'GET');
+          console.log('🎬 Hero - Fetching slides:', {
+            endpoint,
+            isMobile,
+            mobileDetected,
+            NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+            timestamp: new Date().toISOString()
+          });
+          
           // Use Next.js API route with direct fetch
-          const response = await fetch("/api/hero-slides?populate=*");
+          const response = await fetch(endpoint);
           const data = await response.json();
           
-          const transformedSlides = data.data.map((item) => {
+          // Debug API response
+          debugApiResponse(endpoint, response, data);
+          console.log('🎭 Hero - API Response:', {
+            success: response.ok,
+            status: response.status,
+            dataCount: data?.data?.length || 0,
+            hasData: !!(data?.data && data.data.length > 0),
+            timestamp: new Date().toISOString()
+          });
+          
+          const transformedSlides = data.data.map((item, index) => {
             // Select media based on screen size
             const selectedMedia = isMobile && item.mobileMedia ? item.mobileMedia : item.media;
+            
+            console.log(`🎯 Hero - Processing slide ${index}:`, {
+              documentId: item.documentId,
+              isMobile,
+              hasMobileMedia: !!item.mobileMedia,
+              hasDesktopMedia: !!item.media,
+              selectedMediaType: selectedMedia === item.mobileMedia ? 'mobile' : 'desktop',
+              selectedMediaUrl: selectedMedia?.url
+            });
             
             const media = selectedMedia;
             let mediaUrl = "";
