@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { debugApiCall, debugApiResponse, debugComponentMount, checkProductionReadiness, createDebugPanel } from '../../utils/debug';
 
-const STRAPI_URL = process.env.NEXT_PUBLIC_API_URL;
+// Remove the constant assignment to fix environment variable access
 
 export default function BannerCountdown() {
   const [offerData, setOfferData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [debugInfo, setDebugInfo] = useState(null);
   
   // Countdown state
   const [timeLeft, setTimeLeft] = useState({
@@ -352,25 +354,64 @@ export default function BannerCountdown() {
   }, []);
 
   useEffect(() => {
+    debugComponentMount('BannerCountdown');
+    checkProductionReadiness();
+    
     const fetchOfferData = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/offers?populate=*`, {
+        const endpoint = '/api/offers?populate=*';
+        const debugCallInfo = debugApiCall(endpoint, 'GET');
+        
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
           headers: {
             'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`
           }
         });
+        
         if (!response.ok) {
-          throw new Error('Failed to fetch offer data');
+          throw new Error(`Failed to fetch offer data: ${response.status} ${response.statusText}`);
         }
+        
         const data = await response.json();
+        const debugResponseInfo = debugApiResponse(endpoint, response, data);
         
         // Get the first active offer
         const activeOffer = data.data.find(offer => offer.isActive);
+        
+        setDebugInfo({
+          success: true,
+          NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+          endpoint,
+          fullUrl: `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`,
+          responseStatus: response.status,
+          totalOffers: data.data?.length || 0,
+          activeOfferFound: !!activeOffer,
+          activeOfferId: activeOffer?.id,
+          bannerImageCount: activeOffer?.banner_image?.length || 0,
+          timestamp: new Date().toISOString(),
+          error: null
+        });
+        
         if (activeOffer) {
           setOfferData(activeOffer);
         }
       } catch (err) {
-        console.error('Error fetching offer data:', err);
+        debugApiResponse('/api/offers?populate=*', null, null, err);
+        
+        setDebugInfo({
+          success: false,
+          NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+          endpoint: '/api/offers?populate=*',
+          fullUrl: `${process.env.NEXT_PUBLIC_API_URL}/api/offers?populate=*`,
+          responseStatus: null,
+          totalOffers: 0,
+          activeOfferFound: false,
+          activeOfferId: null,
+          bannerImageCount: 0,
+          timestamp: new Date().toISOString(),
+          error: err.message
+        });
+        
         setError(err.message);
       } finally {
         setLoading(false);
@@ -448,6 +489,51 @@ export default function BannerCountdown() {
       </section>
     );
   }
+
+  // Debug Panel Component
+  const DebugPanel = () => {
+    if (process.env.NODE_ENV !== 'development' || !debugInfo) return null;
+    
+    return (
+      <div style={{
+        background: '#fff3cd',
+        border: '1px solid #ffeaa7',
+        borderRadius: '8px',
+        padding: '16px',
+        margin: '20px auto',
+        maxWidth: '1200px',
+        fontSize: '12px',
+        fontFamily: 'monospace'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#856404' }}>🔍 BannerCountdown Debug Info</h4>
+        <div style={{ display: 'grid', gap: '4px' }}>
+          <div><strong>NEXT_PUBLIC_API_URL:</strong> {debugInfo.NEXT_PUBLIC_API_URL || 'undefined'}</div>
+          <div><strong>STRAPI_API_TOKEN:</strong> {debugInfo.NEXT_PUBLIC_STRAPI_API_TOKEN}</div>
+          <div><strong>NODE_ENV:</strong> {debugInfo.NODE_ENV}</div>
+          <div><strong>API URL:</strong> {debugInfo.apiUrl}</div>
+          <div><strong>Response Status:</strong> 
+            <span style={{ color: debugInfo.responseStatus === 200 ? 'green' : 'red' }}>
+              {debugInfo.responseStatus}
+            </span>
+          </div>
+          <div><strong>Total Offers:</strong> {debugInfo.totalOffers}</div>
+          <div><strong>Active Offer Found:</strong> 
+            <span style={{ color: debugInfo.activeOfferFound ? 'green' : 'red' }}>
+              {debugInfo.activeOfferFound ? 'Yes' : 'No'}
+            </span>
+          </div>
+          {debugInfo.activeOfferId && (
+            <div><strong>Active Offer ID:</strong> {debugInfo.activeOfferId}</div>
+          )}
+          <div><strong>Banner Images Count:</strong> {debugInfo.bannerImageCount}</div>
+          {debugInfo.error && (
+            <div style={{ color: 'red' }}><strong>Error:</strong> {debugInfo.error}</div>
+          )}
+          <div><strong>Timestamp:</strong> {debugInfo.timestamp}</div>
+        </div>
+      </div>
+    );
+  };
 
   // Show error state or fallback to default content
   if (error || !offerData) {
@@ -567,8 +653,10 @@ export default function BannerCountdown() {
   }
 
   return (
-    <section className="bg-surface" style={{ marginBottom: '60px' }}>
-      <div className={`banner-countdown-responsive ${getBannerImages().length > 2 ? 'three-images' : ''}`}>
+    <>
+      <DebugPanel />
+      <section className="bg-surface" style={{ marginBottom: '60px' }}>
+        <div className={`banner-countdown-responsive ${getBannerImages().length > 2 ? 'three-images' : ''}`}>
         {getBannerImages().length > 2 ? (
           // Layout for 3+ images: images on left, content + timer centered on right
           <>
@@ -738,7 +826,8 @@ export default function BannerCountdown() {
 
           </>
         )}
-      </div>
-    </section>
+        </div>
+      </section>
+    </>
   );
 }
