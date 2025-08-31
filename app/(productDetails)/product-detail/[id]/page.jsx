@@ -164,11 +164,13 @@ function transformProduct(rawProduct) {
     if (rawProduct.imgHover.url && rawProduct.imgHover.url.startsWith('http')) {
       imgHover = rawProduct.imgHover.url;
     } else if (rawProduct.imgHover.url) {
-      imgHover = `${API_URL}${rawProduct.imgHover.url}`;
+      imgHover = rawProduct.imgHover.url.startsWith('http') ? rawProduct.imgHover.url : `${API_URL}${rawProduct.imgHover.url}`;
     } else if (rawProduct.imgHover.formats && rawProduct.imgHover.formats.medium) {
-      imgHover = `${API_URL}${rawProduct.imgHover.formats.medium.url}`;
+      const mediumUrl = rawProduct.imgHover.formats.medium.url;
+      imgHover = mediumUrl.startsWith('http') ? mediumUrl : `${API_URL}${mediumUrl}`;
     } else if (rawProduct.imgHover.formats && rawProduct.imgHover.formats.small) {
-      imgHover = `${API_URL}${rawProduct.imgHover.formats.small.url}`;
+      const smallUrl = rawProduct.imgHover.formats.small.url;
+      imgHover = smallUrl.startsWith('http') ? smallUrl : `${API_URL}${smallUrl}`;
     }
   }
   
@@ -201,11 +203,13 @@ function transformProduct(rawProduct) {
         if (img.url && img.url.startsWith('http')) {
           imageUrl = img.url;
         } else if (img.url) {
-          imageUrl = `${API_URL}${img.url}`;
+          imageUrl = img.url.startsWith('http') ? img.url : `${API_URL}${img.url}`;
         } else if (img.formats && img.formats.medium) {
-          imageUrl = `${API_URL}${img.formats.medium.url}`;
+          const mediumUrl = img.formats.medium.url;
+          imageUrl = mediumUrl.startsWith('http') ? mediumUrl : `${API_URL}${mediumUrl}`;
         } else if (img.formats && img.formats.small) {
-          imageUrl = `${API_URL}${img.formats.small.url}`;
+          const smallUrl = img.formats.small.url;
+          imageUrl = smallUrl.startsWith('http') ? smallUrl : `${API_URL}${smallUrl}`;
         }
         return { id: img.id || img.documentId || 0, url: imageUrl };
       }) 
@@ -265,7 +269,7 @@ function transformVariant(rawVariant) {
     if (rawVariant.imgSrc.url && rawVariant.imgSrc.url.startsWith('http')) {
       imgSrc = rawVariant.imgSrc.url;
     } else if (rawVariant.imgSrc.url) {
-      imgSrc = `${API_URL}${rawVariant.imgSrc.url}`;
+      imgSrc = rawVariant.imgSrc.url.startsWith('http') ? rawVariant.imgSrc.url : `${API_URL}${rawVariant.imgSrc.url}`;
     }
   }
   
@@ -274,7 +278,7 @@ function transformVariant(rawVariant) {
     if (rawVariant.imgHover.url && rawVariant.imgHover.url.startsWith('http')) {
       imgHover = rawVariant.imgHover.url;
     } else if (rawVariant.imgHover.url) {
-      imgHover = `${API_URL}${rawVariant.imgHover.url}`;
+      imgHover = rawVariant.imgHover.url.startsWith('http') ? rawVariant.imgHover.url : `${API_URL}${rawVariant.imgHover.url}`;
     }
   }
   
@@ -332,7 +336,7 @@ function transformProductAsVariant(rawProduct) {
     if (rawProduct.imgSrc.url && rawProduct.imgSrc.url.startsWith('http')) {
       imgSrc = rawProduct.imgSrc.url;
     } else if (rawProduct.imgSrc.url) {
-      imgSrc = `${API_URL}${rawProduct.imgSrc.url}`;
+      imgSrc = rawProduct.imgSrc.url.startsWith('http') ? rawProduct.imgSrc.url : `${API_URL}${rawProduct.imgSrc.url}`;
     }
   }
   
