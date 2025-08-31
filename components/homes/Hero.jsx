@@ -11,7 +11,7 @@ import Link from "next/link";
 import { fetchDataFromApi } from "@/utils/api";
 import { getImageUrl } from "@/utils/imageUtils";
 import { slides as staticSlides } from "@/data/heroSlides";
-import { debugApiCall, debugApiResponse, debugComponentMount } from "@/utils/debug"; 
+ 
 
 export default function Hero() {
   const [slides, setSlides] = useState([]);
@@ -41,8 +41,6 @@ export default function Hero() {
   }, [checkMobile]);
 
   useEffect(() => {
-    debugComponentMount('Hero');
-    
     // Only fetch slides after mobile detection is complete
     if (!mobileDetected) {
       return;
@@ -53,42 +51,13 @@ export default function Hero() {
         if (typeof window !== "undefined") {
           const endpoint = "/api/hero-slides?populate=*";
           
-          // Debug API call
-          debugApiCall(endpoint, 'GET');
-          console.log('🎬 Hero - Fetching slides:', {
-            endpoint,
-            isMobile,
-            mobileDetected,
-            NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-            timestamp: new Date().toISOString()
-          });
-          
           // Use Next.js API route with direct fetch
           const response = await fetch(endpoint);
           const data = await response.json();
           
-          // Debug API response
-          debugApiResponse(endpoint, response, data);
-          console.log('🎭 Hero - API Response:', {
-            success: response.ok,
-            status: response.status,
-            dataCount: data?.data?.length || 0,
-            hasData: !!(data?.data && data.data.length > 0),
-            timestamp: new Date().toISOString()
-          });
-          
           const transformedSlides = data.data.map((item, index) => {
             // Select media based on screen size
             const selectedMedia = isMobile && item.mobileMedia ? item.mobileMedia : item.media;
-            
-            console.log(`🎯 Hero - Processing slide ${index}:`, {
-              documentId: item.documentId,
-              isMobile,
-              hasMobileMedia: !!item.mobileMedia,
-              hasDesktopMedia: !!item.media,
-              selectedMediaType: selectedMedia === item.mobileMedia ? 'mobile' : 'desktop',
-              selectedMediaUrl: selectedMedia?.url
-            });
             
             const media = selectedMedia;
             let mediaUrl = "";
@@ -127,45 +96,13 @@ export default function Hero() {
               poster: item.poster ? getImageUrl(item.poster?.url || item.poster?.formats?.large?.url) : getImageUrl(fallbackImageUrl),
             };
             
-            // Debug logging for video URLs
-            if (mediaType === 'video') {
-              console.log('\n🎥 VIDEO SLIDE DETECTED:');
-              console.log('📱 Screen type:', isMobile ? 'Mobile' : 'Desktop');
-              console.log('🎯 Selected media:', selectedMedia === item.mobileMedia ? 'mobileMedia' : 'media');
-              console.log('🔗 Original mediaUrl:', mediaUrl);
-              console.log('📹 Constructed videoSrc:', result.videoSrc);
-              console.log('📦 Media object:', media);
-              console.log('🔍 FINAL RESULT:', {
-                isMobile,
-                hasMobileMedia: !!item.mobileMedia,
-                selectedMobileMedia: selectedMedia === item.mobileMedia,
-                videoSrc: result.videoSrc
-              });
-            }
-            
-            // Additional comprehensive logging for all media types
-            console.log(`\n🎬 RENDERING SLIDE ${data.data.indexOf(item)}:`);
-            console.log('📱 Current isMobile:', isMobile);
-            console.log('🎯 selectedMedia === item.mobileMedia:', selectedMedia === item.mobileMedia);
-            console.log('📹 Final imgSrc:', result.imgSrc);
-            console.log('📹 Final videoSrc:', result.videoSrc);
-            console.log('🔗 Original selectedMedia URL:', selectedMedia?.url);
-            console.log('📱 Available mobileMedia URL:', item.mobileMedia?.url);
-            console.log('🖥️ Available desktop media URL:', item.media?.url);
-            
-            if (selectedMedia === item.mobileMedia) {
-              console.log('✅ CONFIRMED: Using MOBILE media for slide', data.data.indexOf(item));
-            } else {
-              console.log('ℹ️ CONFIRMED: Using DESKTOP media for slide', data.data.indexOf(item));
-            }
+
             
             return result;
           });
           setSlides(transformedSlides);
         }
       } catch (error) {
-        console.error("Error fetching slides:", error);
-        console.log("🔄 Falling back to static slides due to API error");
         // Fallback to static slides if API fails
         setSlides(staticSlides);
       } finally {

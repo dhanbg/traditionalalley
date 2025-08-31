@@ -110,7 +110,7 @@ export const formatPrice = (price, currency = 'USD', showSymbol = true) => {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }),
-    NPR: new Intl.NumberFormat('ne-NP', {
+    NPR: new Intl.NumberFormat('en-NP', {
       style: showSymbol ? 'currency' : 'decimal',
       currency: 'NPR',
       minimumFractionDigits: 0,
@@ -226,4 +226,4 @@ export const getSavedCurrencyPreference = () => {
     currency: localStorage.getItem(CURRENCY_STORAGE_KEY) || 'USD',
     country: localStorage.getItem(COUNTRY_STORAGE_KEY) || 'US'
   };
-}; 
+};

@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { debugApiCall, debugApiResponse, debugComponentMount, checkProductionReadiness, createDebugPanel } from '../../utils/debug';
-
-// Remove the constant assignment to fix environment variable access
 
 export default function BannerCountdown() {
-  console.log('🚀🚀🚀 BannerCountdown component is mounting!');
-  console.log('🔥 BannerCountdown: Component function called');
+  
+  // State declarations
   const [offerData, setOfferData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [debugInfo, setDebugInfo] = useState(null);
   
   // Countdown state
   const [timeLeft, setTimeLeft] = useState({
@@ -356,70 +352,25 @@ export default function BannerCountdown() {
   }, []);
 
   useEffect(() => {
-    debugComponentMount('BannerCountdown');
-    checkProductionReadiness();
-    
     const fetchOfferData = async () => {
       try {
         const endpoint = '/api/offers?populate=*';
-        const debugCallInfo = debugApiCall(endpoint, 'GET');
-        
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
-          headers: {
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`
-          }
-        });
+        const response = await fetch(endpoint);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch offer data: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
-        const debugResponseInfo = debugApiResponse(endpoint, response, data);
         
-        console.log('🔍 OFFER API RESPONSE:');
-        console.log('📊 Total offers received:', data.data?.length || 0);
-        console.log('📦 Raw offers data:', data.data);
+        // Get the first offer (regardless of isActive status)
+        const firstOffer = data.data && data.data.length > 0 ? data.data[0] : null;
         
-        // Get the first active offer
-        const activeOffer = data.data.find(offer => offer.isActive);
-        console.log('🎯 Active offer found:', activeOffer);
-        console.log('🖼️ Active offer banner_image:', activeOffer?.banner_image);
-        
-        setDebugInfo({
-          success: true,
-          NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-          endpoint,
-          fullUrl: `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`,
-          responseStatus: response.status,
-          totalOffers: data.data?.length || 0,
-          activeOfferFound: !!activeOffer,
-          activeOfferId: activeOffer?.id,
-          bannerImageCount: activeOffer?.banner_image?.length || 0,
-          timestamp: new Date().toISOString(),
-          error: null
-        });
-        
-        if (activeOffer) {
-          setOfferData(activeOffer);
+        // Always set the first offer so we can check isActive property
+        if (firstOffer) {
+          setOfferData(firstOffer);
         }
       } catch (err) {
-        debugApiResponse('/api/offers?populate=*', null, null, err);
-        
-        setDebugInfo({
-          success: false,
-          NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-          endpoint: '/api/offers?populate=*',
-          fullUrl: `${process.env.NEXT_PUBLIC_API_URL}/api/offers?populate=*`,
-          responseStatus: null,
-          totalOffers: 0,
-          activeOfferFound: false,
-          activeOfferId: null,
-          bannerImageCount: 0,
-          timestamp: new Date().toISOString(),
-          error: err.message
-        });
-        
         setError(err.message);
       } finally {
         setLoading(false);
@@ -433,27 +384,16 @@ export default function BannerCountdown() {
 
   // Get banner images URLs (max 3 images)
   const getBannerImages = () => {
-    console.log('🖼️ getBannerImages called');
-    console.log('📦 offerData:', offerData);
-    console.log('🎯 offerData?.banner_image:', offerData?.banner_image);
-    
     if (!offerData?.banner_image || offerData.banner_image.length === 0) {
-      console.log('⚠️ No banner images found, using fallback');
       return [{
         url: "/images/banner/img-countdown1.png",
         alternativeText: "banner"
       }]; // fallback
     }
     
-    console.log('📊 Banner images count:', offerData.banner_image.length);
-    
     // Limit to maximum 3 images
     const images = offerData.banner_image.slice(0, 3).map((image, index) => {
       const processedUrl = image.url.startsWith('http') ? image.url : `${process.env.NEXT_PUBLIC_API_URL}${image.url}`;
-      console.log(`🖼️ Processing image ${index + 1}:`);
-      console.log(`  - Original URL: ${image.url}`);
-      console.log(`  - Processed URL: ${processedUrl}`);
-      console.log(`  - Alternative text: ${image.alternativeText || "banner"}`);
       
       return {
         url: processedUrl,
@@ -461,7 +401,6 @@ export default function BannerCountdown() {
       };
     });
     
-    console.log('✅ Final processed images:', images);
     return images;
   };
 
@@ -501,7 +440,6 @@ export default function BannerCountdown() {
 
   // Show loading state
   if (loading) {
-    console.log('⏳ BannerCountdown: Still loading...');
     return (
       <section className="bg-surface flat-countdown-banner">
         <div className="container">
@@ -515,61 +453,18 @@ export default function BannerCountdown() {
     );
   }
   
-  console.log('🎯 BannerCountdown: Rendering component');
-  console.log('📦 Current offerData:', offerData);
-  console.log('❌ Current error:', error);
-  console.log('🔍 Current debugInfo:', debugInfo);
+  // Early return if offer exists and is not active
+  if (offerData && offerData.isActive === false) {
+    return null;
+  }
 
-  // Debug Panel Component
-  const DebugPanel = () => {
-    if (process.env.NODE_ENV !== 'development' || !debugInfo) return null;
-    
-    return (
-      <div style={{
-        background: '#fff3cd',
-        border: '1px solid #ffeaa7',
-        borderRadius: '8px',
-        padding: '16px',
-        margin: '20px auto',
-        maxWidth: '1200px',
-        fontSize: '12px',
-        fontFamily: 'monospace'
-      }}>
-        <h4 style={{ margin: '0 0 10px 0', color: '#856404' }}>🔍 BannerCountdown Debug Info</h4>
-        <div style={{ display: 'grid', gap: '4px' }}>
-          <div><strong>NEXT_PUBLIC_API_URL:</strong> {debugInfo.NEXT_PUBLIC_API_URL || 'undefined'}</div>
-          <div><strong>STRAPI_API_TOKEN:</strong> {debugInfo.NEXT_PUBLIC_STRAPI_API_TOKEN}</div>
-          <div><strong>NODE_ENV:</strong> {debugInfo.NODE_ENV}</div>
-          <div><strong>API URL:</strong> {debugInfo.apiUrl}</div>
-          <div><strong>Response Status:</strong> 
-            <span style={{ color: debugInfo.responseStatus === 200 ? 'green' : 'red' }}>
-              {debugInfo.responseStatus}
-            </span>
-          </div>
-          <div><strong>Total Offers:</strong> {debugInfo.totalOffers}</div>
-          <div><strong>Active Offer Found:</strong> 
-            <span style={{ color: debugInfo.activeOfferFound ? 'green' : 'red' }}>
-              {debugInfo.activeOfferFound ? 'Yes' : 'No'}
-            </span>
-          </div>
-          {debugInfo.activeOfferId && (
-            <div><strong>Active Offer ID:</strong> {debugInfo.activeOfferId}</div>
-          )}
-          <div><strong>Banner Images Count:</strong> {debugInfo.bannerImageCount}</div>
-          {debugInfo.error && (
-            <div style={{ color: 'red' }}><strong>Error:</strong> {debugInfo.error}</div>
-          )}
-          <div><strong>Timestamp:</strong> {debugInfo.timestamp}</div>
-        </div>
-      </div>
-    );
-  };
+  // Don't render if offer is not active
+  if (offerData && !offerData.isActive) {
+    return null;
+  }
 
   // Show error state or fallback to default content
   if (error || !offerData) {
-    console.log('🚫 BannerCountdown: No offer data or error - rendering fallback content');
-    console.log('❌ Error:', error);
-    console.log('📦 OfferData:', offerData);
     
     // Use fallback images when no offer data
     const fallbackImages = [{
@@ -704,12 +599,8 @@ export default function BannerCountdown() {
               <div className="banner-img" style={{ display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'center', maxWidth: '100%', overflow: 'hidden' }}>
                 {(() => {
                   const bannerImages = getBannerImages();
-                  console.log('🎨 RENDERING BANNER IMAGES:');
-                  console.log('📊 Images to render:', bannerImages.length);
-                  console.log('🖼️ Images array:', bannerImages);
                   
                   return bannerImages.map((image, index) => {
-                    console.log(`🖼️ Rendering image ${index + 1}: ${image.url}`);
                     return (
                       <div key={index} style={{ flex: 1, display: 'flex', justifyContent: 'center', maxWidth: '300px' }}>
                         <Image
@@ -725,8 +616,6 @@ export default function BannerCountdown() {
                             objectFit: 'cover',
                             borderRadius: '8px'
                           }}
-                          onLoad={() => console.log(`✅ Image ${index + 1} loaded successfully: ${image.url}`)}
-                          onError={(e) => console.error(`❌ Image ${index + 1} failed to load: ${image.url}`, e)}
                         />
                       </div>
                     );

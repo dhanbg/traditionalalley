@@ -134,7 +134,6 @@ export default function Home() {
       {/* <Products /> */}
       {/* <BannerCollection /> */}
       <div style={{ marginTop: '60px' }}>
-        {console.log('📍 About to render BannerCountdown component')}
         <BannerCountdown />
       </div>
       {/* <Testimonials3 /> */}

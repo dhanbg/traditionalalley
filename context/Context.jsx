@@ -1215,8 +1215,6 @@ export default function Context({ children }) {
   const fetchWishlistFromServer = useCallback(async () => {
     if (!user?.id) return;
     
-    console.log('🔄 fetchWishlistFromServer: Starting fetch for user:', user.id);
-    
     try {
       setIsWishlistLoading(true);
       const response = await fetch(`/api/wishlists?userId=${encodeURIComponent(user.id)}`);
@@ -1224,20 +1222,8 @@ export default function Context({ children }) {
       if (response.ok) {
         const data = await response.json();
         
-        console.log('📦 Raw wishlist data from server:', data);
-        
         // Extract product IDs from the wishlist data
         const productIds = data.data?.map(item => {
-          console.log('🔍 Processing wishlist item:', {
-            item,
-            productDocumentId: item.product?.documentId,
-            productId: item.product?.id,
-            directProductId: item.productId,
-            itemId: item.id,
-            hasVariant: !!(item.productVariant || item.product_variant),
-            sizes: item.sizes
-          });
-          
           const baseId = item.product?.documentId || item.product?.id;
           
           // Generate the composite ID based on variant and size information
@@ -1248,22 +1234,16 @@ export default function Context({ children }) {
             const baseVariantId = `${baseId}-variant-${variantIdentifier}`;
             const compositeId = item.sizes ? `${baseVariantId}-size-${item.sizes}` : baseVariantId;
             
-            console.log('🎯 Found variant item, storing composite ID:', compositeId);
             return [compositeId]; // Only store the composite ID for variants
           } else if (item.sizes) {
             // This is a main product with size - create size composite ID
             const compositeId = `${baseId}-size-${item.sizes}`;
-            console.log('📏 Found sized main product, storing composite ID:', compositeId);
             return [compositeId];
           } else {
             // This is a simple main product without variants or sizes
-            console.log('📝 Found simple main product, storing base ID:', baseId);
             return [baseId];
           }
         }).flat().filter(Boolean) || [];
-        
-        console.log('📋 Final processed wishlist IDs:', productIds);
-        console.log('📋 Wishlist details to store:', data.data);
         
         // Store both the simple ID list and detailed data
         setWishList(productIds);
@@ -1757,13 +1737,12 @@ export default function Context({ children }) {
                   timeout: 8000,
                   crossOrigin: 'anonymous'
                 }).then((results) => {
-                  const successful = results.filter(r => r.loaded).length;
-                  console.log(`🖼️ Preloaded ${successful}/${results.length} cart images on login`);
+                  // Image preloading completed
                 }).catch((error) => {
-                  console.warn('Cart image preloading failed:', error);
+                  // Image preloading failed
                 });
               } catch (importError) {
-                console.warn('Failed to import image preloader:', importError);
+                // Failed to import image preloader
               }
             }
           } else {

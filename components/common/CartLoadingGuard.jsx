@@ -17,9 +17,7 @@ export default function CartLoadingGuard({ children, showDebug = false, timeout 
     if (mounted && user && (isCartLoading || !cartLoadedOnce)) {
       const timer = setTimeout(() => {
         setTimedOut(true);
-        if (showDebug) {
-          console.warn("CartLoadingGuard: Timeout reached, showing content anyway");
-        }
+
       }, timeout);
 
       return () => clearTimeout(timer);
@@ -33,20 +31,7 @@ export default function CartLoadingGuard({ children, showDebug = false, timeout 
   // 4. Timeout hasn't been reached
   const shouldShowLoading = mounted && user && (isCartLoading || !cartLoadedOnce) && !timedOut;
 
-  // Debug logging (only if showDebug is true)
-  React.useEffect(() => {
-    if (showDebug) {
-      console.log("CartLoadingGuard state:", {
-        mounted,
-        user: !!user,
-        userId: user?.id,
-        isCartLoading,
-        cartLoadedOnce,
-        timedOut,
-        shouldShowLoading
-      });
-    }
-  }, [mounted, user, isCartLoading, cartLoadedOnce, timedOut, shouldShowLoading, showDebug]);
+
 
   // Don't render anything until mounted (prevents hydration issues)
   if (!mounted) {
@@ -173,4 +158,4 @@ export default function CartLoadingGuard({ children, showDebug = false, timeout 
 
   // If not loading, render the children
   return <>{children}</>;
-} 
+}

@@ -249,8 +249,6 @@ export const preloadCartImages = async (cartProducts, options = {}) => {
   // Remove duplicates
   const uniqueUrls = [...new Set(imageUrls)];
   
-  console.log(`🖼️ Preloading ${uniqueUrls.length} cart images...`);
-  
   try {
     const results = await imagePreloader.preloadImages(uniqueUrls, {
       timeout: 10000, // 10 second timeout
@@ -258,12 +256,8 @@ export const preloadCartImages = async (cartProducts, options = {}) => {
       ...options
     });
     
-    const successful = results.filter(r => r.loaded).length;
-    console.log(`✅ Successfully preloaded ${successful}/${uniqueUrls.length} cart images`);
-    
     return results;
   } catch (error) {
-    console.error('Error preloading cart images:', error);
     return [];
   }
 };

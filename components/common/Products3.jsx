@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { fetchDataFromApi } from "@/utils/api";
 import { PRODUCTS_API, API_URL } from "@/utils/urls";
-import { debugApiCall, debugApiResponse, debugComponentMount } from "@/utils/debug";
+
 
 const tabItems = ["New Arrivals", "Best Seller", "On Sale"];
 const DEFAULT_IMAGE = '/images/placeholder.jpg';
@@ -18,8 +18,6 @@ export default function Products3({ parentClass = "flat-spacing-3" }) {
 
   // Fetch products from the backend
   useEffect(() => {
-    debugComponentMount('Products3');
-    
     const fetchProducts = async () => {
       try {
         setLoading(true);
@@ -28,27 +26,10 @@ export default function Products3({ parentClass = "flat-spacing-3" }) {
         const timestamp = new Date().getTime();
         const endpoint = `${PRODUCTS_API}&timestamp=${timestamp}`;
         
-        // Debug API call
-        debugApiCall(endpoint, 'GET');
-        console.log('🛍️ Products3 - Fetching products:', {
-          endpoint,
-          PRODUCTS_API,
-          API_URL,
-          NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-          timestamp: new Date().toISOString()
-        });
-        
         // Explicitly request only products that have tabFilterOptions2
         const response = await fetchDataFromApi(endpoint);
         
-        // Debug API response
-        debugApiResponse(endpoint, { ok: !!response }, response);
-        console.log('📦 Products3 - API Response:', {
-          success: !!response,
-          dataCount: response?.data?.length || 0,
-          hasData: !!(response?.data && response.data.length > 0),
-          timestamp: new Date().toISOString()
-        });
+
         
         if (response && response.data && response.data.length > 0) {
           // Transform the products to the format expected by ProductCard1
@@ -97,15 +78,6 @@ export default function Products3({ parentClass = "flat-spacing-3" }) {
         
         setLoading(false);
       } catch (error) {
-        debugApiResponse(PRODUCTS_API, null, null, error);
-        console.error('❌ Products3 - Error fetching products:', {
-          error: error.message,
-          PRODUCTS_API,
-          API_URL,
-          NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-          timestamp: new Date().toISOString()
-        });
-        
         setError(`Error fetching products: ${error.message || "Unknown error"}`);
         setAllProducts([]);
         setLoading(false);
