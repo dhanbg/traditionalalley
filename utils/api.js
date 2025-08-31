@@ -29,17 +29,19 @@ export const getImageUrl = (imageObj) => {
   if (imageObj && typeof imageObj === 'object') {
     // Try to get image URL from the formats.small path
     if (imageObj.formats && imageObj.formats.small && imageObj.formats.small.url) {
-      return `${API_URL}${imageObj.formats.small.url}`;
+      const smallUrl = imageObj.formats.small.url;
+      return smallUrl.startsWith('http') ? smallUrl : `${API_URL}${smallUrl}`;
     }
     
     // Try to get image URL from the formats.thumbnail path
     if (imageObj.formats && imageObj.formats.thumbnail && imageObj.formats.thumbnail.url) {
-      return `${API_URL}${imageObj.formats.thumbnail.url}`;
+      const thumbnailUrl = imageObj.formats.thumbnail.url;
+      return thumbnailUrl.startsWith('http') ? thumbnailUrl : `${API_URL}${thumbnailUrl}`;
     }
     
     // Try the main URL if formats not available or don't have URLs
     if (imageObj.url) {
-      return `${API_URL}${imageObj.url}`;
+      return imageObj.url.startsWith('http') ? imageObj.url : `${API_URL}${imageObj.url}`;
     }
   }
   

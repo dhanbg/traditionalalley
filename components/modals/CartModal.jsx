@@ -284,11 +284,14 @@ export default function CartModal() {
                       if (variantInfo.imgSrc) {
                         // Apply same small format logic to variant images
                         if (variantInfo.imgSrc.formats && variantInfo.imgSrc.formats.small && variantInfo.imgSrc.formats.small.url) {
-                          imgSrcUrl = `${API_URL}${variantInfo.imgSrc.formats.small.url}`;
+                          const smallUrl = variantInfo.imgSrc.formats.small.url;
+                          imgSrcUrl = smallUrl.startsWith('http') ? smallUrl : `${API_URL}${smallUrl}`;
                         } else if (variantInfo.imgSrc.formats && variantInfo.imgSrc.formats.thumbnail && variantInfo.imgSrc.formats.thumbnail.url) {
-                          imgSrcUrl = `${API_URL}${variantInfo.imgSrc.formats.thumbnail.url}`;
+                          const thumbnailUrl = variantInfo.imgSrc.formats.thumbnail.url;
+                          imgSrcUrl = thumbnailUrl.startsWith('http') ? thumbnailUrl : `${API_URL}${thumbnailUrl}`;
                         } else if (variantInfo.imgSrc.url) {
-                          imgSrcUrl = `${API_URL}${variantInfo.imgSrc.url}`;
+                          const mainUrl = variantInfo.imgSrc.url;
+                          imgSrcUrl = mainUrl.startsWith('http') ? mainUrl : `${API_URL}${mainUrl}`;
                         } else if (typeof variantInfo.imgSrc === 'string') {
                           // If it's already a string URL, use it as is
                           imgSrcUrl = variantInfo.imgSrc;
@@ -411,17 +414,21 @@ export default function CartModal() {
                 // Get image URLs, prefer small format for cart display
                 let imgSrcUrl = null;
                 if (productAttrs.imgSrc && productAttrs.imgSrc.formats && productAttrs.imgSrc.formats.small && productAttrs.imgSrc.formats.small.url) {
-                  imgSrcUrl = `${API_URL}${productAttrs.imgSrc.formats.small.url}`;
+                  const smallUrl = productAttrs.imgSrc.formats.small.url;
+                  imgSrcUrl = smallUrl.startsWith('http') ? smallUrl : `${API_URL}${smallUrl}`;
                 } else if (productAttrs.imgSrc && productAttrs.imgSrc.formats && productAttrs.imgSrc.formats.thumbnail && productAttrs.imgSrc.formats.thumbnail.url) {
-                  imgSrcUrl = `${API_URL}${productAttrs.imgSrc.formats.thumbnail.url}`;
+                  const thumbnailUrl = productAttrs.imgSrc.formats.thumbnail.url;
+                  imgSrcUrl = thumbnailUrl.startsWith('http') ? thumbnailUrl : `${API_URL}${thumbnailUrl}`;
                 } else {
                   imgSrcUrl = getImageUrl(productAttrs.imgSrc);
                 }
                 let imgHoverUrl = null;
                 if (productAttrs.imgHover && productAttrs.imgHover.formats && productAttrs.imgHover.formats.small && productAttrs.imgHover.formats.small.url) {
-                  imgHoverUrl = `${API_URL}${productAttrs.imgHover.formats.small.url}`;
+                  const smallUrl = productAttrs.imgHover.formats.small.url;
+                  imgHoverUrl = smallUrl.startsWith('http') ? smallUrl : `${API_URL}${smallUrl}`;
                 } else if (productAttrs.imgHover && productAttrs.imgHover.formats && productAttrs.imgHover.formats.thumbnail && productAttrs.imgHover.formats.thumbnail.url) {
-                  imgHoverUrl = `${API_URL}${productAttrs.imgHover.formats.thumbnail.url}`;
+                  const thumbnailUrl = productAttrs.imgHover.formats.thumbnail.url;
+                  imgHoverUrl = thumbnailUrl.startsWith('http') ? thumbnailUrl : `${API_URL}${thumbnailUrl}`;
                 } else {
                   imgHoverUrl = getImageUrl(productAttrs.imgHover);
                 }
@@ -480,11 +487,14 @@ export default function CartModal() {
                       if (variantInfo.imgSrc) {
                         // Apply same small format logic to variant images
                         if (variantInfo.imgSrc.formats && variantInfo.imgSrc.formats.small && variantInfo.imgSrc.formats.small.url) {
-                          imgSrcUrl = `${API_URL}${variantInfo.imgSrc.formats.small.url}`;
+                          const smallUrl = variantInfo.imgSrc.formats.small.url;
+                          imgSrcUrl = smallUrl.startsWith('http') ? smallUrl : `${API_URL}${smallUrl}`;
                         } else if (variantInfo.imgSrc.formats && variantInfo.imgSrc.formats.thumbnail && variantInfo.imgSrc.formats.thumbnail.url) {
-                          imgSrcUrl = `${API_URL}${variantInfo.imgSrc.formats.thumbnail.url}`;
+                          const thumbnailUrl = variantInfo.imgSrc.formats.thumbnail.url;
+                          imgSrcUrl = thumbnailUrl.startsWith('http') ? thumbnailUrl : `${API_URL}${thumbnailUrl}`;
                         } else if (variantInfo.imgSrc.url) {
-                          imgSrcUrl = `${API_URL}${variantInfo.imgSrc.url}`;
+                          const mainUrl = variantInfo.imgSrc.url;
+                          imgSrcUrl = mainUrl.startsWith('http') ? mainUrl : `${API_URL}${mainUrl}`;
                         } else if (typeof variantInfo.imgSrc === 'string') {
                           imgSrcUrl = variantInfo.imgSrc;
                         } else {

@@ -138,7 +138,9 @@ export default function ShopGram({ parentClass = "" }) {
             ))
           ) : (
             instagramPosts.slice(0, 5).map((item, i) => {
-              const mediaUrl = item.media?.url ? `${API_URL}${item.media.url}` : '/images/placeholder.jpg';
+              const mediaUrl = item.media?.url 
+                ? (item.media.url.startsWith('http') ? item.media.url : `${API_URL}${item.media.url}`)
+                : '/images/placeholder.jpg';
               const isVideo = item.media?.mime?.startsWith('video/');
               
               return (

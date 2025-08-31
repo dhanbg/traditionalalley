@@ -2499,11 +2499,13 @@ export default function Context({ children }) {
     if (imageObj.data?.attributes?.formats) {
       // Try thumbnail first for cart items
       if (imageObj.data.attributes.formats.thumbnail?.url) {
-        return `${API_URL}${imageObj.data.attributes.formats.thumbnail.url}`;
+        const thumbnailUrl = imageObj.data.attributes.formats.thumbnail.url;
+        return thumbnailUrl.startsWith('http') ? thumbnailUrl : `${API_URL}${thumbnailUrl}`;
       }
       // Try small format as fallback
       if (imageObj.data.attributes.formats.small?.url) {
-        return `${API_URL}${imageObj.data.attributes.formats.small.url}`;
+        const smallUrl = imageObj.data.attributes.formats.small.url;
+        return smallUrl.startsWith('http') ? smallUrl : `${API_URL}${smallUrl}`;
       }
     }
     
@@ -2511,22 +2513,26 @@ export default function Context({ children }) {
     if (imageObj.formats) {
       // Try thumbnail first for cart items
       if (imageObj.formats.thumbnail?.url) {
-        return `${API_URL}${imageObj.formats.thumbnail.url}`;
+        const thumbnailUrl = imageObj.formats.thumbnail.url;
+        return thumbnailUrl.startsWith('http') ? thumbnailUrl : `${API_URL}${thumbnailUrl}`;
       }
       // Try small format as fallback
       if (imageObj.formats.small?.url) {
-        return `${API_URL}${imageObj.formats.small.url}`;
+        const smallUrl = imageObj.formats.small.url;
+        return smallUrl.startsWith('http') ? smallUrl : `${API_URL}${smallUrl}`;
       }
     }
     
     // Fallback to main URL if formats not available
     if (imageObj.data?.attributes?.url) {
-      return `${API_URL}${imageObj.data.attributes.url}`;
+      const mainUrl = imageObj.data.attributes.url;
+      return mainUrl.startsWith('http') ? mainUrl : `${API_URL}${mainUrl}`;
     }
     
     // Handle the structure where URL is directly in the object
     if (imageObj.url) {
-      return `${API_URL}${imageObj.url}`;
+      const directUrl = imageObj.url;
+      return directUrl.startsWith('http') ? directUrl : `${API_URL}${directUrl}`;
     }
     
     // Return placeholder if no valid URL found
