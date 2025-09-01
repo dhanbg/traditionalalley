@@ -15,11 +15,94 @@ export default function ShopGram({ parentClass = "" }) {
   useEffect(() => {
     const fetchInstagramPosts = async () => {
       try {
+        console.log('🔍 Fetching Instagram posts from API...');
         const apiEndpoint = '/api/instagrams?populate=*';
         const response = await fetchDataFromApi(apiEndpoint);
-        setInstagramPosts(response.data || []);
+        
+        console.log('📡 API Response:', response);
+        
+        if (response && response.data) {
+          console.log('✅ Instagram posts received:', response.data.length, 'posts');
+          console.log('📹 Video posts:', response.data.filter(post => post.media?.mime?.startsWith('video/')).length);
+          response.data.forEach((post, index) => {
+            if (post.media?.mime?.startsWith('video/')) {
+              console.log(`🎬 Video ${index + 1}:`, {
+                url: post.media.url,
+                mime: post.media.mime,
+                size: post.media.size
+              });
+            }
+          });
+          setInstagramPosts(response.data);
+        } else {
+          console.warn('⚠️ No Instagram data received, using mock data');
+          // Use mock data for testing when API fails
+          const mockData = [
+            {
+              id: 1,
+              link: 'https://instagram.com/p/test1',
+              media: {
+                url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                mime: 'video/mp4',
+                alternativeText: 'Sample Instagram Video 1 - Big Buck Bunny',
+                formats: {
+                  thumbnail: {
+                    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images_480x270/BigBuckBunny.jpg'
+                  }
+                }
+              }
+            },
+            {
+              id: 2,
+              link: 'https://instagram.com/p/test2',
+              media: {
+                url: 'https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4',
+                mime: 'video/mp4',
+                alternativeText: 'Sample Instagram Video 2',
+                formats: {
+                  thumbnail: {
+                    url: 'https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4'
+                  }
+                }
+              }
+            },
+            {
+              id: 3,
+              link: 'https://instagram.com/p/test3',
+              media: {
+                url: 'https://res.cloudinary.com/dqmhtibfm/image/upload/v1756706432/sample_image_1.jpg',
+                mime: 'image/jpeg',
+                alternativeText: 'Sample Instagram Image 1'
+              }
+            },
+            {
+              id: 4,
+              link: 'https://instagram.com/p/test4',
+              media: {
+                url: 'https://res.cloudinary.com/dqmhtibfm/video/upload/v1756706432/sample_video_3.mp4',
+                mime: 'video/mp4',
+                alternativeText: 'Sample Instagram Video 3',
+                formats: {
+                  thumbnail: {
+                    url: 'https://res.cloudinary.com/dqmhtibfm/image/upload/v1756706432/sample_thumb_3.jpg'
+                  }
+                }
+              }
+            },
+            {
+              id: 5,
+              link: 'https://instagram.com/p/test5',
+              media: {
+                url: 'https://res.cloudinary.com/dqmhtibfm/image/upload/v1756706432/sample_image_2.jpg',
+                mime: 'image/jpeg',
+                alternativeText: 'Sample Instagram Image 2'
+              }
+            }
+          ];
+          setInstagramPosts(mockData);
+        }
       } catch (error) {
-        console.error('Failed to fetch Instagram posts:', error);
+        console.error('❌ Error fetching Instagram posts:', error);
         // Use mock data for testing when API fails
         const mockData = [
           {
@@ -179,11 +262,22 @@ export default function ShopGram({ parentClass = "" }) {
                             ) : undefined
                           }
                           onLoadStart={(event) => {
+                            console.log(`🎬 Video ${i + 1} loading started:`, mediaUrl);
                             // iOS Safari video loading fix
                             if (typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                              console.log('📱 iOS detected, calling video.load()');
                               const video = event.target;
                               video.load();
                             }
+                          }}
+                          onLoadedData={() => {
+                            console.log(`✅ Video ${i + 1} loaded successfully:`, mediaUrl);
+                          }}
+                          onError={(event) => {
+                            console.error(`❌ Video ${i + 1} failed to load:`, mediaUrl, event.target.error);
+                          }}
+                          onCanPlay={() => {
+                            console.log(`▶️ Video ${i + 1} can play:`, mediaUrl);
                           }}
                         >
                           <source src={mediaUrl} type={item.media?.mime || 'video/mp4'} />
