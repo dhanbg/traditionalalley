@@ -263,6 +263,7 @@ export default function ShopGram({ parentClass = "" }) {
                   >
                     <div className="img-style">
                       {isVideo ? (
+                        <div style={{ position: 'relative', display: 'inline-block' }}>
                         <video
                           className="lazyload img-hover"
                           width={640}
@@ -270,9 +271,22 @@ export default function ShopGram({ parentClass = "" }) {
                           style={{ objectFit: 'cover' }}
                           muted
                           loop
-                          autoPlay
                           playsInline
-                          preload="metadata"
+                          preload="none"
+                          controls={false}
+                          onClick={(e) => {
+                            const video = e.target;
+                            if (video.paused) {
+                              video.play().catch(err => {
+                                setDebugInfo(prev => ({
+                                  ...prev,
+                                  errors: [...prev.errors, `Video ${i + 1} play failed: ${err.message}`]
+                                }));
+                              });
+                            } else {
+                              video.pause();
+                            }
+                          }}
                           poster={item.media?.formats?.thumbnail?.url ? 
                             (item.media.formats.thumbnail.url.startsWith('http') ? 
                               item.media.formats.thumbnail.url : 
@@ -322,10 +336,31 @@ export default function ShopGram({ parentClass = "" }) {
                             }));
                           }}
                         >
-                          <source src={mediaUrl} type={item.media?.mime || 'video/mp4'} />
-                          {/* Fallback for iOS Safari */}
                           <source src={mediaUrl} type="video/mp4" />
                         </video>
+                        {/* Play button overlay for iOS */}
+                        <div 
+                          style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            backgroundColor: 'rgba(0,0,0,0.6)',
+                            borderRadius: '50%',
+                            width: '60px',
+                            height: '60px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            color: 'white',
+                            fontSize: '24px',
+                            pointerEvents: 'none'
+                          }}
+                        >
+                          ▶
+                        </div>
+                        </div>
                       ) : (
                         <Image
                           className="lazyload img-hover"
