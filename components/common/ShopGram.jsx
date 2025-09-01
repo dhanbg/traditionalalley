@@ -171,14 +171,24 @@ export default function ShopGram({ parentClass = "" }) {
                           loop
                           autoPlay
                           playsInline
+                          preload="metadata"
                           poster={item.media?.formats?.thumbnail?.url ? 
                             (item.media.formats.thumbnail.url.startsWith('http') ? 
                               item.media.formats.thumbnail.url : 
                               `${process.env.NEXT_PUBLIC_API_URL || API_URL}${item.media.formats.thumbnail.url}`
                             ) : undefined
                           }
+                          onLoadStart={(event) => {
+                            // iOS Safari video loading fix
+                            if (typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                              const video = event.target;
+                              video.load();
+                            }
+                          }}
                         >
-                          <source src={mediaUrl} type={item.media.mime} />
+                          <source src={mediaUrl} type={item.media?.mime || 'video/mp4'} />
+                          {/* Fallback for iOS Safari */}
+                          <source src={mediaUrl} type="video/mp4" />
                         </video>
                       ) : (
                         <Image
