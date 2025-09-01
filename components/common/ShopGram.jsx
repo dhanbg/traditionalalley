@@ -19,7 +19,9 @@ export default function ShopGram({ parentClass = "" }) {
         const response = await fetchDataFromApi(apiEndpoint);
         setInstagramPosts(response.data || []);
       } catch (error) {
-        // Handle error silently or set error state if needed
+        console.error('Failed to fetch Instagram posts:', error);
+        // Set empty array on error to prevent infinite loading
+        setInstagramPosts([]);
       } finally {
         setLoading(false);
       }
@@ -77,9 +79,17 @@ export default function ShopGram({ parentClass = "" }) {
             ))
           ) : (
             instagramPosts.slice(0, 5).map((item, i) => {
-              const mediaUrl = item.media?.url 
-                ? (item.media.url.startsWith('http') ? item.media.url : `${API_URL}${item.media.url}`)
-                : '/images/placeholder.jpg';
+              // Improved image URL construction for production
+              let mediaUrl = '/images/placeholder.jpg';
+              if (item.media?.url) {
+                if (item.media.url.startsWith('http')) {
+                  mediaUrl = item.media.url;
+                } else {
+                  // Use the API_URL from environment or fallback
+                  const baseUrl = process.env.NEXT_PUBLIC_API_URL || API_URL;
+                  mediaUrl = `${baseUrl}${item.media.url}`;
+                }
+              }
               const isVideo = item.media?.mime?.startsWith('video/');
               
               return (
@@ -102,7 +112,7 @@ export default function ShopGram({ parentClass = "" }) {
                           poster={item.media?.formats?.thumbnail?.url ? 
                             (item.media.formats.thumbnail.url.startsWith('http') ? 
                               item.media.formats.thumbnail.url : 
-                              `${API_URL}${item.media.formats.thumbnail.url}`
+                              `${process.env.NEXT_PUBLIC_API_URL || API_URL}${item.media.formats.thumbnail.url}`
                             ) : undefined
                           }
                         >
