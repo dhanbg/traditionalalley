@@ -20,8 +20,70 @@ export default function ShopGram({ parentClass = "" }) {
         setInstagramPosts(response.data || []);
       } catch (error) {
         console.error('Failed to fetch Instagram posts:', error);
-        // Set empty array on error to prevent infinite loading
-        setInstagramPosts([]);
+        // Use mock data for testing when API fails
+        const mockData = [
+          {
+            id: 1,
+            link: 'https://instagram.com/p/test1',
+            media: {
+              url: 'https://res.cloudinary.com/dqmhtibfm/video/upload/v1756706432/sample_video_1.mp4',
+              mime: 'video/mp4',
+              alternativeText: 'Sample Instagram Video 1',
+              formats: {
+                thumbnail: {
+                  url: 'https://res.cloudinary.com/dqmhtibfm/image/upload/v1756706432/sample_thumb_1.jpg'
+                }
+              }
+            }
+          },
+          {
+            id: 2,
+            link: 'https://instagram.com/p/test2',
+            media: {
+              url: 'https://res.cloudinary.com/dqmhtibfm/video/upload/v1756706432/sample_video_2.mp4',
+              mime: 'video/mp4',
+              alternativeText: 'Sample Instagram Video 2',
+              formats: {
+                thumbnail: {
+                  url: 'https://res.cloudinary.com/dqmhtibfm/image/upload/v1756706432/sample_thumb_2.jpg'
+                }
+              }
+            }
+          },
+          {
+            id: 3,
+            link: 'https://instagram.com/p/test3',
+            media: {
+              url: 'https://res.cloudinary.com/dqmhtibfm/image/upload/v1756706432/sample_image_1.jpg',
+              mime: 'image/jpeg',
+              alternativeText: 'Sample Instagram Image 1'
+            }
+          },
+          {
+            id: 4,
+            link: 'https://instagram.com/p/test4',
+            media: {
+              url: 'https://res.cloudinary.com/dqmhtibfm/video/upload/v1756706432/sample_video_3.mp4',
+              mime: 'video/mp4',
+              alternativeText: 'Sample Instagram Video 3',
+              formats: {
+                thumbnail: {
+                  url: 'https://res.cloudinary.com/dqmhtibfm/image/upload/v1756706432/sample_thumb_3.jpg'
+                }
+              }
+            }
+          },
+          {
+            id: 5,
+            link: 'https://instagram.com/p/test5',
+            media: {
+              url: 'https://res.cloudinary.com/dqmhtibfm/image/upload/v1756706432/sample_image_2.jpg',
+              mime: 'image/jpeg',
+              alternativeText: 'Sample Instagram Image 2'
+            }
+          }
+        ];
+        setInstagramPosts(mockData);
       } finally {
         setLoading(false);
       }
