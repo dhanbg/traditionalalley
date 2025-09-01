@@ -11,116 +11,15 @@ import { API_URL } from "@/utils/urls";
 export default function ShopGram({ parentClass = "" }) {
   const [instagramPosts, setInstagramPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [debugInfo, setDebugInfo] = useState({
-    apiCalled: false,
-    apiResponse: null,
-    videoCount: 0,
-    videoUrls: [],
-    errors: [],
-    videoLoadStatus: {}
-  });
 
   useEffect(() => {
     const fetchInstagramPosts = async () => {
       try {
-        setDebugInfo(prev => ({ ...prev, apiCalled: true }));
         const apiEndpoint = '/api/instagrams?populate=*';
         const response = await fetchDataFromApi(apiEndpoint);
-        
-        setDebugInfo(prev => ({ ...prev, apiResponse: response }));
-        
-        if (response && response.data) {
-          const videoCount = response.data.filter(post => post.media?.mime?.startsWith('video/')).length;
-          const videoUrls = response.data
-            .filter(post => post.media?.mime?.startsWith('video/'))
-            .map(post => ({
-              url: post.media.url,
-              mime: post.media.mime,
-              size: post.media.size
-            }));
-          
-          setDebugInfo(prev => ({ 
-            ...prev, 
-            videoCount,
-            videoUrls
-          }));
-          
-          setInstagramPosts(response.data);
-        } else {
-          setDebugInfo(prev => ({ 
-            ...prev, 
-            errors: [...prev.errors, 'No Instagram data received, using mock data']
-          }));
-          // Use mock data for testing when API fails
-          const mockData = [
-            {
-              id: 1,
-              link: 'https://instagram.com/p/test1',
-              media: {
-                url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-                mime: 'video/mp4',
-                alternativeText: 'Sample Instagram Video 1 - Big Buck Bunny',
-                formats: {
-                  thumbnail: {
-                    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images_480x270/BigBuckBunny.jpg'
-                  }
-                }
-              }
-            },
-            {
-              id: 2,
-              link: 'https://instagram.com/p/test2',
-              media: {
-                url: 'https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4',
-                mime: 'video/mp4',
-                alternativeText: 'Sample Instagram Video 2',
-                formats: {
-                  thumbnail: {
-                    url: 'https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4'
-                  }
-                }
-              }
-            },
-            {
-              id: 3,
-              link: 'https://instagram.com/p/test3',
-              media: {
-                url: 'https://res.cloudinary.com/dqmhtibfm/image/upload/v1756706432/sample_image_1.jpg',
-                mime: 'image/jpeg',
-                alternativeText: 'Sample Instagram Image 1'
-              }
-            },
-            {
-              id: 4,
-              link: 'https://instagram.com/p/test4',
-              media: {
-                url: 'https://res.cloudinary.com/dqmhtibfm/video/upload/v1756706432/sample_video_3.mp4',
-                mime: 'video/mp4',
-                alternativeText: 'Sample Instagram Video 3',
-                formats: {
-                  thumbnail: {
-                    url: 'https://res.cloudinary.com/dqmhtibfm/image/upload/v1756706432/sample_thumb_3.jpg'
-                  }
-                }
-              }
-            },
-            {
-              id: 5,
-              link: 'https://instagram.com/p/test5',
-              media: {
-                url: 'https://res.cloudinary.com/dqmhtibfm/image/upload/v1756706432/sample_image_2.jpg',
-                mime: 'image/jpeg',
-                alternativeText: 'Sample Instagram Image 2'
-              }
-            }
-          ];
-          setInstagramPosts(mockData);
-        }
+        setInstagramPosts(response.data || []);
       } catch (error) {
-        setDebugInfo(prev => ({ 
-          ...prev, 
-          errors: [...prev.errors, `Error fetching Instagram posts: ${error.message}`]
-        }));
+        console.error('Failed to fetch Instagram posts:', error);
         // Use mock data for testing when API fails
         const mockData = [
           {
@@ -263,7 +162,6 @@ export default function ShopGram({ parentClass = "" }) {
                   >
                     <div className="img-style">
                       {isVideo ? (
-                        <div style={{ position: 'relative', display: 'inline-block' }}>
                         <video
                           className="lazyload img-hover"
                           width={640}
@@ -271,23 +169,9 @@ export default function ShopGram({ parentClass = "" }) {
                           style={{ objectFit: 'cover' }}
                           muted
                           loop
+                          autoPlay
                           playsInline
-                          preload="none"
-                          controls={false}
-                          crossOrigin="anonymous"
-                          onClick={(e) => {
-                            const video = e.target;
-                            if (video.paused) {
-                              video.play().catch(err => {
-                                setDebugInfo(prev => ({
-                                  ...prev,
-                                  errors: [...prev.errors, `Video ${i + 1} play failed: ${err.message}`]
-                                }));
-                              });
-                            } else {
-                              video.pause();
-                            }
-                          }}
+                          preload="metadata"
                           poster={item.media?.formats?.thumbnail?.url ? 
                             (item.media.formats.thumbnail.url.startsWith('http') ? 
                               item.media.formats.thumbnail.url : 
@@ -295,99 +179,17 @@ export default function ShopGram({ parentClass = "" }) {
                             ) : undefined
                           }
                           onLoadStart={(event) => {
-                            const video = event.target;
-                            setDebugInfo(prev => ({
-                              ...prev,
-                              videoLoadStatus: {
-                                ...prev.videoLoadStatus,
-                                [`video_${i + 1}`]: { 
-                                  status: 'loading', 
-                                  url: mediaUrl, 
-                                  isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
-                                  networkState: video.networkState,
-                                  readyState: video.readyState,
-                                  timestamp: new Date().toISOString()
-                                }
-                              }
-                            }));
-                            
-                            // Set timeout to detect loading failures
-                            setTimeout(() => {
-                              if (video.readyState === 0) {
-                                setDebugInfo(prev => ({
-                                  ...prev,
-                                  videoLoadStatus: {
-                                    ...prev.videoLoadStatus,
-                                    [`video_${i + 1}`]: { 
-                                      ...prev.videoLoadStatus[`video_${i + 1}`], 
-                                      status: 'timeout',
-                                      error: 'Video failed to load within 10 seconds'
-                                    }
-                                  },
-                                  errors: [...prev.errors, `Video ${i + 1} loading timeout after 10s`]
-                                }));
-                              }
-                            }, 10000);
-                            
                             // iOS Safari video loading fix
                             if (typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                              const video = event.target;
                               video.load();
                             }
                           }}
-                          onLoadedData={() => {
-                            setDebugInfo(prev => ({
-                              ...prev,
-                              videoLoadStatus: {
-                                ...prev.videoLoadStatus,
-                                [`video_${i + 1}`]: { ...prev.videoLoadStatus[`video_${i + 1}`], status: 'loaded' }
-                              }
-                            }));
-                          }}
-                          onError={(event) => {
-                            setDebugInfo(prev => ({
-                              ...prev,
-                              videoLoadStatus: {
-                                ...prev.videoLoadStatus,
-                                [`video_${i + 1}`]: { ...prev.videoLoadStatus[`video_${i + 1}`], status: 'error', error: event.target.error?.message || 'Unknown error' }
-                              },
-                              errors: [...prev.errors, `Video ${i + 1} failed to load: ${mediaUrl}`]
-                            }));
-                          }}
-                          onCanPlay={() => {
-                            setDebugInfo(prev => ({
-                              ...prev,
-                              videoLoadStatus: {
-                                ...prev.videoLoadStatus,
-                                [`video_${i + 1}`]: { ...prev.videoLoadStatus[`video_${i + 1}`], status: 'can_play' }
-                              }
-                            }));
-                          }}
                         >
-                          <source src={mediaUrl} type="video/mp4" crossOrigin="anonymous" />
+                          <source src={mediaUrl} type={item.media?.mime || 'video/mp4'} />
+                          {/* Fallback for iOS Safari */}
+                          <source src={mediaUrl} type="video/mp4" />
                         </video>
-                        {/* Play button overlay for iOS */}
-                        <div 
-                          style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            backgroundColor: 'rgba(0,0,0,0.6)',
-                            borderRadius: '50%',
-                            width: '60px',
-                            height: '60px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            color: 'white',
-                            fontSize: '24px',
-                            pointerEvents: 'none'
-                          }}
-                        >
-                          ▶
-                        </div>
-                        </div>
                       ) : (
                         <Image
                           className="lazyload img-hover"
@@ -415,126 +217,6 @@ export default function ShopGram({ parentClass = "" }) {
           )}
           <div className="sw-pagination-gallery sw-dots type-circle justify-content-center spb222"></div>
         </Swiper>
-        
-        {/* Debug Panel */}
-        <div style={{
-          backgroundColor: '#f0f0f0',
-          padding: '20px',
-          margin: '20px 0',
-          borderRadius: '8px',
-          fontSize: '12px',
-          fontFamily: 'monospace',
-          maxHeight: '500px',
-          overflowY: 'auto'
-        }}>
-          <h4 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>🔍 Debug Info</h4>
-          
-          {/* Direct URL Test Links */}
-          <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#e8f4f8', borderRadius: '4px' }}>
-            <strong>📱 Test URLs Directly in Safari:</strong>
-            {instagramPosts.slice(0, 5).map((item, i) => {
-              if (item.media?.mime?.startsWith('video/')) {
-                let mediaUrl = item.media.url;
-                if (!mediaUrl.startsWith('http')) {
-                  const baseUrl = process.env.NEXT_PUBLIC_API_URL || API_URL;
-                  mediaUrl = `${baseUrl}${mediaUrl}`;
-                }
-                return (
-                  <div key={i} style={{ margin: '5px 0' }}>
-                    <a 
-                      href={mediaUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      style={{ color: '#0066cc', textDecoration: 'underline' }}
-                    >
-                      🎥 Test Video {i + 1} in New Tab
-                    </a>
-                  </div>
-                );
-              }
-              return null;
-            })}
-          </div>
-          
-          <div style={{ marginBottom: '10px' }}>
-            <strong>API Status:</strong> {debugInfo.apiCalled ? '✅ Called' : '❌ Not Called'}
-          </div>
-          
-          <div style={{ marginBottom: '10px' }}>
-            <strong>Posts Received:</strong> {debugInfo.apiResponse?.data?.length || 0}
-          </div>
-          
-          <div style={{ marginBottom: '10px' }}>
-            <strong>Video Count:</strong> {debugInfo.videoCount}
-          </div>
-          
-          {debugInfo.videoUrls.length > 0 && (
-            <div style={{ marginBottom: '10px' }}>
-              <strong>Video URLs:</strong>
-              {debugInfo.videoUrls.map((video, idx) => (
-                <div key={idx} style={{ marginLeft: '10px', marginTop: '5px' }}>
-                  <div>🎬 Video {idx + 1}: {video.mime}</div>
-                  <div style={{ wordBreak: 'break-all', color: '#6c757d' }}>{video.url}</div>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {Object.keys(debugInfo.videoLoadStatus).length > 0 && (
-            <div style={{ marginBottom: '10px' }}>
-              <strong>Video Load Status:</strong>
-              {Object.entries(debugInfo.videoLoadStatus).map(([key, status]) => {
-                const getNetworkStateText = (state) => {
-                  const states = ['EMPTY', 'IDLE', 'LOADING', 'NO_SOURCE'];
-                  return `${state} (${states[state] || 'UNKNOWN'})`;
-                };
-                const getReadyStateText = (state) => {
-                  const states = ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'];
-                  return `${state} (${states[state] || 'UNKNOWN'})`;
-                };
-                return (
-                  <div key={key} style={{ 
-                    marginLeft: '10px', 
-                    color: status.status === 'error' || status.status === 'timeout' ? 'red' : status.status === 'can_play' ? 'green' : 'orange',
-                    marginBottom: '5px'
-                  }}>
-                    <div><strong>{key}:</strong> {status.status} {status.isIOS ? '📱' : '💻'} {status.error && `(${status.error})`}</div>
-                    {status.networkState !== undefined && (
-                      <div style={{ fontSize: '10px', marginLeft: '15px' }}>
-                        NetworkState: {getNetworkStateText(status.networkState)}
-                      </div>
-                    )}
-                    {status.readyState !== undefined && (
-                      <div style={{ fontSize: '10px', marginLeft: '15px' }}>
-                        ReadyState: {getReadyStateText(status.readyState)}
-                      </div>
-                    )}
-                    {status.timestamp && (
-                      <div style={{ fontSize: '10px', marginLeft: '15px' }}>
-                        Started: {new Date(status.timestamp).toLocaleTimeString()}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          
-          {debugInfo.errors.length > 0 && (
-            <div style={{ marginBottom: '10px' }}>
-              <strong>Errors:</strong>
-              {debugInfo.errors.map((error, idx) => (
-                <div key={idx} style={{ color: 'red', marginLeft: '10px', marginTop: '5px' }}>
-                  ❌ {error}
-                </div>
-              ))}
-            </div>
-          )}
-          
-          <div style={{ marginTop: '10px', fontSize: '10px', color: '#6c757d' }}>
-            User Agent: {typeof window !== 'undefined' ? navigator.userAgent.substring(0, 100) + '...' : 'Server'}
-          </div>
-        </div>
       </div>
     </section>
   );
