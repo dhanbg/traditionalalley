@@ -134,7 +134,7 @@ export const fetchDataFromApi = async (endpoint) => {
     }
 
     // Determine if this is a Next.js API route or Strapi API call
-    const isNextApiRoute = processedEndpoint.startsWith('/api/ncm/') || processedEndpoint.startsWith('/api/auth/') || processedEndpoint.startsWith('/api/webhook/');
+    const isNextApiRoute = processedEndpoint.startsWith('/api/ncm/') || processedEndpoint.startsWith('/api/auth/') || processedEndpoint.startsWith('/api/webhook/') || processedEndpoint.startsWith('/api/instagrams');
     const fetchUrl = isNextApiRoute ? processedEndpoint : `${API_URL}${processedEndpoint}`;
     
     // Don't add Strapi auth header for Next.js API routes
