@@ -169,10 +169,10 @@ export default function ShopGram({ parentClass = "" }) {
                           style={{ objectFit: 'cover' }}
                           muted
                           loop
-                          autoPlay={typeof window !== 'undefined' && !/iPad|iPhone|iPod/.test(navigator.userAgent)}
+                          autoPlay
                           playsInline
                           preload="metadata"
-                          controls={typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)}
+                          controls={false}
                           webkit-playsinline="true"
                           poster={item.media?.formats?.thumbnail?.url ? 
                             (item.media.formats.thumbnail.url.startsWith('http') ? 
@@ -186,12 +186,6 @@ export default function ShopGram({ parentClass = "" }) {
                               const video = event.target;
                               console.log('iOS detected, forcing video load:', mediaUrl);
                               video.load();
-                              // Try to play after a short delay for iOS
-                              setTimeout(() => {
-                                video.play().catch(e => {
-                                  console.log('iOS autoplay prevented, user interaction required:', e);
-                                });
-                              }, 100);
                             }
                           }}
                           onError={(event) => {
@@ -209,19 +203,7 @@ export default function ShopGram({ parentClass = "" }) {
                           onLoadedData={() => {
                             console.log('Video loaded data:', mediaUrl);
                           }}
-                          onClick={(event) => {
-                            // Handle manual play for iOS devices
-                            if (typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
-                              const video = event.target;
-                              if (video.paused) {
-                                video.play().catch(e => {
-                                  console.log('Manual play failed:', e);
-                                });
-                              } else {
-                                video.pause();
-                              }
-                            }
-                          }}
+
                         >
                           <source src={mediaUrl} type={item.media?.mime || 'video/mp4'} />
                           {/* Fallback for iOS Safari */}
