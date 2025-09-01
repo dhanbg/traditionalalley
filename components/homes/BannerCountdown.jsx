@@ -589,7 +589,6 @@ export default function BannerCountdown() {
 
   return (
     <>
-      <DebugPanel />
       <section className="bg-surface" style={{ marginBottom: '60px' }}>
         <div className={`banner-countdown-responsive ${getBannerImages().length > 2 ? 'three-images' : ''}`}>
         {getBannerImages().length > 2 ? (
