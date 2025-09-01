@@ -274,6 +274,7 @@ export default function ShopGram({ parentClass = "" }) {
                           playsInline
                           preload="none"
                           controls={false}
+                          crossOrigin="anonymous"
                           onClick={(e) => {
                             const video = e.target;
                             if (video.paused) {
@@ -362,7 +363,7 @@ export default function ShopGram({ parentClass = "" }) {
                             }));
                           }}
                         >
-                          <source src={mediaUrl} type="video/mp4" />
+                          <source src={mediaUrl} type="video/mp4" crossOrigin="anonymous" />
                         </video>
                         {/* Play button overlay for iOS */}
                         <div 
