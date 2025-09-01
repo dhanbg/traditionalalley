@@ -10,7 +10,7 @@ import Collections from "@/components/homes/Categories";
 import Features from "@/components/common/Features";
 import Hero from "@/components/homes/Hero";
 import Products from "@/components/common/Products3";
-import ShopGram from "@/components/common/ShopGram";
+import IOSVideoSlider from "@/components/common/IOSVideoSlider";
 import Testimonials3 from "@/components/common/Testimonials3";
 import MarqueeSection from "@/components/common/MarqueeSection";
 import CustomizationPopup from "@/components/common/CustomizationPopup";
@@ -137,7 +137,7 @@ export default function Home() {
         <BannerCountdown />
       </div>
       {/* <Testimonials3 /> */}
-      <ShopGram />
+      <IOSVideoSlider />
       {/* <Features /> */}
       {/* <Blogs /> */}
       <Footer1 hasPaddingBottom />
