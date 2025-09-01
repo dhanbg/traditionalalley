@@ -11,31 +11,46 @@ import { API_URL } from "@/utils/urls";
 export default function ShopGram({ parentClass = "" }) {
   const [instagramPosts, setInstagramPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [debugInfo, setDebugInfo] = useState({
+    apiCalled: false,
+    apiResponse: null,
+    videoCount: 0,
+    videoUrls: [],
+    errors: [],
+    videoLoadStatus: {}
+  });
 
   useEffect(() => {
     const fetchInstagramPosts = async () => {
       try {
-        console.log('🔍 Fetching Instagram posts from API...');
+        setDebugInfo(prev => ({ ...prev, apiCalled: true }));
         const apiEndpoint = '/api/instagrams?populate=*';
         const response = await fetchDataFromApi(apiEndpoint);
         
-        console.log('📡 API Response:', response);
+        setDebugInfo(prev => ({ ...prev, apiResponse: response }));
         
         if (response && response.data) {
-          console.log('✅ Instagram posts received:', response.data.length, 'posts');
-          console.log('📹 Video posts:', response.data.filter(post => post.media?.mime?.startsWith('video/')).length);
-          response.data.forEach((post, index) => {
-            if (post.media?.mime?.startsWith('video/')) {
-              console.log(`🎬 Video ${index + 1}:`, {
-                url: post.media.url,
-                mime: post.media.mime,
-                size: post.media.size
-              });
-            }
-          });
+          const videoCount = response.data.filter(post => post.media?.mime?.startsWith('video/')).length;
+          const videoUrls = response.data
+            .filter(post => post.media?.mime?.startsWith('video/'))
+            .map(post => ({
+              url: post.media.url,
+              mime: post.media.mime,
+              size: post.media.size
+            }));
+          
+          setDebugInfo(prev => ({ 
+            ...prev, 
+            videoCount,
+            videoUrls
+          }));
+          
           setInstagramPosts(response.data);
         } else {
-          console.warn('⚠️ No Instagram data received, using mock data');
+          setDebugInfo(prev => ({ 
+            ...prev, 
+            errors: [...prev.errors, 'No Instagram data received, using mock data']
+          }));
           // Use mock data for testing when API fails
           const mockData = [
             {
@@ -102,7 +117,10 @@ export default function ShopGram({ parentClass = "" }) {
           setInstagramPosts(mockData);
         }
       } catch (error) {
-        console.error('❌ Error fetching Instagram posts:', error);
+        setDebugInfo(prev => ({ 
+          ...prev, 
+          errors: [...prev.errors, `Error fetching Instagram posts: ${error.message}`]
+        }));
         // Use mock data for testing when API fails
         const mockData = [
           {
@@ -262,22 +280,46 @@ export default function ShopGram({ parentClass = "" }) {
                             ) : undefined
                           }
                           onLoadStart={(event) => {
-                            console.log(`🎬 Video ${i + 1} loading started:`, mediaUrl);
+                            setDebugInfo(prev => ({
+                              ...prev,
+                              videoLoadStatus: {
+                                ...prev.videoLoadStatus,
+                                [`video_${i + 1}`]: { status: 'loading', url: mediaUrl, isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent) }
+                              }
+                            }));
                             // iOS Safari video loading fix
                             if (typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
-                              console.log('📱 iOS detected, calling video.load()');
                               const video = event.target;
                               video.load();
                             }
                           }}
                           onLoadedData={() => {
-                            console.log(`✅ Video ${i + 1} loaded successfully:`, mediaUrl);
+                            setDebugInfo(prev => ({
+                              ...prev,
+                              videoLoadStatus: {
+                                ...prev.videoLoadStatus,
+                                [`video_${i + 1}`]: { ...prev.videoLoadStatus[`video_${i + 1}`], status: 'loaded' }
+                              }
+                            }));
                           }}
                           onError={(event) => {
-                            console.error(`❌ Video ${i + 1} failed to load:`, mediaUrl, event.target.error);
+                            setDebugInfo(prev => ({
+                              ...prev,
+                              videoLoadStatus: {
+                                ...prev.videoLoadStatus,
+                                [`video_${i + 1}`]: { ...prev.videoLoadStatus[`video_${i + 1}`], status: 'error', error: event.target.error?.message || 'Unknown error' }
+                              },
+                              errors: [...prev.errors, `Video ${i + 1} failed to load: ${mediaUrl}`]
+                            }));
                           }}
                           onCanPlay={() => {
-                            console.log(`▶️ Video ${i + 1} can play:`, mediaUrl);
+                            setDebugInfo(prev => ({
+                              ...prev,
+                              videoLoadStatus: {
+                                ...prev.videoLoadStatus,
+                                [`video_${i + 1}`]: { ...prev.videoLoadStatus[`video_${i + 1}`], status: 'can_play' }
+                              }
+                            }));
                           }}
                         >
                           <source src={mediaUrl} type={item.media?.mime || 'video/mp4'} />
@@ -311,6 +353,70 @@ export default function ShopGram({ parentClass = "" }) {
           )}
           <div className="sw-pagination-gallery sw-dots type-circle justify-content-center spb222"></div>
         </Swiper>
+        
+        {/* Debug Panel */}
+        <div style={{
+          marginTop: '20px',
+          padding: '15px',
+          backgroundColor: '#f8f9fa',
+          border: '1px solid #dee2e6',
+          borderRadius: '5px',
+          fontSize: '12px',
+          fontFamily: 'monospace'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#495057' }}>🔍 Debug Info</h4>
+          
+          <div style={{ marginBottom: '10px' }}>
+            <strong>API Status:</strong> {debugInfo.apiCalled ? '✅ Called' : '❌ Not Called'}
+          </div>
+          
+          <div style={{ marginBottom: '10px' }}>
+            <strong>Posts Received:</strong> {debugInfo.apiResponse?.data?.length || 0}
+          </div>
+          
+          <div style={{ marginBottom: '10px' }}>
+            <strong>Video Count:</strong> {debugInfo.videoCount}
+          </div>
+          
+          {debugInfo.videoUrls.length > 0 && (
+            <div style={{ marginBottom: '10px' }}>
+              <strong>Video URLs:</strong>
+              {debugInfo.videoUrls.map((video, idx) => (
+                <div key={idx} style={{ marginLeft: '10px', marginTop: '5px' }}>
+                  <div>🎬 Video {idx + 1}: {video.mime}</div>
+                  <div style={{ wordBreak: 'break-all', color: '#6c757d' }}>{video.url}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {Object.keys(debugInfo.videoLoadStatus).length > 0 && (
+            <div style={{ marginBottom: '10px' }}>
+              <strong>Video Load Status:</strong>
+              {Object.entries(debugInfo.videoLoadStatus).map(([key, status]) => (
+                <div key={key} style={{ marginLeft: '10px', marginTop: '5px' }}>
+                  <div>{key}: {status.status} {status.isIOS ? '📱' : '💻'}</div>
+                  {status.error && <div style={{ color: 'red' }}>Error: {status.error}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {debugInfo.errors.length > 0 && (
+            <div style={{ marginBottom: '10px' }}>
+              <strong>Errors:</strong>
+              {debugInfo.errors.map((error, idx) => (
+                <div key={idx} style={{ color: 'red', marginLeft: '10px', marginTop: '5px' }}>
+                  ❌ {error}
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <div style={{ marginTop: '10px', fontSize: '10px', color: '#6c757d' }}>
+            User Agent: {typeof window !== 'undefined' ? navigator.userAgent.substring(0, 100) + '...' : 'Server'}
+          </div>
+        </div>
       </div>
     </section>
   );
