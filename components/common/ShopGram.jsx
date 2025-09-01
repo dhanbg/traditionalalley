@@ -294,16 +294,42 @@ export default function ShopGram({ parentClass = "" }) {
                             ) : undefined
                           }
                           onLoadStart={(event) => {
+                            const video = event.target;
                             setDebugInfo(prev => ({
                               ...prev,
                               videoLoadStatus: {
                                 ...prev.videoLoadStatus,
-                                [`video_${i + 1}`]: { status: 'loading', url: mediaUrl, isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent) }
+                                [`video_${i + 1}`]: { 
+                                  status: 'loading', 
+                                  url: mediaUrl, 
+                                  isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
+                                  networkState: video.networkState,
+                                  readyState: video.readyState,
+                                  timestamp: new Date().toISOString()
+                                }
                               }
                             }));
+                            
+                            // Set timeout to detect loading failures
+                            setTimeout(() => {
+                              if (video.readyState === 0) {
+                                setDebugInfo(prev => ({
+                                  ...prev,
+                                  videoLoadStatus: {
+                                    ...prev.videoLoadStatus,
+                                    [`video_${i + 1}`]: { 
+                                      ...prev.videoLoadStatus[`video_${i + 1}`], 
+                                      status: 'timeout',
+                                      error: 'Video failed to load within 10 seconds'
+                                    }
+                                  },
+                                  errors: [...prev.errors, `Video ${i + 1} loading timeout after 10s`]
+                                }));
+                              }
+                            }, 10000);
+                            
                             // iOS Safari video loading fix
                             if (typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
-                              const video = event.target;
                               video.load();
                             }
                           }}
@@ -391,15 +417,43 @@ export default function ShopGram({ parentClass = "" }) {
         
         {/* Debug Panel */}
         <div style={{
-          marginTop: '20px',
-          padding: '15px',
-          backgroundColor: '#f8f9fa',
-          border: '1px solid #dee2e6',
-          borderRadius: '5px',
+          backgroundColor: '#f0f0f0',
+          padding: '20px',
+          margin: '20px 0',
+          borderRadius: '8px',
           fontSize: '12px',
-          fontFamily: 'monospace'
+          fontFamily: 'monospace',
+          maxHeight: '500px',
+          overflowY: 'auto'
         }}>
-          <h4 style={{ margin: '0 0 10px 0', color: '#495057' }}>🔍 Debug Info</h4>
+          <h4 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>🔍 Debug Info</h4>
+          
+          {/* Direct URL Test Links */}
+          <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#e8f4f8', borderRadius: '4px' }}>
+            <strong>📱 Test URLs Directly in Safari:</strong>
+            {instagramPosts.slice(0, 5).map((item, i) => {
+              if (item.media?.mime?.startsWith('video/')) {
+                let mediaUrl = item.media.url;
+                if (!mediaUrl.startsWith('http')) {
+                  const baseUrl = process.env.NEXT_PUBLIC_API_URL || API_URL;
+                  mediaUrl = `${baseUrl}${mediaUrl}`;
+                }
+                return (
+                  <div key={i} style={{ margin: '5px 0' }}>
+                    <a 
+                      href={mediaUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ color: '#0066cc', textDecoration: 'underline' }}
+                    >
+                      🎥 Test Video {i + 1} in New Tab
+                    </a>
+                  </div>
+                );
+              }
+              return null;
+            })}
+          </div>
           
           <div style={{ marginBottom: '10px' }}>
             <strong>API Status:</strong> {debugInfo.apiCalled ? '✅ Called' : '❌ Not Called'}
@@ -428,12 +482,40 @@ export default function ShopGram({ parentClass = "" }) {
           {Object.keys(debugInfo.videoLoadStatus).length > 0 && (
             <div style={{ marginBottom: '10px' }}>
               <strong>Video Load Status:</strong>
-              {Object.entries(debugInfo.videoLoadStatus).map(([key, status]) => (
-                <div key={key} style={{ marginLeft: '10px', marginTop: '5px' }}>
-                  <div>{key}: {status.status} {status.isIOS ? '📱' : '💻'}</div>
-                  {status.error && <div style={{ color: 'red' }}>Error: {status.error}</div>}
-                </div>
-              ))}
+              {Object.entries(debugInfo.videoLoadStatus).map(([key, status]) => {
+                const getNetworkStateText = (state) => {
+                  const states = ['EMPTY', 'IDLE', 'LOADING', 'NO_SOURCE'];
+                  return `${state} (${states[state] || 'UNKNOWN'})`;
+                };
+                const getReadyStateText = (state) => {
+                  const states = ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'];
+                  return `${state} (${states[state] || 'UNKNOWN'})`;
+                };
+                return (
+                  <div key={key} style={{ 
+                    marginLeft: '10px', 
+                    color: status.status === 'error' || status.status === 'timeout' ? 'red' : status.status === 'can_play' ? 'green' : 'orange',
+                    marginBottom: '5px'
+                  }}>
+                    <div><strong>{key}:</strong> {status.status} {status.isIOS ? '📱' : '💻'} {status.error && `(${status.error})`}</div>
+                    {status.networkState !== undefined && (
+                      <div style={{ fontSize: '10px', marginLeft: '15px' }}>
+                        NetworkState: {getNetworkStateText(status.networkState)}
+                      </div>
+                    )}
+                    {status.readyState !== undefined && (
+                      <div style={{ fontSize: '10px', marginLeft: '15px' }}>
+                        ReadyState: {getReadyStateText(status.readyState)}
+                      </div>
+                    )}
+                    {status.timestamp && (
+                      <div style={{ fontSize: '10px', marginLeft: '15px' }}>
+                        Started: {new Date(status.timestamp).toLocaleTimeString()}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
           
