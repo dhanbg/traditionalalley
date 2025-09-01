@@ -26,12 +26,12 @@ export default function ShopGram({ parentClass = "" }) {
             id: 1,
             link: 'https://instagram.com/p/test1',
             media: {
-              url: 'https://res.cloudinary.com/dqmhtibfm/video/upload/v1756706432/sample_video_1.mp4',
+              url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
               mime: 'video/mp4',
-              alternativeText: 'Sample Instagram Video 1',
+              alternativeText: 'Sample Instagram Video 1 - Big Buck Bunny',
               formats: {
                 thumbnail: {
-                  url: 'https://res.cloudinary.com/dqmhtibfm/image/upload/v1756706432/sample_thumb_1.jpg'
+                  url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images_480x270/BigBuckBunny.jpg'
                 }
               }
             }
@@ -40,12 +40,12 @@ export default function ShopGram({ parentClass = "" }) {
             id: 2,
             link: 'https://instagram.com/p/test2',
             media: {
-              url: 'https://res.cloudinary.com/dqmhtibfm/video/upload/v1756706432/sample_video_2.mp4',
+              url: 'https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4',
               mime: 'video/mp4',
               alternativeText: 'Sample Instagram Video 2',
               formats: {
                 thumbnail: {
-                  url: 'https://res.cloudinary.com/dqmhtibfm/image/upload/v1756706432/sample_thumb_2.jpg'
+                  url: 'https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4'
                 }
               }
             }
