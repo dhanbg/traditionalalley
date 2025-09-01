@@ -144,6 +144,8 @@ export default function DebugHero() {
                       controls 
                       className="max-w-full h-auto"
                       style={{ maxHeight: '300px' }}
+                      playsInline
+                      muted
                     >
                       <source src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337'}${selectedMedia.url}`} type={selectedMedia.mime} />
                       Your browser does not support the video tag.

@@ -128,6 +128,8 @@ export default function DebugMobileMedia() {
                     controls 
                     className="border rounded"
                     style={{ maxWidth: '100%' }}
+                    playsInline
+                    muted
                   >
                     <source src={getImageUrl(slide.finalUrl)} type="video/mp4" />
                     Your browser does not support the video tag.

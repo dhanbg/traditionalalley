@@ -189,6 +189,8 @@ export default function DebugMobileConsole() {
                           height="150" 
                           controls 
                           className="border rounded"
+                          playsInline
+                          muted
                         >
                           <source src={getImageUrl(selectedMedia.url)} type="video/mp4" />
                           Your browser does not support the video tag.

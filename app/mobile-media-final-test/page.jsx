@@ -237,6 +237,8 @@ export default function MobileMediaFinalTest() {
                         height="200" 
                         controls 
                         className="border rounded max-w-full"
+                        playsInline
+                        muted
                       >
                         <source src={getImageUrl(slide.selectedUrl)} type="video/mp4" />
                         Your browser does not support the video tag.
