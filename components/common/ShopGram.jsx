@@ -172,6 +172,8 @@ export default function ShopGram({ parentClass = "" }) {
                           autoPlay
                           playsInline
                           preload="metadata"
+                          controls={false}
+                          webkit-playsinline="true"
                           poster={item.media?.formats?.thumbnail?.url ? 
                             (item.media.formats.thumbnail.url.startsWith('http') ? 
                               item.media.formats.thumbnail.url : 
@@ -182,13 +184,30 @@ export default function ShopGram({ parentClass = "" }) {
                             // iOS Safari video loading fix
                             if (typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
                               const video = event.target;
+                              console.log('iOS detected, forcing video load:', mediaUrl);
                               video.load();
                             }
+                          }}
+                          onError={(event) => {
+                            console.error('Video error on iOS:', {
+                              error: event.target.error,
+                              src: mediaUrl,
+                              userAgent: navigator.userAgent,
+                              networkState: event.target.networkState,
+                              readyState: event.target.readyState
+                            });
+                          }}
+                          onCanPlay={() => {
+                            console.log('Video can play:', mediaUrl);
+                          }}
+                          onLoadedData={() => {
+                            console.log('Video loaded data:', mediaUrl);
                           }}
                         >
                           <source src={mediaUrl} type={item.media?.mime || 'video/mp4'} />
                           {/* Fallback for iOS Safari */}
                           <source src={mediaUrl} type="video/mp4" />
+                          Your browser does not support the video tag.
                         </video>
                       ) : (
                         <Image
