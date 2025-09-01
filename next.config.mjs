@@ -44,7 +44,7 @@ const nextConfig = {
     return [
       {
         // Apply CORS headers to all video files
-        source: '/(.*\.(mp4|webm|ogg|avi|mov))',
+         source: '/.*\\.(mp4|webm|ogg|avi|mov)$',
         headers: [
           {
             key: 'Access-Control-Allow-Origin',
