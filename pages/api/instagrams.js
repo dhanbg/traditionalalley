@@ -51,11 +51,29 @@ export default async function handler(req, res) {
     const data = await response.json();
     console.log('✅ Successfully fetched', data.data?.length || 0, 'Instagram posts');
 
-    // Process the data to ensure proper image URLs
+    // Helper function to add iOS-compatible codec transformation to Cloudinary URLs
+    const addH264Transform = (url) => {
+      if (!url || !url.includes('cloudinary.com')) return url;
+      
+      // Add H.264 codec transformation for iOS compatibility
+      // vc_h264 forces H.264 codec, q_auto optimizes quality
+      const transformParams = 'vc_h264,q_auto';
+      
+      // Insert transformation parameters after '/upload/'
+      return url.replace('/upload/', `/upload/${transformParams}/`);
+    };
+
+    // Process the data to ensure proper image URLs and iOS-compatible video codecs
     if (data.data) {
       data.data = data.data.map(post => {
         if (post.media?.url && !post.media.url.startsWith('http')) {
           post.media.url = `${STRAPI_URL}${post.media.url}`;
+        }
+        
+        // Transform Cloudinary video URLs to use H.264 codec for iOS compatibility
+        if (post.media?.url && post.media.url.includes('cloudinary.com') && post.media.mime === 'video/mp4') {
+          post.media.url = addH264Transform(post.media.url);
+          console.log('🔄 Transformed video URL for iOS compatibility:', post.media.url);
         }
         
         // Handle thumbnail formats
