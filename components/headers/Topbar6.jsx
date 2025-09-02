@@ -19,8 +19,8 @@ export default function Topbar6({ bgColor = "bg-blue-2" }) {
                   marginRight: "10px",
                 }}
               />
-              <a className="text-caption-1 text-white" href="tel:9812345678">
-                9812345678
+              <a className="text-caption-1 text-white" href="tel:9844594187">
+                9844594187
               </a>
             </li>
           </ul>

@@ -119,7 +119,7 @@ export default function Footer1({
                       </li>
                       <li>
                         <i className="icon-phone" />
-                        <p>9812345678</p>
+                        <p>9844594187</p>
                       </li>
                     </ul>
                     <ul

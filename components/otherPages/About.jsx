@@ -22,7 +22,7 @@ export default function About() {
           <div className="col-md-6">
             <div className="about-us-content">
               <h3 className="title wow fadeInUp">
-                Traditional alley – Offering rare and beautiful items worldwide
+                Traditional Alley – Timeless Fashion, Handcrafted in Nepal
               </h3>
               <div className="widget-tabs style-3">
                 <ul className="widget-menu-tab wow fadeInUp">
@@ -60,14 +60,13 @@ export default function About() {
                     } `}
                   >
                     <p>
-                      Welcome to Traditional alley, your premier destination for
-                      fashion-forward clothing and accessories. We pride
-                      ourselves on offering a curated selection of rare and
-                      beautiful items sourced both locally and globally. Our
-                      mission is to bring you the latest trends and timeless
-                      styles, ensuring every piece reflects quality and
-                      elegance. Discover the perfect addition to your wardrobe
-                      at Traditional alley.
+                      Traditional Alley is a designer fashion brand based in Nepal, committed to celebrating heritage through modern design. We produce, wholesale, and retail a wide range of garments crafted using traditional techniques and hand-based processes passed down through generations.
+                    </p>
+                    <p>
+                      From everyday essentials to statement pieces for special events, our collections cater to all age groups—offering style, comfort, and cultural authenticity. Each piece is thoughtfully designed and handcrafted by skilled artisans, blending age-old craftsmanship with contemporary fashion sensibilities.
+                    </p>
+                    <p>
+                      At Traditional Alley, we don't just make clothes—we preserve tradition, empower local artisans, and bring timeless Nepali artistry to wardrobes around the world.
                     </p>
                   </div>
                   <div
@@ -76,14 +75,13 @@ export default function About() {
                     } `}
                   >
                     <p>
-                      Welcome to Traditional alley, your premier destination for
-                      fashion-forward clothing and accessories. We pride
-                      ourselves on offering a curated selection of rare and
-                      beautiful items sourced both locally and globally. Our
-                      mission is to bring you the latest trends and timeless
-                      styles, ensuring every piece reflects quality and
-                      elegance. Discover the perfect addition to your wardrobe
-                      at Traditional alley.
+                      Our vision is to become the global ambassador of Nepali fashion heritage, making traditional craftsmanship accessible and relevant to modern consumers worldwide. We envision a future where every Traditional Alley piece tells a story of cultural pride and artistic excellence.
+                    </p>
+                    <p>
+                      We aspire to bridge the gap between tradition and innovation, creating a sustainable fashion ecosystem that honors our ancestors' wisdom while embracing contemporary design sensibilities. Through our work, we aim to put Nepal on the global fashion map as a destination for authentic, handcrafted luxury.
+                    </p>
+                    <p>
+                      Our ultimate goal is to ensure that traditional Nepali textiles like Dhaka, along with time-honored techniques, continue to thrive and evolve for future generations, while providing meaningful livelihoods for our skilled artisan community.
                     </p>
                   </div>
                   <div
@@ -92,14 +90,16 @@ export default function About() {
                     } `}
                   >
                     <p>
-                      Welcome to Traditional alley, your premier destination for
-                      fashion-forward clothing and accessories. We pride
-                      ourselves on offering a curated selection of rare and
-                      beautiful items sourced both locally and globally. Our
-                      mission is to bring you the latest trends and timeless
-                      styles, ensuring every piece reflects quality and
-                      elegance. Discover the perfect addition to your wardrobe
-                      at Traditional alley.
+                      <strong>Authentic Heritage Craftsmanship:</strong> Every piece is handcrafted using traditional techniques passed down through generations, ensuring authenticity that machine-made fashion simply cannot replicate.
+                    </p>
+                    <p>
+                      <strong>Cultural Storytelling:</strong> Each garment carries the rich narrative of Nepali culture, from the revival of Dhaka fabric to intricate hand-weaving processes that connect wearers to centuries of artistic tradition.
+                    </p>
+                    <p>
+                      <strong>Artisan Empowerment:</strong> We work directly with skilled local artisans, ensuring fair wages and preserving traditional skills while creating sustainable livelihoods in rural communities.
+                    </p>
+                    <p>
+                      <strong>Modern Versatility:</strong> Our designs seamlessly blend traditional elements with contemporary fashion, making heritage pieces suitable for both everyday wear and special occasions.
                     </p>
                   </div>
                   <div
@@ -108,14 +108,16 @@ export default function About() {
                     } `}
                   >
                     <p>
-                      Welcome to Traditional alley, your premier destination for
-                      fashion-forward clothing and accessories. We pride
-                      ourselves on offering a curated selection of rare and
-                      beautiful items sourced both locally and globally. Our
-                      mission is to bring you the latest trends and timeless
-                      styles, ensuring every piece reflects quality and
-                      elegance. Discover the perfect addition to your wardrobe
-                      at Traditional alley.
+                      <strong>Quality Excellence:</strong> We are committed to delivering exceptional quality in every stitch, ensuring that each piece meets the highest standards of craftsmanship and durability.
+                    </p>
+                    <p>
+                      <strong>Cultural Preservation:</strong> We pledge to protect and promote Nepal's rich textile heritage, working tirelessly to keep traditional techniques alive and relevant for modern times.
+                    </p>
+                    <p>
+                      <strong>Sustainable Practices:</strong> Our commitment extends to environmental responsibility through sustainable sourcing, ethical production methods, and supporting eco-friendly practices throughout our supply chain.
+                    </p>
+                    <p>
+                      <strong>Customer Satisfaction:</strong> We promise to provide exceptional service, authentic products, and a meaningful connection to Nepali culture with every purchase, ensuring our customers feel proud to wear our creations.
                     </p>
                   </div>
                 </div>

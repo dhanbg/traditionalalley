@@ -22,6 +22,7 @@ import DemoModal from "@/components/modals/DemoModal";
 import Categories from "@/components/modals/Categories";
 import ScrollTop from "@/components/common/ScrollTop";
 import LoadingBar from "@/components/common/LoadingBar";
+import EnhancedWhatsApp from "@/components/common/EnhancedWhatsApp";
 import { SessionProvider } from "next-auth/react";
 
 export default function RootLayout({ children }) {
@@ -180,34 +181,8 @@ export default function RootLayout({ children }) {
           <Categories />
           <ScrollTop />
 
-          {/* WhatsApp Floating Button */}
-          <a
-            href="https://wa.me/9779844594187"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              position: 'fixed',
-              bottom: '24px',
-              right: '24px',
-              zIndex: 10000,
-              background: 'white',
-              borderRadius: '50%',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-              width: '60px',
-              height: '60px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'box-shadow 0.2s',
-            }}
-            aria-label="Chat with us on WhatsApp"
-          >
-            <img
-              src="/whatsapp.svg"
-              alt="WhatsApp"
-              style={{ width: '38px', height: '38px', display: 'block' }}
-            />
-          </a>
+          {/* Enhanced WhatsApp Component */}
+          <EnhancedWhatsApp />
           </Context>
         </ToastProvider>
       </body>

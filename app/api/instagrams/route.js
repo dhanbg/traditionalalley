@@ -3,11 +3,7 @@ import { NextResponse } from 'next/server';
 const STRAPI_URL = process.env.NEXT_PUBLIC_API_URL || process.env.STRAPI_URL;
 const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN;
 
-export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
+export async function GET(request) {
   try {
     // Debug environment variables
     console.log('🔧 Instagram API Environment check:');
@@ -17,12 +13,12 @@ export default async function handler(req, res) {
 
     if (!STRAPI_URL) {
       console.error('❌ STRAPI_URL is not set');
-      return res.status(500).json({ error: 'Server configuration error: STRAPI_URL missing' });
+      return NextResponse.json({ error: 'Server configuration error: STRAPI_URL missing' }, { status: 500 });
     }
 
     if (!STRAPI_TOKEN) {
       console.error('❌ STRAPI_TOKEN is not set');
-      return res.status(500).json({ error: 'Server configuration error: STRAPI_TOKEN missing' });
+      return NextResponse.json({ error: 'Server configuration error: STRAPI_TOKEN missing' }, { status: 500 });
     }
 
     const apiUrl = `${STRAPI_URL}/api/instagrams?populate=*`;
@@ -41,11 +37,11 @@ export default async function handler(req, res) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('❌ Strapi API error:', response.status, errorText);
-      return res.status(response.status).json({ 
+      return NextResponse.json({ 
         error: 'Failed to fetch Instagram posts from Strapi',
         details: errorText,
         status: response.status
-      });
+      }, { status: response.status });
     }
 
     const data = await response.json();
@@ -95,13 +91,13 @@ export default async function handler(req, res) {
       });
     }
 
-    return res.status(200).json(data);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('❌ Instagram API error:', error);
-    return res.status(500).json({ 
+    return NextResponse.json({ 
       error: 'Internal server error',
       message: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    }, { status: 500 });
   }
 }

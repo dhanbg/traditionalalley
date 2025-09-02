@@ -11,9 +11,10 @@ import Features from "@/components/common/Features";
 import Hero from "@/components/homes/Hero";
 import Products from "@/components/common/Products3";
 import ShopGram from "@/components/common/ShopGram";
+
 import Testimonials3 from "@/components/common/Testimonials3";
 import MarqueeSection from "@/components/common/MarqueeSection";
-import CustomizationPopup from "@/components/common/CustomizationPopup";
+
 
 function PaymentMessageHandler() {
   const searchParams = useSearchParams();
@@ -119,7 +120,7 @@ export default function Home() {
   return (
     <>
       {/* Customization Popup */}
-      <CustomizationPopup />
+
       
       {/* Payment Status Message */}
       <Suspense fallback={<div style={{display: 'none'}}>Loading payment status...</div>}>

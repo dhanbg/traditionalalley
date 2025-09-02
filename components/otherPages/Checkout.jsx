@@ -1847,153 +1847,108 @@ export default function Checkout() {
                     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
                   }}
                 >
-                  <div className={styles.paymentMethods}>
+                  {/* Maintenance Notice */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                    border: '2px solid #f59e0b',
+                    borderRadius: '12px',
+                    padding: '24px',
+                    textAlign: 'center',
+                    marginBottom: '20px'
+                  }}>
+                    <div style={{
+                      fontSize: '48px',
+                      marginBottom: '16px'
+                    }}>🚧</div>
+                    <h3 style={{
+                      color: '#92400e',
+                      fontSize: '20px',
+                      fontWeight: '700',
+                      marginBottom: '12px',
+                      margin: '0 0 12px 0'
+                    }}>Payment System Under Maintenance</h3>
+                    <p style={{
+                      color: '#b45309',
+                      fontSize: '16px',
+                      lineHeight: '1.5',
+                      margin: '0 0 16px 0'
+                    }}>
+                      We're currently updating our payment systems to serve you better. 
+                      Both NPS and Cash on Delivery options are temporarily unavailable.
+                    </p>
+                    <p style={{
+                      color: '#92400e',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      margin: '0'
+                    }}>
+                      Please check back soon. We apologize for any inconvenience.
+                    </p>
+                  </div>
+
+                  {/* Disabled Payment Methods */}
+                  <div className={styles.paymentMethods} style={{ opacity: 0.5, pointerEvents: 'none' }}>
                     <div 
-                      className={`${styles.paymentMethodCard} ${selectedPaymentMethod === 'cod' ? styles.selected : ''}`}
-                      onClick={() => setSelectedPaymentMethod('cod')}
+                      className={`${styles.paymentMethodCard} ${styles.disabled}`}
                     >
-                      <input
-                        type="radio"
-                        name="payment-method"
-                        id="cod-method"
-                        checked={selectedPaymentMethod === 'cod'}
-                        onChange={() => setSelectedPaymentMethod('cod')}
-                        style={{ display: 'none' }}
-                      />
                       <div className={styles.paymentMethodHeader}>
                         <span className={styles.paymentIcon}>💰</span>
                         <span>Cash on Delivery</span>
+                        <span className={styles.lockIcon}>🔒</span>
                       </div>
+                      <p className={styles.errorMessage}>
+                        Temporarily unavailable due to maintenance.
+                      </p>
                     </div>
 
                     <div 
-                      className={`${styles.paymentMethodCard} ${!shippingRatesObtained ? styles.disabled : ''} ${selectedPaymentMethod === 'nps' ? styles.selected : ''}`}
-                      onClick={() => shippingRatesObtained && setSelectedPaymentMethod('nps')}
+                      className={`${styles.paymentMethodCard} ${styles.disabled}`}
                     >
-                      <input
-                        type="radio"
-                        name="payment-method"
-                        id="nps-method"
-                        checked={selectedPaymentMethod === 'nps'}
-                        onChange={() => shippingRatesObtained && setSelectedPaymentMethod('nps')}
-                        disabled={!shippingRatesObtained}
-                        style={{ display: 'none' }}
-                      />
                       <div className={styles.paymentMethodHeader}>
                         <span className={styles.paymentIcon}>🏦</span>
                         <span>NPS (Nepal Payment System)</span>
-                        {!shippingRatesObtained && (
-                          <span className={styles.lockIcon}>🔒</span>
-                        )}
+                        <span className={styles.lockIcon}>🔒</span>
                       </div>
-                      {!shippingRatesObtained && (
-                        <p className={styles.errorMessage}>
-                          Please get shipping rates first to use NPS.
-                        </p>
-                      )}
+                      <p className={styles.errorMessage}>
+                        Temporarily unavailable due to maintenance.
+                      </p>
                     </div>
                   </div>
                   
-                  {/* Payment button section */}
+                  {/* Disabled Payment button section */}
                   <div style={{ marginTop: '24px' }}>
-                    {selectedPaymentMethod === 'nps' && (
-                      nprExchangeRate ? (
-                        <NPSPaymentForm 
-                          amount={nprAmount}
-                          onSuccess={(response) => {
-                            console.log('NPS Payment Success:', response);
-                            // Handle successful payment
-                            if (response.success) {
-                              // You can redirect to payment gateway or handle the response
-                              if (response.data?.redirectUrl && response.data?.redirectForm) {
-                                // Create and submit form to redirect to NPS gateway
-                                const form = document.createElement('form');
-                                form.method = 'POST';
-                                form.action = response.data.redirectUrl;
-                                
-                                Object.entries(response.data.redirectForm).forEach(([key, value]) => {
-                                  if (value) {
-                                    const input = document.createElement('input');
-                                    input.type = 'hidden';
-                                    input.name = key;
-                                    input.value = value;
-                                    form.appendChild(input);
-                                  }
-                                });
-                                
-                                document.body.appendChild(form);
-                                form.submit();
-                              }
-                            }
-                          }}
-                          onError={(error) => {
-                            console.error('NPS Payment Error:', error);
-                            alert(`Payment failed: ${error.message || 'Unknown error'}`);
-                          }}
-                          orderData={constructOrderData()}
-                          transactionRemarks={`Checkout Order - ${selectedProducts.length} items`}
-                        />
-                      ) : (
-                        <div style={{ textAlign: 'center', padding: '20px' }}>
-                          <p>Loading payment information...</p>
-                        </div>
-                      )
-                    )}
-                    {selectedPaymentMethod === 'cod' && (
-                      <label htmlFor="cod-method">
-                        <button 
-                          className="tf-btn btn-reset"
-                          onClick={handleCashPaymentOrder}
-                          disabled={isProcessingOrder}
-                          style={{
-                            background: isProcessingOrder 
-                              ? 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)' 
-                              : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                            border: 'none',
-                            borderRadius: '10px',
-                            padding: '14px 28px',
-                            fontSize: '16px',
-                            fontWeight: '600',
-                            color: 'white',
-                            boxShadow: isProcessingOrder 
-                              ? 'none' 
-                              : '0 4px 12px rgba(16, 185, 129, 0.3)',
-                            transition: 'all 0.3s ease',
-                            cursor: isProcessingOrder ? 'not-allowed' : 'pointer',
-                            transform: isProcessingOrder ? 'none' : 'translateY(0)',
-                            width: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px'
-                          }}
-                          onMouseOver={(e) => {
-                            if (!isProcessingOrder) {
-                              e.target.style.transform = 'translateY(-2px)';
-                              e.target.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
-                            }
-                          }}
-                          onMouseOut={(e) => {
-                            if (!isProcessingOrder) {
-                              e.target.style.transform = 'translateY(0)';
-                              e.target.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
-                            }
-                          }}
-                        >
-                          {isProcessingOrder ? (
-                            <>
-                              <span>⏳</span>
-                              <span>Processing Order...</span>
-                            </>
-                          ) : (
-                            <>
-                              <span>💰</span>
-                              <span>Place Order (Cash on Delivery)</span>
-                            </>
-                          )}
-                        </button>
-                      </label>
-                    )}
+                    <button 
+                      className="tf-btn btn-reset"
+                      disabled={true}
+                      style={{
+                        background: 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)',
+                        border: 'none',
+                        borderRadius: '10px',
+                        padding: '14px 28px',
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: 'white',
+                        cursor: 'not-allowed',
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        opacity: 0.6
+                      }}
+                    >
+                      <span>🚧</span>
+                      <span>Payment Temporarily Unavailable</span>
+                    </button>
+                    <p style={{
+                      textAlign: 'center',
+                      marginTop: '12px',
+                      fontSize: '14px',
+                      color: '#6b7280',
+                      fontStyle: 'italic'
+                    }}>
+                      We're working on improvements. Please check back soon!
+                    </p>
                   </div>
                 </form>
               </div>

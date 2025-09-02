@@ -1,5 +1,3 @@
-import Brands from "@/components/common/Brands";
-import Features2 from "@/components/common/Features2";
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import Link from "next/link";
@@ -64,9 +62,7 @@ export default function page() {
         </div>
       </div>
       <About />
-      <Features2 parentClass="flat-spacing line-bottom-container" />
       <Team />
-      <Brands parentClass="flat-spacing-5 bg-surface" />
       <Testimonials />
       <Footer1 />
     </>
