@@ -10,7 +10,6 @@ import Collections from "@/components/homes/Categories";
 import Features from "@/components/common/Features";
 import Hero from "@/components/homes/Hero";
 import Products from "@/components/common/Products3";
-import ShopGram from "@/components/common/ShopGram";
 import InstagramVideoCards from "@/components/common/InstagramVideoCards";
 
 import Testimonials3 from "@/components/common/Testimonials3";
@@ -139,7 +138,6 @@ export default function Home() {
         <BannerCountdown />
       </div>
       {/* <Testimonials3 /> */}
-      <ShopGram />
       <InstagramVideoCards />
       {/* <Features /> */}
       {/* <Blogs /> */}

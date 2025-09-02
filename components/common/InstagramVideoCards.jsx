@@ -133,8 +133,8 @@ export default function InstagramVideoCards({ parentClass = "" }) {
   }, []);
 
   return (
-    <section className={parentClass}>
-      <div className="container">
+    <section className={parentClass} style={{ marginTop: '60px', marginBottom: '60px' }}>
+      <div className="container" style={{ paddingTop: '40px', paddingBottom: '40px' }}>
         <div className="heading-section text-center">
           <h3 className="heading wow fadeInUp">Explore Instagram</h3>
           <p className="subheading text-secondary wow fadeInUp">
@@ -244,7 +244,7 @@ export default function InstagramVideoCards({ parentClass = "" }) {
                         transform: 'translate(-50%, -50%)',
                         opacity: 0,
                         transition: 'opacity 0.3s ease',
-                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
                         borderRadius: '50%',
                         width: '50px',
                         height: '50px',
@@ -260,7 +260,7 @@ export default function InstagramVideoCards({ parentClass = "" }) {
                         e.currentTarget.style.opacity = '0';
                       }}
                     >
-                      <span className="icon icon-eye" />
+                      <span className="icon icon-eye" style={{ color: 'white' }} />
                       <span className="tooltip">View Instagram Post</span>
                     </Link>
                   </div>

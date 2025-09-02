@@ -880,7 +880,8 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                               alignItems: "center",
                               justifyContent: "center",
                               padding: "0 15px",
-                              minWidth: "120px",
+                              minWidth: "140px",
+                              whiteSpace: "nowrap",
                               opacity: safeProduct.isActive === false ? 0.6 : 1,
                               cursor: safeProduct.isActive === false ? 'not-allowed' : 'pointer',
                               backgroundColor: safeProduct.isActive === false ? '#6c757d' : ''
@@ -1002,15 +1003,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                           <p className="text-caption-1">Share</p>
                         </a>
                       </div>
-                      <div className="tf-product-info-time">
-                        <div className="icon">
-                          <i className="icon-timer" />
-                        </div>
-                        <p className="text-caption-1">
-                          Estimated Delivery:&nbsp;&nbsp;<span>12-26 days</span>
-                          (International), <span>3-6 days</span> (United States)
-                        </p>
-                      </div>
+
                       <div className="tf-product-info-return">
                         <div className="icon">
                           <i className="icon-arrowClockwise" />
@@ -1069,22 +1062,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                           {safeProduct.isActive === false ? 'Inactive' : 'Active'}
                         </p>
                       </li>
-                      <li>
-                        <p className="text-caption-1">Categories:</p>
-                        <p className="text-caption-1">
-                          <a href="#" className="text-1 link">
-                            Clothes
-                          </a>
-                          ,
-                          <a href="#" className="text-1 link">
-                            women
-                          </a>
-                          ,
-                          <a href="#" className="text-1 link">
-                            T-shirt
-                          </a>
-                        </p>
-                      </li>
+
                     </ul>
                   </div>
                 </div>
