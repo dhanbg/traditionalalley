@@ -81,22 +81,22 @@ export default function OrdersFAQs() {
                 </div>
               </div>
               <div className="terms-of-use-item item-scroll-target" id="returns-exchanges" style={{ marginBottom: '30px' }}>
-                <h5 className="terms-of-use-title" style={{ marginBottom: '20px' }}>4. Returns & Exchanges</h5>
+                <h5 className="terms-of-use-title" style={{ marginBottom: '20px' }}>4. Exchanges Only</h5>
                 <div className="terms-of-use-content">
-                  <p style={{ marginBottom: '15px', lineHeight: '1.6' }}><strong>Q: What is your return policy?</strong></p>
-                  <p style={{ marginBottom: '20px', lineHeight: '1.6' }}>A: We accept returns within 30 days of delivery. Items must be unworn, unwashed, and in original condition with tags attached.</p>
+                  <p style={{ marginBottom: '15px', lineHeight: '1.6' }}><strong>Q: What is your return and refund policy?</strong></p>
+                  <p style={{ marginBottom: '20px', lineHeight: '1.6' }}>A: All products are non-refundable. We do not offer monetary refunds for any items purchased. However, we offer product exchanges only within 12 days of delivery, subject to our exchange conditions.</p>
                   
-                  <p style={{ marginBottom: '15px', lineHeight: '1.6' }}><strong>Q: How do I return an item?</strong></p>
-                  <p style={{ marginBottom: '20px', lineHeight: '1.6' }}>A: Contact our customer service to initiate a return. We'll provide a return authorization number and shipping instructions. Package the item securely and ship it back to us.</p>
+                  <p style={{ marginBottom: '15px', lineHeight: '1.6' }}><strong>Q: How do I exchange an item?</strong></p>
+                  <p style={{ marginBottom: '20px', lineHeight: '1.6' }}>A: You must contact our customer service within 12 days of receiving your order to initiate an exchange request. We'll provide exchange authorization and shipping instructions if you're eligible.</p>
                   
                   <p style={{ marginBottom: '15px', lineHeight: '1.6' }}><strong>Q: Can I exchange an item for a different size or color?</strong></p>
-                  <p style={{ marginBottom: '20px', lineHeight: '1.6' }}>A: Yes, exchanges are available subject to stock availability. The exchange process is similar to returns - contact us to initiate the exchange.</p>
+                  <p style={{ marginBottom: '20px', lineHeight: '1.6' }}>A: Yes, exchanges are available for items of equal or lesser value, subject to stock availability. Items must be unworn, unwashed, and in original condition with all tags attached.</p>
                   
-                  <p style={{ marginBottom: '15px', lineHeight: '1.6' }}><strong>Q: Who pays for return shipping?</strong></p>
-                  <p style={{ marginBottom: '20px', lineHeight: '1.6' }}>A: Customers are responsible for return shipping costs unless the return is due to our error (wrong item sent, defective product, etc.).</p>
+                  <p style={{ marginBottom: '15px', lineHeight: '1.6' }}><strong>Q: What happens if I don't contact you within 12 days?</strong></p>
+                  <p style={{ marginBottom: '20px', lineHeight: '1.6' }}>A: After the 12-day deadline, no exchanges will be accepted under any circumstances. All sales become final after this period.</p>
                   
-                  <p style={{ marginBottom: '15px', lineHeight: '1.6' }}><strong>Q: How long does it take to process a refund?</strong></p>
-                  <p style={{ marginBottom: '10px', lineHeight: '1.6' }}>A: Refunds are processed within 5-7 business days after we receive and inspect your returned item. Bank processing may take additional 3-5 business days.</p>
+                  <p style={{ marginBottom: '15px', lineHeight: '1.6' }}><strong>Q: How long does the exchange process take?</strong></p>
+                  <p style={{ marginBottom: '10px', lineHeight: '1.6' }}>A: The complete exchange process typically takes 7-10 business days from when we receive your item until you receive the replacement, including inspection and processing time.</p>
                 </div>
               </div>
               <div className="terms-of-use-item item-scroll-target" id="account-support">

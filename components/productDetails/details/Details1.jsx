@@ -1016,8 +1016,8 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                           <i className="icon-arrowClockwise" />
                         </div>
                         <p className="text-caption-1">
-                          Return within <span>45 days</span> of purchase. Duties
-                          &amp; taxes are non-refundable.
+                          Exchange within <span>12 days</span> of delivery. No refunds available.
+                          All sales are final.
                         </p>
                       </div>
                       <div className="dropdown dropdown-store-location">

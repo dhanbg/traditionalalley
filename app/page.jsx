@@ -11,6 +11,7 @@ import Features from "@/components/common/Features";
 import Hero from "@/components/homes/Hero";
 import Products from "@/components/common/Products3";
 import ShopGram from "@/components/common/ShopGram";
+import InstagramVideoCards from "@/components/common/InstagramVideoCards";
 
 import Testimonials3 from "@/components/common/Testimonials3";
 import MarqueeSection from "@/components/common/MarqueeSection";
@@ -139,6 +140,7 @@ export default function Home() {
       </div>
       {/* <Testimonials3 /> */}
       <ShopGram />
+      <InstagramVideoCards />
       {/* <Features /> */}
       {/* <Blogs /> */}
       <Footer1 hasPaddingBottom />
