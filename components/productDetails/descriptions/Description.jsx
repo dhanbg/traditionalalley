@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 
 // Helper to render text with inline marks (bold, italic, uppercase, etc.)
@@ -82,6 +82,20 @@ const RenderBlock = ({ block }) => {
 };
 
 export default function Description({ product }) {
+  const [isMobile, setIsMobile] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // If no product or description is provided, show default content or null
   if (!product || !product.description) {
     return (
@@ -146,7 +160,41 @@ export default function Description({ product }) {
     ])
   ];
 
-  // Split content into two balanced columns
+  // For mobile: show limited content initially, full content when expanded
+  if (isMobile) {
+    const previewBlocks = allContentBlocks.slice(0, 3); // Show first 3 blocks
+    const hasMoreContent = allContentBlocks.length > 3;
+    
+    return (
+      <div className="single-column">
+        {(isExpanded ? allContentBlocks : previewBlocks).map((block, index) => (
+          <RenderBlock key={`mobile-${index}`} block={block} />
+        ))}
+        
+        {hasMoreContent && (
+          <button 
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="btn-read-more mt-3"
+            style={{
+              background: 'none',
+              border: '1px solid #000',
+              padding: '8px 16px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              color: '#000'
+            }}
+          >
+            {isExpanded ? 'Read Less' : 'Read More'}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // For desktop: keep the two-column layout
   const midPoint = Math.ceil(allContentBlocks.length / 2);
   const leftColumnBlocks = allContentBlocks.slice(0, midPoint);
   const rightColumnBlocks = allContentBlocks.slice(midPoint);

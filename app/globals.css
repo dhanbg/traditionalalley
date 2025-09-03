@@ -77,6 +77,80 @@
   position: relative;
 }
 
+/* Mobile touch improvements for product cards */
+@media (max-width: 768px) {
+  .card-product {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  
+  .card-product .product-img {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  
+  .card-product .product-img:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+  
+  /* Prevent hover effects on mobile */
+  .card-product:hover .img-product {
+    opacity: 1;
+  }
+  
+  .card-product:hover .img-hover {
+    opacity: 0;
+    transform: none;
+  }
+  
+  /* Mobile description and title improvements */
+  .card-product-info {
+    padding-top: 8px !important;
+    gap: 6px !important;
+  }
+  
+  .card-product-info .title {
+    font-size: 14px !important;
+    line-height: 20px !important;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    display: -webkit-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-wrap: break-word;
+    hyphens: auto;
+    max-height: 40px;
+  }
+  
+  .card-product-info .price {
+    font-size: 14px !important;
+    line-height: 22px !important;
+  }
+  
+  .card-product-info .old-price {
+    font-size: 12px !important;
+    line-height: 18px !important;
+  }
+  
+  /* Better spacing for mobile product cards */
+  .card-product {
+    margin-bottom: 16px;
+  }
+  
+  /* Improve text readability on mobile */
+  .card-product-info .title.link {
+    color: #1a1a1a;
+    text-decoration: none;
+  }
+  
+  .card-product-info .title.link:hover {
+    color: #333;
+    text-decoration: none;
+  }
+}
+
 /* Reset and fix scaling issues */
 html {
   font-size: 16px !important;

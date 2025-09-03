@@ -266,4 +266,4 @@ export default function OTPVerification({ email, firstName, lastName, password, 
       </div>
     </section>
   );
-} 
+}

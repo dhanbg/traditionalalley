@@ -30,7 +30,7 @@ export default function DescriptionTab() {
                   className={`item-title ${activeTab == 3 ? "active" : ""} `}
                   onClick={() => setActiveTab(3)}
                 >
-                  <span className="inner">Shipping &amp; Returns</span>
+                  <span className="inner">Shipping</span>
                 </li>
                 <li
                   className={`item-title ${activeTab == 4 ? "active" : ""} `}

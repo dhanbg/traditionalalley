@@ -467,82 +467,37 @@ export default function Details1({ product, variants = [], preferredVariantId = 
     if (!user) {
       signIn();
     } else {
-      // Check if the entire product is inactive
-      if (safeProduct.isActive === false) {
-        setSizeSelectionError("This product is currently unavailable and cannot be added to cart.");
-        return;
-      }
-      
-      // Check if sizes are available and no size is selected
-      const hasAvailableSizes = (currentProduct.size_stocks) || 
-                                (activeVariant && activeVariant.size_stocks) || 
-                                (safeProduct.sizes && safeProduct.sizes.length > 0);
-      
-      if (hasAvailableSizes && !selectedSize) {
-        // Show an alert or notification that size selection is required
-        setSizeSelectionError("Please select a size before adding to cart.");
-        return;
-      }
-      
-      // Check if the selected size is out of stock
-      if (selectedSize && sizeOptions.length > 0) {
-        const selectedSizeOption = sizeOptions.find(s => s.value === selectedSize);
-        if (selectedSizeOption && selectedSizeOption.quantity === 0) {
-          setSizeSelectionError(`Size ${selectedSize} is currently out of stock. Please select a different size.`);
-          return;
-        }
-      }
-      
-      // Create unique ID that includes size information
+      // Create unique cart ID based on product, variant, and size
       let uniqueCartId;
-      let variantInfo = null;
-      
-      const baseId = safeProduct.documentId || safeProduct.id;
-
-      if (activeVariant && !activeVariant.isCurrentProduct) {
-        // For variants: include variant documentId and size for consistency
-        const variantIdentifier = activeVariant.documentId || activeVariant.id;
-        const baseVariantId = `${baseId}-variant-${variantIdentifier}`;
-        uniqueCartId = selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
-        
-        variantInfo = {
-          isVariant: true,
-          documentId: activeVariant.documentId || activeVariant.id, // Use documentId as primary identifier
-          title: activeVariant.title || extractDesignFromVariant(activeVariant),
-          imgSrc: processImageUrl(activeVariant.imgSrc),
-          imgSrcObject: activeVariant.imgSrc // Preserve original image object for thumbnail extraction
-        };
-      } else {
-        // For main products: use documentId for consistency and include size in ID
-        uniqueCartId = selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
-      }
-      
-      // Check if this exact item is already in cart before adding
-      if (isAddedToCartProducts(uniqueCartId)) {
-        return; // Already in cart, do nothing
-      }
-      
-      addProductToCart(uniqueCartId, quantity, true, variantInfo, selectedSize);
-    }
-  };
-
-  const handleCompareClick = () => {
-    if (!user) {
-      signIn();
-    } else {
-      // Use the same unique ID logic as cart for consistency
-      let uniqueId;
       const baseId = safeProduct.documentId || safeProduct.id;
 
       if (activeVariant && !activeVariant.isCurrentProduct) {
         const baseVariantId = `${baseId}-variant-${activeVariant.id}`;
-        uniqueId = selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
+        uniqueCartId = selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
       } else {
-        uniqueId = selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
+        uniqueCartId = selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
       }
-      addToCompareItem(uniqueId);
+
+      // Prepare variant info for cart
+      const variantInfo = activeVariant && !activeVariant.isCurrentProduct ? {
+        id: activeVariant.id,
+        documentId: activeVariant.documentId,
+        color: activeVariant.color,
+        imgSrc: activeVariant.imgSrc,
+        imgHover: activeVariant.imgHover,
+        title: activeVariant.title,
+        price: activeVariant.price,
+        oldPrice: activeVariant.oldPrice,
+        discount: activeVariant.discount,
+        sizes: activeVariant.sizes,
+        gallery: activeVariant.gallery
+      } : null;
+
+      addProductToCart(uniqueCartId, quantity, true, variantInfo, selectedSize);
     }
   };
+
+
 
 
 
@@ -909,38 +864,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                             </span>
                           </a>
                         )}
-                        <a
-                          href="#compare"
-                          data-bs-toggle="offcanvas"
-                          aria-controls="compare"
-                          onClick={handleCompareClick}
-                          className="box-icon hover-tooltip compare btn-icon-action"
-                        >
-                          <span className="icon icon-gitDiff" />
-                          <span className="tooltip text-caption-2">
-                            {(() => {
-                              // Check compare status - use same logic as cart
-                              if (!selectedSize) {
-                                return "Compare";
-                              }
-                              
-                              const productDocumentId = safeProduct.documentId;
-                              const variantId = (activeVariant && !activeVariant.isCurrentProduct) ? activeVariant.id : null;
-                              
-                              // For compare, we still use the old ID-based logic since compare doesn't store size info
-                              let checkId;
-                              const baseId = safeProduct.documentId || safeProduct.id;
-                              if (activeVariant && !activeVariant.isCurrentProduct) {
-                                const baseVariantId = `${baseId}-variant-${activeVariant.id}`;
-                                checkId = selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
-                              } else {
-                                checkId = selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
-                              }
-                              
-                              return isAddedtoCompareItem(checkId) ? "Already Compared" : "Compare";
-                            })()}
-                          </span>
-                        </a>
+
 
                         <button 
                           onClick={() => setShowCustomOrderForm(true)}

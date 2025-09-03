@@ -266,9 +266,29 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
         setShowSizeSelection(false);
         setSelectedSize(''); // Reset selection when mouse leaves
       }}
+      onTouchStart={() => {
+        // Prevent double-tap zoom on mobile
+        if (hasAvailableSizes) {
+          setShowSizeSelection(true);
+        }
+      }}
+      onTouchEnd={() => {
+        // Reset size selection after touch
+        setTimeout(() => {
+          setShowSizeSelection(false);
+          setSelectedSize('');
+        }, 2000);
+      }}
     >
       <div className="card-product-wrapper">
-        <Link href={`/product-detail/${getMainProductId(safeProduct) || safeProduct.id}${(getMainProductId(safeProduct) !== (safeProduct.documentId || safeProduct.id)) ? `?variant=${safeProduct.documentId || safeProduct.id}` : ''}`} className="product-img">
+        <Link 
+          href={`/product-detail/${getMainProductId(safeProduct) || safeProduct.id}${(getMainProductId(safeProduct) !== (safeProduct.documentId || safeProduct.id)) ? `?variant=${safeProduct.documentId || safeProduct.id}` : ''}`} 
+          className="product-img"
+          style={{
+            WebkitTapHighlightColor: 'transparent',
+            touchAction: 'manipulation'
+          }}
+        >
           <Image
             className="lazyload img-product"
             src={currentImage && currentImage !== "" ? currentImage : DEFAULT_IMAGE}

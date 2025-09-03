@@ -162,29 +162,35 @@ export default function Slider1({
     });
     driftInstancesRef.current = [];
 
-    // Create new instances for visible images
-    imageRefs.current.forEach((imgEl, index) => {
-      if (imgEl) {
-        const driftInstance = new Drift(imgEl, {
-          paneContainer: document.querySelector('.tf-zoom-main'),
-          inlinePane: false,
-          containInline: false,
-          hoverBoundingBox: true,
-          zoomFactor: 2.5,
-          touchDelay: 100,
-          sourceAttribute: 'src',
-          handleTouch: true,
-          inlineOffsetX: 0,
-          inlineOffsetY: 0,
-          hoverDelay: 0,
-          boundingBoxContainer: document.body
-        });
-        driftInstancesRef.current[index] = driftInstance;
-      }
-    });
+    // Check if device is mobile (disable zoom on mobile)
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    
+    // Only create zoom instances on desktop devices
+    if (!isMobile) {
+      // Create new instances for visible images
+      imageRefs.current.forEach((imgEl, index) => {
+        if (imgEl) {
+          const driftInstance = new Drift(imgEl, {
+            paneContainer: document.querySelector('.tf-zoom-main'),
+            inlinePane: false,
+            containInline: false,
+            hoverBoundingBox: true,
+            zoomFactor: 2.5,
+            touchDelay: 100,
+            sourceAttribute: 'src',
+            handleTouch: true,
+            inlineOffsetX: 0,
+            inlineOffsetY: 0,
+            hoverDelay: 0,
+            boundingBoxContainer: document.body
+          });
+          driftInstancesRef.current[index] = driftInstance;
+        }
+      });
+    }
 
-    // Register swiper slide change event to update zoom
-    if (swiperRef.current) {
+    // Register swiper slide change event to update zoom (only on desktop)
+    if (swiperRef.current && !isMobile) {
       swiperRef.current.on('slideChange', () => {
         // Instead of destroying all instances, just create/update for active slide
         setTimeout(() => {

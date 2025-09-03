@@ -117,7 +117,7 @@ const EnhancedWhatsApp = () => {
                 color: '#666',
                 lineHeight: '1.4'
               }}>
-                If you want to customize any of our designs, please go to WhatsApp and enquiry with us!
+                If you want to customize any of our designs, please go to WhatsApp and inquiry with us!
               </p>
             </div>
           </div>

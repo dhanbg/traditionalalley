@@ -1102,7 +1102,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                   alignItems: 'center'
                 }}>
                   <li>
-                    <a href="https://facebook.com" className="social-facebook" target="_blank" rel="noopener noreferrer" style={{
+                    <a href="https://www.facebook.com/traditionalalley555/" className="social-facebook" target="_blank" rel="noopener noreferrer" style={{
                       width: '36px',
                       height: '36px',
                       fontSize: '16px',
@@ -1118,23 +1118,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                     </a>
                   </li>
                   <li>
-                    <a href="https://twitter.com" className="social-twiter" target="_blank" rel="noopener noreferrer" style={{
-                      width: '36px',
-                      height: '36px',
-                      fontSize: '16px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: '1px solid var(--main)',
-                      borderRadius: '50%',
-                      color: 'var(--main)',
-                      transition: 'all 0.3s ease'
-                    }}>
-                      <i className="icon icon-x" />
-                    </a>
-                  </li>
-                  <li>
-                    <a href="https://instagram.com" className="social-instagram" target="_blank" rel="noopener noreferrer" style={{
+                    <a href="https://www.instagram.com/_traditional_alley/" className="social-instagram" target="_blank" rel="noopener noreferrer" style={{
                       width: '36px',
                       height: '36px',
                       fontSize: '16px',
@@ -1150,7 +1134,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                     </a>
                   </li>
                   <li>
-                    <a href="https://tiktok.com" className="social-tiktok" target="_blank" rel="noopener noreferrer" style={{
+                    <a href="https://www.tiktok.com/@_traditional_alley?lang=en" className="social-tiktok" target="_blank" rel="noopener noreferrer" style={{
                       width: '36px',
                       height: '36px',
                       fontSize: '16px',
@@ -1166,7 +1150,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                     </a>
                   </li>
                   <li>
-                    <a href="https://pinterest.com" className="social-pinterest" target="_blank" rel="noopener noreferrer" style={{
+                    <a href="https://www.pinterest.com/Traditionalley01/" className="social-pinterest" target="_blank" rel="noopener noreferrer" style={{
                       width: '36px',
                       height: '36px',
                       fontSize: '16px',

@@ -23,6 +23,7 @@ import Categories from "@/components/modals/Categories";
 import ScrollTop from "@/components/common/ScrollTop";
 import NextTopLoader from 'nextjs-toploader';
 import EnhancedWhatsApp from "@/components/common/EnhancedWhatsApp";
+import CenterLoader from "@/components/common/CenterLoader";
 import { SessionProvider } from "next-auth/react";
 
 export default function RootLayout({ children }) {
@@ -169,6 +170,7 @@ export default function RootLayout({ children }) {
         <ToastProvider>
           <Context>
             <NextTopLoader showSpinner={false} />
+            <CenterLoader />
             <div id="wrapper">{children}</div>
           <CartModal />
 

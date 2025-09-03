@@ -1,5 +1,5 @@
 import React from "react";
-import Hero from '@/components/homes/CatHero'
+import Hero from '@/components/homes/MenHero'
 import Collections from "./Collections";
 import ProductsMen from '@/components/common/ProductsMen'
 
