@@ -20,6 +20,7 @@ export default function Hero() {
   const [isMobile, setIsMobile] = useState(false);
   const [mobileDetected, setMobileDetected] = useState(false);
   const videoRefs = useRef([]);
+  const playPromisesRef = useRef([]);
   const slideTimeoutRef = useRef(null);
   const swiperRef = useRef(null);
 
@@ -130,10 +131,21 @@ export default function Hero() {
       clearTimeout(slideTimeoutRef.current);
     }
     
-    // Pause all videos and audio
-    videoRefs.current.forEach((media) => {
+    // Pause all videos and audio safely
+    videoRefs.current.forEach((media, index) => {
       if (media && !media.paused) {
-        media.pause();
+        // Check if there's a pending play promise
+        if (playPromisesRef.current[index]) {
+          playPromisesRef.current[index].then(() => {
+            if (!media.paused) {
+              media.pause();
+            }
+          }).catch(() => {
+            // Play failed, no need to pause
+          });
+        } else {
+          media.pause();
+        }
       }
     });
     
@@ -142,7 +154,7 @@ export default function Hero() {
     
     if (currentMedia && currentMedia.tagName === 'VIDEO') {
       // For video slides: wait for video to end
-      currentMedia.play().catch(() => {
+      playPromisesRef.current[swiper.activeIndex] = currentMedia.play().catch(() => {
         // Handle autoplay restrictions - if video can't play, advance after delay
         slideTimeoutRef.current = setTimeout(() => {
           handleVideoEnd();
@@ -226,7 +238,7 @@ export default function Hero() {
               setTimeout(() => {
                 const firstMedia = videoRefs.current[0];
                 if (firstMedia && firstMedia.tagName === 'VIDEO') {
-                  firstMedia.play().catch(() => {
+                  playPromisesRef.current[0] = firstMedia.play().catch(() => {
                     // Auto-play failed, which is expected in some browsers
                   });
                 }

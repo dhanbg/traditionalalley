@@ -355,6 +355,9 @@ export default function ShopCart() {
                                 src={getThumbnailImageUrl(elm.variantInfo?.imgSrc || elm.imgSrc)}
                                 width={600}
                                 height={800}
+                                priority={i < 3}
+                                loading={i < 3 ? "eager" : "lazy"}
+                                style={{ objectFit: 'cover' }}
                               />
                             </Link>
                             <div className="cart-info">

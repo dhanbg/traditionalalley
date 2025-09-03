@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import ProductCard1 from "../productCards/ProductCard1";
 import { fetchDataFromApi } from "@/utils/api";
 import { SEARCH_PRODUCTS_API, API_URL } from "@/utils/urls";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import Link from "next/link";
 import { searchProductsWithVariants, fetchSingleProductWithVariants } from "@/utils/productVariantUtils";
 

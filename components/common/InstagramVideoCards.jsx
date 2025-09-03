@@ -10,6 +10,7 @@ import { API_URL } from "@/utils/urls";
 // Custom AutoplayVideo component as fallback
 const AutoplayVideo = ({ src, poster, style, className, ...props }) => {
   const videoRef = useRef(null);
+  const playPromiseRef = useRef(null);
   const [isInView, setIsInView] = useState(false);
 
   useEffect(() => {
@@ -20,9 +21,21 @@ const AutoplayVideo = ({ src, poster, style, className, ...props }) => {
       ([entry]) => {
         setIsInView(entry.isIntersecting);
         if (entry.isIntersecting) {
-          video.play().catch(console.error);
+          // Store the play promise to handle it properly
+          playPromiseRef.current = video.play().catch(console.error);
         } else {
-          video.pause();
+          // Wait for play promise to resolve before pausing
+          if (playPromiseRef.current) {
+            playPromiseRef.current.then(() => {
+              if (!video.paused) {
+                video.pause();
+              }
+            }).catch(() => {
+              // Play failed, no need to pause
+            });
+          } else {
+            video.pause();
+          }
         }
       },
       { threshold: 0.5 }
@@ -199,6 +212,21 @@ export default function InstagramVideoCards({ parentClass = "" }) {
                   <div
                     className="gallery-item hover-overlay hover-img wow fadeInUp"
                     data-wow-delay={`${(i + 1) * 0.1}s`}
+                    onMouseEnter={(e) => {
+                      const eyeIcon = e.currentTarget.querySelector('.box-icon');
+                      if (eyeIcon) {
+                        eyeIcon.style.opacity = '1';
+                        eyeIcon.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+                        const iconSpan = eyeIcon.querySelector('.icon-eye');
+                        if (iconSpan) iconSpan.style.color = 'black';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      const eyeIcon = e.currentTarget.querySelector('.box-icon');
+                      if (eyeIcon) {
+                        eyeIcon.style.opacity = '0';
+                      }
+                    }}
                   >
                     <div className="img-style">
                     {isVideo ? (
@@ -243,8 +271,8 @@ export default function InstagramVideoCards({ parentClass = "" }) {
                         left: '50%',
                         transform: 'translate(-50%, -50%)',
                         opacity: 0,
-                        transition: 'opacity 0.3s ease',
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        transition: 'all 0.3s ease',
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
                         borderRadius: '50%',
                         width: '50px',
                         height: '50px',
@@ -254,13 +282,17 @@ export default function InstagramVideoCards({ parentClass = "" }) {
                         zIndex: 10
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.opacity = '1';
+                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                        const iconSpan = e.currentTarget.querySelector('.icon-eye');
+                        if (iconSpan) iconSpan.style.color = 'white';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.opacity = '0';
+                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+                        const iconSpan = e.currentTarget.querySelector('.icon-eye');
+                        if (iconSpan) iconSpan.style.color = 'black';
                       }}
                     >
-                      <span className="icon icon-eye" style={{ color: 'white' }} />
+                      <span className="icon icon-eye" style={{ color: 'black' }} />
                       <span className="tooltip">View Instagram Post</span>
                     </Link>
                   </div>

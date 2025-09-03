@@ -7,7 +7,7 @@ import ShopCart from "@/components/otherPages/ShopCart";
 import CartLoadingGuard from "@/components/common/CartLoadingGuard";
 import Link from "next/link";
 import React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 
 export default function ShoppingCartPage() {
   const router = useRouter();

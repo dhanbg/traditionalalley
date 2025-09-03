@@ -8,7 +8,7 @@ import { useSession, signIn } from "next-auth/react";
 import { fetchDataFromApi } from "@/utils/api";
 import { PRODUCT_BY_DOCUMENT_ID_API, API_URL } from "@/utils/urls";
 import { getImageUrl } from "@/utils/imageUtils";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import PriceDisplay from "@/components/common/PriceDisplay";
 import { useCartImagePreloader } from "@/hooks/useCartImagePreloader";
 import imagePreloader from "@/utils/imagePreloader";
@@ -671,6 +671,8 @@ export default function CartModal() {
                                    alt={elm.title}
                                    width={60}
                                    height={90}
+                                   priority={i < 3}
+                                   loading={i < 3 ? "eager" : "lazy"}
                                    preload={true}
                                    fallbackSrc="/images/placeholder.svg"
                                   style={{

@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { fetchDataFromApi } from "@/utils/api";
 import { getImageUrl } from "@/utils/imageUtils";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 
 export default function Collections() {
   const [categories, setCategories] = useState([]);

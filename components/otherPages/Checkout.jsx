@@ -2005,6 +2005,9 @@ export default function Checkout() {
                           src={getThumbnailImageUrl(elm.imgSrc)}
                           width={600}
                           height={800}
+                          priority={i < 3}
+                          loading={i < 3 ? "eager" : "lazy"}
+                          style={{ objectFit: 'cover' }}
                         />
                       </Link>
                       <div className="content-box">

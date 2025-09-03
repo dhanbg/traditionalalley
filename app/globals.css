@@ -1285,3 +1285,58 @@ img {
     min-width: 120px;
   }
 }
+
+/* Enhanced NextTopLoader Styles */
+#nprogress {
+  pointer-events: none;
+}
+
+#nprogress .bar {
+  background: linear-gradient(90deg, #e43131 0%, #ff6b6b 50%, #e43131 100%) !important;
+  position: fixed;
+  z-index: 1031;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  border-radius: 0 0 2px 2px;
+  box-shadow: 0 0 15px rgba(228, 49, 49, 0.8), 0 0 25px rgba(228, 49, 49, 0.4) !important;
+  animation: nprogress-glow 2s ease-in-out infinite alternate;
+}
+
+#nprogress .peg {
+  display: block;
+  position: absolute;
+  right: 0px;
+  width: 100px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: rotate(3deg) translate(0px, -4px);
+  animation: nprogress-pulse 1.5s ease-in-out infinite;
+}
+
+#nprogress .spinner {
+  display: none !important;
+}
+
+@keyframes nprogress-glow {
+  0% {
+    box-shadow: 0 0 15px rgba(228, 49, 49, 0.8), 0 0 25px rgba(228, 49, 49, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(228, 49, 49, 1), 0 0 35px rgba(228, 49, 49, 0.6);
+  }
+}
+
+@keyframes nprogress-pulse {
+  0%, 100% {
+    opacity: 0.8;
+    transform: rotate(3deg) translate(0px, -4px) scaleX(1);
+  }
+  50% {
+    opacity: 1;
+    transform: rotate(3deg) translate(0px, -4px) scaleX(1.1);
+  }
+}
+
+/* Spinner animations removed - circular loading indicator disabled */

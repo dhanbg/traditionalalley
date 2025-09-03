@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 
 export default function OTPVerification({ email, firstName, lastName, password, confirmPassword, onBack, onSuccess }) {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);

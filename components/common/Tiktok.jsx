@@ -7,25 +7,49 @@ import Link from "next/link";
 import { Pagination } from "swiper/modules";
 export default function Tiktok({ parentClass = "flat-spacing pt-0" }) {
   const videoRefs = useRef([]);
+  const playPromises = useRef([]);
   const [activeVideoIndex, setActiveVideoIndex] = useState(null);
 
   const handleMouseEnter = (index) => {
     videoRefs.current.forEach((video, i) => {
       if (video) {
         if (i === index) {
-          video.play();
+          // Store the play promise to handle it properly
+          playPromises.current[i] = video.play().catch(console.error);
           setActiveVideoIndex(index); // Set active video index
         } else {
-          video.pause();
+          // Wait for play promise to resolve before pausing
+          if (playPromises.current[i]) {
+            playPromises.current[i].then(() => {
+              if (!video.paused) {
+                video.pause();
+              }
+            }).catch(() => {
+              // Play failed, no need to pause
+            });
+          } else {
+            video.pause();
+          }
         }
       }
     });
   };
 
   const handleMouseLeave = () => {
-    videoRefs.current.forEach((video) => {
+    videoRefs.current.forEach((video, i) => {
       if (video) {
-        video.pause();
+        // Wait for play promise to resolve before pausing
+        if (playPromises.current[i]) {
+          playPromises.current[i].then(() => {
+            if (!video.paused) {
+              video.pause();
+            }
+          }).catch(() => {
+            // Play failed, no need to pause
+          });
+        } else {
+          video.pause();
+        }
       }
     });
     setActiveVideoIndex(null); // Reset active video index
