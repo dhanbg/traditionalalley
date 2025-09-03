@@ -349,7 +349,7 @@ export default function Hero() {
                       autoPlay={index === activeSlideIndex}
                       muted
                       playsInline
-                      preload={loadedVideos.has(index) || index === activeSlideIndex ? "auto" : "none"}
+                      preload={index === 0 ? "metadata" : (loadedVideos.has(index) || index === activeSlideIndex ? "auto" : "none")}
                       poster={slide.poster || slide.imgSrc}
                       style={{
                         width: '100%',
@@ -358,6 +358,14 @@ export default function Hero() {
                         objectPosition: isMobile ? 'center bottom' : 'center center',
                         backgroundColor: 'transparent',
                       }}
+                      // Mobile-specific optimizations
+                      {...(isMobile && {
+                        'data-setup': '{}',
+                        'webkit-playsinline': 'true',
+                        'x5-playsinline': 'true',
+                        'x5-video-player-type': 'h5',
+                        'x5-video-player-fullscreen': 'true'
+                      })}
                       onLoadedData={() => {
                         setImageLoaded(true);
                       }}
@@ -366,6 +374,13 @@ export default function Hero() {
                         setVideoLoadingStates(prev => new Map(prev.set(index, 'loading')));
                         if (index === activeSlideIndex) {
                           setImageLoaded(false);
+                        }
+                        // For first video on mobile, start buffering immediately
+                        if (index === 0 && isMobile) {
+                          const video = videoRefs.current[index];
+                          if (video) {
+                            video.load(); // Force load to start buffering
+                          }
                         }
                       }}
                       onCanPlay={() => {
@@ -376,7 +391,11 @@ export default function Hero() {
                           // Auto-play if this is the active slide and video is ready
                           const video = videoRefs.current[index];
                           if (video && video.paused) {
-                            playPromisesRef.current[index] = video.play().catch(() => {});
+                            // Add small delay for mobile devices to ensure smooth playback
+                            const playDelay = isMobile ? 100 : 0;
+                            setTimeout(() => {
+                              playPromisesRef.current[index] = video.play().catch(() => {});
+                            }, playDelay);
                           }
                         }
                       }}

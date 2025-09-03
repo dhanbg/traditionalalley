@@ -667,7 +667,11 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
               }} 
             />
 
-            {activeLayout == 1 ? (
+            {loading && loadedItems.length === 0 ? (
+              <div className="d-flex justify-content-center align-items-center" style={{minHeight: '300px'}}>
+                <div className="loader"></div>
+              </div>
+            ) : activeLayout == 1 ? (
               <div className="tf-list-layout wrapper-shop" id="listLayout">
                 <Listview pagination={false} products={loadedItems} />
                 {(productDetails.length > 0 && loadedItems.length === productDetails.length) || 
@@ -708,6 +712,33 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
                 )}
               </div>
             )}
+            
+            <style jsx>{`
+              .loader {
+                width: 50px;
+                aspect-ratio: 1;
+                border-radius: 50%;
+                border: 8px solid #514b82;
+                animation: 
+                  l20-1 0.8s infinite linear alternate, 
+                  l20-2 1.6s infinite linear;
+              }
+              @keyframes l20-1{
+                 0%    {clip-path: polygon(50% 50%,0       0,  50%   0%,  50%    0%, 50%    0%, 50%    0%, 50%    0% )}
+                 12.5% {clip-path: polygon(50% 50%,0       0,  50%   0%,  100%   0%, 100%   0%, 100%   0%, 100%   0% )}
+                 25%   {clip-path: polygon(50% 50%,0       0,  50%   0%,  100%   0%, 100% 100%, 100% 100%, 100% 100% )}
+                 50%   {clip-path: polygon(50% 50%,0       0,  50%   0%,  100%   0%, 100% 100%, 50%  100%, 0%   100% )}
+                 62.5% {clip-path: polygon(50% 50%,100%    0, 100%   0%,  100%   0%, 100% 100%, 50%  100%, 0%   100% )}
+                 75%   {clip-path: polygon(50% 50%,100% 100%, 100% 100%,  100% 100%, 100% 100%, 50%  100%, 0%   100% )}
+                 100%  {clip-path: polygon(50% 50%,50%  100%,  50% 100%,   50% 100%,  50% 100%, 50%  100%, 0%   100% )}
+              }
+              @keyframes l20-2{
+                0%    {transform:scaleY(1)  rotate(0deg)}
+                49.99%{transform:scaleY(1)  rotate(135deg)}
+                50%   {transform:scaleY(-1) rotate(0deg)}
+                100%  {transform:scaleY(-1) rotate(-135deg)}
+              }
+            `}</style>
           </div>
         </div>
       </section>

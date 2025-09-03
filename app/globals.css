@@ -95,7 +95,7 @@
     transition: transform 0.1s ease;
   }
   
-  /* Prevent hover effects on mobile */
+  /* Prevent hover effects on mobile - disable hover image transitions on touch devices */
   .card-product:hover .img-product {
     opacity: 1;
   }
@@ -103,6 +103,22 @@
   .card-product:hover .img-hover {
     opacity: 0;
     transform: none;
+  }
+  
+  /* Completely disable hover effects on touch devices to prevent double-click issue */
+  @media (hover: none) and (pointer: coarse) {
+    .card-product:hover .img-product {
+      opacity: 1 !important;
+    }
+    
+    .card-product:hover .img-hover {
+      opacity: 0 !important;
+      transform: none !important;
+    }
+    
+    .card-product .product-img .img-hover {
+      display: none !important;
+    }
   }
   
   /* Mobile description and title improvements */

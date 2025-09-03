@@ -2,20 +2,20 @@ import React from "react";
 
 export default function Shipping() {
   return (
-    <div style={{ padding: "20px", lineHeight: "1.6" }}>
+    <div style={{ width: "100%", padding: "20px", lineHeight: "1.6" }}>
       <h2 style={{ marginBottom: "20px", color: "#d4af37" }}>Shipping Information</h2>
       
       {/* Desktop Layout - Side by Side */}
       <div className="shipping-container" style={{ 
         display: "flex", 
-        flexDirection: "column", 
-        gap: "30px", 
+        flexDirection: "row", 
+        gap: "40px", 
         padding: "20px", 
         backgroundColor: "#f9f9f9", 
-        borderRadius: "8px"
+        borderRadius: "8px" 
       }}>
         {/* Domestic Delivery Section */}
-        <section>
+        <section style={{ flex: "1" }}>
           <h3 style={{ marginBottom: "12px", fontSize: "16px", color: "#333" }}>Domestic Delivery</h3>
           <div style={{ display: "flex", gap: "8px" }}>
             <div style={{ padding: "10px", backgroundColor: "#f8f9fa", borderRadius: "6px", border: "1px solid #e9ecef" }}>
@@ -46,7 +46,7 @@ export default function Shipping() {
 
 
         {/* International Delivery Section */}
-        <section>
+        <section style={{ flex: "1" }}>
           <h3 style={{ marginBottom: "12px", fontSize: "16px", color: "#333" }}>International Delivery</h3>
           <div style={{ display: "flex", gap: "8px" }}>
             <div style={{ padding: "10px", border: "1px solid #e0e0e0", borderRadius: "6px", backgroundColor: "#fff" }}>
@@ -77,6 +77,7 @@ export default function Shipping() {
        <style jsx>{`
          @media (max-width: 768px) {
            .shipping-container {
+             flex-direction: column !important;
              gap: 20px !important;
            }
            .shipping-container section > div {
