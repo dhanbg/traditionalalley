@@ -25,7 +25,7 @@ export default function CustomOrderForm({ isOpen, onClose, product }) {
 
   const [showMeasurements, setShowMeasurements] = useState(false);
   const [showColorInput, setShowColorInput] = useState(false);
-  const [showWhatsappLink, setShowWhatsappLink] = useState(false);
+  const [showViberLink, setShowViberLink] = useState(false);
 
   // Close modal when clicking outside
   useEffect(() => {
@@ -70,7 +70,7 @@ export default function CustomOrderForm({ isOpen, onClose, product }) {
     setFormData({ ...formData, customizationType: type });
     setShowMeasurements(type === "1");
     setShowColorInput(type === "2");
-    setShowWhatsappLink(type === "3");
+    setShowViberLink(type === "3");
   };
 
   const handleSubmit = (e) => {
@@ -131,14 +131,14 @@ export default function CustomOrderForm({ isOpen, onClose, product }) {
       }
     }
     
-    // Encode the message for WhatsApp URL
+    // Encode the message for Viber URL
     const encodedMessage = encodeURIComponent(message);
     
-    // Create WhatsApp URL with the message
-    const whatsappUrlWithMessage = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+    // Create Viber URL with the message
+    const viberUrlWithMessage = `viber://chat?number=${viberNumber}&text=${encodedMessage}`;
     
-    // Open WhatsApp in a new tab
-    window.open(whatsappUrlWithMessage, '_blank');
+    // Open Viber in a new tab
+    window.open(viberUrlWithMessage, '_blank');
     
     // Close the form after submission
     onClose();
@@ -150,9 +150,9 @@ export default function CustomOrderForm({ isOpen, onClose, product }) {
 
   if (!isOpen) return null;
 
-  // WhatsApp number - replace with your actual WhatsApp number
-  const whatsappNumber = "+9779844594187";
-  const whatsappUrl = `https://wa.me/${whatsappNumber}`;
+  // Viber number - replace with your actual Viber number
+  const viberNumber = "9844594187";
+  const viberUrl = `viber://chat?number=${viberNumber}`;
 
   // Image for size customization
   const sizeChartImageUrl = `${API_URL}/uploads/inverted_triangle_bacba040fd.jpg`;
@@ -735,18 +735,18 @@ export default function CustomOrderForm({ isOpen, onClose, product }) {
                   </div>
                 )}
 
-                {showWhatsappLink && (
+                {showViberLink && (
                   <div style={{ textAlign: "center", marginBottom: "15px" }}>
                     <p style={{ marginBottom: "12px", fontSize: "14px" }}>
-                      Connect with us on WhatsApp messenger for further
+                      Connect with us on Viber messenger for further
                       assistance:
                     </p>
                     <Link
-                      href={whatsappUrl}
+                      href={viberUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
-                        color: "#25D366",
+                        color: "#665CAC",
                         textDecoration: "none",
                         fontWeight: "500",
                         fontSize: "14px",
@@ -755,15 +755,15 @@ export default function CustomOrderForm({ isOpen, onClose, product }) {
                         gap: "6px"
                       }}
                     >
-                      <img src="/whatsapp.svg" alt="WhatsApp" style={{ width: '20px', height: '20px', display: 'inline-block', verticalAlign: 'middle' }} />
-                      Contact us on WhatsApp
+                      <img src="/viber.svg" alt="Viber" style={{ width: '20px', height: '20px', display: 'inline-block', verticalAlign: 'middle' }} />
+                      Contact us on Viber
                     </Link>
                     <style jsx global>{`
-                      .whatsapp-button-hover {
+                      .viber-button-hover {
                         position: relative;
                         z-index: 1;
                       }
-                      .whatsapp-button-hover:before {
+                      .viber-button-hover:before {
                         content: '';
                         position: absolute;
                         top: 0;
@@ -774,28 +774,28 @@ export default function CustomOrderForm({ isOpen, onClose, product }) {
                         transition: left 0.7s ease;
                         z-index: -1;
                       }
-                      .whatsapp-button-hover:hover {
+                      .viber-button-hover:hover {
                         box-shadow: 0 5px 15px rgba(0,0,0,0.2);
                         transform: translateY(-2px);
                       }
-                      .whatsapp-button-hover:hover:before {
+                      .viber-button-hover:hover:before {
                         left: 100%;
                       }
                     `}</style>
                   </div>
                 )}
 
-                {!showWhatsappLink && (
+                {!showViberLink && (
                   <div style={{ marginBottom: "15px" }}>
                     <p style={{ marginBottom: "8px", fontSize: "14px" }}>
                       Or chat our team for further assistance:
                     </p>
                     <Link
-                      href={whatsappUrl}
+                      href={viberUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
-                        color: "#25D366",
+                        color: "#665CAC",
                         textDecoration: "none",
                         fontWeight: "500",
                         fontSize: "14px",
@@ -804,8 +804,8 @@ export default function CustomOrderForm({ isOpen, onClose, product }) {
                         gap: "6px"
                       }}
                     >
-                      <img src="/whatsapp.svg" alt="WhatsApp" style={{ width: '20px', height: '20px', display: 'inline-block', verticalAlign: 'middle' }} />
-                      Contact us on WhatsApp
+                      <img src="/viber.svg" alt="Viber" style={{ width: '20px', height: '20px', display: 'inline-block', verticalAlign: 'middle' }} />
+                      Contact us on Viber
                     </Link>
                   </div>
                 )}

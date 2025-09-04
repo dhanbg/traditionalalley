@@ -22,7 +22,7 @@ import DemoModal from "@/components/modals/DemoModal";
 import Categories from "@/components/modals/Categories";
 import ScrollTop from "@/components/common/ScrollTop";
 import NextTopLoader from 'nextjs-toploader';
-import EnhancedWhatsApp from "@/components/common/EnhancedWhatsApp";
+import EnhancedViber from "@/components/common/EnhancedViber";
 import CenterLoader from "@/components/common/CenterLoader";
 import { SessionProvider } from "next-auth/react";
 
@@ -187,7 +187,7 @@ export default function RootLayout({ children }) {
           <ScrollTop />
 
           {/* Enhanced WhatsApp Component */}
-          <EnhancedWhatsApp />
+          <EnhancedViber />
           </Context>
         </ToastProvider>
       </body>

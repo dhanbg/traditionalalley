@@ -472,13 +472,19 @@ const OrderManagement = () => {
 
   // Toggle order details expansion
   const toggleOrderDetails = (orderId) => {
+    console.log('🔍 toggleOrderDetails called with orderId:', orderId);
+    console.log('🔍 Current expandedOrders:', Array.from(expandedOrders));
+    
     setExpandedOrders(prev => {
       const newSet = new Set(prev);
       if (newSet.has(orderId)) {
+        console.log('🔍 Removing orderId from expanded set');
         newSet.delete(orderId);
       } else {
+        console.log('🔍 Adding orderId to expanded set');
         newSet.add(orderId);
       }
+      console.log('🔍 New expandedOrders will be:', Array.from(newSet));
       return newSet;
     });
   };
@@ -528,8 +534,13 @@ const OrderManagement = () => {
 
   // OrderDetailView component
   const OrderDetailView = ({ payment }) => {
+    console.log('🔍 OrderDetailView rendered with payment:', payment);
+    console.log('🔍 OrderDetailView payment.orderData:', payment?.orderData);
+    console.log('🔍 OrderDetailView receiver_details:', payment?.orderData?.receiver_details);
+    
     // Add safety checks for data structure
     if (!payment || !payment.orderData) {
+      console.log('❌ OrderDetailView: No payment or orderData');
       return (
         <div className="mt-4 p-4 bg-red-50 rounded-lg border-l-4 border-red-500">
           <p className="text-red-700">Error: Order data not available</p>
@@ -540,12 +551,15 @@ const OrderManagement = () => {
     const { receiver_details, products } = payment.orderData;
     
     if (!receiver_details) {
+      console.log('❌ OrderDetailView: No receiver_details found');
       return (
         <div className="mt-4 p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">
           <p className="text-yellow-700">Error: Customer details not available</p>
         </div>
       );
     }
+    
+    console.log('✅ OrderDetailView: Successfully rendering with receiver_details:', receiver_details);
 
     const { address } = receiver_details;
 
@@ -650,15 +664,22 @@ const OrderManagement = () => {
                     </div>
                   </div>
                   
-                  {/* Expanded Order Details */}
-                  {expandedOrders.has(payment.merchantTxnId) && (
-                    <OrderDetailView payment={payment} />
-                  )}
                 </div>
               ))}
             </div>
           </div>
         </div>
+        
+        {/* Expanded Order Details - Moved outside product loop */}
+        {(() => {
+          const isExpanded = expandedOrders.has(payment.merchantTxnId);
+          console.log('🔍 Checking if order should be expanded:', {
+            merchantTxnId: payment.merchantTxnId,
+            isExpanded,
+            expandedOrders: Array.from(expandedOrders)
+          });
+          return isExpanded && <OrderDetailView payment={payment} />;
+        })()}
 
         {/* Order Summary */}
         <div className="mt-6 pt-4 border-t border-gray-200">
