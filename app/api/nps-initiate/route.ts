@@ -41,6 +41,8 @@ interface GatewayRedirectForm {
   TransactionRemarks: string;
   InstrumentCode?: string;
   ProcessId: string;
+  Signature: string;
+  ResponseUrl: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -225,7 +227,9 @@ export async function POST(request: NextRequest) {
       MerchantTxnId: gatewayParams.MerchantTxnId,
       TransactionRemarks: transactionRemarks || `Payment for order ${shortMerchantTxnId}`,
       InstrumentCode: instrumentCode,
-      ProcessId: processId
+      ProcessId: processId,
+      Signature: gatewaySignature,
+      ResponseUrl: responseUrl
     };
 
     console.log('Gateway redirect form:', redirectForm);
@@ -299,4 +303,4 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
   }
-} 
+}
