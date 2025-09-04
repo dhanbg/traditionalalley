@@ -7,9 +7,11 @@ interface NPSPaymentFormProps {
   onError: (error: any) => void;
   orderData?: any;
   transactionRemarks?: string;
+  disabled?: boolean;
+  shippingRatesObtained?: boolean;
 }
 
-export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, transactionRemarks }: NPSPaymentFormProps) {
+export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, transactionRemarks, disabled = false, shippingRatesObtained = false }: NPSPaymentFormProps) {
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -77,13 +79,34 @@ export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, 
 
   return (
     <div className="nps-payment-form">
+      {!shippingRatesObtained && (
+        <div style={{
+          background: 'linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%)',
+          border: '1px solid #ffc107',
+          borderRadius: '8px',
+          padding: '12px 16px',
+          marginBottom: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span style={{ fontSize: '18px' }}>⚠️</span>
+          <span style={{ color: '#856404', fontSize: '14px', fontWeight: '500' }}>
+            Please calculate shipping rates before proceeding with payment
+          </span>
+        </div>
+      )}
       <button
         onClick={handlePayment}
-        disabled={isLoading || !session?.user}
+        disabled={isLoading || !session?.user || disabled || !shippingRatesObtained}
         className="tf-btn btn-fill animate-hover-btn radius-3 justify-content-center fw-6"
+        style={{
+          opacity: (!shippingRatesObtained || disabled) ? 0.6 : 1,
+          cursor: (!shippingRatesObtained || disabled) ? 'not-allowed' : 'pointer'
+        }}
       >
-        {isLoading ? "Processing..." : `Pay $${amount} with NPS`}
+        {isLoading ? "Processing..." : `Pay $${amount}`}
       </button>
     </div>
   );
-} 
+}

@@ -46,26 +46,6 @@
         opacity: 0;
       }
     }
-    
-    // Disable hover effects on touch devices to prevent double-click issue
-    @media (hover: none) and (pointer: coarse) {
-      &:hover {
-        .product-img {
-          .img-product {
-            opacity: 1 !important;
-          }
-          .img-hover {
-            opacity: 0 !important;
-            transform: none !important;
-            display: none !important;
-          }
-        }
-      }
-      
-      .product-img .img-hover {
-        display: none !important;
-      }
-    }
     .on-sale-wrap {
       position: absolute;
       top: 5px;

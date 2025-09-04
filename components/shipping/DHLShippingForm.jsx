@@ -797,18 +797,6 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
-        .dhl-form-select {
-          position: relative;
-          background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23666" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
-          background-repeat: no-repeat;
-          background-position: right 12px center;
-          background-size: 12px;
-          padding-right: 40px;
-        }
-        
-        .dhl-form-select:focus {
-          background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23eab308" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
-        }
       `}</style>
       <div style={{
         background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
@@ -958,7 +946,6 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                     Country *
                   </label>
               <select
-                className="dhl-form-select"
                 value={formData.destinationAddress.countryCode}
                 onChange={(e) => {
                   const selectedUniqueId = e.target.value;
@@ -980,10 +967,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                       fontSize: '1rem',
                       background: 'white',
                       boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                      transition: 'all 0.2s',
-                      WebkitAppearance: 'none',
-                      MozAppearance: 'none',
-                      appearance: 'none'
+                      transition: 'all 0.2s'
                     }}
                 required
                     onFocus={(e) => e.target.style.borderColor = '#eab308'}
@@ -1025,7 +1009,6 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                   Service Type *
                 </label>
                 <select
-                  className="dhl-form-select"
                   value={formData.serviceType}
                   onChange={(e) => handleInputChange('', 'serviceType', e.target.value)}
                   style={{
@@ -1036,10 +1019,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                     fontSize: '1rem',
                     background: 'white',
                     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                    transition: 'all 0.2s',
-                    WebkitAppearance: 'none',
-                    MozAppearance: 'none',
-                    appearance: 'none'
+                    transition: 'all 0.2s'
                   }}
                   required
                   disabled={loadingServiceTypes || availableServiceTypes.length === 1}

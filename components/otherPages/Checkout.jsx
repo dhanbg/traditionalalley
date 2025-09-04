@@ -1082,6 +1082,34 @@ export default function Checkout() {
     }
   };
 
+  // Function to handle NPS payment success
+  const handleNPSPaymentSuccess = (response) => {
+    console.log('NPS Payment Success:', response);
+    
+    // The NPSPaymentForm will handle the redirect to NPS gateway
+    // The actual payment processing will happen in the nps-callback page
+    // after the user completes payment and returns from NPS
+  };
+
+  // Function to handle NPS payment error
+  const handleNPSPaymentError = (error) => {
+    console.error('NPS Payment Error:', error);
+    
+    let errorMessage = 'Payment failed. Please try again.';
+    
+    if (error.message) {
+      if (error.message.includes('sign in')) {
+        errorMessage = 'Please sign in to continue with payment.';
+      } else if (error.message.includes('NPS API')) {
+        errorMessage = 'Payment service is temporarily unavailable. Please try again later.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
+    alert(errorMessage);
+  };
+
   // Fetch product details when selectedProducts change
   useEffect(() => {
     if (selectedProducts.length === 0 || isLoadingProductDetails) return;
@@ -1803,154 +1831,21 @@ export default function Checkout() {
               </div>
               <div className="wrap">
                 <div style={{
-                  marginBottom: '24px',
-                  padding: '20px',
-                  background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                  padding: '24px',
                   borderRadius: '12px',
-                  border: '1px solid #e2e8f0'
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
                 }}>
-                  <h5 className="title" style={{
-                    margin: '0 0 8px 0',
-                    fontSize: '20px',
-                    fontWeight: '700',
-                    color: '#1e293b',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px'
-                  }}>
-                    <span style={{
-                      fontSize: '24px',
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      backgroundClip: 'text'
-                    }}>💳</span>
-                    Choose Payment Option
-                  </h5>
-                  <p style={{
-                    margin: '0',
-                    fontSize: '14px',
-                    color: '#64748b',
-                    fontWeight: '500'
-                  }}>
-                    Select your preferred payment method to complete your order
-                  </p>
+                  <NPSPaymentForm
+                    amount={nprAmount}
+                    onSuccess={handleNPSPaymentSuccess}
+                    onError={handleNPSPaymentError}
+                    orderData={constructOrderData()}
+                    transactionRemarks={`Payment for ${selectedProducts.length} items`}
+                    shippingRatesObtained={shippingRatesObtained}
+                  />
                 </div>
-                <form
-                  className="form-payment"
-                  onSubmit={(e) => e.preventDefault()}
-                  style={{
-                    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-                    padding: '24px',
-                    borderRadius: '12px',
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
-                  }}
-                >
-                  {/* Maintenance Notice */}
-                  <div style={{
-                    background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                    border: '2px solid #f59e0b',
-                    borderRadius: '12px',
-                    padding: '24px',
-                    textAlign: 'center',
-                    marginBottom: '20px'
-                  }}>
-                    <div style={{
-                      fontSize: '48px',
-                      marginBottom: '16px'
-                    }}>🚧</div>
-                    <h3 style={{
-                      color: '#92400e',
-                      fontSize: '20px',
-                      fontWeight: '700',
-                      marginBottom: '12px',
-                      margin: '0 0 12px 0'
-                    }}>Payment System Under Maintenance</h3>
-                    <p style={{
-                      color: '#b45309',
-                      fontSize: '16px',
-                      lineHeight: '1.5',
-                      margin: '0 0 16px 0'
-                    }}>
-                      We're currently updating our payment systems to serve you better. 
-                      Both NPS and Cash on Delivery options are temporarily unavailable.
-                    </p>
-                    <p style={{
-                      color: '#92400e',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      margin: '0'
-                    }}>
-                      Please check back soon. We apologize for any inconvenience.
-                    </p>
-                  </div>
-
-                  {/* Disabled Payment Methods */}
-                  <div className={styles.paymentMethods} style={{ opacity: 0.5, pointerEvents: 'none' }}>
-                    <div 
-                      className={`${styles.paymentMethodCard} ${styles.disabled}`}
-                    >
-                      <div className={styles.paymentMethodHeader}>
-                        <span className={styles.paymentIcon}>💰</span>
-                        <span>Cash on Delivery</span>
-                        <span className={styles.lockIcon}>🔒</span>
-                      </div>
-                      <p className={styles.errorMessage}>
-                        Temporarily unavailable due to maintenance.
-                      </p>
-                    </div>
-
-                    <div 
-                      className={`${styles.paymentMethodCard} ${styles.disabled}`}
-                    >
-                      <div className={styles.paymentMethodHeader}>
-                        <span className={styles.paymentIcon}>🏦</span>
-                        <span>NPS (Nepal Payment System)</span>
-                        <span className={styles.lockIcon}>🔒</span>
-                      </div>
-                      <p className={styles.errorMessage}>
-                        Temporarily unavailable due to maintenance.
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Disabled Payment button section */}
-                  <div style={{ marginTop: '24px' }}>
-                    <button 
-                      className="tf-btn btn-reset"
-                      disabled={true}
-                      style={{
-                        background: 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)',
-                        border: 'none',
-                        borderRadius: '10px',
-                        padding: '14px 28px',
-                        fontSize: '16px',
-                        fontWeight: '600',
-                        color: 'white',
-                        cursor: 'not-allowed',
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        opacity: 0.6
-                      }}
-                    >
-                      <span>🚧</span>
-                      <span>Payment Temporarily Unavailable</span>
-                    </button>
-                    <p style={{
-                      textAlign: 'center',
-                      marginTop: '12px',
-                      fontSize: '14px',
-                      color: '#6b7280',
-                      fontStyle: 'italic'
-                    }}>
-                      We're working on improvements. Please check back soon!
-                    </p>
-                  </div>
-                </form>
               </div>
             </div>
           </div>

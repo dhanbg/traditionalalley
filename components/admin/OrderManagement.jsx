@@ -13,6 +13,10 @@ const OrderManagement = () => {
   const [showNCMForm, setShowNCMForm] = useState(false);
   const [ncmOrders, setNcmOrders] = useState([]);
   const [activeTab, setActiveTab] = useState('pending');
+  const [expandedOrders, setExpandedOrders] = useState(new Set());
+  const [currentPage, setCurrentPage] = useState(0);
+  const [isLoadingPagination, setIsLoadingPagination] = useState(false);
+  const ordersPerPage = 10;
 
   useEffect(() => {
     fetchUserBags();
@@ -466,6 +470,213 @@ const OrderManagement = () => {
 
   const [error, setError] = useState('');
 
+  // Toggle order details expansion
+  const toggleOrderDetails = (orderId) => {
+    setExpandedOrders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
+
+  // Pagination navigation functions
+  const goToNextPage = async () => {
+    setIsLoadingPagination(true);
+    // Simulate loading delay for better UX
+    await new Promise(resolve => setTimeout(resolve, 300));
+    setCurrentPage(prev => prev + 1);
+    setIsLoadingPagination(false);
+  };
+
+  const goToPreviousPage = async () => {
+    setIsLoadingPagination(true);
+    // Simulate loading delay for better UX
+    await new Promise(resolve => setTimeout(resolve, 300));
+    setCurrentPage(prev => Math.max(0, prev - 1));
+    setIsLoadingPagination(false);
+  };
+
+  // Reset to first page when tab changes
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setCurrentPage(0);
+  };
+
+  // Get proper product image (variant vs main)
+  const getProductImage = (product) => {
+    // If product has a selected variant with image, use variant image
+    if (product.selectedVariant && product.selectedVariant.image) {
+      return product.selectedVariant.image;
+    }
+    // If product has variant images and a selected variant, find matching variant image
+    if (product.variantImages && product.selectedVariant) {
+      const variantImage = product.variantImages.find(img => 
+        img.variant === product.selectedVariant.size || 
+        img.variant === product.selectedVariant.color
+      );
+      if (variantImage) {
+        return variantImage.image;
+      }
+    }
+    // Fall back to main product image
+    return product.image || product.mainImage || '/images/placeholder.jpg';
+  };
+
+  // OrderDetailView component
+  const OrderDetailView = ({ payment }) => {
+    // Add safety checks for data structure
+    if (!payment || !payment.orderData) {
+      return (
+        <div className="mt-4 p-4 bg-red-50 rounded-lg border-l-4 border-red-500">
+          <p className="text-red-700">Error: Order data not available</p>
+        </div>
+      );
+    }
+
+    const { receiver_details, products } = payment.orderData;
+    
+    if (!receiver_details) {
+      return (
+        <div className="mt-4 p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">
+          <p className="text-yellow-700">Error: Customer details not available</p>
+        </div>
+      );
+    }
+
+    const { address } = receiver_details;
+
+    return (
+      <div className="mt-4 p-4 bg-gray-50 rounded-lg border-l-4 border-blue-500">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Customer Information */}
+          <div>
+            <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+              <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Customer Details
+            </h4>
+            <div className="space-y-2 text-sm">
+              <div>
+                <span className="font-medium text-gray-600">Name:</span>
+                <span className="ml-2 text-gray-800">{receiver_details.fullName}</span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">Email:</span>
+                <span className="ml-2 text-gray-800">{receiver_details.email}</span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">Phone:</span>
+                <span className="ml-2 text-gray-800">{receiver_details.phone}</span>
+              </div>
+              {receiver_details.companyName && (
+                <div>
+                  <span className="font-medium text-gray-600">Company:</span>
+                  <span className="ml-2 text-gray-800">{receiver_details.companyName}</span>
+                </div>
+              )}
+            </div>
+            
+            <h5 className="text-md font-semibold text-gray-800 mt-4 mb-2 flex items-center">
+              <svg className="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Shipping Address
+            </h5>
+            <div className="text-sm text-gray-700 bg-white p-3 rounded border">
+              <div>{address?.addressLine1 || 'Address not available'}</div>
+              {address?.addressLine2 && <div>{address.addressLine2}</div>}
+              <div>{address?.cityName || 'City'}, {address?.postalCode || 'Postal Code'}</div>
+              <div>{address?.countryCode || 'Country'}</div>
+            </div>
+          </div>
+
+          {/* Product Information */}
+          <div>
+            <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+              <svg className="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+              Products Ordered
+            </h4>
+            <div className="space-y-4">
+              {(products || []).map((product, index) => (
+                <div key={index} className="bg-white p-4 rounded-lg border flex items-start space-x-4">
+                  {/* Product Image */}
+                  <div className="flex-shrink-0">
+                    <img 
+                      src={getProductImage(product)}
+                      alt={product.title}
+                      className="w-20 h-20 object-cover rounded-lg border"
+                      onError={(e) => {
+                        e.target.src = '/images/placeholder.jpg';
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Product Details */}
+                  <div className="flex-1 min-w-0">
+                    <h5 className="text-md font-medium text-gray-900 truncate">{product.title}</h5>
+                    <div className="mt-1 text-sm text-gray-600 space-y-1">
+                      <div>
+                        <span className="font-medium">Size:</span>
+                        <span className="ml-1">
+                          {product.selectedSize || 
+                           (product.selectedVariant && product.selectedVariant.size) || 
+                           'N/A'}
+                        </span>
+                      </div>
+                      {product.selectedVariant && product.selectedVariant.color && (
+                        <div>
+                          <span className="font-medium">Color:</span>
+                          <span className="ml-1">{product.selectedVariant.color}</span>
+                        </div>
+                      )}
+                      <div>
+                        <span className="font-medium">Quantity:</span>
+                        <span className="ml-1">{product.quantity || 1}</span>
+                      </div>
+                      {product.price && (
+                        <div>
+                          <span className="font-medium">Price:</span>
+                          <span className="ml-1">${product.price}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Expanded Order Details */}
+                  {expandedOrders.has(payment.merchantTxnId) && (
+                    <OrderDetailView payment={payment} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Order Summary */}
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <div className="flex justify-between items-center text-sm">
+            <div className="flex space-x-4">
+              <span className="text-gray-600">Order ID: <span className="font-mono text-gray-800">{payment.merchantTxnId}</span></span>
+              <span className="text-gray-600">Gateway Ref: <span className="font-mono text-gray-800">{payment.gatewayReferenceNo}</span></span>
+            </div>
+            <div className="text-right">
+              <span className="text-gray-600">Total Amount: </span>
+              <span className="font-semibold text-gray-900">${payment.amount || 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Determine if destination is Nepal
   const isNepalDestination = (payment) => {
     try {
@@ -587,7 +798,7 @@ const OrderManagement = () => {
             <div className="border-b border-gray-200">
               <nav className="-mb-px flex space-x-8">
                 <button
-                  onClick={() => setActiveTab('pending')}
+                  onClick={() => handleTabChange('pending')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'pending'
                       ? 'border-blue-500 text-blue-600'
@@ -597,7 +808,7 @@ const OrderManagement = () => {
                   Pending ({tabCounts.pending})
                 </button>
                 <button
-                  onClick={() => setActiveTab('success')}
+                  onClick={() => handleTabChange('success')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'success'
                       ? 'border-green-500 text-green-600'
@@ -607,7 +818,7 @@ const OrderManagement = () => {
                   Success ({tabCounts.success})
                 </button>
                 <button
-                  onClick={() => setActiveTab('failed')}
+                  onClick={() => handleTabChange('failed')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'failed'
                       ? 'border-red-500 text-red-600'
@@ -617,7 +828,7 @@ const OrderManagement = () => {
                   Failed ({tabCounts.failed})
                 </button>
                 <button
-                  onClick={() => setActiveTab('shipped')}
+                  onClick={() => handleTabChange('shipped')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'shipped'
                       ? 'border-purple-500 text-purple-600'
@@ -635,7 +846,7 @@ const OrderManagement = () => {
             {activeTab === 'success' && 'Successful Orders'}
             {activeTab === 'failed' && 'Failed Orders'}
             {activeTab === 'shipped' && 'Shipped Orders'}
-            ({filteredPayments.length})
+            (Showing {Math.min(filteredPayments.length - currentPage * ordersPerPage, ordersPerPage)} of {filteredPayments.length} - Page {currentPage + 1})
           </h3>
           <div className="space-y-4">
             {filteredPayments.length === 0 ? (
@@ -643,7 +854,7 @@ const OrderManagement = () => {
                 <p>No orders with {activeTab} status.</p>
               </div>
             ) : (
-              filteredPayments.map((payment, globalIndex) => (
+              filteredPayments.slice(currentPage * ordersPerPage, (currentPage + 1) * ordersPerPage).map((payment, globalIndex) => (
                 <div 
                   key={`${payment.userBag.id}-${payment.paymentIndex}-${payment.merchantTxnId}`}
                   className="border p-2 mb-2 rounded">
@@ -680,6 +891,17 @@ const OrderManagement = () => {
                     </div>
                       
                     <div className="flex flex-wrap gap-2">
+                      {/* Show Details Button */}
+                      <button
+                        onClick={() => toggleOrderDetails(payment.merchantTxnId)}
+                        className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded flex items-center"
+                      >
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={expandedOrders.has(payment.merchantTxnId) ? "M19 9l-7 7-7-7" : "M9 5l7 7-7 7"} />
+                        </svg>
+                        {expandedOrders.has(payment.merchantTxnId) ? 'Hide Details' : 'Show Details'}
+                      </button>
+                      
                       {(() => {
                         const shipmentInfo = getShipmentInfo(payment.userBag, payment.merchantTxnId);
                         const { label, invoice } = getDocuments(shipmentInfo);
@@ -772,6 +994,59 @@ const OrderManagement = () => {
               ))
             )}
           </div>
+          
+          {/* Pagination Controls */}
+          {filteredPayments.length > ordersPerPage && (
+            <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
+              <button
+                 onClick={goToPreviousPage}
+                 disabled={currentPage === 0 || isLoadingPagination}
+                 className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${
+                   currentPage === 0 || isLoadingPagination
+                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                     : 'bg-blue-500 text-white hover:bg-blue-600'
+                 }`}
+               >
+                 {isLoadingPagination && currentPage > 0 ? (
+                   <>
+                     <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                       <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                     </svg>
+                     Loading...
+                   </>
+                 ) : (
+                   'Previous'
+                 )}
+               </button>
+              
+              <span className="text-sm text-gray-600">
+                Page {currentPage + 1} of {Math.ceil(filteredPayments.length / ordersPerPage)}
+              </span>
+              
+              <button
+                 onClick={goToNextPage}
+                 disabled={(currentPage + 1) * ordersPerPage >= filteredPayments.length || isLoadingPagination}
+                 className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${
+                   (currentPage + 1) * ordersPerPage >= filteredPayments.length || isLoadingPagination
+                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                     : 'bg-blue-500 text-white hover:bg-blue-600'
+                 }`}
+               >
+                 {isLoadingPagination && (currentPage + 1) * ordersPerPage < filteredPayments.length ? (
+                   <>
+                     <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                       <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                     </svg>
+                     Loading...
+                   </>
+                 ) : (
+                   'Next'
+                 )}
+               </button>
+            </div>
+          )}
         </div>
       )}
     </div>

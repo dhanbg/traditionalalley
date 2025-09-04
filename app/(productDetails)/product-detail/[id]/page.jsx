@@ -259,62 +259,50 @@ function transformProduct(rawProduct) {
 function transformVariant(rawVariant) {
   if (!rawVariant) return null;
   
+
+  
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
   
-  // Helper function to process variant image URLs with format support
-  const processVariantImageUrl = (imgData) => {
-    if (!imgData) return '/logo.png';
-    
-    // If it's already a string URL, return it
-    if (typeof imgData === 'string') {
-      return imgData.startsWith('http') ? imgData : `${API_URL}${imgData}`;
+  // Handle variant images
+  let imgSrc = '/logo.png';
+  if (rawVariant.imgSrc) {
+    if (rawVariant.imgSrc.url && rawVariant.imgSrc.url.startsWith('http')) {
+      imgSrc = rawVariant.imgSrc.url;
+    } else if (rawVariant.imgSrc.url) {
+      imgSrc = rawVariant.imgSrc.url.startsWith('http') ? rawVariant.imgSrc.url : `${API_URL}${rawVariant.imgSrc.url}`;
     }
-    
-    // If it's a Strapi media object, extract the best URL
-    if (imgData.url) {
-      return imgData.url.startsWith('http') ? imgData.url : `${API_URL}${imgData.url}`;
-    }
-    
-    // Try formats if available (prefer medium, then small, then thumbnail)
-    if (imgData.formats) {
-      if (imgData.formats.medium?.url) {
-        const url = imgData.formats.medium.url;
-        return url.startsWith('http') ? url : `${API_URL}${url}`;
-      }
-      if (imgData.formats.small?.url) {
-        const url = imgData.formats.small.url;
-        return url.startsWith('http') ? url : `${API_URL}${url}`;
-      }
-      if (imgData.formats.thumbnail?.url) {
-        const url = imgData.formats.thumbnail.url;
-        return url.startsWith('http') ? url : `${API_URL}${url}`;
-      }
-    }
-    
-    return '/logo.png';
-  };
+  }
   
-  // Handle variant images with proper format support
-  const imgSrc = processVariantImageUrl(rawVariant.imgSrc);
-  const imgHover = processVariantImageUrl(rawVariant.imgHover) || imgSrc;
+  let imgHover = imgSrc;
+  if (rawVariant.imgHover) {
+    if (rawVariant.imgHover.url && rawVariant.imgHover.url.startsWith('http')) {
+      imgHover = rawVariant.imgHover.url;
+    } else if (rawVariant.imgHover.url) {
+      imgHover = rawVariant.imgHover.url.startsWith('http') ? rawVariant.imgHover.url : `${API_URL}${rawVariant.imgHover.url}`;
+    }
+  }
   
-  // Handle color image with format support
+  // Handle color image
   let color = null;
   if (rawVariant.color) {
     color = {
       ...rawVariant.color,
-      url: processVariantImageUrl(rawVariant.color)
+      url: rawVariant.color.url && rawVariant.color.url.startsWith('http') 
+        ? rawVariant.color.url 
+        : `${API_URL}${rawVariant.color.url}`
     };
   }
   
-  // Process gallery images with format support
   const gallery = Array.isArray(rawVariant.gallery) 
     ? rawVariant.gallery.map(img => {
         if (!img) return { id: 0, url: '/logo.png' };
-        return { 
-          id: img.id || img.documentId || 0, 
-          url: processVariantImageUrl(img)
-        };
+        let imageUrl = '/logo.png';
+        if (img.url && img.url.startsWith('http')) {
+          imageUrl = img.url;
+        } else if (img.url) {
+          imageUrl = `${API_URL}${img.url}`;
+        }
+        return { id: img.id || img.documentId || 0, url: imageUrl };
       }) 
     : [];
   
@@ -323,9 +311,9 @@ function transformVariant(rawVariant) {
     documentId: rawVariant.documentId, // Preserve documentId for stock operations
     design: rawVariant.design || null, // Include the design field
     color, // New color image field
-    imgSrc: rawVariant.imgSrc, // Preserve original Strapi media object for Details1 processing
-    imgHover: rawVariant.imgHover, // Preserve original Strapi media object for Details1 processing
-    gallery: rawVariant.gallery, // Preserve original gallery array for Details1 processing
+    imgSrc,
+    imgHover,
+    gallery,
     isDefault: rawVariant.isDefault || false,
     isActive: rawVariant.isActive !== false,
     quantity: rawVariant.quantity || 0,
