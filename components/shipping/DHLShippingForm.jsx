@@ -485,6 +485,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
       
       console.log('Fetching shipping rates:', { countryCode, serviceType, totalWeight });
       
+      // Use the Next.js API route which handles both local and production environments
       const response = await axios.get('/api/shipping-rates', {
         params: {
           populate: '*'

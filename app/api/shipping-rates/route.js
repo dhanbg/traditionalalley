@@ -3,6 +3,11 @@ import { NextResponse } from 'next/server';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
 const API_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
 
+// Add validation for required environment variables
+if (!API_TOKEN) {
+  console.error('NEXT_PUBLIC_STRAPI_API_TOKEN is not defined in environment variables');
+}
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -27,6 +32,18 @@ export async function GET(request) {
     const strapiUrl = `${API_BASE_URL}/api/shipping-rates?${queryParams.toString()}`;
     
     console.log('Fetching shipping rates from Strapi:', strapiUrl);
+    console.log('API_BASE_URL:', API_BASE_URL);
+    console.log('API_TOKEN exists:', !!API_TOKEN);
+    
+    if (!API_TOKEN) {
+      return NextResponse.json(
+        { 
+          error: 'API token not configured',
+          message: 'NEXT_PUBLIC_STRAPI_API_TOKEN environment variable is missing'
+        },
+        { status: 500 }
+      );
+    }
     
     const response = await fetch(strapiUrl, {
       method: 'GET',
@@ -80,6 +97,18 @@ export async function POST(request) {
     const strapiUrl = `${API_BASE_URL}/api/shipping-rates`;
     
     console.log('Creating shipping rate in Strapi:', strapiUrl);
+    console.log('API_BASE_URL:', API_BASE_URL);
+    console.log('API_TOKEN exists:', !!API_TOKEN);
+    
+    if (!API_TOKEN) {
+      return NextResponse.json(
+        { 
+          error: 'API token not configured',
+          message: 'NEXT_PUBLIC_STRAPI_API_TOKEN environment variable is missing'
+        },
+        { status: 500 }
+      );
+    }
     
     const response = await fetch(strapiUrl, {
       method: 'POST',
