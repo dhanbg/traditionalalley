@@ -73,6 +73,21 @@ export async function GET(request) {
     
     const data = await response.json();
     console.log('Successfully fetched shipping rates:', data.data?.length || 0, 'rates');
+    console.log('Full Strapi response:', JSON.stringify(data, null, 2));
+    
+    // Log detailed information about the response
+    if (data.data && Array.isArray(data.data)) {
+      console.log('Shipping rates data structure:', {
+        totalCount: data.data.length,
+        firstRate: data.data[0] ? {
+          id: data.data[0].id,
+          attributes: Object.keys(data.data[0].attributes || {})
+        } : null,
+        meta: data.meta
+      });
+    } else {
+      console.log('Unexpected data structure:', typeof data, Object.keys(data));
+    }
     
     return NextResponse.json(data);
     

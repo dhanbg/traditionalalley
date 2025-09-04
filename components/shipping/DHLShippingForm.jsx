@@ -492,13 +492,42 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         }
       });
       
+      console.log('Raw API response:', {
+        status: response.status,
+        dataExists: !!response.data,
+        dataDataExists: !!(response.data && response.data.data),
+        dataLength: response.data?.data?.length || 0,
+        firstItem: response.data?.data?.[0] || null
+      });
+      
       if (response.data && response.data.data) {
+        console.log('All shipping rates before filtering:', response.data.data.map(rate => ({
+          id: rate.id,
+          country_code: rate.country_code,
+          service_type: rate.service_type,
+          weight_limit: rate.weight_limit,
+          country_name: rate.country_name
+        })));
+        
         // Filter rates based on country code and service type
         const filteredRates = response.data.data.filter(rate => {
           const matchesCountry = rate.country_code === countryCode;
           const matchesService = rate.service_type.toLowerCase() === serviceType.toLowerCase();
           // Handle null weight_limit (means no weight restriction)
           const withinWeightLimit = rate.weight_limit === null || totalWeight <= rate.weight_limit;
+          
+          console.log(`Rate ${rate.id} filtering:`, {
+            rate_country: rate.country_code,
+            target_country: countryCode,
+            matchesCountry,
+            rate_service: rate.service_type,
+            target_service: serviceType,
+            matchesService,
+            rate_weight_limit: rate.weight_limit,
+            total_weight: totalWeight,
+            withinWeightLimit,
+            finalMatch: matchesCountry && matchesService && withinWeightLimit
+          });
           
           return matchesCountry && matchesService && withinWeightLimit;
         });
