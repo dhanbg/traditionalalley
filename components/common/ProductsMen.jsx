@@ -118,7 +118,7 @@ export default function ProductsMen({ parentClass = "flat-spacing-3 pt-0" }) {
     <section className={parentClass}>
       <div className="container">
         <div className="heading-section text-center wow fadeInUp">
-          <h3>Men's Top Picks</h3>
+          <h3>Men's Products</h3>
           <ul className="tab-product-v2 justify-content-sm-center">
             {tabItems.map((item) => (
               <li key={item} className="nav-tab-item">
@@ -169,4 +169,4 @@ export default function ProductsMen({ parentClass = "flat-spacing-3 pt-0" }) {
       </div>
     </section>
   );
-} 
+}

@@ -51,11 +51,11 @@ export default function Shipping() {
           <div style={{ display: "flex", gap: "8px" }}>
             <div style={{ padding: "10px", border: "1px solid #e0e0e0", borderRadius: "6px", backgroundColor: "#fff" }}>
               <h4 style={{ color: "#d4af37", marginBottom: "4px", fontSize: "13px" }}>Express Service</h4>
-              <p style={{ fontSize: "11px", margin: "0", color: "#666" }}>5-6 days • Premium delivery</p>
+              <p style={{ fontSize: "11px", margin: "0", color: "#666" }}>9-11 days • Premium delivery</p>
             </div>
             <div style={{ padding: "10px", border: "1px solid #e0e0e0", borderRadius: "6px", backgroundColor: "#fff" }}>
               <h4 style={{ color: "#d4af37", marginBottom: "4px", fontSize: "13px" }}>Economy Service</h4>
-              <p style={{ fontSize: "11px", margin: "0", color: "#666" }}>10-15 days • Cost-effective</p>
+              <p style={{ fontSize: "11px", margin: "0", color: "#666" }}>16-21 days • Cost-effective</p>
             </div>
           </div>
           

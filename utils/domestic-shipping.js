@@ -45,13 +45,13 @@ export async function getDomesticShippingRates(params) {
           }
         ],
         coverage: {
-          kathmandu: { available: true, deliveryTime: '1 day' },
-          pokhara: { available: true, deliveryTime: '1-2 days' },
-          chitwan: { available: true, deliveryTime: '1-2 days' },
-          butwal: { available: true, deliveryTime: '2-3 days' },
-          dharan: { available: true, deliveryTime: '2-3 days' },
-          karnali: { available: true, deliveryTime: '3-5 days', note: 'Remote area delivery' },
-          farWest: { available: true, deliveryTime: '3-5 days', note: 'Remote area delivery' }
+          kathmandu: { available: true, deliveryTime: '3-5 days' },
+          pokhara: { available: true, deliveryTime: '3-5 days' },
+          chitwan: { available: true, deliveryTime: '5-7 days' },
+          butwal: { available: true, deliveryTime: '5-7 days' },
+          dharan: { available: true, deliveryTime: '5-7 days' },
+          karnali: { available: true, deliveryTime: '6-8 days', note: 'Remote area delivery' },
+          farWest: { available: true, deliveryTime: '6-8 days', note: 'Remote area delivery' }
         }
       }
     };
@@ -95,13 +95,13 @@ function calculateDomesticRate(params, serviceType) {
  */
 export function getDeliveryCoverage(location) {
   const coverageMap = {
-    'kathmandu': { zone: 'Zone 1', deliveryTime: '1 day', available: true },
-    'pokhara': { zone: 'Zone 1', deliveryTime: '1-2 days', available: true },
-    'chitwan': { zone: 'Zone 2', deliveryTime: '1-2 days', available: true },
-    'butwal': { zone: 'Zone 2', deliveryTime: '2-3 days', available: true },
-    'dharan': { zone: 'Zone 2', deliveryTime: '2-3 days', available: true },
-    'karnali': { zone: 'Zone 3', deliveryTime: '3-5 days', available: true, note: 'Remote area' },
-    'farwest': { zone: 'Zone 3', deliveryTime: '3-5 days', available: true, note: 'Remote area' }
+    'kathmandu': { zone: 'Zone 1', deliveryTime: '3-5 days', available: true },
+    'pokhara': { zone: 'Zone 1', deliveryTime: '3-5 days', available: true },
+    'chitwan': { zone: 'Zone 2', deliveryTime: '5-7 days', available: true },
+    'butwal': { zone: 'Zone 2', deliveryTime: '5-7 days', available: true },
+    'dharan': { zone: 'Zone 2', deliveryTime: '5-7 days', available: true },
+    'karnali': { zone: 'Zone 3', deliveryTime: '6-8 days', available: true, note: 'Remote area' },
+    'farwest': { zone: 'Zone 3', deliveryTime: '6-8 days', available: true, note: 'Remote area' }
   };
 
   return coverageMap[location.toLowerCase()] || {
@@ -121,21 +121,21 @@ export function getDomesticShippingZones() {
       zone: 'Zone 1',
       name: 'Major Cities',
       locations: ['Kathmandu', 'Pokhara', 'Lalitpur', 'Bhaktapur'],
-      deliveryTime: '1-2 days',
+      deliveryTime: '3-5 days',
       description: 'Fast delivery to major urban centers'
     },
     {
       zone: 'Zone 2',
       name: 'Regional Centers',
       locations: ['Chitwan', 'Butwal', 'Dharan', 'Biratnagar', 'Nepalgunj'],
-      deliveryTime: '2-3 days',
+      deliveryTime: '5-7 days',
       description: 'Reliable delivery to regional hubs'
     },
     {
       zone: 'Zone 3',
       name: 'Remote Areas',
       locations: ['Karnali Province', 'Far Western Province', 'Mountain Districts'],
-      deliveryTime: '3-5 days',
+      deliveryTime: '6-8 days',
       description: 'Specialized delivery to remote and mountainous regions'
     }
   ];

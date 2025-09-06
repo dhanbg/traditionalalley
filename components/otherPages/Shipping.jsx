@@ -25,19 +25,19 @@ export default function Shipping() {
                 <div style={{ padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
                   <h4 style={{ color: '#28a745', marginBottom: '8px' }}>Zone 1 - Major Cities</h4>
                   <p style={{ fontSize: '14px', marginBottom: '8px', lineHeight: '1.5' }}>Kathmandu, Pokhara, Lalitpur, Bhaktapur</p>
-                  <span style={{ fontSize: '12px', color: '#666', fontWeight: 'bold' }}>Delivery: 1-2 days</span>
+                  <span style={{ fontSize: '12px', color: '#666', fontWeight: 'bold' }}>Delivery: 3-5 days</span>
                 </div>
                 
                 <div style={{ padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
                   <h4 style={{ color: '#ffc107', marginBottom: '8px' }}>Zone 2 - Regional Centers</h4>
                   <p style={{ fontSize: '14px', marginBottom: '8px', lineHeight: '1.5' }}>Chitwan, Butwal, Dharan, Biratnagar, Nepalgunj</p>
-                  <span style={{ fontSize: '12px', color: '#666', fontWeight: 'bold' }}>Delivery: 2-3 days</span>
+                  <span style={{ fontSize: '12px', color: '#666', fontWeight: 'bold' }}>Delivery: 5-7 days</span>
                 </div>
                 
                 <div style={{ padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
                   <h4 style={{ color: '#dc3545', marginBottom: '8px' }}>Zone 3 - Remote Areas</h4>
                   <p style={{ fontSize: '14px', marginBottom: '8px', lineHeight: '1.5' }}>Karnali Province, Far Western Province, Mountain Districts</p>
-                  <span style={{ fontSize: '12px', color: '#666', fontWeight: 'bold' }}>Delivery: 3-5 days</span>
+                  <span style={{ fontSize: '12px', color: '#666', fontWeight: 'bold' }}>Delivery: 6-8 days</span>
                 </div>
               </div>
             </div>
@@ -51,7 +51,7 @@ export default function Shipping() {
                 <h3 style={{ color: '#d4af37', marginBottom: '10px' }}>International Express Courier</h3>
                 <p style={{ marginBottom: '10px' }}>Premium and faster international delivery option for urgent shipments like documents, samples, or small parcels.</p>
                 <div style={{ padding: '8px 12px', backgroundColor: '#e8f5e8', borderRadius: '4px', marginBottom: '10px' }}>
-                  <strong style={{ color: '#28a745' }}>Delivery Time: 5-6 days</strong>
+                  <strong style={{ color: '#28a745' }}>Delivery Time: 9-11 days</strong>
                 </div>
                 <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
                   <li>Reliable and secure door-to-door delivery</li>
@@ -63,7 +63,7 @@ export default function Shipping() {
                 <h3 style={{ color: '#d4af37', marginBottom: '10px' }}>International Economy Courier</h3>
                 <p style={{ marginBottom: '10px' }}>Cost-effective international shipping solution where urgency takes a backseat to cost efficiency.</p>
                 <div style={{ padding: '8px 12px', backgroundColor: '#fff3cd', borderRadius: '4px', marginBottom: '10px' }}>
-                  <strong style={{ color: '#856404' }}>Delivery Time: 10-15 days</strong>
+                  <strong style={{ color: '#856404' }}>Delivery Time: 16-21 days</strong>
                 </div>
                 <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
                   <li>Affordable pricing for standard shipments</li>

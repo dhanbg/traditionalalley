@@ -1,6 +1,8 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useContextElement } from '@/context/Context';
+import { formatPrice, convertUsdToNpr } from '@/utils/currency';
 
 // Country calling codes mapping
 const countryCallingCodes = {
@@ -81,6 +83,26 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
 
   const [branches, setBranches] = useState([]);
   const [loadingBranches, setLoadingBranches] = useState(false);
+
+  // Currency context
+  const { userCurrency, exchangeRate } = useContextElement();
+
+  // Helper function to format shipping cost based on user currency
+  const formatShippingCost = (nprCost) => {
+    if (userCurrency === 'USD' && exchangeRate) {
+      const usdCost = nprCost / exchangeRate;
+      return {
+        amount: usdCost,
+        formatted: formatPrice(usdCost, 'USD'),
+        currency: 'USD'
+      };
+    }
+    return {
+      amount: nprCost,
+      formatted: formatPrice(nprCost, 'NPR'),
+      currency: 'NPR'
+    };
+  };
   const [countries, setCountries] = useState([]);
   const [loadingCountries, setLoadingCountries] = useState(false);
   const [countriesError, setCountriesError] = useState('');
@@ -1631,8 +1653,12 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                           fontWeight: 700,
                           color: '#0ea5e9'
                         }}>
-                          NPR {shippingCost.toLocaleString()}
+                          {(() => {
+                            const costInfo = formatShippingCost(shippingCost);
+                            return costInfo.formatted;
+                          })()} 
                         </div>
+
                         <div style={{
                           fontSize: '0.75rem',
                           color: '#64748b'

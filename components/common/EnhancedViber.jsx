@@ -4,13 +4,28 @@ import { useState, useEffect } from "react";
 const EnhancedViber = () => {
   const [showTempMessage, setShowTempMessage] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [userInteracted, setUserInteracted] = useState(false);
 
   useEffect(() => {
+    // Detect user interaction for audio autoplay compliance
+    const handleUserInteraction = () => {
+      setUserInteracted(true);
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
+    };
+
+    document.addEventListener('click', handleUserInteraction);
+    document.addEventListener('keydown', handleUserInteraction);
+    document.addEventListener('touchstart', handleUserInteraction);
+
     // Show temporary message when page loads
     const timer = setTimeout(() => {
       setShowTempMessage(true);
-      // Play notification sound
-      playNotificationSound();
+      // Only play notification sound if user has interacted
+      if (userInteracted) {
+        playNotificationSound();
+      }
     }, 2000);
 
     // Hide temporary message after 8 seconds
@@ -28,19 +43,28 @@ const EnhancedViber = () => {
       clearTimeout(timer);
       clearTimeout(hideTimer);
       clearInterval(animationInterval);
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
     };
-  }, []);
+  }, [userInteracted]);
 
   const playNotificationSound = () => {
+    // Only play audio if user has interacted with the page
+    if (!userInteracted) {
+      console.log('Audio playback skipped: User interaction required for autoplay compliance');
+      return;
+    }
+
     try {
       // Use the existing sound file from public folder
       const audio = new Audio('/sharp-pop-328170.mp3');
       audio.volume = 0.3; // Set to 30% volume for a softer sound
       audio.play().catch(error => {
-        console.log('Audio playback failed:', error);
+        console.log('Audio playback failed:', error.name, error.message);
       });
     } catch (error) {
-      console.log('Audio not supported or blocked');
+      console.log('Audio not supported or blocked:', error);
     }
   };
 

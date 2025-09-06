@@ -497,6 +497,44 @@ export default function Details1({ product, variants = [], preferredVariantId = 
     }
   };
 
+  const handleShare = async (e) => {
+    e.preventDefault();
+    
+    // Create a shareable link with product information
+    const baseUrl = window.location.origin;
+    const productId = safeProduct.documentId || safeProduct.id;
+    const productSlug = safeProduct.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'product';
+    
+    // Create a clean shareable URL
+    const shareableUrl = `${baseUrl}/product-detail/${productId}?ref=share&title=${encodeURIComponent(getCurrentDisplayTitle())}`;
+    
+    const shareData = {
+      title: getCurrentDisplayTitle(),
+      text: `Check out this amazing product: ${getCurrentDisplayTitle()} - Traditional Alley`,
+      url: shareableUrl
+    };
+
+    try {
+      // Check if Web Share API is supported (mobile devices)
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback: copy shareable URL to clipboard
+        await navigator.clipboard.writeText(shareableUrl);
+        alert('Shareable link copied to clipboard!');
+      }
+    } catch (error) {
+      // If sharing fails or is cancelled, try clipboard as fallback
+      try {
+        await navigator.clipboard.writeText(shareableUrl);
+        alert('Shareable link copied to clipboard!');
+      } catch (clipboardError) {
+        console.error('Failed to share or copy URL:', clipboardError);
+        alert('Unable to share. Please copy the URL manually.');
+      }
+    }
+  };
+
 
 
 
@@ -908,18 +946,11 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                             Delivery &amp; Return
                           </p>
                         </a>
+
                         <a
                           href="#"
                           className="tf-product-extra-icon"
-                        >
-                          <div className="icon">
-                            <i className="icon-question" />
-                          </div>
-                          <p className="text-caption-1">Ask A Question</p>
-                        </a>
-                        <a
-                          href="#"
-                          className="tf-product-extra-icon"
+                          onClick={handleShare}
                         >
                           <div className="icon">
                             <i className="icon-share" />
@@ -928,6 +959,16 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                         </a>
                       </div>
 
+                      <div className="tf-product-info-delivery">
+                        <div className="icon">
+                          <i className="icon-truck" />
+                        </div>
+                        <p className="text-caption-1">
+                          <strong>Delivery Times:</strong><br/>
+                          Domestic: Zone 1 (3-5 days), Zone 2 (5-7 days), Zone 3 (6-8 days)<br/>
+                          International: Express (9-11 days), Economy (16-21 days)
+                        </p>
+                      </div>
                       <div className="tf-product-info-return">
                         <div className="icon">
                           <i className="icon-arrowClockwise" />

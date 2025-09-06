@@ -77,7 +77,7 @@ export default function OrdersFAQs() {
                   <p style={{ marginBottom: '20px', lineHeight: '1.6' }}>A: Our delivery partners will attempt delivery 2-3 times. If unsuccessful, the package will be held at the local facility for pickup, or you can reschedule delivery.</p>
                   
                   <p style={{ marginBottom: '15px', lineHeight: '1.6' }}><strong>Q: Do you offer international shipping?</strong></p>
-                  <p style={{ marginBottom: '10px', lineHeight: '1.6' }}>A: Yes, we ship to selected countries. International shipping takes 7-14 business days. Additional customs duties may apply depending on your country's regulations.</p>
+                  <p style={{ marginBottom: '10px', lineHeight: '1.6' }}>A: Yes, we ship to selected countries. International shipping takes 9-21 business days (9-11 days express, 16-21 days economy). Additional customs duties may apply depending on your country's regulations.</p>
                 </div>
               </div>
               <div className="terms-of-use-item item-scroll-target" id="returns-exchanges" style={{ marginBottom: '30px' }}>

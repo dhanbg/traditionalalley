@@ -26,3 +26,6 @@ export const USER_BAGS_API = "/api/user-bags";
 
 // Search endpoint
 export const SEARCH_PRODUCTS_API = (query) => `/api/products?filters[title][$containsi]=${encodeURIComponent(query)}&populate=*`;
+
+// Hero slides endpoint
+export const HERO_SLIDES_API = "/api/hero-slides?populate=*";

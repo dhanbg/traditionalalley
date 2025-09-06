@@ -2,7 +2,7 @@
 
 // Exchange rate API configuration
 const EXCHANGE_API_URL = 'https://api.exchangerate-api.com/v4/latest/USD';
-const FALLBACK_USD_TO_NPR_RATE = 134.5; // Fallback rate if API fails
+const FALLBACK_USD_TO_NPR_RATE = 141.11; // Auto-updated on 2025-09-05T13:42:03.955Z // Fallback rate if API fails
 
 // Cache for exchange rates (valid for 1 hour)
 let exchangeRateCache = {

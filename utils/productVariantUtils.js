@@ -15,9 +15,9 @@ export async function checkWelcomeCouponUsage(userId) {
       return { hasUsed: false, couponData: null };
     }
 
-    // Find the WELCOMETOTA coupon
+    // Find the WELCOMETOTA coupon (case-insensitive)
     const welcomeCoupon = couponsResponse.data.find(coupon => 
-      coupon.code === 'WELCOMETOTA'
+      coupon.code && coupon.code.toLowerCase() === 'welcometota'
     );
 
     if (!welcomeCoupon) {

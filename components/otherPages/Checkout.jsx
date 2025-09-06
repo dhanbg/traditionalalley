@@ -162,7 +162,7 @@ export default function Checkout() {
         finalSubtotal: finalTotal,
         shippingCost: shippingCost,
         totalAmount: finalTotal + shippingCost,
-        currency: "NPR",
+        currency: userCurrency || "NPR",
         orderDate: new Date().toISOString(),
         orderTimezone: "Asia/Kathmandu"
       },
@@ -214,7 +214,7 @@ export default function Checkout() {
       shipping: {
         method: "DHL Express",
         cost: shippingCost,
-        currency: "NPR",
+        currency: userCurrency || "NPR",
         estimatedDelivery: "3-5 business days"
       },
 
@@ -922,7 +922,7 @@ export default function Checkout() {
           finalSubtotal: finalTotal,
           shippingCost: shippingCost,
           totalAmount: finalTotal + shippingCost,
-          currency: "NPR",
+          currency: userCurrency || "NPR",
           orderDate: new Date().toISOString(),
           orderTimezone: "Asia/Kathmandu"
         },
@@ -938,7 +938,7 @@ export default function Checkout() {
             service: "COD Standard",
             estimatedDays: receiverDetails.address.country === "Nepal" ? "3-5" : "7-10",
             cost: shippingCost,
-            currency: "NPR",
+            currency: userCurrency || "NPR",
             trackingAvailable: false, // COD usually doesn't have tracking
             insuranceIncluded: false, // COD payment on delivery
             signatureRequired: true // Always required for COD
@@ -1531,7 +1531,14 @@ export default function Checkout() {
                   onRateCalculated={(rateInfo) => {
                     console.log('Rate calculated:', rateInfo);
                     // Use actual shipping rate from DHL/NCM calculation
-                    const actualShippingCost = parseFloat(rateInfo.price) || 0;
+                    let actualShippingCost = parseFloat(rateInfo.price) || 0;
+                    
+                    // Convert shipping cost based on user currency preference
+                    // DHL rates come in NPR, so convert to USD if user is in USD mode
+                    if (userCurrency === 'USD' && nprExchangeRate) {
+                      actualShippingCost = actualShippingCost / nprExchangeRate;
+                    }
+                    
                     setShippingCost(actualShippingCost);
                     setShippingRatesObtained(true);
                   }}

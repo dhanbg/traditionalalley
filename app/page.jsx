@@ -11,6 +11,7 @@ import Features from "@/components/common/Features";
 import Hero from "@/components/homes/Hero";
 import Products from "@/components/common/Products3";
 import InstagramVideoCards from "@/components/common/InstagramVideoCards";
+import TopPicks from "@/components/common/TopPicks";
 
 import Testimonials3 from "@/components/common/Testimonials3";
 import MarqueeSection from "@/components/common/MarqueeSection";
@@ -134,10 +135,9 @@ export default function Home() {
       {/* <Collections /> */}
       {/* <Products /> */}
       {/* <BannerCollection /> */}
-      <div style={{ marginTop: '60px' }}>
-        <BannerCountdown />
-      </div>
+      <BannerCountdown />
       {/* <Testimonials3 /> */}
+      <TopPicks />
       <InstagramVideoCards />
       {/* <Features /> */}
       {/* <Blogs /> */}

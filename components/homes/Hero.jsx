@@ -27,6 +27,18 @@ export default function Hero() {
   const swiperRef = useRef(null);
   const slideTimeoutRef = useRef(null);
 
+  // Function to validate video source
+  const validateVideoSource = async (videoSrc) => {
+    if (!videoSrc) return false;
+    try {
+      const response = await fetch(videoSrc, { method: 'HEAD' });
+      return response.ok;
+    } catch (error) {
+      console.warn('Video source validation failed:', error);
+      return false;
+    }
+  };
+
   // Hook to detect mobile screen size
   const checkMobile = useCallback(() => {
     const width = window.innerWidth;
@@ -89,6 +101,8 @@ export default function Hero() {
             fallbackImageUrl = item.poster?.url || item.poster?.formats?.large?.url || mediaUrl;
             
             const result = {
+              id: item.id,
+              documentId: item.documentId,
               imgSrc: getImageUrl(mediaType === 'image' ? mediaUrl : fallbackImageUrl),
               videoSrc: mediaType === 'video' ? getImageUrl(mediaUrl) : null,
               audioSrc: mediaType === 'audio' ? getImageUrl(mediaUrl) : null,
@@ -361,11 +375,23 @@ export default function Hero() {
                       onLoadedData={() => {
                         setImageLoaded(true);
                       }}
-                      onLoadStart={() => {
+                      onLoadStart={async () => {
                         // Show loading state for current slide
                         setVideoLoadingStates(prev => new Map(prev.set(index, 'loading')));
                         if (index === activeSlideIndex) {
                           setImageLoaded(false);
+                        }
+                        
+                        // Validate video source
+                        if (slide.videoSrc) {
+                          const isValid = await validateVideoSource(slide.videoSrc);
+                          if (!isValid) {
+                            console.warn(`Video source validation failed for slide ${index}:`, slide.videoSrc);
+                            setVideoLoadingStates(prev => new Map(prev.set(index, 'error')));
+                            if (index === activeSlideIndex) {
+                              setImageLoaded(true);
+                            }
+                          }
                         }
                       }}
                       onCanPlay={() => {
@@ -382,7 +408,7 @@ export default function Hero() {
                       }}
                       onError={(e) => {
                         // Handle video loading errors - fallback to image
-                        console.log(`Video failed to load for slide ${index}, falling back to image`);
+                        console.warn(`Video failed to load for slide ${index}, falling back to image. Error:`, e.target.error);
                         setVideoLoadingStates(prev => new Map(prev.set(index, 'error')));
                         if (index === activeSlideIndex) {
                           setImageLoaded(true); // Show fallback image
@@ -394,10 +420,13 @@ export default function Hero() {
                       }}
                       onEnded={onVideoEnded}
                     >
-                      {(loadedVideos.has(index) || index === activeSlideIndex) && (
+                      {(loadedVideos.has(index) || index === activeSlideIndex) && slide.videoSrc && (
                         <>
                           <source src={slide.videoSrc} type="video/mp4" />
-                          <source src={slide.videoSrc} type="video/webm" />
+                          {/* Only add webm source if it's actually a webm file */}
+                          {slide.videoSrc.includes('.webm') && (
+                            <source src={slide.videoSrc} type="video/webm" />
+                          )}
                         </>
                       )}
                       {/* Fallback image if video fails to load */}
@@ -492,7 +521,7 @@ export default function Hero() {
                     </div>
                     <div className="fade-item fade-item-3 box-btn-slider">
                       <Link
-                        href="/shop-default-grid"
+                        href={`/hero-products?slideId=${slide.documentId || slide.id}&btnText=${encodeURIComponent(slide.btnText)}`}
                         className="tf-btn btn-fill btn-white"
                       >
                         <span className="text">{slide.btnText}</span>
