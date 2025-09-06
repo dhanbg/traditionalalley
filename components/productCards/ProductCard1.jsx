@@ -266,18 +266,20 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
         setShowSizeSelection(false);
         setSelectedSize(''); // Reset selection when mouse leaves
       }}
-      onTouchStart={() => {
-        // Prevent double-tap zoom on mobile
-        if (hasAvailableSizes) {
+      onTouchStart={(e) => {
+        // Only handle touch for size selection, don't interfere with navigation
+        if (hasAvailableSizes && !e.target.closest('.product-img') && !e.target.closest('.title.link')) {
           setShowSizeSelection(true);
         }
       }}
-      onTouchEnd={() => {
-        // Reset size selection after touch
-        setTimeout(() => {
-          setShowSizeSelection(false);
-          setSelectedSize('');
-        }, 2000);
+      onTouchEnd={(e) => {
+        // Only reset size selection if not clicking on navigation elements
+        if (hasAvailableSizes && !e.target.closest('.product-img') && !e.target.closest('.title.link')) {
+          setTimeout(() => {
+            setShowSizeSelection(false);
+            setSelectedSize('');
+          }, 2000);
+        }
       }}
     >
       <div className="card-product-wrapper">
@@ -286,7 +288,12 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
           className="product-img"
           style={{
             WebkitTapHighlightColor: 'transparent',
-            touchAction: 'manipulation'
+            touchAction: 'manipulation',
+            cursor: 'pointer'
+          }}
+          onClick={(e) => {
+            // Ensure single click navigation works on mobile
+            e.stopPropagation();
           }}
         >
           <Image
@@ -591,7 +598,19 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
         )}
       </div>
       <div className="card-product-info">
-        <Link href={`/product-detail/${getMainProductId(safeProduct) || safeProduct.id}${(getMainProductId(safeProduct) !== (safeProduct.documentId || safeProduct.id)) ? `?variant=${safeProduct.documentId || safeProduct.id}` : ''}`} className="title link">
+        <Link 
+          href={`/product-detail/${getMainProductId(safeProduct) || safeProduct.id}${(getMainProductId(safeProduct) !== (safeProduct.documentId || safeProduct.id)) ? `?variant=${safeProduct.documentId || safeProduct.id}` : ''}`} 
+          className="title link"
+          style={{
+            WebkitTapHighlightColor: 'transparent',
+            touchAction: 'manipulation',
+            cursor: 'pointer'
+          }}
+          onClick={(e) => {
+            // Ensure single click navigation works on mobile
+            e.stopPropagation();
+          }}
+        >
           {safeProduct.title ? safeProduct.title.replace(' (Variant)', '').replace(/ - [^-]+$/, '') : 'Product'}
         </Link>
         <PriceDisplay 

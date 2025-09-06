@@ -1,28 +1,55 @@
 "use client";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
 import { Navigation, Pagination } from "swiper/modules";
-import { useState, useEffect } from "react";
+import { fetchDataFromApi } from "@/utils/api";
+import { API_URL } from "@/utils/urls";
 
 export default function Collections() {
   const [collections, setCollections] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Fetch collections from backend
+  
   useEffect(() => {
     const fetchCollections = async () => {
       try {
-        const response = await fetch('/api/collections?populate=*');
-        if (response.ok) {
-          const data = await response.json();
-          setCollections(data.data || []);
-        }
+        const response = await fetchDataFromApi("/api/collections?populate=*");
+        // Filter collections to only include those with category.title === "Kids"
+        const filteredCollections = response.data.filter(item => 
+          item.category && item.category.title === "Kids"
+        );
+        
+        const transformedCollections = filteredCollections.map((item) => ({
+          id: item.id,
+          name: item.attributes?.name || item.name || "Unnamed Collection",
+          slug: item.attributes?.slug || item.slug || `collection-${item.id}`,
+          image: getImageUrl(item),
+        }));
+        setCollections(transformedCollections);
       } catch (error) {
-        console.error('Error fetching collections:', error);
-      } finally {
-        setLoading(false);
+        // Silently handle error
       }
+    };
+
+    // Helper function to extract the correct image URL
+    const getImageUrl = (item) => {
+      // For attributes-based structure (Strapi v4)
+      if (item.attributes?.image?.data?.attributes) {
+        const imageData = item.attributes.image.data.attributes;
+        // Use medium format if available, otherwise use the main URL
+        const imageUrl = imageData.formats?.medium?.url || imageData.url;
+        return imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`;
+      }
+      
+      // For direct structure
+      if (item.image) {
+        // Use medium format if available, otherwise use the main URL
+        const imageUrl = item.image.formats?.medium?.url || item.image.url;
+        return imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`;
+      }
+      
+      // Fallback to default image
+      return '/images/collections/default.jpg';
     };
 
     fetchCollections();
@@ -72,54 +99,40 @@ export default function Collections() {
                 nextEl: ".snbn3",
               }}
             >
-              {loading ? (
-                <SwiperSlide>
-                  <div className="collection-circle hover-img">
-                    <div className="img-style radius-12 d-flex align-items-center justify-content-center" style={{backgroundColor: '#f5f5f5'}}>
-                      <span>Loading collections...</span>
-                    </div>
-                  </div>
-                </SwiperSlide>
-              ) : collections.length > 0 ? (
-                collections.map((collection, index) => {
-                  const collectionName = collection.name || 'Unnamed Collection';
-                  const collectionSlug = collection.slug || `collection-${collection.id}`;
-                  const collectionImage = collection.image?.url || '/images/collections/default.jpg';
-                  
-                  return (
-                    <SwiperSlide key={collection.id}>
-                      <div className="collection-circle hover-img">
-                        <Link
-                          href={`/collections/${collectionSlug}`}
-                          className="img-style radius-12"
-                        >
-                          <Image
-                            className="lazyload"
-                            data-src={collectionImage}
-                            alt={`${collectionName} collection`}
-                            src={collectionImage}
-                            width={468}
-                            height={624}
-                            style={{ objectFit: "cover" }}
-                          />
-                        </Link>
-                        <div className="collection-content text-center">
-                          <div>
-                            <Link href={`/collections/${collectionSlug}`} className="cls-title">
-                              <h6 className="text">{collectionName}</h6>
-                              <i className="icon icon-arrowUpRight" />
-                            </Link>
-                          </div>
+              {collections.length > 0 ? (
+                collections.map((collection, index) => (
+                  <SwiperSlide key={collection.id}>
+                    <div className="collection-circle hover-img">
+                      <Link
+                        href={`/collections/${collection.slug}`}
+                        className="img-style radius-12"
+                      >
+                        <Image
+                          className="lazyload"
+                          data-src={collection.image}
+                          alt={`${collection.name} collection`}
+                          src={collection.image}
+                          width={468}
+                          height={624}
+                          style={{ objectFit: "cover" }}
+                        />
+                      </Link>
+                      <div className="collection-content text-center">
+                        <div>
+                          <Link href={`/collections/${collection.slug}`} className="cls-title">
+                            <h6 className="text">{collection.name}</h6>
+                            <i className="icon icon-arrowUpRight" />
+                          </Link>
                         </div>
                       </div>
-                    </SwiperSlide>
-                  );
-                })
+                    </div>
+                  </SwiperSlide>
+                ))
               ) : (
                 <SwiperSlide>
                   <div className="collection-circle hover-img">
                     <div className="img-style radius-12 d-flex align-items-center justify-content-center" style={{backgroundColor: '#f5f5f5'}}>
-                      <span>No collections available</span>
+                      <span>No kids collections available</span>
                     </div>
                   </div>
                 </SwiperSlide>

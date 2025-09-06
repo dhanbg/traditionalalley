@@ -127,8 +127,8 @@ export default function TopPicks({ parentClass = "flat-spacing-3 pt-5 pb-2" }) {
                           spaceBetween: 15,
                         },
                         0: {
-                          slidesPerView: 1, // For small mobile screens
-                          spaceBetween: 15,
+                          slidesPerView: 2, // For small mobile screens - show 2 cards per row
+                          spaceBetween: 10,
                         },
                       }}
                       modules={[Pagination, Navigation]}
