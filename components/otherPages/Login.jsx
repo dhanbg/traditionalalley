@@ -74,7 +74,7 @@ export default function Login() {
             {providers && (
               <div className="oauth-providers mb-4">
                 {Object.values(providers).map((provider) => {
-                  if (provider.id === "credentials") return null;
+                  if (provider.id === "credentials" || provider.id === "github") return null;
                   
                   return (
                     <button

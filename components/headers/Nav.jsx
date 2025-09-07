@@ -173,15 +173,15 @@ export default function Nav() {
         </div>
       </li>
 
-      {/* Kids Collections */}
-      <li className={pathname.startsWith("/kids") ? "active" : ""}>
+      {/* Kids Collections - Hidden as no kids products available */}
+      {/* <li className={pathname.startsWith("/kids") ? "active" : ""}>
         <div className="tf-list-categories">
           <div className="categories-title">
             <Link href="/kids" className="item-link">Kids</Link>
           </div>
           {renderCollectionsList(getNavigationData().kids)}
         </div>
-      </li>
+      </li> */}
 
       {/* Blog List section */}
       <li

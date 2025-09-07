@@ -1,9 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
-import { Navigation, Pagination } from "swiper/modules";
+// Removed Swiper imports - now using grid layout
 import { fetchDataFromApi } from "@/utils/api";
 import { API_URL } from "@/utils/urls";
 export default function Collections() {
@@ -53,47 +52,17 @@ export default function Collections() {
         <div className="heading-section text-center wow fadeInUp">
           <h3 className="heading">Explore Collections</h3>
           <p className="subheading">
-            Browse our Top Trending: the hottest picks loved by al
+            Discover our curated collections: handpicked styles for every occasion
           </p>
         </div>
         <div
-          className="flat-collection-circle wow fadeInUp"
+          className="flat-collection-grid wow fadeInUp"
           data-wow-delay="0.1s"
         >
-          <div dir="ltr" className="swiper tf-sw-collection">
-            <Swiper
-              slidesPerView={5} // For default screens (large screens)
-              spaceBetween={15} // Default space between slides
-              breakpoints={{
-                1200: {
-                  slidesPerView: 5, // For large screens
-                  spaceBetween: 20, // Larger space on larger screens
-                },
-                992: {
-                  slidesPerView: 4, // For medium (tablet) screens
-                  spaceBetween: 20,
-                },
-                768: {
-                  slidesPerView: 3, // For mobile screens
-                  spaceBetween: 15,
-                },
-                0: {
-                  slidesPerView: 2, // For mobile screens
-                  spaceBetween: 15,
-                },
-              }}
-              modules={[Pagination, Navigation]}
-              pagination={{
-                clickable: true,
-                el: ".spd8",
-              }}
-              navigation={{
-                prevEl: ".snbp3",
-                nextEl: ".snbn3",
-              }}
-            >
+          <div className="collections-grid-container">
+            <div className="row g-3">
               {collections.map((collection, index) => (
-                <SwiperSlide key={index}>
+                <div key={index} className="col-lg-3 col-md-4 col-sm-6 col-6">
                   <div className="collection-circle hover-img">
                     <Link
                       href={`/shop-default-grid-women?collectionId=${collection.id}`}
@@ -125,16 +94,9 @@ export default function Collections() {
                       </div> */}
                     </div>
                   </div>
-                </SwiperSlide>
+                </div>
               ))}
-            </Swiper>
-            <div className="d-flex d-lg-none sw-pagination-collection sw-dots type-circle justify-content-center spd8" />
-          </div>
-          <div className="nav-prev-collection d-none d-lg-flex nav-sw style-line nav-sw-left snbp3">
-            <i className="icon icon-arrLeft" />
-          </div>
-          <div className="nav-next-collection d-none d-lg-flex nav-sw style-line nav-sw-right snbn3">
-            <i className="icon icon-arrRight" />
+            </div>
           </div>
         </div>
       </div>

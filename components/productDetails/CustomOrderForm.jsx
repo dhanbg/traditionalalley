@@ -155,7 +155,7 @@ export default function CustomOrderForm({ isOpen, onClose, product }) {
   const viberUrl = `viber://chat?number=${viberNumber}`;
 
   // Image for size customization
-  const sizeChartImageUrl = `${API_URL}/uploads/inverted_triangle_bacba040fd.jpg`;
+  const sizeChartImageUrl = "/inverted_triangle.jpg";
 
   return (
     <>

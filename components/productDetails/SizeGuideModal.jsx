@@ -44,7 +44,7 @@ export default function SizeGuideModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   // Image for size chart
-  const sizeChartImageUrl = `${API_URL}/uploads/inverted_triangle_bacba040fd.jpg`;
+  const sizeChartImageUrl = "/inverted_triangle.jpg";
 
   return (
     <>
@@ -217,36 +217,36 @@ export default function SizeGuideModal({ isOpen, onClose }) {
                   <tr style={{ borderBottom: "1px solid #eee" }}>
                     <td style={{ padding: "12px", fontWeight: "500" }}>S</td>
                     <td style={{ padding: "12px" }}>4</td>
-                    <td style={{ padding: "12px" }}>26 - 27</td>
                     <td style={{ padding: "12px" }}>34 - 35</td>
-                    <td style={{ padding: "12px" }}>35 - 26</td>
+                    <td style={{ padding: "12px" }}>26 - 27</td>
+                    <td style={{ padding: "12px" }}>35 - 36</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid #eee" }}>
                     <td style={{ padding: "12px", fontWeight: "500" }}>M</td>
                     <td style={{ padding: "12px" }}>6</td>
-                    <td style={{ padding: "12px" }}>28 - 29</td>
                     <td style={{ padding: "12px" }}>36 - 37</td>
+                    <td style={{ padding: "12px" }}>28 - 29</td>
                     <td style={{ padding: "12px" }}>38 - 40</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid #eee" }}>
                     <td style={{ padding: "12px", fontWeight: "500" }}>L</td>
                     <td style={{ padding: "12px" }}>8</td>
+                    <td style={{ padding: "12px" }}>38 - 40</td>
                     <td style={{ padding: "12px" }}>30 - 31</td>
-                    <td style={{ padding: "12px" }}>38 - 29</td>
                     <td style={{ padding: "12px" }}>42 - 44</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid #eee" }}>
                     <td style={{ padding: "12px", fontWeight: "500" }}>XL</td>
                     <td style={{ padding: "12px" }}>10</td>
-                    <td style={{ padding: "12px" }}>32 - 33</td>
                     <td style={{ padding: "12px" }}>40 - 41</td>
+                    <td style={{ padding: "12px" }}>32 - 33</td>
                     <td style={{ padding: "12px" }}>45 - 47</td>
                   </tr>
                   <tr style={{ borderBottom: "1px solid #eee" }}>
                     <td style={{ padding: "12px", fontWeight: "500" }}>XXL</td>
                     <td style={{ padding: "12px" }}>12</td>
-                    <td style={{ padding: "12px" }}>34 - 35</td>
                     <td style={{ padding: "12px" }}>42 - 43</td>
+                    <td style={{ padding: "12px" }}>34 - 35</td>
                     <td style={{ padding: "12px" }}>48 - 50</td>
                   </tr>
                 </tbody>
@@ -363,4 +363,4 @@ export default function SizeGuideModal({ isOpen, onClose }) {
       )}
     </>
   );
-} 
+}

@@ -558,8 +558,8 @@ const MobileMenu = React.memo(function MobileMenu() {
                   )}
                 </li>
 
-                {/* Kids */}
-                <li className="menu-item-enter" style={{
+                {/* Kids - Hidden as no kids products available */}
+                {/* <li className="menu-item-enter" style={{
                   marginBottom: '8px',
                   borderRadius: '12px',
                   overflow: 'hidden',
@@ -679,7 +679,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                       ))}
                     </ul>
                   )}
-                </li>
+                </li> */}
 
                 {/* Wishlist */}
                 <li className="menu-item-enter" style={{
@@ -722,6 +722,78 @@ const MobileMenu = React.memo(function MobileMenu() {
                     <span>Wishlist</span>
                   </Link>
                 </li>
+
+                {/* My Account */}
+                {session && (
+                  <li className="menu-item-enter" style={{
+                    marginBottom: '8px',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}>
+                    <Link 
+                      href="/my-account" 
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '16px 20px',
+                        fontSize: '16px',
+                        fontWeight: '500',
+                        color: 'var(--main)',
+                        textDecoration: 'none',
+                        background: 'linear-gradient(135deg, #F8FAFC 0%, #EDF2F7 100%)',
+                        border: '1px solid var(--line)',
+                        borderRadius: '12px',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        fontFamily: '"Kumbh Sans", sans-serif',
+                        position: 'relative',
+                        overflow: 'hidden'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.background = 'linear-gradient(135deg, var(--primary-rgba-1) 0%, var(--primary-rgba-05) 100%)';
+                        e.target.style.color = 'var(--primary)';
+                        e.target.style.transform = 'translateY(-2px)';
+                        e.target.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.background = 'linear-gradient(135deg, #F8FAFC 0%, #EDF2F7 100%)';
+                        e.target.style.color = 'var(--main)';
+                        e.target.style.transform = 'translateY(0)';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    >
+                      <svg 
+                        width="20" 
+                        height="20" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        xmlns="http://www.w3.org/2000/svg"
+                        style={{
+                          marginRight: '12px',
+                          flexShrink: 0
+                        }}
+                      >
+                        <path 
+                          d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" 
+                          stroke="currentColor" 
+                          strokeWidth="2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                        />
+                        <circle 
+                          cx="12" 
+                          cy="7" 
+                          r="4" 
+                          stroke="currentColor" 
+                          strokeWidth="2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <span>My Account</span>
+                    </Link>
+                  </li>
+                )}
 
                 {/* Login/Logout */}
                 {!session ? (
@@ -1050,11 +1122,11 @@ const MobileMenu = React.memo(function MobileMenu() {
                       marginRight: '12px',
                       fontSize: '16px'
                     }}>✉️</span>
-                    <a href="mailto:traditionalalley.com.np" style={{
+                    <a href="mailto:contact@traditionalalley.com.np" style={{
                       color: 'var(--primary)',
                       textDecoration: 'none',
                       fontWeight: '500'
-                    }}>traditionalalley.com.np</a>
+                    }}>contact@traditionalalley.com.np</a>
                   </div>
                   <div style={{
                     display: 'flex',

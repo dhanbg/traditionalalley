@@ -330,10 +330,10 @@ export default function ToReview() {
                   <div className="product-info flex-grow-1">
                     <h6 className="product-title">{product.details?.title || 'Product Name'}</h6>
                     <div className="product-details">
-                      <p className="mb-1"><strong>Size:</strong> {product.size}</p>
-                      <p className="mb-1"><strong>Color:</strong> {product.color}</p>
-                      <p className="mb-1"><strong>Quantity:</strong> {product.quantity}</p>
-                      <p className="mb-1"><strong>Price:</strong> ${product.unitPrice}</p>
+                      <p className="mb-1"><strong>Size:</strong> {product.selectedVariant?.size || product.selectedSize || 'N/A'}</p>
+                      <p className="mb-1"><strong>Color:</strong> {product.selectedVariant?.color && product.selectedVariant.color !== 'default' ? product.selectedVariant.color : 'N/A'}</p>
+                      <p className="mb-1"><strong>Quantity:</strong> {product.pricing?.quantity || 1}</p>
+                      <p className="mb-1"><strong>Price:</strong> ${product.pricing?.currentPrice || product.price}</p>
                       <p className="mb-1"><strong>Purchased on:</strong> {formatDate(product.orderDate)}</p>
                     </div>
                     
@@ -475,4 +475,4 @@ export default function ToReview() {
       </div>
     </div>
   );
-} 
+}

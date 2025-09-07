@@ -41,7 +41,7 @@ export default function ReturnPolicies() {
       <section style={{ marginBottom: "20px" }}>
         <h3 style={{ marginBottom: "12px", fontSize: "16px" }}>How to Exchange</h3>
         <ol style={{ paddingLeft: "20px", margin: "0", fontSize: "14px" }}>
-          <li style={{ marginBottom: "6px" }}>Contact support@traditionalalley.com.np within 12 days</li>
+          <li style={{ marginBottom: "6px" }}>Contact contact@traditionalalley.com.np within 12 days</li>
           <li style={{ marginBottom: "6px" }}>Provide order number and exchange reason</li>
           <li style={{ marginBottom: "6px" }}>Ship item back with original packaging</li>
           <li style={{ marginBottom: "0" }}>Receive replacement item (7-10 business days)</li>

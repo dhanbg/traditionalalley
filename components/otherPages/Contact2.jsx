@@ -119,7 +119,7 @@ export default function Contact2() {
             </div>
             <div className="mb_20">
               <div className="text-title mb_8">Email:</div>
-              <p className="text-secondary">traditionalalley.com.np</p>
+              <p className="text-secondary">contact@traditionalalley.com.np</p>
             </div>
             <div className="mb_20">
               <div className="text-title mb_8">Address:</div>

@@ -1,6 +1,5 @@
 import type { NextAuthConfig, DefaultSession } from "next-auth"
 import Google from "next-auth/providers/google"
-import GitHub from "next-auth/providers/github"
 import Credentials from "next-auth/providers/credentials"
 
 declare module "next-auth" {
@@ -28,10 +27,6 @@ export default {
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    }),
-    GitHub({
-      clientId: process.env.GITHUB_CLIENT_ID,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET,
     }),
     Credentials({
       name: "credentials",
@@ -137,7 +132,7 @@ export default {
       // Use consistent ID based on provider
       if (account && user) {
         // For OAuth providers, use the provider's account ID as a stable identifier
-        if (account.provider === 'google' || account.provider === 'github') {
+        if (account.provider === 'google') {
           token.id = `${account.provider}_${account.providerAccountId}`
         } else {
           // For credentials provider, use the user.id

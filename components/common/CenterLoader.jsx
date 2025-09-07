@@ -43,6 +43,10 @@ export default function CenterLoader() {
     // Listen for form submissions that might trigger navigation
     const handleFormSubmit = (e) => {
       const form = e.target;
+      // Skip loading for search forms or forms marked to skip loading
+      if (form.dataset.skipLoading === 'true' || form.classList.contains('search-form')) {
+        return;
+      }
       if (form.method === 'get' || !form.action.includes('#')) {
         setIsLoading(true);
       }

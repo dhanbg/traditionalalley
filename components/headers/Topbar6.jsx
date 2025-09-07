@@ -38,7 +38,7 @@ export default function Topbar6({ bgColor = "bg-blue-2" }) {
                 }}
               />
               <a className="text-caption-1 text-white" href="#">
-                traditionalalley.com.np
+                contact@traditionalalley.com.np
               </a>
             </li>
           </ul>

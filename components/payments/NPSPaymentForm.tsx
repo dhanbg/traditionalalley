@@ -1,6 +1,7 @@
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { useNPS } from "@/utils/useNPS";
+import { useContextElement } from "@/context/Context";
 
 interface NPSPaymentFormProps {
   amount: number;
@@ -14,6 +15,7 @@ interface NPSPaymentFormProps {
 
 export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, transactionRemarks, disabled = false, shippingRatesObtained = false }: NPSPaymentFormProps) {
   const { data: session } = useSession();
+  const { userCurrency } = useContextElement();
   const [isLoading, setIsLoading] = useState(false);
   
   // Use the NPS hook with proper redirect handling
@@ -82,6 +84,25 @@ export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, 
           </span>
         </div>
       )}
+      
+      {/* Currency conversion notice - only show in USD mode */}
+      {userCurrency === 'USD' && (
+        <div style={{
+          background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+          border: '1px solid #2196f3',
+          borderRadius: '8px',
+          padding: '12px 16px',
+          marginBottom: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span style={{ fontSize: '16px' }}>💱</span>
+          <span style={{ color: '#1565c0', fontSize: '14px', fontWeight: '500' }}>
+            Your amount is converted to Nepali currency for payment processing
+          </span>
+        </div>
+      )}
       <button
         onClick={handlePayment}
         disabled={isLoading || !session?.user || disabled || !shippingRatesObtained}
@@ -91,7 +112,7 @@ export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, 
           cursor: (!shippingRatesObtained || disabled) ? 'not-allowed' : 'pointer'
         }}
       >
-        {isLoading ? "Processing..." : `Pay $${amount}`}
+        {isLoading ? "Processing..." : `Pay Rs.${amount}`}
       </button>
     </div>
   );

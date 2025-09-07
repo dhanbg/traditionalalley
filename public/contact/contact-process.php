@@ -1,6 +1,6 @@
 <?php
 
-$address = "traditionalalley.com.np";
+$address = "contact@traditionalalley.com.np";
 if (!defined("PHP_EOL")) define("PHP_EOL", "\r\n");
 
 $error = false;

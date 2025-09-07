@@ -115,7 +115,7 @@ export default function Footer1({
                     <ul className="footer-info">
                       <li>
                         <i className="icon-mail" />
-                        <p>traditionaalley.com.np</p>
+                        <p>contact@traditionalalley.com.np</p>
                       </li>
                       <li>
                         <i className="icon-phone" />
@@ -267,7 +267,7 @@ export default function Footer1({
                   <div className="footer-bottom-wrap">
                     <div className="left">
                       <p className="text-caption-1">
-                        ©{new Date().getFullYear()} Traditional Allay. All Rights Reserved.
+                        ©{new Date().getFullYear()} Traditional Alley. All Rights Reserved.
                       </p>
                     </div>
                     <div className="tf-payment">
@@ -286,38 +286,6 @@ export default function Footer1({
                             alt=""
                             src="/images/payment/img-2.png"
                             width={100}
-                            height={64}
-                          />
-                        </li>
-                        <li>
-                          <Image
-                            alt=""
-                            src="/images/payment/img-3.png"
-                            width={100}
-                            height={64}
-                          />
-                        </li>
-                        <li>
-                          <Image
-                            alt=""
-                            src="/images/payment/img-4.png"
-                            width={98}
-                            height={64}
-                          />
-                        </li>
-                        <li>
-                          <Image
-                            alt=""
-                            src="/images/payment/img-5.png"
-                            width={102}
-                            height={64}
-                          />
-                        </li>
-                        <li>
-                          <Image
-                            alt=""
-                            src="/images/payment/img-6.png"
-                            width={98}
                             height={64}
                           />
                         </li>

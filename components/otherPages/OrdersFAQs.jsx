@@ -109,7 +109,7 @@ export default function OrdersFAQs() {
                   <p style={{ marginBottom: '20px', lineHeight: '1.6' }}>A: Click on 'Forgot Password' on the login page, enter your email address, and we'll send you a password reset link.</p>
                   
                   <p style={{ marginBottom: '15px', lineHeight: '1.6' }}><strong>Q: How can I contact customer service?</strong></p>
-                  <p style={{ marginBottom: '20px', lineHeight: '1.6' }}>A: You can reach us via email at support@traditionalalley.com.np, call our customer service line, or use the live chat feature on our website during business hours.</p>
+                  <p style={{ marginBottom: '20px', lineHeight: '1.6' }}>A: You can reach us via email at contact@traditionalalley.com.np, call our customer service line, or use the live chat feature on our website during business hours.</p>
                   
                   <p style={{ marginBottom: '15px', lineHeight: '1.6' }}><strong>Q: What are your customer service hours?</strong></p>
                   <p style={{ marginBottom: '20px', lineHeight: '1.6' }}>A: Our customer service team is available Sunday to Friday, 9 AM to 6 PM (Nepal Time). We respond to emails within 24 hours during business days.</p>

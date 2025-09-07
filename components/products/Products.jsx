@@ -15,7 +15,7 @@ import { calculateInStock } from "@/utils/stockUtils";
 import { getImageUrl } from "@/utils/imageUtils";
 import { useSearchParams } from 'next/navigation';
 import { getBestImageUrl } from "@/utils/imageUtils";
-import { fetchProductsWithVariantsByCategory } from "@/utils/productVariantUtils";
+import { fetchProductsWithVariantsByCategory, fetchProductsWithVariantsByCollection } from "@/utils/productVariantUtils";
 
 // Default placeholder image
 const DEFAULT_IMAGE = '/logo.png';
@@ -199,27 +199,24 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
   useEffect(() => {
     const fetchCollectionProducts = async () => {
       try {
-        // Use the collection slug to fetch the specific collection
-        const response = await fetchDataFromApi(COLLECTION_BY_SLUG_API(collection));
+        setLoading(true);
         
-        if (response.data && response.data.length > 0) {
-          // Get the first matching collection
-          const collectionItem = response.data[0];
-          setCollectionData([collectionItem]);
+        // Use the new function that fetches products with variants for collections
+        const productsWithVariants = await fetchProductsWithVariantsByCollection(collection);
+        
+        if (productsWithVariants && productsWithVariants.length > 0) {
+          // Set the products directly since they're already transformed
+          setProductDetails(productsWithVariants);
           
-          // Products are directly in the collection.products array
-          const products = collectionItem.products || [];
-          
-          // Extract document IDs from products
-          const productDocumentIds = products.map(product => product.documentId);
-          
-          setCollectionProducts(products);
-          
-          // Fetch product details for each document ID
-          await fetchProductsByDocumentIds(productDocumentIds);
+          // Update the filtered and sorted state
+          dispatch({ type: "SET_FILTERED", payload: productsWithVariants });
+          dispatch({ type: "SET_SORTED", payload: productsWithVariants });
         }
+        
+        setLoading(false);
       } catch (error) {
         // Silently handle error - removed console.error
+        setLoading(false);
       }
     };
 

@@ -394,3 +394,91 @@ export async function fetchSingleProductWithVariants(productId) {
     return [];
   }
 }
+
+/**
+ * Fetch products with variants for a specific collection by slug
+ * @param {string} collectionSlug - The collection slug
+ * @returns {Promise<Array>} Array of products and variants
+ */
+export async function fetchProductsWithVariantsByCollection(collectionSlug) {
+  try {
+    // First, get the collection data
+    const collectionResponse = await fetchDataFromApi(`/api/collections?filters[slug][$eq]=${collectionSlug}&populate=products`);
+    
+    if (!collectionResponse.data || collectionResponse.data.length === 0) {
+      return [];
+    }
+
+    const collection = collectionResponse.data[0];
+    const products = collection.products || [];
+    
+    if (products.length === 0) {
+      return [];
+    }
+
+    const allItems = [];
+
+    // Process each product in the collection
+    for (const product of products) {
+      if (!product || !product.documentId) continue;
+
+      try {
+        // Fetch full product details
+        const productResponse = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${product.documentId}&populate=*`);
+        
+        if (!productResponse.data || productResponse.data.length === 0) continue;
+        
+        const rawProduct = productResponse.data[0];
+        
+        // Transform main product
+        const transformedProduct = transformProductForListing(rawProduct);
+        
+        // Only include active products
+        if (transformedProduct.isActive !== false) {
+          allItems.push({
+            ...transformedProduct,
+            itemType: 'product',
+            parentProductId: rawProduct.documentId,
+            isMainProduct: true
+          });
+        }
+
+        // Fetch variants for this product
+        try {
+          const variantsResponse = await fetchDataFromApi(
+            `/api/product-variants?filters[product][documentId][$eq]=${rawProduct.documentId}&populate=*`
+          );
+
+          if (variantsResponse.data && variantsResponse.data.length > 0) {
+            // Transform each variant as a separate item
+            for (const rawVariant of variantsResponse.data) {
+              const transformedVariant = transformVariantForListing(rawVariant, rawProduct);
+              
+              // Only include active variants
+              if (transformedVariant.isActive !== false) {
+                allItems.push({
+                  ...transformedVariant,
+                  itemType: 'variant',
+                  parentProductId: rawProduct.documentId,
+                  isMainProduct: false
+                });
+              }
+            }
+          }
+        } catch (variantError) {
+          // Silently handle variants not found - this is expected for products without variants
+          if (variantError.status !== 404) {
+            console.error(`Error fetching variants for product ${rawProduct.documentId}:`, variantError);
+          }
+        }
+      } catch (productError) {
+        console.error(`Error fetching product details for ${product.documentId}:`, productError);
+      }
+    }
+
+    return allItems;
+  } catch (error) {
+    console.error('Error fetching collection products with variants:', error);
+    return [];
+  }
+}

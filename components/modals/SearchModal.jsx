@@ -36,7 +36,6 @@ export default function SearchModal() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
 
@@ -70,35 +69,56 @@ export default function SearchModal() {
     }
   }, []);
 
-  // Handle search submission
-  const handleSearch = async (e) => {
+  // Handle search submission (now just prevents default form behavior)
+  const handleSearch = (e) => {
     e.preventDefault();
-    
-    if (!searchQuery.trim()) return;
-    
-    setSearching(true);
-    setLoading(true);
-    
-    try {
-      // Use the new search utility that includes both products and variants
-      const searchResults = await searchProductsWithVariants(searchQuery);
-      setSearchResults(searchResults);
-    } catch (error) {
-      console.error("Error searching products with variants:", error);
-      setSearchResults([]);
-    } finally {
-      setLoading(false);
-    }
+    // Search is now handled by handleInputChange as user types
   };
 
-  // Handle input change
+  // Debounce timer for search
+  const [searchTimeout, setSearchTimeout] = useState(null);
+
+  // Handle input change with debounced real-time search
   const handleInputChange = (e) => {
-    setSearchQuery(e.target.value);
-    if (e.target.value.trim() === "") {
+    const query = e.target.value;
+    setSearchQuery(query);
+    
+    // Clear existing timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    
+    if (query.trim() === "") {
       setSearching(false);
       setSearchResults([]);
+      return;
     }
+    
+    // Set new timeout for debounced search
+    const newTimeout = setTimeout(async () => {
+      setSearching(true);
+      
+      try {
+        // Use the new search utility that includes both products and variants
+        const searchResults = await searchProductsWithVariants(query);
+        setSearchResults(searchResults);
+      } catch (error) {
+        console.error("Error searching products with variants:", error);
+        setSearchResults([]);
+      }
+    }, 300); // 300ms delay
+    
+    setSearchTimeout(newTimeout);
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [searchTimeout]);
 
   // Navigate to product detail
   const navigateToProduct = (product) => {
@@ -128,7 +148,6 @@ export default function SearchModal() {
 
   // Load more results
   const handleLoadMore = async () => {
-    setLoading(true);
     try {
       const currentCount = searchResults.length;
       const res = await fetchDataFromApi(`${SEARCH_PRODUCTS_API(searchQuery)}&pagination[start]=${currentCount}&pagination[limit]=8`);
@@ -139,8 +158,6 @@ export default function SearchModal() {
       setSearchResults(prev => [...prev, ...filteredResults]);
     } catch (error) {
       console.error("Error loading more products:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -156,7 +173,7 @@ export default function SearchModal() {
             />
           </div>
 
-          <form className="form-search" onSubmit={handleSearch}>
+          <form className="form-search search-form" onSubmit={handleSearch}>
             <fieldset className="text">
               <input
                 type="text"
@@ -170,7 +187,7 @@ export default function SearchModal() {
                 required
               />
             </fieldset>
-            <button className="" type="submit" disabled={loading}>
+            <button className="" type="submit">
               <svg
                 className="icon"
                 width={20}
@@ -197,15 +214,9 @@ export default function SearchModal() {
             </button>
           </form>
 
-          {loading && (
-            <div className="text-center my-4">
-              <div className="spinner-border" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
-            </div>
-          )}
 
-          {searching && !loading && searchResults.length === 0 && (
+
+          {searching && searchResults.length === 0 && (
             <div className="text-center my-4">
               <p>No products found matching "{searchQuery}"</p>
             </div>
@@ -228,10 +239,7 @@ export default function SearchModal() {
                   onClick={handleLoadMore}
                 >
                   <button
-                    className={`tf-loading btn-loadmore tf-btn btn-reset ${
-                      loading ? "loading" : ""
-                    }`}
-                    disabled={loading}
+                    className="tf-loading btn-loadmore tf-btn btn-reset"
                   >
                     <span className="text text-btn text-btn-uppercase">
                       Load more

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 export default function SizeGuide() {
   const [rangeValue1, setRangeValue1] = useState(50);
@@ -149,6 +150,41 @@ export default function SizeGuide() {
                   activeTab == 2 ? "active" : ""
                 } `}
               >
+                {/* Size measurement diagram */}
+                <div style={{ 
+                  textAlign: "center", 
+                  marginBottom: "20px", 
+                  padding: "10px",
+                  backgroundColor: "#f9f9f9",
+                  borderRadius: "8px"
+                }}>
+                  <div 
+                    style={{ 
+                      position: "relative", 
+                      width: "100%", 
+                      height: "200px", 
+                      marginBottom: "10px"
+                    }}
+                  >
+                    <Image 
+                      src="/inverted_triangle.jpg"
+                      alt="Body Measurement Diagram"
+                      fill
+                      style={{ 
+                        objectFit: "contain"
+                      }}
+                    />
+                  </div>
+                  <p style={{ 
+                    fontSize: "12px", 
+                    fontStyle: "italic", 
+                    color: "#666",
+                    margin: "0"
+                  }}>
+                    Reference body measurement guide
+                  </p>
+                </div>
+                
                 <table className="tab-sizeguide-table">
                   <thead>
                     <tr>
@@ -170,36 +206,36 @@ export default function SizeGuide() {
                     <tr>
                       <td>S</td>
                       <td>4</td>
-                      <td>26 - 27</td>
                       <td>34 - 35</td>
-                      <td>35 - 26</td>
+                      <td>26 - 27</td>
+                      <td>35 - 36</td>
                     </tr>
                     <tr>
                       <td>M</td>
                       <td>6</td>
-                      <td>28 - 29</td>
                       <td>36 - 37</td>
+                      <td>28 - 29</td>
                       <td>38 - 40</td>
                     </tr>
                     <tr>
                       <td>L</td>
                       <td>8</td>
+                      <td>38 - 40</td>
                       <td>30 - 31</td>
-                      <td>38 - 29</td>
                       <td>42 - 44</td>
                     </tr>
                     <tr>
                       <td>XL</td>
                       <td>10</td>
-                      <td>32 - 33</td>
                       <td>40 - 41</td>
+                      <td>32 - 33</td>
                       <td>45 - 47</td>
                     </tr>
                     <tr>
                       <td>XXL</td>
                       <td>12</td>
-                      <td>34 - 35</td>
                       <td>42 - 43</td>
+                      <td>34 - 35</td>
                       <td>48 - 50</td>
                     </tr>
                   </tbody>
