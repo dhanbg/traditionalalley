@@ -301,10 +301,10 @@ function transformVariantForListing(rawVariant, parentProduct) {
     };
   }
 
-  // Create a title that includes the variant info
-  const variantTitle = rawVariant.design 
-    ? `${parentProduct.title} - ${rawVariant.design}`
-    : `${parentProduct.title} (Variant)`;
+  // Use variant title if available, otherwise fall back to main product title
+  const variantTitle = rawVariant.title && rawVariant.title.trim() !== '' 
+    ? rawVariant.title
+    : parentProduct.title || "Untitled Product";
 
   return {
     id: rawVariant.id,

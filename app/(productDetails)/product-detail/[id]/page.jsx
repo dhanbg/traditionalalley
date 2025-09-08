@@ -12,10 +12,50 @@ import { calculateInStock } from "@/utils/stockUtils";
 import React from "react";
 import Link from "next/link";
 
-export const metadata = {
-  title: "Product Detail || Traditional Alley",
-  description: "Traditional Alley - Product Detail Page",
-};
+export async function generateMetadata({ params }) {
+  const { id } = await params;
+  
+  try {
+    // Fetch product data for metadata
+    const timestamp = Date.now();
+    const response = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*&timestamp=${timestamp}`);
+    
+    if (response.data && response.data.length > 0) {
+      const rawProduct = response.data[0];
+      const product = transformProduct(rawProduct);
+      
+      if (product && product.isActive !== false) {
+        const title = `${product.title} | Traditional Alley`;
+        const description = product.description 
+          ? `${product.description.substring(0, 155)}...` 
+          : `Shop ${product.title} at Traditional Alley. Premium quality traditional and modern fashion.`;
+        
+        return {
+          title,
+          description,
+          openGraph: {
+            title,
+            description,
+            images: product.imgSrc?.url ? [{
+              url: product.imgSrc.url.startsWith('http') ? product.imgSrc.url : `${API_URL}${product.imgSrc.url}`,
+              width: 800,
+              height: 600,
+              alt: product.title
+            }] : []
+          }
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Error generating metadata:', error);
+  }
+  
+  // Fallback metadata
+  return {
+    title: "Product Detail | Traditional Alley",
+    description: "Traditional Alley - Premium quality traditional and modern fashion.",
+  };
+}
 
 export default async function page({ params, searchParams }) {
   const { id } = await params;
@@ -306,9 +346,15 @@ function transformVariant(rawVariant) {
       }) 
     : [];
   
+  // Use variant title if available, otherwise fall back to main product title
+  const variantTitle = rawVariant.title && rawVariant.title.trim() !== '' 
+    ? rawVariant.title
+    : (rawVariant.product?.title || "Untitled Product");
+
   return {
     id: rawVariant.id || rawVariant.documentId,
     documentId: rawVariant.documentId, // Preserve documentId for stock operations
+    title: variantTitle, // Add title field
     design: rawVariant.design || null, // Include the design field
     color, // New color image field
     imgSrc,

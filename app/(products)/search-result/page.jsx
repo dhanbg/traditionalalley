@@ -4,6 +4,11 @@ import Topbar6 from "@/components/headers/Topbar6";
 import SearchProducts from "@/components/products/SearchProducts";
 import React from "react";
 
+export const metadata = {
+  title: "Search Results | Traditional Alley",
+  description: "Find your perfect fashion items with our search results. Browse through our collection of traditional and modern clothing at Traditional Alley.",
+};
+
 export default function page() {
   return (
     <>

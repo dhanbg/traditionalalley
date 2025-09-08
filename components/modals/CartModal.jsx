@@ -702,7 +702,7 @@ export default function CartModal() {
                                 className="link text-line-clamp-2"
                                 href={`/product-detail/${elm.documentId || elm.baseProductId}`}
                                   >
-                                {elm.title ? elm.title.replace(' (Variant)', '').replace(/ - [^-]+$/, '') : 'Product'}
+                                {elm.title || 'Product'}
                                   </Link>
                                 </div>
                             <div className="quantity-display-wrapper">

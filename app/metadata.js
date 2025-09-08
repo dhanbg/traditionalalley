@@ -1,6 +1,5 @@
-import HomeClient from './home-client';
-
-export const metadata = {
+// Default metadata configuration for the application
+export const defaultMetadata = {
   title: "Traditional Alley - Premium Fashion & Traditional Clothing",
   description: "Discover premium quality traditional and modern fashion at Traditional Alley. Shop our exclusive collection of clothing, accessories, and more with authentic craftsmanship.",
   keywords: "traditional clothing, fashion, premium quality, authentic craftsmanship, modern fashion, traditional alley",
@@ -21,7 +20,3 @@ export const metadata = {
     follow: true,
   },
 };
-
-export default function HomePage() {
-  return <HomeClient />;
-}

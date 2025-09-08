@@ -365,7 +365,7 @@ export default function ShopCart() {
                                 href={`/product-detail/${elm.documentId || elm.baseProductId}`}
                                 className="cart-title link"
                               >
-                                {elm.title ? elm.title.replace(' (Variant)', '').replace(/ - [^-]+$/, '') : 'Product'}
+                                {elm.title || 'Product'}
                               </Link>
 
                               {elm.selectedSize && (

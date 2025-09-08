@@ -98,13 +98,15 @@ export default function ColorVariantSelect({
 
   // Determine the main product documentId for variants (same logic as ProductCard1)
   const getMainProductId = (productData) => {
-    const isVariantProduct = productData.title && productData.title.includes('(Variant)');
+    // Check if this is a variant by looking for parent product relationship
+    const isVariantProduct = productData.parentProduct || (productData.product && productData.product.documentId);
     
     console.log('🔍 ColorVariantSelect getMainProductId Debug:', {
       title: productData.title,
       id: productData.id,
       documentId: productData.documentId,
       isVariantProduct,
+      parentProduct: productData.parentProduct,
       fullProductData: productData
     });
     
@@ -131,7 +133,7 @@ export default function ColorVariantSelect({
     // If this variant represents a different product, navigate to it
     if (variant.product?.documentId && variant.product.documentId !== currentProductId) {
       const mainProductId = getMainProductId(variant.product);
-      const isVariant = variant.product.title && variant.product.title.includes('(Variant)');
+      const isVariant = variant.product.parentProduct || (variant.product.product && variant.product.product.documentId);
       const variantParam = isVariant ? `?variant=${variant.product.documentId}` : '';
       const targetUrl = `/product-detail/${mainProductId}${variantParam}`;
       

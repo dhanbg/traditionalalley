@@ -611,7 +611,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
             e.stopPropagation();
           }}
         >
-          {safeProduct.title ? safeProduct.title.replace(' (Variant)', '').replace(/ - [^-]+$/, '') : 'Product'}
+          {safeProduct.title || 'Product'}
         </Link>
         <PriceDisplay 
           price={safeProduct.price}

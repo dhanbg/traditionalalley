@@ -134,6 +134,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
   const [selectedSize, setSelectedSize] = useState("");
   const [sizeOptions, setSizeOptions] = useState([]);
   const [sizeSelectionError, setSizeSelectionError] = useState("");
+  const [shareStatus, setShareStatus] = useState(''); // 'copied', 'error', or ''
 
   // Memoized callback to prevent infinite re-renders
   const handleSizeChange = useCallback((val, arr) => {
@@ -500,38 +501,18 @@ export default function Details1({ product, variants = [], preferredVariantId = 
   const handleShare = async (e) => {
     e.preventDefault();
     
-    // Create a shareable link with product information
-    const baseUrl = window.location.origin;
-    const productId = safeProduct.documentId || safeProduct.id;
-    const productSlug = safeProduct.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'product';
-    
-    // Create a clean shareable URL
-    const shareableUrl = `${baseUrl}/product-detail/${productId}?ref=share&title=${encodeURIComponent(getCurrentDisplayTitle())}`;
-    
-    const shareData = {
-      title: getCurrentDisplayTitle(),
-      text: `Check out this amazing product: ${getCurrentDisplayTitle()} - Traditional Alley`,
-      url: shareableUrl
-    };
-
     try {
-      // Check if Web Share API is supported (mobile devices)
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        // Fallback: copy shareable URL to clipboard
-        await navigator.clipboard.writeText(shareableUrl);
-        alert('Shareable link copied to clipboard!');
-      }
+      // Copy current page URL to clipboard
+      const currentUrl = window.location.href;
+      await navigator.clipboard.writeText(currentUrl);
+      setShareStatus('copied');
+      // Clear status after 2 seconds
+      setTimeout(() => setShareStatus(''), 2000);
     } catch (error) {
-      // If sharing fails or is cancelled, try clipboard as fallback
-      try {
-        await navigator.clipboard.writeText(shareableUrl);
-        alert('Shareable link copied to clipboard!');
-      } catch (clipboardError) {
-        console.error('Failed to share or copy URL:', clipboardError);
-        alert('Unable to share. Please copy the URL manually.');
-      }
+      console.error('Failed to copy URL:', error);
+      setShareStatus('error');
+      // Clear status after 3 seconds
+      setTimeout(() => setShareStatus(''), 3000);
     }
   };
 
@@ -542,9 +523,10 @@ export default function Details1({ product, variants = [], preferredVariantId = 
   // Function to get the current display title
   const getCurrentDisplayTitle = () => {
     if (activeVariant) {
-      return extractDesignFromVariant(activeVariant);
+      // Use variant's title if available, otherwise fallback to main product title
+      return activeVariant.title || safeProduct.title || 'Untitled Product';
     }
-    return safeProduct.title;
+    return safeProduct.title || 'Untitled Product';
   };
 
   const handleVariantChange = (variant) => {
@@ -955,7 +937,10 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                           <div className="icon">
                             <i className="icon-share" />
                           </div>
-                          <p className="text-caption-1">Share</p>
+                          <p className="text-caption-1">
+                            {shareStatus === 'copied' ? 'Copied!' : 
+                             shareStatus === 'error' ? 'Copy failed' : 'Share'}
+                          </p>
                         </a>
                       </div>
 
@@ -978,37 +963,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                           All sales are final.
                         </p>
                       </div>
-                      <div className="dropdown dropdown-store-location">
-                        <div
-                          className="dropdown-title dropdown-backdrop"
-                          data-bs-toggle="dropdown"
-                          aria-haspopup="true"
-                        >
-                          <div className="tf-product-info-view link">
-                            <div className="icon">
-                              <i className="icon-map-pin" />
-                            </div>
-                            <span>View Store Information</span>
-                          </div>
-                        </div>
-                        <div className="dropdown-menu dropdown-menu-end">
-                          <div className="dropdown-content">
-                            <div className="dropdown-content-heading">
-                              <h5>Store Location</h5>
-                              <i className="icon icon-close" />
-                            </div>
-                            <div className="line-bt" />
-                            <div>
-                              <h6>Fashion Traditional Alley</h6>
-                              <p>Pickup available. Usually ready in 24 hours</p>
-                            </div>
-                            <div>
-                              <p>766 Rosalinda Forges Suite 044,</p>
-                              <p>Gracielahaven, Oregon</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      {/* View Store Information section removed */}
                     </div>
                     <ul className="tf-product-info-sku">
                       {/* <li>
