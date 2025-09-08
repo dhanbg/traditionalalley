@@ -237,18 +237,7 @@ export default function Hero() {
     transform: "scale(1)",
   };
 
-  // Loading skeleton styles
-  const skeletonStyle = {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
-    backgroundSize: '200% 100%',
-    animation: 'shimmer 2s infinite',
-    zIndex: 1
-  };
+  // Loading skeleton styles - REMOVED
 
   const contentStyle = {
     opacity: !imageLoaded ? 0.8 : 1, // Only fade based on image load, not loading state
@@ -281,33 +270,7 @@ export default function Hero() {
           }
         }
         
-        .video-loading-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 2;
-        }
-        
-        .loading-spinner {
-          width: 40px;
-          height: 40px;
-          border: 3px solid rgba(255, 255, 255, 0.3);
-          border-radius: 50%;
-          border-top-color: #fff;
-          animation: spin 1s ease-in-out infinite;
-        }
-        
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
+        /* Video loading overlay styles - REMOVED */
       `}</style>
       
       <section className="tf-slideshow slider-default slider-position slider-effect-fade" style={heroWrapperStyle}>
@@ -338,22 +301,7 @@ export default function Hero() {
             return (
               <SwiperSlide key={index}>
               <div className="wrap-slider" style={{...blurStyle, height: '100%', position: 'relative'}}>
-                {/* Loading skeleton for videos */}
-                {slide.mediaType === 'video' && videoLoadingStates.get(index) === 'loading' && (
-                  <div style={skeletonStyle}>
-                    <div style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      color: '#666',
-                      fontSize: '18px',
-                      fontWeight: '500'
-                    }}>
-                      Loading video...
-                    </div>
-                  </div>
-                )}
+                {/* Loading skeleton for videos - REMOVED */}
                 {slide.mediaType === 'video' && slide.videoSrc ? (
                   <>
                     <video
