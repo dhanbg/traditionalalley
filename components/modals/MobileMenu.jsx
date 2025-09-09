@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
+import { useSession, signOut, signIn } from "next-auth/react";
 
 const MobileMenu = React.memo(function MobileMenu() {
   const pathname = usePathname();
@@ -803,8 +803,8 @@ const MobileMenu = React.memo(function MobileMenu() {
                     overflow: 'hidden',
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                   }}>
-                    <Link 
-                      href="/login" 
+                    <button 
+                      onClick={() => signIn()}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -819,7 +819,9 @@ const MobileMenu = React.memo(function MobileMenu() {
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         fontFamily: '"Kumbh Sans", sans-serif',
                         position: 'relative',
-                        overflow: 'hidden'
+                        overflow: 'hidden',
+                        width: '100%',
+                        cursor: 'pointer'
                       }}
                       onMouseEnter={(e) => {
                         e.target.style.background = 'linear-gradient(135deg, var(--primary-rgba-1) 0%, var(--primary-rgba-05) 100%)';
@@ -863,7 +865,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                         />
                       </svg>
                       <span>Login</span>
-                    </Link>
+                    </button>
                   </li>
                 ) : (
                   <li className="menu-item-enter" style={{

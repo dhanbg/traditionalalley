@@ -175,4 +175,4 @@ export default {
   pages: {
     signIn: "/login",
   },
-} satisfies NextAuthConfig 
+} satisfies NextAuthConfig
