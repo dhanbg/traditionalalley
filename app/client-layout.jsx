@@ -162,19 +162,14 @@ export default function RootLayout({ children }) {
 
   return (
     <SessionProvider>
-    <html lang="en">
-      <body suppressHydrationWarning={true}>
-        <ToastProvider>
-          <Context>
-            <NextTopLoader showSpinner={false} />
-            <CenterLoader />
-            <div id="wrapper">{children}</div>
+      <ToastProvider>
+        <Context>
+          <NextTopLoader showSpinner={false} />
+          <CenterLoader />
+          <div id="wrapper">{children}</div>
           <CartModal />
-
-  
           <Compare />
           <MobileMenu />
-
           {/* <NewsLetterModal /> */}
           <SearchModal />
           <SizeGuide />
@@ -182,13 +177,10 @@ export default function RootLayout({ children }) {
           <DemoModal />
           <Categories />
           <ScrollTop />
-
           {/* Enhanced WhatsApp Component */}
           <EnhancedWhatsApp />
-          </Context>
-        </ToastProvider>
-      </body>
-    </html>
+        </Context>
+      </ToastProvider>
     </SessionProvider>
   );
 }

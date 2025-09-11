@@ -17,6 +17,18 @@ export default function Header1({ fullWidth = false }) {
   
   const [isMobile, setIsMobile] = useState(false);
   
+  // Helper function to get user avatar with proxy for Google images
+  const getUserAvatar = () => {
+    if (!user?.image) return null;
+    
+    // If it's a Google image, use our proxy route to bypass CORS
+    if (user.image.includes('googleusercontent.com')) {
+      return `/api/proxy-avatar?url=${encodeURIComponent(user.image)}`;
+    }
+    
+    return user.image;
+  };
+  
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 767);
@@ -184,14 +196,18 @@ export default function Header1({ fullWidth = false }) {
                           e.target.style.boxShadow = 'none';
                         }}
                       >
-                        {user.image ? (
+                        {getUserAvatar() ? (
                           <img
-                            src={user.image}
-                            alt={user.name}
+                            src={getUserAvatar()}
+                            alt={user.name || 'User Avatar'}
                             className="rounded-circle nav-avatar-img align-middle"
                             width={30}
                             height={30}
                             style={{ objectFit: 'cover', verticalAlign: 'middle' }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextElementSibling?.style.setProperty('display', 'block', 'important');
+                            }}
                           />
                         ) : (
                           <svg
