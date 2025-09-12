@@ -126,20 +126,6 @@ export default function Nav() {
   return (
     <>
       <style jsx global>{`
-        .tf-list-categories .categories-title:hover .item-link {
-          color: #e53637;
-          transition: all 0.3s ease;
-        }
-        .categories-item:hover {
-          background-color: #f9f9f9;
-        }
-        .categories-item:hover .inner-left {
-          color: #e53637;
-          transform: translateX(3px);
-          transition: all 0.3s ease;
-        }
-
-
         .categories-title {
           display: flex;
           align-items: center;

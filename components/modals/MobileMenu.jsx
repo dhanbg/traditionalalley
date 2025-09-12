@@ -358,12 +358,7 @@ const MobileMenu = React.memo(function MobileMenu() {
           will-change: transform, background, box-shadow;
         }
 
-        .menu-link:hover {
-          background: var(--primary-rgba-1);
-          color: var(--primary);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-        }
+
 
         .category-container {
           display: flex;
@@ -383,12 +378,7 @@ const MobileMenu = React.memo(function MobileMenu() {
           will-change: transform, background, box-shadow;
         }
 
-        .category-container:hover {
-          background: var(--primary-rgba-1);
-          color: var(--primary);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-        }
+
 
         .category-link {
           display: flex;
@@ -497,12 +487,7 @@ const MobileMenu = React.memo(function MobileMenu() {
           cursor: pointer;
         }
         
-        .auth-menu-link:hover {
-          background: linear-gradient(135deg, var(--primary-rgba-1) 0%, var(--primary-rgba-05) 100%);
-          color: var(--primary);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-        }
+
         
         .auth-menu-icon {
           margin-right: 12px;
@@ -534,17 +519,7 @@ const MobileMenu = React.memo(function MobileMenu() {
           width: 100%;
         }
         
-        .logout-menu-button:hover {
-          background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-          color: #ffffff;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3);
-        }
-        
-        .logout-menu-button:hover .logout-icon {
-          transform: rotate(-5deg) scale(1.1);
-          filter: brightness(0) invert(1);
-        }
+
         
         .logout-icon {
           display: inline-block;
@@ -590,12 +565,7 @@ const MobileMenu = React.memo(function MobileMenu() {
           overflow: hidden;
         }
         
-        .help-menu-link:hover {
-          background: linear-gradient(135deg, var(--primary-rgba-1) 0%, var(--primary-rgba-05) 100%);
-          color: var(--primary);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-        }
+
         
         .help-emoji {
           margin-right: 12px;
@@ -764,32 +734,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                       overflow: 'hidden'
                     }}
                   >
-                    <svg 
-                      width="20" 
-                      height="20" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      xmlns="http://www.w3.org/2000/svg"
-                      style={{
-                        marginRight: '4px',
-                        flexShrink: 0
-                      }}
-                    >
-                      <path 
-                        d="M20.84 4.61C20.3292 4.099 19.7228 3.69364 19.0554 3.41708C18.3879 3.14052 17.6725 2.99817 16.95 3H7.05C6.32745 2.99817 5.61209 3.14052 4.94462 3.41708C4.27714 3.69364 3.67081 4.099 3.16 4.61C2.64919 5.121 2.24383 5.72733 1.96727 6.39481C1.69071 7.06229 1.54836 7.77765 1.55 8.5V15.5C1.54836 16.2224 1.69071 16.9377 1.96727 17.6052C2.24383 18.2727 2.64919 18.879 3.16 19.39C3.67081 19.901 4.27714 20.3064 4.94462 20.5829C5.61209 20.8595 6.32745 21.0018 7.05 21H16.95C17.6725 21.0018 18.3879 20.8595 19.0554 20.5829C19.7228 20.3064 20.3292 19.901 20.84 19.39C21.3508 18.879 21.7562 18.2727 22.0327 17.6052C22.3093 16.9377 22.4516 16.2224 22.45 15.5V8.5C22.4516 7.77765 22.3093 7.06229 22.0327 6.39481C21.7562 5.72733 21.3508 5.121 20.84 4.61V4.61Z" 
-                        stroke="currentColor" 
-                        strokeWidth="2" 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round"
-                      />
-                      <path 
-                        d="M8 12L16 12" 
-                        stroke="currentColor" 
-                        strokeWidth="2" 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+
                     <span>Wishlist</span>
                   </Link>
                 </li>
@@ -829,7 +774,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                         fill="none" 
                         xmlns="http://www.w3.org/2000/svg"
                         style={{
-                          marginRight: '4px',
+                          marginRight: '8px',
                           flexShrink: 0
                         }}
                       >
