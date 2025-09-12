@@ -274,7 +274,8 @@ button{
     color: var(--white);
     padding: 15px 32px;
     border-radius: 99px;
-    @include mixin.flex(center, space-between);
+    display: flex;
+    align-items: center;
     gap: 8px;
     font-size: 16px;
     line-height: 26px;

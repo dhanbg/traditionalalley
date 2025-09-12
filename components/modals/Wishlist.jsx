@@ -117,7 +117,7 @@ export default function Wishlist() {
                               }}
                               className="remove-cart"
                             >
-                            <i className="icon-delete" />
+                            ×
                           </a>
                         </div>
                       </div>
