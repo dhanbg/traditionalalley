@@ -168,16 +168,6 @@ export default function FilterModal({ allProps = {}, products = [], filterOption
                   {typeof sizeOption === 'string' ? sizeOption : sizeOption.name || sizeOption}
                 </span>
               ))}
-              {!sizes.includes("Free Size") && (
-                <span
-                  className={`size-item size-check free-size ${
-                    size == "Free Size" ? "active" : ""
-                  } `}
-                  onClick={() => setSize("Free Size")}
-                >
-                  Free Size
-                </span>
-              )}
             </div>
           </div>
 

@@ -1,5 +1,5 @@
 export const categories = [
-  { name: "Uncategorized", count: 65, active: true },
+  { name: "All Products", count: 65, active: true },
   { name: "Women", count: 13, active: false },
   { name: "Men", count: 13, active: false },
   { name: "Kids", count: 14, active: false },

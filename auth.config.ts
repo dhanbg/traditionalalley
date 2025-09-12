@@ -140,7 +140,7 @@ export default {
         }
         
         // Check if user is the authorized admin
-        if (user.email === "gurungvaaiii@gmail.com") {
+        if (user.email === "gurungvaaiii@gmail.com" || user.email === "traditionalley2050@gmail.com") {
           token.role = "admin"
           console.log("🔑 Admin role assigned to:", user.email)
         } else {
@@ -150,7 +150,7 @@ export default {
       }
       
       // Always check email on subsequent requests and assign admin role if needed
-      if (token.email === "gurungvaaiii@gmail.com") {
+      if (token.email === "gurungvaaiii@gmail.com" || token.email === "traditionalley2050@gmail.com") {
         token.role = "admin"
       }
       
@@ -163,7 +163,7 @@ export default {
         session.user.role = token.role as string
         
         // Double check for admin role based on email
-        if (session.user.email === "gurungvaaiii@gmail.com") {
+        if (session.user.email === "gurungvaaiii@gmail.com" || session.user.email === "traditionalley2050@gmail.com") {
           session.user.role = "admin"
         }
         

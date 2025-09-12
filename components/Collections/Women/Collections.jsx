@@ -65,7 +65,7 @@ export default function Collections() {
                 <div key={index} className="col-lg-3 col-md-4 col-sm-6 col-6">
                   <div className="collection-circle hover-img">
                     <Link
-                      href={`/shop-default-grid-women?collectionId=${collection.id}`}
+                      href={`/collections/${collection.slug}`}
                       className="img-style radius-12"
                     >
                       <Image
@@ -82,7 +82,7 @@ export default function Collections() {
                     <div className="collection-content text-center">
                       <div>
                         <Link
-                          href={`/shop-default-grid-women?collectionId=${collection.id}`}
+                          href={`/collections/${collection.slug}`}
                           className="cls-title"
                         >
                           <h6 className="text">{collection.name}</h6>

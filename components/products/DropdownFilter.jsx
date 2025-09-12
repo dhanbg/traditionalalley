@@ -72,14 +72,6 @@ export default function DropdownFilter({ allProps, setIsDDActive }) {
                 {size}
               </span>
             ))}
-            <span
-              className={`size-item size-check free-size ${
-                allProps.size == "Free Size" ? "active" : ""
-              } `}
-              onClick={() => allProps.setSize("Free Size")}
-            >
-              Free Size
-            </span>
           </div>
         </div>
 
