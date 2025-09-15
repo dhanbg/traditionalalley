@@ -21,9 +21,18 @@ const generateOTP = (): string => {
   return crypto.randomInt(100000, 999999).toString();
 };
 
-// Send OTP email
+// Send OTP email with proper error handling and timeout
 const sendOTPEmail = async (email: string, otp: string, firstName: string) => {
   const transporter = createTransporter();
+  
+  // Verify connection first
+  try {
+    await transporter.verify();
+    console.log('✅ Email server connection verified');
+  } catch (error) {
+    console.error('❌ Email server connection failed:', error);
+    throw new Error('Email service is currently unavailable. Please try again later.');
+  }
   
   const mailOptions = {
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
@@ -53,6 +62,7 @@ const sendOTPEmail = async (email: string, otp: string, firstName: string) => {
           </p>
         </div>
         
+        
         <div style="text-align: center; color: #7f8c8d; font-size: 12px;">
           <p>If you didn't request this verification, please ignore this email.</p>
           <p>© 2024 Traditional Alley. All rights reserved.</p>
@@ -61,7 +71,20 @@ const sendOTPEmail = async (email: string, otp: string, firstName: string) => {
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+  // Send email with timeout
+  const emailPromise = transporter.sendMail(mailOptions);
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Email sending timeout after 30 seconds')), 30000);
+  });
+  
+  try {
+    const result = await Promise.race([emailPromise, timeoutPromise]) as any;
+    console.log('✅ Email sent successfully:', result.messageId);
+    return result;
+  } catch (error) {
+    console.error('❌ Failed to send email:', error);
+    throw new Error('Failed to send verification email. Please try again.');
+  }
 };
 
 export async function POST(request: NextRequest) {
@@ -70,8 +93,20 @@ export async function POST(request: NextRequest) {
   try {
     console.log(`🚀 [${requestId}] Send OTP: Starting request`);
     
-    const body = await request.json();
+    // Parse JSON with error handling
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error(`❌ [${requestId}] Send OTP: JSON parsing error:`, parseError);
+      return NextResponse.json(
+        { error: "Invalid JSON in request body", requestId },
+        { status: 400 }
+      );
+    }
+    
     const { email, firstName, lastName } = body;
+    console.log(`📝 [${requestId}] Send OTP: Parsed data - email: ${email}, firstName: ${firstName}, lastName: ${lastName}`);
     
     if (!email || !firstName || !lastName) {
       return NextResponse.json(
@@ -106,7 +141,7 @@ export async function POST(request: NextRequest) {
     let userData;
     if (existingUser?.data && existingUser.data.length > 0) {
       // Update existing user with new OTP and name data
-      const userId = existingUser.data[0].id;
+      const userDocumentId = existingUser.data[0].documentId;
       userData = {
         data: {
           firstName: firstName,
@@ -118,7 +153,7 @@ export async function POST(request: NextRequest) {
       
       // Update user record
       const { updateData } = await import("@/utils/api");
-      await updateData(`/api/user-data/${userId}`, userData);
+      await updateData(`/api/user-data/${userDocumentId}`, userData);
       console.log(`🔄 [${requestId}] Send OTP: Updated existing user with new OTP`);
     } else {
       // Create new user record with OTP (without password yet)
@@ -139,8 +174,19 @@ export async function POST(request: NextRequest) {
     }
     
     // Send OTP email
-    await sendOTPEmail(email, otp, firstName);
-    console.log(`📧 [${requestId}] Send OTP: Email sent to ${email}`);
+    try {
+      await sendOTPEmail(email, otp, firstName);
+      console.log(`📧 [${requestId}] Send OTP: Email sent successfully to ${email}`);
+    } catch (emailError) {
+      console.error(`❌ [${requestId}] Send OTP: Email sending failed:`, emailError);
+      return NextResponse.json(
+        { 
+          error: emailError.message || "Failed to send verification email. Please try again.",
+          requestId 
+        },
+        { status: 500 }
+      );
+    }
     
     return NextResponse.json({
       message: "OTP sent successfully",
@@ -160,4 +206,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

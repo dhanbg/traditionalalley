@@ -150,7 +150,13 @@ export default function Register() {
     }
 
     try {
-      const response = await fetch("/api/send-otp", {
+      // Create a timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 60000); // 60 second timeout
+      });
+
+      // Create the fetch promise
+      const fetchPromise = fetch("/api/send-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -162,6 +168,8 @@ export default function Register() {
         }),
       });
 
+      // Race between fetch and timeout
+      const response = await Promise.race([fetchPromise, timeoutPromise]);
       const data = await response.json();
 
       if (!response.ok) {
@@ -180,7 +188,12 @@ export default function Register() {
         setStep("verify");
       }, 1500);
     } catch (error) {
-      setError("Network error. Please try again.");
+      console.error('Registration error:', error);
+      if (error.message === 'Request timeout') {
+        setError("Request timed out. Please check your internet connection and try again.");
+      } else {
+        setError("Network error. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }

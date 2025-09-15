@@ -107,8 +107,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Find user by email
-    const searchUrl = `/api/user-data?filters[email][$containsi]=${email}&publicationState=preview`;
+    // Find user by email (get the most recent record)
+    const searchUrl = `/api/user-data?filters[email][$containsi]=${email}&publicationState=preview&sort[0]=createdAt:desc`;
     console.log(`🔍 [${requestId}] Verify OTP: Searching for user with URL: ${searchUrl}`);
     
     const userResponse = await fetchDataFromApi(searchUrl);

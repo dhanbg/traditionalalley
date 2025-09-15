@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 export default function CenterLoader() {
   const [isLoading, setIsLoading] = useState(false);
   const pathname = usePathname();
+  const [loadingTimeout, setLoadingTimeout] = useState(null);
 
   useEffect(() => {
     // Function to check if NextTopLoader is active
@@ -13,7 +14,28 @@ export default function CenterLoader() {
       if (topLoader) {
         const isActive = topLoader.style.opacity !== '0' && topLoader.style.opacity !== '';
         setIsLoading(isActive);
+      } else {
+        // If nprogress element doesn't exist, ensure loading is false
+        setIsLoading(false);
       }
+    };
+
+    // Function to start loading with timeout protection
+    const startLoadingWithTimeout = () => {
+      // Clear any existing timeout
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+      }
+      
+      setIsLoading(true);
+      
+      // Set a maximum loading duration of 5 seconds
+      const timeout = setTimeout(() => {
+        setIsLoading(false);
+        setLoadingTimeout(null);
+      }, 5000);
+      
+      setLoadingTimeout(timeout);
     };
 
     // Listen for link clicks that might trigger navigation
@@ -26,12 +48,7 @@ export default function CenterLoader() {
           
           // Only show loader for internal navigation to different pages
           if (linkUrl.origin === currentOrigin && linkUrl.pathname !== window.location.pathname) {
-            setIsLoading(true);
-            
-            // Set a timeout to hide loader if navigation doesn't complete
-            setTimeout(() => {
-              checkTopLoaderStatus();
-            }, 3000);
+            startLoadingWithTimeout();
           }
         } catch (error) {
           // Handle invalid URLs gracefully
@@ -48,13 +65,13 @@ export default function CenterLoader() {
         return;
       }
       if (form.method === 'get' || !form.action.includes('#')) {
-        setIsLoading(true);
+        startLoadingWithTimeout();
       }
     };
 
     // Listen for browser navigation (back/forward)
     const handlePopState = () => {
-      setIsLoading(true);
+      startLoadingWithTimeout();
     };
 
     // Add event listeners
@@ -90,17 +107,28 @@ export default function CenterLoader() {
       document.removeEventListener('submit', handleFormSubmit);
       window.removeEventListener('popstate', handlePopState);
       observer.disconnect();
+      
+      // Clear any pending timeout
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+      }
     };
   }, []);
 
   // Hide loader when pathname changes (route completed)
   useEffect(() => {
+    // Clear any existing loading timeout
+    if (loadingTimeout) {
+      clearTimeout(loadingTimeout);
+      setLoadingTimeout(null);
+    }
+    
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 200); // Slightly longer delay to ensure smooth transition
     
     return () => clearTimeout(timer);
-  }, [pathname]);
+  }, [pathname, loadingTimeout]);
 
   if (!isLoading) return null;
 
