@@ -5,6 +5,7 @@ import NCMOrderForm from './NCMOrderForm';
 import NCMOrderButton from './NCMOrderButton';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+// Removed direct email import - using API route instead
 // Force recompilation - all userBag references fixed
 
 const OrderManagement = () => {
@@ -689,6 +690,7 @@ const OrderManagement = () => {
         
         tableData.push([
           item.title || 'N/A',
+          item.productCode || 'N/A',
           item.selectedSize || 'N/A',
           item.selectedColor || 'N/A',
           quantity.toString(),
@@ -698,11 +700,11 @@ const OrderManagement = () => {
       });
       
       if (tableData.length === 0) {
-        tableData.push(['No items found', '', '', '', '', '']);
+        tableData.push(['No items found', '', '', '', '', '', '']);
       }
       
       autoTable(doc, {
-        head: [['Product', 'Size', 'Color', 'Quantity', 'Price', 'Total']],
+        head: [['Product', 'Product Code', 'Size', 'Color', 'Quantity', 'Price', 'Total']],
         body: tableData,
         startY: yPosition,
         theme: 'striped',
@@ -854,9 +856,58 @@ const OrderManagement = () => {
       
       // Save the PDF
       const txnId = payment.merchantTxnId || payment.attributes?.merchantTxnId || 'receipt';
-      doc.save(`Traditional_Alley_Bill_${txnId}.pdf`);
+      const fileName = `Traditional_Alley_Bill_${txnId}.pdf`;
+      doc.save(fileName);
       
       console.log('PDF generated successfully for transaction:', txnId);
+      
+      // Send invoice email automatically via API route
+      try {
+        const receiverDetails = orderData.receiver_details || {};
+        const customerEmail = receiverDetails.email;
+        
+        if (customerEmail) {
+          console.log('Sending invoice email to:', customerEmail);
+          
+          // Generate PDF as base64 for API transmission
+          const pdfBase64 = doc.output('datauristring').split(',')[1];
+          
+          const response = await fetch('/api/send-invoice-email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              customerEmail,
+              customerName: receiverDetails.fullName || 'Valued Customer',
+              orderId: txnId,
+              amount: `${currency} ${formattedAmount}`,
+              pdfBase64,
+              fileName
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const emailResult = await response.json();
+          
+          if (emailResult.success) {
+            console.log('Invoice email sent successfully');
+            alert('PDF generated and invoice email sent successfully!');
+          } else {
+            console.warn('Email API returned failure:', emailResult.error);
+            alert('PDF generated successfully, but failed to send email: ' + (emailResult.error || 'Unknown error'));
+          }
+        } else {
+          console.warn('No customer email found, skipping email send');
+          alert('PDF generated successfully, but no customer email found for sending invoice.');
+        }
+      } catch (emailError) {
+        console.error('Error sending invoice email:', emailError);
+        alert('PDF generated successfully, but failed to send email: ' + emailError.message);
+      }
       
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -1049,8 +1100,7 @@ const OrderManagement = () => {
                           {payment.computedStatus.toUpperCase()}
                         </span>
                       </div>
-                      {
-                        payment.orderData.products && payment.orderData.products.length > 0 && (
+                      {payment.orderData.products && payment.orderData.products.length > 0 && (
                           <div className="mt-1 text-sm text-gray-600">
                             {payment.orderData.products.map((product, index) => (
                               <div key={index} className="mb-1">
@@ -1060,6 +1110,9 @@ const OrderManagement = () => {
                                   (product.selectedVariant && product.selectedVariant.size) || 
                                   'N/A'
                                 }</div>
+                                {product.productCode && (
+                                  <div>Product Code: {product.productCode}</div>
+                                )}
                               </div>
                             ))}
                           </div>

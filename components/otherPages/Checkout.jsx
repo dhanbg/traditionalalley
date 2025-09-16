@@ -196,8 +196,8 @@ export default function Checkout() {
           imgSrc: product.imgSrc,
           selectedSize: availableSize,
           selectedColor: availableColor,
+          productCode: fetchedProduct?.productCode || "",
           productDetails: {
-            productCode: fetchedProduct?.productCode || "",
             brand: fetchedProduct?.brand || "",
             material: fetchedProduct?.material || "",
             weight: fetchedProduct?.weight || "",

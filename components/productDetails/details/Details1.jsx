@@ -343,6 +343,20 @@ export default function Details1({ product, variants = [], preferredVariantId = 
   // Add state for wishlist operations
   const [wishlistLoading, setWishlistLoading] = useState(false);
 
+  // Update currentProduct when activeVariant changes
+  useEffect(() => {
+    if (activeVariant && safeProduct) {
+      setCurrentProduct({
+        ...safeProduct,
+        imgSrc: processImageUrl(activeVariant.imgSrc) || processImageUrl(safeProduct.imgSrc),
+        imgHover: processImageUrl(activeVariant.imgHover) || processImageUrl(activeVariant.imgSrc) || processImageUrl(safeProduct.imgHover),
+        gallery: processGalleryItems(activeVariant.gallery && activeVariant.gallery.length > 0 ? activeVariant.gallery : safeProduct.gallery),
+        inStock: calculateInStock(activeVariant),
+        quantity: activeVariant.quantity
+      });
+    }
+  }, [activeVariant?.documentId, activeVariant?.id, safeProduct.documentId, safeProduct.id]);
+
   // Check if current product is in wishlist using Context
   const currentProductId = safeProduct.documentId || safeProduct.id;
   // Create unique wishlist ID that matches cart ID pattern
