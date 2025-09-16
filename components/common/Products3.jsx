@@ -165,9 +165,9 @@ export default function Products3({ parentClass = "flat-spacing-3" }) {
                     )}
                   </div>
                   <div className="sec-btn text-center">
-                    {/* <Link href={`/shop-default-grid-women`} className="btn-line">
+                    <Link href={`/women`} className="btn-line">
                       View All Products
-                    </Link> */}
+                    </Link>
                   </div>
                 </>
               )}

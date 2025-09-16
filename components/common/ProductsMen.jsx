@@ -156,7 +156,7 @@ export default function ProductsMen({ parentClass = "flat-spacing-3 pt-0" }) {
                     )}
                   </div>
                   <div className="sec-btn text-center">
-                    <Link href={`/shop-default-grid-men`} className="btn-line">
+                    <Link href={`/men`} className="btn-line">
                       View All Products
                     </Link>
                   </div>
