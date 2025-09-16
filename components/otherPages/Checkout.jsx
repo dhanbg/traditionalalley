@@ -196,7 +196,7 @@ export default function Checkout() {
           imgSrc: product.imgSrc,
           selectedSize: availableSize,
           selectedColor: availableColor,
-          productCode: fetchedProduct?.productCode || "",
+          productCode: fetchedProduct?.product_code || "",
           productDetails: {
             brand: fetchedProduct?.brand || "",
             material: fetchedProduct?.material || "",
@@ -858,6 +858,7 @@ export default function Checkout() {
           collection: fetchedProduct?.collection || product.collection || "",
           brand: fetchedProduct?.brand || "Traditional Alley",
           sku: fetchedProduct?.sku || product.sku || `SKU-${product.documentId}`,
+          productCode: fetchedProduct?.product_code || "",
           
           // Size and variant info for cart matching
           selectedSize: availableSize,
@@ -1168,6 +1169,7 @@ export default function Checkout() {
                   weight: parsedWeight,
                   dimensions: parsedDimensions,
                   hsCode: productData.hsCode || null,
+                  productCode: productData.product_code || null,
                   // Keep original string values for reference
                   originalWeight: productData.weight,
                   originalDimensions: productData.dimensions
