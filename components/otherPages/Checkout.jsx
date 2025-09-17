@@ -1161,7 +1161,7 @@ export default function Checkout() {
               }
 
               // Determine the correct product code to use
-              let productCode = productData.product_code || "";
+              let productCode = productData.product_code || "NO-CODES";
               
               // If this cart item has variant information, try to use the variant's product code
               if (product.variantInfo && product.variantInfo.variantId) {
@@ -1171,6 +1171,8 @@ export default function Checkout() {
                 );
                 if (matchingVariant && matchingVariant.product_code) {
                   productCode = matchingVariant.product_code;
+                } else if (matchingVariant && !matchingVariant.product_code) {
+                  productCode = "NO-CODES";
                 }
               }
 
