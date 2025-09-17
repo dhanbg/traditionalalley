@@ -197,7 +197,7 @@ export default function Checkout() {
           selectedSize: availableSize,
           selectedColor: availableColor,
           productDetails: {
-            productCode: fetchedProduct?.productCode || "",
+            productCode: fetchedProduct?.productCode || "NO-CODES",
             brand: fetchedProduct?.brand || "",
             material: fetchedProduct?.material || "",
             weight: fetchedProduct?.weight || "",
@@ -858,6 +858,7 @@ export default function Checkout() {
           collection: fetchedProduct?.collection || product.collection || "",
           brand: fetchedProduct?.brand || "Traditional Alley",
           sku: fetchedProduct?.sku || product.sku || `SKU-${product.documentId}`,
+          productCode: fetchedProduct?.productCode || "NO-CODES",
           
           // Size and variant info for cart matching
           selectedSize: availableSize,
