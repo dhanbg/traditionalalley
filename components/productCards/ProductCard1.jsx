@@ -217,10 +217,12 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
         variantInfo = {
           id: currentProductId, // Use variant's documentId as the variant identifier
           documentId: currentProductId,
+          variantId: currentProductId, // Add variantId for checkout matching
           title: safeProduct.title,
           imgSrc: safeProduct.imgSrc,
           imgSrcObject: safeProduct.imgSrc, // Preserve original image object
-          isVariant: true // Add this flag so cart modal can identify variants
+          isVariant: true, // Add this flag so cart modal can identify variants
+          product_code: safeProduct.product_code // Include variant's product code
         };
         
         console.log('🛒 Adding variant to cart:', { 

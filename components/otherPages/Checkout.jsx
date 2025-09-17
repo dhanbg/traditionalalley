@@ -1124,7 +1124,7 @@ export default function Checkout() {
           if (!product.documentId) return null;
           
           try {
-            const productEndpoint = `/api/products?filters[documentId][$eq]=${product.documentId}`;
+            const productEndpoint = `/api/products?filters[documentId][$eq]=${product.documentId}&populate=*`;
             console.log('Fetching product details from:', productEndpoint);
             const response = await fetchDataFromApi(productEndpoint);
             console.log('Product API response:', response);
@@ -1160,6 +1160,20 @@ export default function Checkout() {
                 }
               }
 
+              // Determine the correct product code to use
+              let productCode = productData.product_code || "";
+              
+              // If this cart item has variant information, try to use the variant's product code
+              if (product.variantInfo && product.variantInfo.variantId) {
+                // Find the matching variant in the product data
+                const matchingVariant = productData.product_variants?.find(
+                  variant => variant.documentId === product.variantInfo.variantId
+                );
+                if (matchingVariant && matchingVariant.product_code) {
+                  productCode = matchingVariant.product_code;
+                }
+              }
+
               return {
                 id: product.id,
                 data: {
@@ -1168,7 +1182,7 @@ export default function Checkout() {
                   weight: parsedWeight,
                   dimensions: parsedDimensions,
                   hsCode: productData.hsCode || null,
-                  productCode: productData.product_code || "",
+                  productCode: productCode,
                   // Keep original string values for reference
                   originalWeight: productData.weight,
                   originalDimensions: productData.dimensions

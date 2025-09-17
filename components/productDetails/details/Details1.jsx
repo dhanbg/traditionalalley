@@ -497,6 +497,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
       const variantInfo = activeVariant && !activeVariant.isCurrentProduct ? {
         id: activeVariant.id,
         documentId: activeVariant.documentId,
+        variantId: activeVariant.documentId, // Add variantId for checkout matching
         color: activeVariant.color,
         imgSrc: activeVariant.imgSrc,
         imgHover: activeVariant.imgHover,
@@ -505,7 +506,8 @@ export default function Details1({ product, variants = [], preferredVariantId = 
         oldPrice: activeVariant.oldPrice,
         discount: activeVariant.discount,
         sizes: activeVariant.sizes,
-        gallery: activeVariant.gallery
+        gallery: activeVariant.gallery,
+        product_code: activeVariant.product_code // Include variant's product code
       } : null;
 
       addProductToCart(uniqueCartId, quantity, true, variantInfo, selectedSize);
