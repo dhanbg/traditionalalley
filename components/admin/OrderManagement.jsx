@@ -690,6 +690,7 @@ const OrderManagement = () => {
         
         tableData.push([
           item.title || 'N/A',
+          item.productDetails?.productCode || item.productCode || 'N/A',
           item.selectedSize || 'N/A',
           item.selectedColor || 'N/A',
           quantity.toString(),
@@ -699,11 +700,11 @@ const OrderManagement = () => {
       });
       
       if (tableData.length === 0) {
-        tableData.push(['No items found', '', '', '', '', '']);
+        tableData.push(['No items found', '', '', '', '', '', '']);
       }
       
       autoTable(doc, {
-        head: [['Product', 'Size', 'Color', 'Quantity', 'Price', 'Total']],
+        head: [['Product', 'Product Code', 'Size', 'Color', 'Quantity', 'Price', 'Total']],
         body: tableData,
         startY: yPosition,
         theme: 'striped',
@@ -1108,6 +1109,11 @@ const OrderManagement = () => {
                                 <div>Size: {
                                   product.selectedSize || 
                                   (product.selectedVariant && product.selectedVariant.size) || 
+                                  'N/A'
+                                }</div>
+                                <div>Product Code: {
+                                  product.productDetails?.productCode || 
+                                  product.productCode || 
                                   'N/A'
                                 }</div>
                               </div>

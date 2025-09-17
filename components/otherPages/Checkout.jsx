@@ -1168,6 +1168,7 @@ export default function Checkout() {
                   weight: parsedWeight,
                   dimensions: parsedDimensions,
                   hsCode: productData.hsCode || null,
+                  productCode: productData.product_code || "",
                   // Keep original string values for reference
                   originalWeight: productData.weight,
                   originalDimensions: productData.dimensions
@@ -1206,7 +1207,8 @@ export default function Checkout() {
                  prev[id].oldPrice !== updatedProducts[id].oldPrice ||
                  prev[id].weight !== updatedProducts[id].weight ||
                  prev[id].dimensions !== updatedProducts[id].dimensions ||
-                 prev[id].hsCode !== updatedProducts[id].hsCode
+                 prev[id].hsCode !== updatedProducts[id].hsCode ||
+                 prev[id].productCode !== updatedProducts[id].productCode
           );
           
           console.log('Has changes:', hasChanges);
