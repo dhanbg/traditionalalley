@@ -402,11 +402,6 @@ export default function Orders() {
                              <div key={index} className="product-card">
                                <div className="product-info">
                                  <h6 className="product-title">{product.title}</h6>
-                                 {product.productCode && (
-                                   <div className="product-code">
-                                     <span className="variant-tag">Code: {product.productCode}</span>
-                                   </div>
-                                 )}
                                  {product.selectedVariant && (
                                    <div className="product-variant">
                                      {product.selectedVariant.size && (

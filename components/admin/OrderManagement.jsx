@@ -690,7 +690,6 @@ const OrderManagement = () => {
         
         tableData.push([
           item.title || 'N/A',
-          item.productCode || 'N/A',
           item.selectedSize || 'N/A',
           item.selectedColor || 'N/A',
           quantity.toString(),
@@ -700,11 +699,11 @@ const OrderManagement = () => {
       });
       
       if (tableData.length === 0) {
-        tableData.push(['No items found', '', '', '', '', '', '']);
+        tableData.push(['No items found', '', '', '', '', '']);
       }
       
       autoTable(doc, {
-        head: [['Product', 'Product Code', 'Size', 'Color', 'Quantity', 'Price', 'Total']],
+        head: [['Product', 'Size', 'Color', 'Quantity', 'Price', 'Total']],
         body: tableData,
         startY: yPosition,
         theme: 'striped',
@@ -1100,7 +1099,8 @@ const OrderManagement = () => {
                           {payment.computedStatus.toUpperCase()}
                         </span>
                       </div>
-                      {payment.orderData.products && payment.orderData.products.length > 0 && (
+                      {
+                        payment.orderData.products && payment.orderData.products.length > 0 && (
                           <div className="mt-1 text-sm text-gray-600">
                             {payment.orderData.products.map((product, index) => (
                               <div key={index} className="mb-1">
@@ -1110,9 +1110,6 @@ const OrderManagement = () => {
                                   (product.selectedVariant && product.selectedVariant.size) || 
                                   'N/A'
                                 }</div>
-                                {product.productCode && (
-                                  <div>Product Code: {product.productCode}</div>
-                                )}
                               </div>
                             ))}
                           </div>
