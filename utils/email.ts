@@ -258,8 +258,166 @@ export async function sendRegistrationOTP(email: string, otp: string, userName?:
   }
 }
 
+// Hostinger email configuration for invoice automation
+const hostingerEmailConfig = {
+  host: process.env.HOSTINGER_SMTP_HOST || 'smtp.hostinger.com',
+  port: parseInt(process.env.HOSTINGER_SMTP_PORT || '587'),
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.HOSTINGER_SMTP_USER,
+    pass: process.env.HOSTINGER_SMTP_PASS,
+  },
+};
+
+// Create Hostinger transporter for invoice emails
+const hostingerTransporter = nodemailer.createTransport(hostingerEmailConfig);
+
+// Verify Hostinger email connection
+export async function verifyHostingerEmailConnection() {
+  try {
+    await hostingerTransporter.verify();
+    console.log('✅ Hostinger email server is ready to send invoices');
+    return true;
+  } catch (error) {
+    console.error('❌ Hostinger email server connection failed:', error);
+    return false;
+  }
+}
+
+// Send invoice email with PDF attachment
+export async function sendInvoiceEmail(
+  customerEmail: string,
+  customerName: string,
+  orderId: string,
+  invoicePdfBuffer: Buffer,
+  orderDetails: any
+) {
+  try {
+    const mailOptions = {
+      from: process.env.HOSTINGER_SMTP_FROM || '"Traditional Alley Support" <support@traditionalalley.com.np>',
+      to: customerEmail,
+      subject: `📄 Invoice for Your Order #${orderId} - Traditional Alley`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Invoice - Traditional Alley</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+          <table role="presentation" style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 40px 20px;">
+                <table role="presentation" style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="padding: 40px 40px 20px 40px; text-align: center; background: linear-gradient(135deg, #2c5aa0 0%, #1e3a8a 100%); border-radius: 12px 12px 0 0;">
+                      <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">📄 Invoice Ready</h1>
+                      <p style="margin: 10px 0 0 0; color: #e0e7ff; font-size: 16px;">Your order has been processed successfully</p>
+                    </td>
+                  </tr>
+                  
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding: 40px;">
+                      <h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 24px; font-weight: 600;">Hello ${customerName}!</h2>
+                      
+                      <p style="margin: 0 0 20px 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                        Thank you for your purchase! Your order <strong>#${orderId}</strong> has been successfully processed and your invoice is attached to this email.
+                      </p>
+                      
+                      <div style="background-color: #f8fafc; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                        <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 18px; font-weight: 600;">📋 Order Summary</h3>
+                        <p style="margin: 5px 0; color: #4b5563; font-size: 14px;"><strong>Order ID:</strong> ${orderId}</p>
+                        <p style="margin: 5px 0; color: #4b5563; font-size: 14px;"><strong>Order Date:</strong> ${new Date().toLocaleDateString()}</p>
+                        <p style="margin: 5px 0; color: #4b5563; font-size: 14px;"><strong>Total Amount:</strong> ${orderDetails?.totalAmount || 'See invoice'}</p>
+                        <p style="margin: 5px 0; color: #4b5563; font-size: 14px;"><strong>Payment Status:</strong> ${orderDetails?.paymentStatus || 'Completed'}</p>
+                      </div>
+                      
+                      <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0;">
+                        <p style="margin: 0; color: #065f46; font-size: 14px; font-weight: 500;">
+                          📎 Your detailed invoice is attached as a PDF file to this email.
+                        </p>
+                      </div>
+                      
+                      <p style="margin: 20px 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                        If you have any questions about your order or need assistance, please don't hesitate to contact our support team.
+                      </p>
+                      
+                      <div style="text-align: center; margin: 30px 0;">
+                        <a href="mailto:support@traditionalalley.com.np" style="display: inline-block; background-color: #2c5aa0; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: 600; font-size: 16px;">Contact Support</a>
+                      </div>
+                    </td>
+                  </tr>
+                  
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 30px 40px; background-color: #f8f9fa; border-radius: 0 0 12px 12px; text-align: center;">
+                      <p style="margin: 0 0 10px 0; font-size: 14px; color: #6c757d;">
+                        Thank you for choosing Traditional Alley
+                      </p>
+                      <p style="margin: 0; font-size: 12px; color: #adb5bd;">
+                        This is an automated message. Please do not reply to this email.
+                      </p>
+                    </td>
+                  </tr>
+                  
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `,
+      text: `
+        Traditional Alley - Invoice for Order #${orderId}
+        
+        Hello ${customerName},
+        
+        Thank you for your purchase! Your order #${orderId} has been successfully processed.
+        
+        Order Details:
+        - Order ID: ${orderId}
+        - Order Date: ${new Date().toLocaleDateString()}
+        - Total Amount: ${orderDetails?.totalAmount || 'See attached invoice'}
+        - Payment Status: ${orderDetails?.paymentStatus || 'Completed'}
+        
+        Your detailed invoice is attached as a PDF file to this email.
+        
+        If you have any questions, please contact us at support@traditionalalley.com.np
+        
+        Thank you for choosing Traditional Alley!
+      `,
+      attachments: [
+        {
+          filename: `Invoice-${orderId}.pdf`,
+          content: invoicePdfBuffer,
+          contentType: 'application/pdf'
+        }
+      ]
+    };
+
+    const info = await hostingerTransporter.sendMail(mailOptions);
+    console.log('✅ Invoice email sent successfully:', info.messageId);
+    return {
+      success: true,
+      messageId: info.messageId
+    };
+  } catch (error) {
+    console.error('❌ Failed to send invoice email:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
 export default {
   verifyEmailConnection,
   sendResetPasswordOTP,
-  sendRegistrationOTP
-}; 
+  sendRegistrationOTP,
+  verifyHostingerEmailConnection,
+  sendInvoiceEmail
+};

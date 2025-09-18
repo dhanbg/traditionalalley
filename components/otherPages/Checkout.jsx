@@ -197,7 +197,7 @@ export default function Checkout() {
           selectedSize: availableSize,
           selectedColor: availableColor,
           productDetails: {
-            productCode: fetchedProduct?.productCode || "",
+            productCode: fetchedProduct?.productCode || "NO-CODES",
             brand: fetchedProduct?.brand || "",
             material: fetchedProduct?.material || "",
             weight: fetchedProduct?.weight || "",
@@ -858,6 +858,7 @@ export default function Checkout() {
           collection: fetchedProduct?.collection || product.collection || "",
           brand: fetchedProduct?.brand || "Traditional Alley",
           sku: fetchedProduct?.sku || product.sku || `SKU-${product.documentId}`,
+          productCode: fetchedProduct?.productCode || "NO-CODES",
           
           // Size and variant info for cart matching
           selectedSize: availableSize,
@@ -1124,7 +1125,7 @@ export default function Checkout() {
           if (!product.documentId) return null;
           
           try {
-            const productEndpoint = `/api/products?filters[documentId][$eq]=${product.documentId}`;
+            const productEndpoint = `/api/products?filters[documentId][$eq]=${product.documentId}&populate=*`;
             console.log('Fetching product details from:', productEndpoint);
             const response = await fetchDataFromApi(productEndpoint);
             console.log('Product API response:', response);
@@ -1160,6 +1161,22 @@ export default function Checkout() {
                 }
               }
 
+              // Determine the correct product code to use
+              let productCode = productData.product_code || "NO-CODES";
+              
+              // If this cart item has variant information, try to use the variant's product code
+              if (product.variantInfo && product.variantInfo.variantId) {
+                // Find the matching variant in the product data
+                const matchingVariant = productData.product_variants?.find(
+                  variant => variant.documentId === product.variantInfo.variantId
+                );
+                if (matchingVariant && matchingVariant.product_code) {
+                  productCode = matchingVariant.product_code;
+                } else if (matchingVariant && !matchingVariant.product_code) {
+                  productCode = "NO-CODES";
+                }
+              }
+
               return {
                 id: product.id,
                 data: {
@@ -1168,6 +1185,7 @@ export default function Checkout() {
                   weight: parsedWeight,
                   dimensions: parsedDimensions,
                   hsCode: productData.hsCode || null,
+                  productCode: productCode,
                   // Keep original string values for reference
                   originalWeight: productData.weight,
                   originalDimensions: productData.dimensions
@@ -1206,7 +1224,8 @@ export default function Checkout() {
                  prev[id].oldPrice !== updatedProducts[id].oldPrice ||
                  prev[id].weight !== updatedProducts[id].weight ||
                  prev[id].dimensions !== updatedProducts[id].dimensions ||
-                 prev[id].hsCode !== updatedProducts[id].hsCode
+                 prev[id].hsCode !== updatedProducts[id].hsCode ||
+                 prev[id].productCode !== updatedProducts[id].productCode
           );
           
           console.log('Has changes:', hasChanges);

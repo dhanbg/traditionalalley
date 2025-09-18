@@ -343,6 +343,20 @@ export default function Details1({ product, variants = [], preferredVariantId = 
   // Add state for wishlist operations
   const [wishlistLoading, setWishlistLoading] = useState(false);
 
+  // Update currentProduct when activeVariant changes
+  useEffect(() => {
+    if (activeVariant && safeProduct) {
+      setCurrentProduct({
+        ...safeProduct,
+        imgSrc: processImageUrl(activeVariant.imgSrc) || processImageUrl(safeProduct.imgSrc),
+        imgHover: processImageUrl(activeVariant.imgHover) || processImageUrl(activeVariant.imgSrc) || processImageUrl(safeProduct.imgHover),
+        gallery: processGalleryItems(activeVariant.gallery && activeVariant.gallery.length > 0 ? activeVariant.gallery : safeProduct.gallery),
+        inStock: calculateInStock(activeVariant),
+        quantity: activeVariant.quantity
+      });
+    }
+  }, [activeVariant?.documentId, activeVariant?.id, safeProduct.documentId, safeProduct.id]);
+
   // Check if current product is in wishlist using Context
   const currentProductId = safeProduct.documentId || safeProduct.id;
   // Create unique wishlist ID that matches cart ID pattern
@@ -483,6 +497,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
       const variantInfo = activeVariant && !activeVariant.isCurrentProduct ? {
         id: activeVariant.id,
         documentId: activeVariant.documentId,
+        variantId: activeVariant.documentId, // Add variantId for checkout matching
         color: activeVariant.color,
         imgSrc: activeVariant.imgSrc,
         imgHover: activeVariant.imgHover,
@@ -491,7 +506,8 @@ export default function Details1({ product, variants = [], preferredVariantId = 
         oldPrice: activeVariant.oldPrice,
         discount: activeVariant.discount,
         sizes: activeVariant.sizes,
-        gallery: activeVariant.gallery
+        gallery: activeVariant.gallery,
+        product_code: activeVariant.product_code // Include variant's product code
       } : null;
 
       addProductToCart(uniqueCartId, quantity, true, variantInfo, selectedSize);
