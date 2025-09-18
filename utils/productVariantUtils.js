@@ -135,6 +135,140 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
  * @param {string} apiEndpoint - The API endpoint to fetch products from
  * @returns {Array} Array of products and variants as separate items
  */
+/**
+ * Fetch top picks items (both main products and specific variants)
+ * @returns {Promise<Array>} Array of transformed products and variants for top picks
+ */
+export async function fetchTopPicksItems() {
+  try {
+    // Fetch top picks data
+    const response = await fetchDataFromApi('/api/top-picks?populate=*');
+    
+    if (!response.data || response.data.length === 0) {
+      return [];
+    }
+
+    const topPicksItem = response.data[0];
+    if (!topPicksItem.isActive) {
+      return [];
+    }
+
+    const allItems = [];
+
+    // Process main products from 'products' array
+    if (topPicksItem.products && topPicksItem.products.length > 0) {
+      for (const product of topPicksItem.products) {
+        if (product && product.documentId) {
+          try {
+            const apiEndpoint = `/api/products?filters[documentId][$eq]=${product.documentId}&populate=*`;
+            const productsResponse = await fetchDataFromApi(apiEndpoint);
+            
+            if (productsResponse.data && productsResponse.data.length > 0) {
+              const rawProduct = productsResponse.data[0];
+              const transformedProduct = transformProductForListing(rawProduct);
+              
+              if (transformedProduct.isActive !== false) {
+                allItems.push({
+                  ...transformedProduct,
+                  itemType: 'product',
+                  parentProductId: rawProduct.documentId,
+                  isMainProduct: true
+                });
+              }
+            }
+          } catch (error) {
+            console.error(`Error fetching main product ${product.documentId}:`, error);
+          }
+        }
+      }
+    }
+
+    // Process specific variants from 'product_variants' array
+    if (topPicksItem.product_variants && topPicksItem.product_variants.length > 0) {
+      for (const variant of topPicksItem.product_variants) {
+        if (variant && variant.documentId) {
+          try {
+            const variantEndpoint = `/api/product-variants?filters[documentId][$eq]=${variant.documentId}&populate=*`;
+            const variantResponse = await fetchDataFromApi(variantEndpoint);
+            
+            if (variantResponse.data && variantResponse.data.length > 0) {
+              const rawVariant = variantResponse.data[0];
+              
+              // Get the parent product for the variant
+              if (rawVariant.product && rawVariant.product.documentId) {
+                const parentProductEndpoint = `/api/products?filters[documentId][$eq]=${rawVariant.product.documentId}&populate=*`;
+                const parentProductResponse = await fetchDataFromApi(parentProductEndpoint);
+                
+                if (parentProductResponse.data && parentProductResponse.data.length > 0) {
+                  const parentProduct = parentProductResponse.data[0];
+                  const transformedVariant = transformVariantForListing(rawVariant, parentProduct);
+                  
+                  if (transformedVariant.isActive !== false) {
+                    allItems.push({
+                      ...transformedVariant,
+                      itemType: 'variant',
+                      parentProductId: parentProduct.documentId,
+                      isMainProduct: false
+                    });
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error(`Error fetching variant ${variant.documentId}:`, error);
+          }
+        }
+      }
+    }
+
+    return allItems;
+  } catch (error) {
+    console.error('Error fetching top picks items:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch only main products without variants (for top-picks sections)
+ * @param {string} apiEndpoint - API endpoint to fetch products from
+ * @returns {Promise<Array>} Array of transformed main products only
+ */
+export async function fetchMainProductsOnly(apiEndpoint) {
+  try {
+    // Fetch main products
+    const productsResponse = await fetchDataFromApi(apiEndpoint);
+    
+    if (!productsResponse.data || productsResponse.data.length === 0) {
+      return [];
+    }
+
+    const allItems = [];
+
+    // Process each product (main products only, no variants)
+    for (const rawProduct of productsResponse.data) {
+      if (!rawProduct) continue;
+
+      // Transform main product
+      const transformedProduct = transformProductForListing(rawProduct);
+      
+      // Only include active products
+      if (transformedProduct.isActive !== false) {
+        allItems.push({
+          ...transformedProduct,
+          itemType: 'product', // Mark as main product
+          parentProductId: rawProduct.documentId,
+          isMainProduct: true
+        });
+      }
+    }
+
+    return allItems;
+  } catch (error) {
+    console.error('Error fetching main products only:', error);
+    return [];
+  }
+}
+
 export async function fetchProductsWithVariants(apiEndpoint) {
   try {
     // Fetch main products
