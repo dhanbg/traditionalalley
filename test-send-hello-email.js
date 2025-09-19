@@ -86,8 +86,8 @@ async function sendHelloViaAPI() {
       const testPdfBase64 = createTestPDF();
       
       const emailData = {
-        customerEmail: 'rohitgurung0915@gmail.com',
-        customerName: 'Rohit Gurung',
+        customerEmail: 'gurungvaaiii@gmail.com',
+        customerName: 'Gurung',
         orderId: 'HELLO_TEST_' + Date.now(),
         amount: '$0.00 (Test Message)',
         pdfBase64: testPdfBase64,
@@ -138,9 +138,8 @@ async function sendHelloViaAPI() {
               console.log('  - Subject: Invoice for Order ' + emailData.orderId);
               console.log('  - A "Hello!" message in PDF attachment');
               console.log('  - Professional email template from Traditional Alley');
-              console.log('\n📬 Please check:');
-              console.log('  - Inbox: rohitgurung0915@gmail.com');
-              console.log('  - Spam/Junk folder if not in inbox');
+              console.log('\n✅ Please check your Gmail inbox and spam folder.');
+              console.log('🎯 This test will show if emails are being delivered to inbox or spam folder.');
               resolve(response);
             } else {
               console.log('\n❌ FAILED: Email sending failed');
@@ -182,7 +181,7 @@ async function sendHelloViaAPI() {
 
 // Main execution
 async function main() {
-  console.log('🎯 Testing email sending to rohitgurung0915@gmail.com');
+  console.log('🎯 Testing email sending to gurungvaaiii@gmail.com');
   console.log('📝 Message: "Hello!" (embedded in PDF)');
   console.log('🏢 Using Traditional Alley email infrastructure');
   console.log('🔗 API Endpoint: /api/send-invoice-email\n');
@@ -197,7 +196,7 @@ async function main() {
     console.log('\n📋 What happened:');
     console.log('✅ Created a PDF with "Hello!" message');
     console.log('✅ Sent API request to /api/send-invoice-email');
-    console.log('✅ Email should be delivered to rohitgurung0915@gmail.com');
+    console.log('✅ Email should be delivered to gurungvaaiii@gmail.com');
     
   } catch (error) {
     console.error('\n🚨 Test failed:', error.message);
@@ -225,7 +224,7 @@ main().then(() => {
 });
 
 console.log('\n📋 Test Information:');
-console.log('• Recipient: rohitgurung0915@gmail.com');
+console.log('• Recipient: gurungvaaiii@gmail.com');
 console.log('• Message: "Hello!" in PDF format');
 console.log('• Method: API call to /api/send-invoice-email');
 console.log('• Infrastructure: Traditional Alley email system');

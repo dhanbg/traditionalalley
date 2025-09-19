@@ -289,115 +289,85 @@ export async function sendInvoiceEmail(
   customerEmail: string,
   customerName: string,
   orderId: string,
-  invoicePdfBuffer: Buffer,
+  invoicePdfBuffer: Buffer | null,
   orderDetails: any
 ) {
   try {
-    const mailOptions = {
-      from: process.env.HOSTINGER_SMTP_FROM || '"Traditional Alley Support" <support@traditionalalley.com.np>',
+    const { downloadUrl } = orderDetails || {};
+    const hasAttachment = invoicePdfBuffer && invoicePdfBuffer.length > 0;
+    const hasDownloadUrl = downloadUrl && downloadUrl.trim().length > 0;
+    
+    console.log('📧 Email method:', { hasAttachment, hasDownloadUrl, downloadUrl });
+    
+    // Determine the invoice access method
+    let invoiceAccessText = '';
+    let invoiceAccessHtml = '';
+    
+    // We'll use the same message format regardless of delivery method
+    let invoiceAccessMethod = 'attached';
+    let downloadLinkHtml = '';
+    
+    if (hasDownloadUrl) {
+      const fullDownloadUrl = downloadUrl.startsWith('http') ? downloadUrl : `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}${downloadUrl}`;
+      invoiceAccessMethod = 'available for download';
+      downloadLinkHtml = `
+        <div style="background-color: #e8f5e8; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745;">
+          <p><strong>📄 Download Your Invoice:</strong></p>
+          <p><a href="${fullDownloadUrl}" style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">📥 Download Invoice PDF</a></p>
+          <p style="font-size: 12px; color: #666; margin-top: 10px;">Click the button above to download your invoice. The link will be available for 30 days.</p>
+        </div>
+      `;
+    }
+    
+    const mailOptions: any = {
+      from: process.env.HOSTINGER_SMTP_FROM || '"Traditional Alley" <support@traditionalalley.com.np>',
       to: customerEmail,
       subject: `📄 Invoice for Your Order #${orderId} - Traditional Alley`,
       html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Invoice - Traditional Alley</title>
-        </head>
-        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
-          <table role="presentation" style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 40px 20px;">
-                <table role="presentation" style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                  
-                  <!-- Header -->
-                  <tr>
-                    <td style="padding: 40px 40px 20px 40px; text-align: center; background: linear-gradient(135deg, #2c5aa0 0%, #1e3a8a 100%); border-radius: 12px 12px 0 0;">
-                      <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">📄 Invoice Ready</h1>
-                      <p style="margin: 10px 0 0 0; color: #e0e7ff; font-size: 16px;">Your order has been processed successfully</p>
-                    </td>
-                  </tr>
-                  
-                  <!-- Content -->
-                  <tr>
-                    <td style="padding: 40px;">
-                      <h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 24px; font-weight: 600;">Hello ${customerName}!</h2>
-                      
-                      <p style="margin: 0 0 20px 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
-                        Thank you for your purchase! Your order <strong>#${orderId}</strong> has been successfully processed and your invoice is attached to this email.
-                      </p>
-                      
-                      <div style="background-color: #f8fafc; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                        <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 18px; font-weight: 600;">📋 Order Summary</h3>
-                        <p style="margin: 5px 0; color: #4b5563; font-size: 14px;"><strong>Order ID:</strong> ${orderId}</p>
-                        <p style="margin: 5px 0; color: #4b5563; font-size: 14px;"><strong>Order Date:</strong> ${new Date().toLocaleDateString()}</p>
-                        <p style="margin: 5px 0; color: #4b5563; font-size: 14px;"><strong>Total Amount:</strong> ${orderDetails?.totalAmount || 'See invoice'}</p>
-                        <p style="margin: 5px 0; color: #4b5563; font-size: 14px;"><strong>Payment Status:</strong> ${orderDetails?.paymentStatus || 'Completed'}</p>
-                      </div>
-                      
-                      <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0;">
-                        <p style="margin: 0; color: #065f46; font-size: 14px; font-weight: 500;">
-                          📎 Your detailed invoice is attached as a PDF file to this email.
-                        </p>
-                      </div>
-                      
-                      <p style="margin: 20px 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
-                        If you have any questions about your order or need assistance, please don't hesitate to contact our support team.
-                      </p>
-                      
-                      <div style="text-align: center; margin: 30px 0;">
-                        <a href="mailto:support@traditionalalley.com.np" style="display: inline-block; background-color: #2c5aa0; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: 600; font-size: 16px;">Contact Support</a>
-                      </div>
-                    </td>
-                  </tr>
-                  
-                  <!-- Footer -->
-                  <tr>
-                    <td style="padding: 30px 40px; background-color: #f8f9fa; border-radius: 0 0 12px 12px; text-align: center;">
-                      <p style="margin: 0 0 10px 0; font-size: 14px; color: #6c757d;">
-                        Thank you for choosing Traditional Alley
-                      </p>
-                      <p style="margin: 0; font-size: 12px; color: #adb5bd;">
-                        This is an automated message. Please do not reply to this email.
-                      </p>
-                    </td>
-                  </tr>
-                  
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-        </html>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h1 style="color: #333; font-size: 28px; margin-bottom: 10px;">Hi ${customerName},</h1>
+          <p>Thank you for your purchase! 🎉</p>
+          <p>We're happy to let you know that your order has been successfully placed and payment has been received.</p>
+          <p>📄 Please find your <strong>invoice ${invoiceAccessMethod}</strong> for reference.</p>
+          ${downloadLinkHtml}
+          <p>Please wait for another email with your <strong>tracking number details</strong>.</p>
+          <p>If you have any questions, feel free to reply to this email.</p>
+          <p>Thank you for shopping with us. We truly appreciate your trust!</p>
+          <p style="margin-top: 30px;">Best wishes,<br>Traditional Alley</p>
+          <div style="margin-top: 30px; text-align: left;">
+            <img src="https://res.cloudinary.com/dvytbqhm5/image/upload/v1758268516/favicon_removebg_preview_a701788c31.png" alt="Traditional Alley Logo" style="width: 80px; height: 80px;">
+          </div>
+        </div>
       `,
       text: `
-        Traditional Alley - Invoice for Order #${orderId}
+        Hi ${customerName},
         
-        Hello ${customerName},
+        Thank you for your purchase! 🎉
+        We're happy to let you know that your order has been successfully placed and payment has been received.
         
-        Thank you for your purchase! Your order #${orderId} has been successfully processed.
+        Please find your invoice ${invoiceAccessMethod} for reference.${hasDownloadUrl ? `\n        Download link: ${downloadUrl.startsWith('http') ? downloadUrl : `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}${downloadUrl}`}` : ''}
         
-        Order Details:
-        - Order ID: ${orderId}
-        - Order Date: ${new Date().toLocaleDateString()}
-        - Total Amount: ${orderDetails?.totalAmount || 'See attached invoice'}
-        - Payment Status: ${orderDetails?.paymentStatus || 'Completed'}
+        Please wait for another email with your tracking number details.
         
-        Your detailed invoice is attached as a PDF file to this email.
+        If you have any questions, feel free to reply to this email.
         
-        If you have any questions, please contact us at support@traditionalalley.com.np
+        Thank you for shopping with us. We truly appreciate your trust!
         
-        Thank you for choosing Traditional Alley!
-      `,
-      attachments: [
+        Best wishes,
+        Traditional Alley
+      `
+    };
+    
+    // Add attachment only if we have a PDF buffer
+    if (hasAttachment) {
+      mailOptions.attachments = [
         {
           filename: `Invoice-${orderId}.pdf`,
           content: invoicePdfBuffer,
           contentType: 'application/pdf'
         }
-      ]
-    };
+      ];
+    }
 
     const info = await hostingerTransporter.sendMail(mailOptions);
     console.log('✅ Invoice email sent successfully:', info.messageId);

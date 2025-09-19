@@ -531,17 +531,26 @@ const OrderManagement = () => {
     }
   };
 
-  const generateBill = async (payment) => {
+  // Function to generate PDF only (no email)
+  const generateBillOnly = async (payment) => {
     try {
-      console.log('Generating bill for payment:', payment);
+      console.log('🔥 GENERATE BILL ONLY FUNCTION CALLED');
+      console.log('📋 Payment data received:', JSON.stringify(payment, null, 2));
       
       // Validate payment data
       if (!payment) {
+        console.error('❌ Payment data is missing');
+        alert('Error: Payment data is missing');
         throw new Error('Payment data is missing');
       }
       
       // Extract orderData from payment
       const orderData = payment.orderData || {};
+      console.log('📦 Order data extracted:', JSON.stringify(orderData, null, 2));
+      
+      // Check if receiver details exist
+      const receiverDetails = orderData.receiver_details || {};
+      console.log('👤 Receiver details:', JSON.stringify(receiverDetails, null, 2));
       
       // Detect if delivery is to Nepal
       const isNepal = isNepalDestination(payment);
@@ -640,15 +649,15 @@ const OrderManagement = () => {
       doc.setFontSize(10);
       
       // Extract data from the correct structure
-      const receiverDetails = orderData.receiver_details || {};
-      const address = receiverDetails.address || {};
+      const customerDetails = orderData.receiver_details || {};
+      const address = customerDetails.address || {};
       
-      console.log('Customer data sources:', { orderData, receiverDetails, address });
+      console.log('Customer data sources:', { orderData, customerDetails, address });
       
       const customerInfo = [
-        `Name: ${receiverDetails.fullName || 'N/A'}`,
-        `Email: ${receiverDetails.email || 'N/A'}`,
-        `Phone: ${receiverDetails.countryCode || ''}${receiverDetails.phone || 'N/A'}`.replace(/^\+?/, '+'),
+        `Name: ${customerDetails.fullName || 'N/A'}`,
+        `Email: ${customerDetails.email || 'N/A'}`,
+        `Phone: ${customerDetails.countryCode || ''}${customerDetails.phone || 'N/A'}`.replace(/^\+?/, '+'),
         `Address: ${address.addressLine1 || 'N/A'}`,
         `City: ${address.cityName || 'N/A'}`,
         `Postal Code: ${address.postalCode || 'N/A'}`,
@@ -859,60 +868,346 @@ const OrderManagement = () => {
       const fileName = `Traditional_Alley_Bill_${txnId}.pdf`;
       doc.save(fileName);
       
-      console.log('PDF generated successfully for transaction:', txnId);
-      
-      // Send invoice email automatically via API route
-      try {
-        const receiverDetails = orderData.receiver_details || {};
-        const customerEmail = receiverDetails.email;
-        
-        if (customerEmail) {
-          console.log('Sending invoice email to:', customerEmail);
-          
-          // Generate PDF as base64 for API transmission
-          const pdfBase64 = doc.output('datauristring').split(',')[1];
-          
-          const response = await fetch('/api/send-invoice-email', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              customerEmail,
-              customerName: receiverDetails.fullName || 'Valued Customer',
-              orderId: txnId,
-              amount: `${currency} ${formattedAmount}`,
-              pdfBase64,
-              fileName
-            })
-          });
-          
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          
-          const emailResult = await response.json();
-          
-          if (emailResult.success) {
-            console.log('Invoice email sent successfully');
-            alert('PDF generated and invoice email sent successfully!');
-          } else {
-            console.warn('Email API returned failure:', emailResult.error);
-            alert('PDF generated successfully, but failed to send email: ' + (emailResult.error || 'Unknown error'));
-          }
-        } else {
-          console.warn('No customer email found, skipping email send');
-          alert('PDF generated successfully, but no customer email found for sending invoice.');
-        }
-      } catch (emailError) {
-        console.error('Error sending invoice email:', emailError);
-        alert('PDF generated successfully, but failed to send email: ' + emailError.message);
-      }
+      console.log('✅ PDF generated and downloaded successfully for transaction:', txnId);
+      alert('Bill downloaded successfully!');
       
     } catch (error) {
       console.error('Error generating PDF:', error);
       console.error('Payment data structure:', payment);
       alert(`Error generating PDF: ${error.message}. Please check the console for more details.`);
+    }
+  };
+
+  // Function to send email only
+  const sendEmailOnly = async (payment) => {
+    try {
+      console.log('📧 SEND EMAIL ONLY FUNCTION CALLED');
+      console.log('📋 Payment data received:', JSON.stringify(payment, null, 2));
+      
+      // Validate payment data
+      if (!payment) {
+        console.error('❌ Payment data is missing');
+        alert('Error: Payment data is missing');
+        throw new Error('Payment data is missing');
+      }
+      
+      // Extract orderData from payment
+      const orderData = payment.orderData || {};
+      console.log('📦 Order data extracted:', JSON.stringify(orderData, null, 2));
+      
+      // Check if receiver details exist
+      const receiverDetails = orderData.receiver_details || {};
+      console.log('👤 Receiver details:', JSON.stringify(receiverDetails, null, 2));
+      console.log('📧 Customer email found:', receiverDetails.email || 'NO EMAIL FOUND');
+      
+      const customerEmail = receiverDetails.email;
+      
+      if (!customerEmail) {
+        alert('No customer email found. Cannot send invoice email.');
+        return;
+      }
+      
+      // Detect if delivery is to Nepal for currency formatting
+      const isNepal = isNepalDestination(payment);
+      const currency = isNepal ? 'Rs.' : '$';
+      
+      // Calculate amount for display
+      const orderSummary = orderData.orderSummary || {};
+      let amount = payment.amount || orderSummary.totalAmount || 0;
+      
+      // For Nepal orders, keep NPR amounts as-is; for international orders, convert NPR to USD
+      if (!isNepal) {
+        if (payment.amount_npr) {
+          const { getExchangeRate } = await import('../../utils/currency');
+          const nprToUsdRate = await getExchangeRate();
+          amount = payment.amount_npr / nprToUsdRate;
+        } else if (amount > 1000) {
+          const { getExchangeRate } = await import('../../utils/currency');
+          const nprToUsdRate = await getExchangeRate();
+          amount = amount / nprToUsdRate;
+        }
+      } else {
+        if (payment.amount_npr) {
+          amount = payment.amount_npr;
+        }
+      }
+      
+      const formattedAmount = typeof amount === 'number' ? amount.toFixed(2) : amount;
+      const txnId = payment.merchantTxnId || payment.attributes?.merchantTxnId || 'receipt';
+      const fileName = `Traditional_Alley_Bill_${txnId}.pdf`;
+      
+      console.log('📧 STARTING EMAIL SENDING PROCESS');
+      console.log('✅ Customer email found, proceeding to send invoice email to:', customerEmail);
+      
+      // Generate PDF for email (same logic as generateBillOnly but for email purposes)
+      const doc = new jsPDF();
+      
+      // Add Traditional Alley logo
+      let logoLoaded = false;
+      try {
+        const logoImg = new Image();
+        logoImg.crossOrigin = 'anonymous';
+        logoImg.src = '/logo.png';
+        await new Promise((resolve, reject) => {
+          logoImg.onload = () => {
+            const logoWidth = 40;
+            const logoHeight = 10;
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const logoX = (pageWidth - logoWidth) / 2;
+            doc.addImage(logoImg, 'PNG', logoX, 10, logoWidth, logoHeight);
+            logoLoaded = true;
+            resolve();
+          };
+          logoImg.onerror = () => {
+            console.warn('Could not load logo, continuing without it');
+            logoLoaded = false;
+            resolve();
+          };
+        });
+      } catch (error) {
+        console.warn('Logo loading failed:', error);
+        logoLoaded = false;
+      }
+      
+      // Generate the same PDF content as generateBillOnly
+       // Header
+       let headerY = 35;
+       
+       if (!logoLoaded) {
+         doc.setFontSize(20);
+         doc.setTextColor(139, 69, 19);
+         doc.text('Traditional Alley', doc.internal.pageSize.getWidth() / 2, headerY, { align: 'center' });
+         headerY += 10;
+       } else {
+         headerY = 30;
+       }
+
+       doc.setFontSize(16);
+       doc.setTextColor(0, 0, 0);
+       doc.text('INVOICE', doc.internal.pageSize.getWidth() / 2, headerY + 10, { align: 'center' });
+       
+       // Order and Customer Information
+       let yPosition = headerY + 30;
+       
+       doc.setFontSize(12);
+       doc.setTextColor(0, 0, 0);
+       
+       // Order details
+       const txnIdDisplay = payment.merchantTxnId || payment.attributes?.merchantTxnId || 'N/A';
+       doc.text(`Order ID: ${txnIdDisplay}`, 20, yPosition);
+       yPosition += 8;
+       
+       const orderDate = payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : new Date().toLocaleDateString();
+       doc.text(`Date: ${orderDate}`, 20, yPosition);
+       yPosition += 15;
+       
+       // Customer details
+       doc.setFontSize(14);
+       doc.setTextColor(139, 69, 19);
+       doc.text('Bill To:', 20, yPosition);
+       yPosition += 8;
+       
+       doc.setFontSize(12);
+       doc.setTextColor(0, 0, 0);
+       
+       const customerName = receiverDetails.fullName || 'N/A';
+       doc.text(`Name: ${customerName}`, 20, yPosition);
+       yPosition += 6;
+       
+       if (receiverDetails.email) {
+         doc.text(`Email: ${receiverDetails.email}`, 20, yPosition);
+         yPosition += 6;
+       }
+       
+       if (receiverDetails.phone) {
+         doc.text(`Phone: ${receiverDetails.phone}`, 20, yPosition);
+         yPosition += 6;
+       }
+       
+       // Address
+       const address = receiverDetails.address || '';
+       const city = receiverDetails.city || '';
+       const state = receiverDetails.state || '';
+       const country = receiverDetails.country || '';
+       const postalCode = receiverDetails.postalCode || '';
+       
+       let fullAddress = [address, city, state, country, postalCode].filter(Boolean).join(', ');
+       if (fullAddress) {
+         const addressLines = doc.splitTextToSize(`Address: ${fullAddress}`, 170);
+         doc.text(addressLines, 20, yPosition);
+         yPosition += addressLines.length * 6;
+       }
+       
+       yPosition += 10;
+       
+       // Products table
+       doc.setFontSize(14);
+       doc.setTextColor(139, 69, 19);
+       doc.text('Items:', 20, yPosition);
+       yPosition += 10;
+       
+       // Table headers
+       doc.setFontSize(10);
+       doc.setTextColor(0, 0, 0);
+       doc.text('Item', 20, yPosition);
+       doc.text('Qty', 120, yPosition);
+       doc.text('Price', 140, yPosition);
+       doc.text('Total', 170, yPosition);
+       yPosition += 5;
+       
+       // Draw line under headers
+       doc.line(20, yPosition, 190, yPosition);
+       yPosition += 8;
+       
+       // Product items
+       const products = orderData.products || [];
+       let subtotal = 0;
+       
+       products.forEach((product) => {
+         const productName = product.name || product.title || 'Unknown Product';
+         const quantity = product.quantity || 1;
+         const price = product.price || 0;
+         const total = quantity * price;
+         subtotal += total;
+         
+         // Handle long product names
+         const nameLines = doc.splitTextToSize(productName, 90);
+         doc.text(nameLines, 20, yPosition);
+         doc.text(quantity.toString(), 120, yPosition);
+         doc.text(`${currency} ${price.toFixed(2)}`, 140, yPosition);
+         doc.text(`${currency} ${total.toFixed(2)}`, 170, yPosition);
+         
+         yPosition += Math.max(nameLines.length * 5, 8);
+       });
+       
+       yPosition += 5;
+       doc.line(20, yPosition, 190, yPosition);
+       yPosition += 10;
+       
+       // Order summary
+       const shipping = orderSummary.shippingCost || 0;
+       const tax = orderSummary.tax || 0;
+       const discount = orderSummary.discount || 0;
+       const finalTotal = parseFloat(formattedAmount);
+       
+       doc.text(`Subtotal: ${currency} ${subtotal.toFixed(2)}`, 140, yPosition);
+       yPosition += 6;
+       
+       if (shipping > 0) {
+         doc.text(`Shipping: ${currency} ${shipping.toFixed(2)}`, 140, yPosition);
+         yPosition += 6;
+       }
+       
+       if (tax > 0) {
+         doc.text(`Tax: ${currency} ${tax.toFixed(2)}`, 140, yPosition);
+         yPosition += 6;
+       }
+       
+       if (discount > 0) {
+         doc.text(`Discount: -${currency} ${discount.toFixed(2)}`, 140, yPosition);
+         yPosition += 6;
+       }
+       
+       // Total
+       doc.setFontSize(12);
+       doc.setTextColor(139, 69, 19);
+       doc.text(`Total: ${currency} ${finalTotal}`, 140, yPosition);
+       
+       // Footer
+       yPosition += 20;
+       doc.setFontSize(10);
+       doc.setTextColor(100, 100, 100);
+       doc.text('Thank you for your business!', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+       doc.text('Traditional Alley - Authentic Products, Delivered Worldwide', doc.internal.pageSize.getWidth() / 2, yPosition + 8, { align: 'center' });
+      
+      // Generate PDF as base64 for saving to server
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      const payloadSize = pdfBase64 ? pdfBase64.length : 0;
+      
+      console.log('📦 PDF Base64 size:', payloadSize, 'characters');
+      console.log('📦 Estimated PDF size:', Math.round(payloadSize * 0.75 / 1024), 'KB');
+      
+      // First, save the PDF to the server
+      console.log('💾 Saving PDF to server...');
+      const saveResponse = await fetch('/api/save-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileName,
+          pdfBase64,
+        }),
+      });
+      
+      if (!saveResponse.ok) {
+        const errorText = await saveResponse.text();
+        throw new Error(`Failed to save PDF: ${saveResponse.status} - ${errorText}`);
+      }
+      
+      const saveResult = await saveResponse.json();
+      console.log('✅ PDF saved successfully:', saveResult);
+      
+      // Now send email with download link
+      console.log('📤 Making API call to /api/send-invoice-email...');
+      console.log('📋 Request payload:', {
+        customerEmail,
+        customerName: receiverDetails.fullName || 'Valued Customer',
+        orderId: txnId,
+        amount: `${currency} ${formattedAmount}`,
+        fileName,
+        downloadUrl: saveResult.downloadUrl
+      });
+      
+      const response = await fetch('/api/send-invoice-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customerEmail,
+          customerName: receiverDetails.fullName || 'Valued Customer',
+          orderId: txnId,
+          amount: `${currency} ${formattedAmount}`,
+          fileName,
+          downloadUrl: saveResult.downloadUrl,
+        }),
+      });
+      
+      console.log('📥 API Response status:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ API Error Response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}, response: ${errorText}`);
+      }
+      
+      const emailResult = await response.json();
+      console.log('📧 Email API Result:', emailResult);
+      
+      if (emailResult.success) {
+        console.log('✅ Invoice email sent successfully!');
+        alert('Invoice email sent successfully!');
+      } else {
+        console.warn('❌ Email API returned failure:', emailResult.error);
+        alert('Failed to send email: ' + (emailResult.error || 'Unknown error'));
+      }
+      
+    } catch (error) {
+      console.error('Error sending invoice email:', error);
+      
+      let errorMessage = 'Unknown error occurred';
+      if (error.message.includes('Failed to save PDF')) {
+        errorMessage = 'Failed to save PDF to server. Please try again or contact support.';
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Connection failed. Please check if the server is running and try again.';
+      } else if (error.message.includes('CONNECTION_RESET')) {
+        errorMessage = 'Connection was reset. Please try again.';
+      } else {
+        errorMessage = error.message;
+      }
+      
+      alert('Failed to send email: ' + errorMessage);
     }
   };
 
@@ -1124,15 +1419,34 @@ const OrderManagement = () => {
                     </div>
                       
                     <div className="flex flex-wrap gap-2">
-                      {/* Generate Bill/Receipt Button */}
+                      {/* Download Bill Button */}
                       <button
-                        onClick={() => generateBill(payment)}
-                        className="bg-orange-500 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-1"
+                        onClick={() => {
+                          console.log('📥 DOWNLOAD BILL BUTTON CLICKED');
+                          console.log('📋 Payment data being passed:', JSON.stringify(payment, null, 2));
+                          generateBillOnly(payment);
+                        }}
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-1"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
-                        <span>Generate Bill</span>
+                        <span>Download Bill</span>
+                      </button>
+                      
+                      {/* Send Email Button */}
+                      <button
+                        onClick={() => {
+                          console.log('📧 SEND EMAIL BUTTON CLICKED');
+                          console.log('📋 Payment data being passed:', JSON.stringify(payment, null, 2));
+                          sendEmailOnly(payment);
+                        }}
+                        className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-1"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                        <span>Send Email</span>
                       </button>
                       
                       {(() => {
