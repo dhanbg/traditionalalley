@@ -561,7 +561,7 @@ const OrderManagement = () => {
       
       const doc = new jsPDF();
       
-      // Add Traditional Alley logo with compression
+      // Add Traditional Alley logo
       let logoLoaded = false;
       try {
         const logoImg = new Image();
@@ -569,22 +569,12 @@ const OrderManagement = () => {
         logoImg.src = '/logo.png';
         await new Promise((resolve, reject) => {
           logoImg.onload = () => {
-            // Create canvas to compress image
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
+            // Add logo to PDF (centered at top)
             const logoWidth = 40;
             const logoHeight = 10;
-            canvas.width = logoWidth * 2;
-            canvas.height = logoHeight * 2;
-            
-            // Draw and compress to JPEG
-            ctx.drawImage(logoImg, 0, 0, canvas.width, canvas.height);
-            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
-            
             const pageWidth = doc.internal.pageSize.getWidth();
             const logoX = (pageWidth - logoWidth) / 2;
-            doc.addImage(compressedDataUrl, 'JPEG', logoX, 10, logoWidth, logoHeight);
+            doc.addImage(logoImg, 'PNG', logoX, 10, logoWidth, logoHeight);
             logoLoaded = true;
             resolve();
           };
@@ -873,21 +863,6 @@ const OrderManagement = () => {
       doc.text('Thank you for shopping with Traditional Alley!', doc.internal.pageSize.getWidth() / 2, footerY, { align: 'center' });
       doc.text('For any queries, please contact us at support@traditionalalley.com', doc.internal.pageSize.getWidth() / 2, footerY + 8, { align: 'center' });
       
-      // Check PDF size before saving
-      const pdfBase64 = doc.output('datauristring').split(',')[1];
-      const payloadSize = pdfBase64 ? pdfBase64.length : 0;
-      const estimatedSizeKB = Math.round(payloadSize * 0.75 / 1024);
-      
-      console.log('📦 PDF Base64 size:', payloadSize, 'characters');
-      console.log('📦 Estimated PDF size:', estimatedSizeKB, 'KB');
-      
-      // Check if PDF is too large (> 3MB estimated)
-      const MAX_SIZE_KB = 3072; // 3MB limit
-      if (estimatedSizeKB > MAX_SIZE_KB) {
-        console.warn('⚠️ PDF size exceeds recommended limit:', estimatedSizeKB, 'KB');
-        alert(`Warning: PDF size is ${estimatedSizeKB}KB. Large PDFs may have issues when emailing. Consider reducing content.`);
-      }
-      
       // Save the PDF
       const txnId = payment.merchantTxnId || payment.attributes?.merchantTxnId || 'receipt';
       const fileName = `Traditional_Alley_Bill_${txnId}.pdf`;
@@ -967,7 +942,7 @@ const OrderManagement = () => {
       // Generate PDF for email (same logic as generateBillOnly but for email purposes)
       const doc = new jsPDF();
       
-      // Add Traditional Alley logo with compression
+      // Add Traditional Alley logo
       let logoLoaded = false;
       try {
         const logoImg = new Image();
@@ -975,22 +950,11 @@ const OrderManagement = () => {
         logoImg.src = '/logo.png';
         await new Promise((resolve, reject) => {
           logoImg.onload = () => {
-            // Create canvas to compress image
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
             const logoWidth = 40;
             const logoHeight = 10;
-            canvas.width = logoWidth * 2;
-            canvas.height = logoHeight * 2;
-            
-            // Draw and compress to JPEG
-            ctx.drawImage(logoImg, 0, 0, canvas.width, canvas.height);
-            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
-            
             const pageWidth = doc.internal.pageSize.getWidth();
             const logoX = (pageWidth - logoWidth) / 2;
-            doc.addImage(compressedDataUrl, 'JPEG', logoX, 10, logoWidth, logoHeight);
+            doc.addImage(logoImg, 'PNG', logoX, 10, logoWidth, logoHeight);
             logoLoaded = true;
             resolve();
           };
@@ -1157,48 +1121,11 @@ const OrderManagement = () => {
        doc.text('Traditional Alley - Authentic Products, Delivered Worldwide', doc.internal.pageSize.getWidth() / 2, yPosition + 8, { align: 'center' });
       
       // Generate PDF as base64 for saving to server
-      let pdfBase64 = doc.output('datauristring').split(',')[1];
-      let payloadSize = pdfBase64 ? pdfBase64.length : 0;
-      let estimatedSizeKB = Math.round(payloadSize * 0.75 / 1024);
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      const payloadSize = pdfBase64 ? pdfBase64.length : 0;
       
       console.log('📦 PDF Base64 size:', payloadSize, 'characters');
-      console.log('📦 Estimated PDF size:', estimatedSizeKB, 'KB');
-      
-      // Check if PDF is too large (> 3MB estimated)
-      const MAX_SIZE_KB = 3072; // 3MB limit
-      if (estimatedSizeKB > MAX_SIZE_KB) {
-        console.warn('⚠️ PDF size exceeds limit, attempting further compression...');
-        
-        // Try generating without logo as fallback
-        const fallbackDoc = new jsPDF();
-        
-        // Generate same content but without logo
-        let headerY = 35;
-        fallbackDoc.setFontSize(20);
-        fallbackDoc.setTextColor(139, 69, 19);
-        fallbackDoc.text('Traditional Alley', fallbackDoc.internal.pageSize.getWidth() / 2, headerY, { align: 'center' });
-        headerY += 10;
-        
-        // Copy the rest of the PDF content (simplified version)
-        fallbackDoc.setFontSize(16);
-        fallbackDoc.setTextColor(0, 0, 0);
-        fallbackDoc.text('INVOICE', fallbackDoc.internal.pageSize.getWidth() / 2, headerY + 10, { align: 'center' });
-        
-        const fallbackBase64 = fallbackDoc.output('datauristring').split(',')[1];
-        const fallbackSize = Math.round(fallbackBase64.length * 0.75 / 1024);
-        
-        console.log('📦 Fallback PDF size:', fallbackSize, 'KB');
-        
-        if (fallbackSize > MAX_SIZE_KB) {
-          throw new Error(`PDF too large even after compression: ${fallbackSize}KB. Please contact support.`);
-        }
-        
-        // Use fallback PDF
-        pdfBase64 = fallbackBase64;
-        payloadSize = pdfBase64.length;
-        estimatedSizeKB = Math.round(payloadSize * 0.75 / 1024);
-        console.log('✅ Using compressed PDF:', estimatedSizeKB, 'KB');
-      }
+      console.log('📦 Estimated PDF size:', Math.round(payloadSize * 0.75 / 1024), 'KB');
       
       // First, save the PDF to the server
       console.log('💾 Saving PDF to server...');
