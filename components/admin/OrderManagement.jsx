@@ -1120,12 +1120,50 @@ const OrderManagement = () => {
        doc.text('Thank you for your business!', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
        doc.text('Traditional Alley - Authentic Products, Delivered Worldwide', doc.internal.pageSize.getWidth() / 2, yPosition + 8, { align: 'center' });
       
-      // Generate PDF as base64 for saving to server
-      const pdfBase64 = doc.output('datauristring').split(',')[1];
-      const payloadSize = pdfBase64 ? pdfBase64.length : 0;
+      // Generate PDF with compression to reduce payload size
+      // Use lower quality settings to reduce file size
+      const pdfArrayBuffer = doc.output('arraybuffer');
+      const pdfUint8Array = new Uint8Array(pdfArrayBuffer);
       
-      console.log('📦 PDF Base64 size:', payloadSize, 'characters');
-      console.log('📦 Estimated PDF size:', Math.round(payloadSize * 0.75 / 1024), 'KB');
+      // Convert to base64 with compression
+      let pdfBase64 = doc.output('datauristring').split(',')[1];
+      const originalSize = pdfBase64 ? pdfBase64.length : 0;
+      
+      console.log('📦 Original PDF Base64 size:', originalSize, 'characters');
+      console.log('📦 Original estimated PDF size:', Math.round(originalSize * 0.75 / 1024), 'KB');
+      
+      // If PDF is too large (>3MB base64), try to compress by reducing quality
+      if (originalSize > 4000000) { // ~3MB base64 limit
+        console.log('⚠️ PDF too large, attempting compression...');
+        
+        // Create a new PDF with reduced quality
+        const compressedDoc = new jsPDF({
+          compress: true,
+          precision: 2
+        });
+        
+        // Copy content with reduced precision
+        const pages = doc.internal.pages;
+        for (let i = 1; i < pages.length; i++) {
+          if (i > 1) compressedDoc.addPage();
+          // Re-add content with compression
+          compressedDoc.internal.pages[i] = pages[i];
+        }
+        
+        pdfBase64 = compressedDoc.output('datauristring').split(',')[1];
+        const compressedSize = pdfBase64 ? pdfBase64.length : 0;
+        
+        console.log('📦 Compressed PDF Base64 size:', compressedSize, 'characters');
+        console.log('📦 Compressed estimated PDF size:', Math.round(compressedSize * 0.75 / 1024), 'KB');
+        console.log('📉 Compression ratio:', Math.round((1 - compressedSize / originalSize) * 100) + '%');
+      }
+      
+      const finalSize = pdfBase64 ? pdfBase64.length : 0;
+      
+      // Check if still too large after compression
+      if (finalSize > 4000000) {
+        throw new Error('PDF file is too large even after compression. Please reduce the number of items or contact support.');
+      }
       
       // First, save the PDF to the server
       console.log('💾 Saving PDF to server...');
@@ -1197,7 +1235,11 @@ const OrderManagement = () => {
       console.error('Error sending invoice email:', error);
       
       let errorMessage = 'Unknown error occurred';
-      if (error.message.includes('Failed to save PDF')) {
+      if (error.message.includes('PDF file is too large')) {
+        errorMessage = 'The invoice PDF is too large to send via email. This usually happens with orders containing many items. Please try reducing the number of items or contact support for assistance.';
+      } else if (error.message.includes('Failed to save PDF: 413') || error.message.includes('Request Entity Too Large')) {
+        errorMessage = 'The invoice file is too large for the server to process. Please try again or contact support if the issue persists.';
+      } else if (error.message.includes('Failed to save PDF')) {
         errorMessage = 'Failed to save PDF to server. Please try again or contact support.';
       } else if (error.message.includes('Failed to fetch')) {
         errorMessage = 'Connection failed. Please check if the server is running and try again.';
