@@ -1134,42 +1134,57 @@ const OrderManagement = () => {
       
       // If PDF is too large (>2MB base64), try to compress by reducing quality
       if (originalSize > 2500000) { // ~2MB base64 limit to be safe
-        console.log('⚠️ PDF too large, attempting compression...');
+        console.log('⚠️ PDF too large (' + originalSize + ' chars), attempting compression...');
         
         try {
-          // Try different compression approaches
-          // Method 1: Use lower precision and compression
-          const compressedDoc = new jsPDF({
-            compress: true,
-            precision: 1, // Lower precision for smaller size
-            putOnlyUsedFonts: true
-          });
+          // Method 1: Try jsPDF built-in compression
+          console.log('🔄 Trying jsPDF compression...');
+          let compressedBase64 = doc.output('datauristring', { compress: true }).split(',')[1];
+          let compressedSize = compressedBase64 ? compressedBase64.length : 0;
           
-          // Re-generate the content with compression settings
-          // Copy the original document structure but with compression
-          const originalContent = doc.internal.pages;
+          console.log('📦 jsPDF Compressed size:', compressedSize, 'characters');
           
-          // Method 2: If jsPDF compression doesn't work well, try reducing content
-          // Generate PDF with reduced font sizes and spacing
-          console.log('🔄 Regenerating PDF with compression settings...');
-          
-          // For now, let's try the simpler approach of using output with compression
-          pdfBase64 = doc.output('datauristring', { compress: true }).split(',')[1];
-          const compressedSize = pdfBase64 ? pdfBase64.length : 0;
-          
-          console.log('📦 Compressed PDF Base64 size:', compressedSize, 'characters');
-          console.log('📦 Compressed estimated PDF size:', Math.round(compressedSize * 0.75 / 1024), 'KB');
+          // If jsPDF compression didn't help much, try manual compression
+          if (compressedSize > originalSize * 0.8) { // Less than 20% reduction
+            console.log('🔄 jsPDF compression insufficient, trying manual compression...');
+            
+            // Create a new PDF with aggressive compression settings
+            const compressedDoc = new jsPDF({
+              orientation: 'portrait',
+              unit: 'mm',
+              format: 'a4',
+              compress: true,
+              precision: 1
+            });
+            
+            // Recreate content with smaller fonts and tighter spacing
+            compressedDoc.setFontSize(8); // Smaller font
+            compressedDoc.text('Invoice - Traditional Alley', 10, 15);
+            compressedDoc.text('Order ID: ' + txnId, 10, 25);
+            compressedDoc.text('Customer: ' + (receiverDetails.fullName || 'N/A'), 10, 35);
+            compressedDoc.text('Total: ' + currency + ' ' + formattedAmount, 10, 45);
+            compressedDoc.text('Items: ' + cartItems.length + ' products', 10, 55);
+            compressedDoc.text('Generated: ' + new Date().toLocaleDateString(), 10, 65);
+            compressedDoc.text('This is a simplified invoice due to size constraints.', 10, 80);
+            compressedDoc.text('Contact support for detailed invoice if needed.', 10, 90);
+            
+            compressedBase64 = compressedDoc.output('datauristring').split(',')[1];
+            compressedSize = compressedBase64 ? compressedBase64.length : 0;
+            
+            console.log('📦 Manual compressed size:', compressedSize, 'characters');
+          }
           
           if (compressedSize < originalSize) {
+            console.log('✅ Compression successful!');
             console.log('📉 Compression ratio:', Math.round((1 - compressedSize / originalSize) * 100) + '%');
+            console.log('📦 Final compressed size:', Math.round(compressedSize * 0.75 / 1024), 'KB');
+            pdfBase64 = compressedBase64;
           } else {
             console.log('⚠️ Compression did not reduce size, using original');
-            pdfBase64 = doc.output('datauristring').split(',')[1];
           }
         } catch (compressionError) {
           console.error('❌ Compression failed:', compressionError);
           console.log('📄 Using original PDF without compression');
-          pdfBase64 = doc.output('datauristring').split(',')[1];
         }
       }
       
