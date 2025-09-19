@@ -1132,38 +1132,57 @@ const OrderManagement = () => {
       console.log('📦 Original PDF Base64 size:', originalSize, 'characters');
       console.log('📦 Original estimated PDF size:', Math.round(originalSize * 0.75 / 1024), 'KB');
       
-      // If PDF is too large (>3MB base64), try to compress by reducing quality
-      if (originalSize > 4000000) { // ~3MB base64 limit
+      // If PDF is too large (>2MB base64), try to compress by reducing quality
+      if (originalSize > 2500000) { // ~2MB base64 limit to be safe
         console.log('⚠️ PDF too large, attempting compression...');
         
-        // Create a new PDF with reduced quality
-        const compressedDoc = new jsPDF({
-          compress: true,
-          precision: 2
-        });
-        
-        // Copy content with reduced precision
-        const pages = doc.internal.pages;
-        for (let i = 1; i < pages.length; i++) {
-          if (i > 1) compressedDoc.addPage();
-          // Re-add content with compression
-          compressedDoc.internal.pages[i] = pages[i];
+        try {
+          // Try different compression approaches
+          // Method 1: Use lower precision and compression
+          const compressedDoc = new jsPDF({
+            compress: true,
+            precision: 1, // Lower precision for smaller size
+            putOnlyUsedFonts: true
+          });
+          
+          // Re-generate the content with compression settings
+          // Copy the original document structure but with compression
+          const originalContent = doc.internal.pages;
+          
+          // Method 2: If jsPDF compression doesn't work well, try reducing content
+          // Generate PDF with reduced font sizes and spacing
+          console.log('🔄 Regenerating PDF with compression settings...');
+          
+          // For now, let's try the simpler approach of using output with compression
+          pdfBase64 = doc.output('datauristring', { compress: true }).split(',')[1];
+          const compressedSize = pdfBase64 ? pdfBase64.length : 0;
+          
+          console.log('📦 Compressed PDF Base64 size:', compressedSize, 'characters');
+          console.log('📦 Compressed estimated PDF size:', Math.round(compressedSize * 0.75 / 1024), 'KB');
+          
+          if (compressedSize < originalSize) {
+            console.log('📉 Compression ratio:', Math.round((1 - compressedSize / originalSize) * 100) + '%');
+          } else {
+            console.log('⚠️ Compression did not reduce size, using original');
+            pdfBase64 = doc.output('datauristring').split(',')[1];
+          }
+        } catch (compressionError) {
+          console.error('❌ Compression failed:', compressionError);
+          console.log('📄 Using original PDF without compression');
+          pdfBase64 = doc.output('datauristring').split(',')[1];
         }
-        
-        pdfBase64 = compressedDoc.output('datauristring').split(',')[1];
-        const compressedSize = pdfBase64 ? pdfBase64.length : 0;
-        
-        console.log('📦 Compressed PDF Base64 size:', compressedSize, 'characters');
-        console.log('📦 Compressed estimated PDF size:', Math.round(compressedSize * 0.75 / 1024), 'KB');
-        console.log('📉 Compression ratio:', Math.round((1 - compressedSize / originalSize) * 100) + '%');
       }
       
       const finalSize = pdfBase64 ? pdfBase64.length : 0;
       
-      // Check if still too large after compression
-      if (finalSize > 4000000) {
+      // Check if still too large after compression (be more aggressive)
+      if (finalSize > 3000000) { // ~2.25MB base64 limit
+        console.error('❌ PDF still too large after compression:', finalSize, 'characters');
+        console.error('📊 Final estimated size:', Math.round(finalSize * 0.75 / 1024), 'KB');
         throw new Error('PDF file is too large even after compression. Please reduce the number of items or contact support.');
       }
+      
+      console.log('✅ PDF size acceptable:', finalSize, 'characters (', Math.round(finalSize * 0.75 / 1024), 'KB )');
       
       // First, save the PDF to the server
       console.log('💾 Saving PDF to server...');
