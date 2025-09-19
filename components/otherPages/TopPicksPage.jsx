@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import ProductCard1 from "@/components/productCards/ProductCard1";
 import Link from "next/link";
 import { fetchDataFromApi } from "@/utils/api";
-import { fetchProductsWithVariants } from "@/utils/productVariantUtils";
+import { fetchTopPicksItems } from "@/utils/productVariantUtils";
 
 const DEFAULT_IMAGE = '/logo.png';
 
@@ -19,37 +19,14 @@ export default function TopPicksPage() {
       try {
         setLoading(true);
         
-        const response = await fetchDataFromApi('/api/top-picks?populate=*');
+        // Use the new function that handles both products and variants
+        const topPicksItems = await fetchTopPicksItems();
         
-        if (response && response.data && response.data.length > 0) {
-          const topPicksItem = response.data[0]; // Get the first (and likely only) top picks entry
-          
-          if (topPicksItem.isActive && topPicksItem.products && topPicksItem.products.length > 0) {
-            setTopPicksData(topPicksItem);
-            
-            // Fetch all products with their variants
-            const allProductsWithVariants = [];
-            
-            for (const product of topPicksItem.products) {
-              try {
-                if (product.documentId) {
-                  const apiEndpoint = `/api/products?filters[documentId][$eq]=${product.documentId}&populate=*`;
-                  const productsWithVariants = await fetchProductsWithVariants(apiEndpoint);
-                  allProductsWithVariants.push(...productsWithVariants);
-                }
-              } catch (error) {
-                console.error(`Error fetching product with variants for ID ${product.documentId}:`, error);
-              }
-            }
-            
-            setProducts(allProductsWithVariants);
-            setError(null);
-          } else {
-            setError("No active top picks found or no products in the top picks");
-            setProducts([]);
-          }
+        if (topPicksItems && topPicksItems.length > 0) {
+          setProducts(topPicksItems);
+          setError(null);
         } else {
-          setError("No top picks data found in API response");
+          setError("No active top picks found");
           setProducts([]);
         }
         
