@@ -1120,84 +1120,38 @@ const OrderManagement = () => {
        doc.text('Thank you for your business!', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
        doc.text('Traditional Alley - Authentic Products, Delivered Worldwide', doc.internal.pageSize.getWidth() / 2, yPosition + 8, { align: 'center' });
       
-      // Generate PDF with compression to reduce payload size
-      // Use lower quality settings to reduce file size
-      const pdfArrayBuffer = doc.output('arraybuffer');
-      const pdfUint8Array = new Uint8Array(pdfArrayBuffer);
-      
-      // Convert to base64 with compression
+      // Generate PDF as base64 for saving to server
       let pdfBase64 = doc.output('datauristring').split(',')[1];
       const originalSize = pdfBase64 ? pdfBase64.length : 0;
       
       console.log('📦 Original PDF Base64 size:', originalSize, 'characters');
       console.log('📦 Original estimated PDF size:', Math.round(originalSize * 0.75 / 1024), 'KB');
       
-      // If PDF is too large (>2MB base64), try to compress by reducing quality
-      if (originalSize > 2500000) { // ~2MB base64 limit to be safe
-        console.log('⚠️ PDF too large (' + originalSize + ' chars), attempting compression...');
+      // Compress PDF if it's too large (over 10MB base64 = ~7.5MB actual)
+      const maxSize = 10 * 1024 * 1024; // 10MB in characters
+      if (originalSize > maxSize) {
+        console.log('⚠️ PDF too large, attempting compression...');
+        // Generate PDF with lower quality/compression
+        const compressedPdf = new jsPDF({
+          compress: true,
+          precision: 2
+        });
         
-        try {
-          // Method 1: Try jsPDF built-in compression
-          console.log('🔄 Trying jsPDF compression...');
-          let compressedBase64 = doc.output('datauristring', { compress: true }).split(',')[1];
-          let compressedSize = compressedBase64 ? compressedBase64.length : 0;
-          
-          console.log('📦 jsPDF Compressed size:', compressedSize, 'characters');
-          
-          // If jsPDF compression didn't help much, try manual compression
-          if (compressedSize > originalSize * 0.8) { // Less than 20% reduction
-            console.log('🔄 jsPDF compression insufficient, trying manual compression...');
-            
-            // Create a new PDF with aggressive compression settings
-            const compressedDoc = new jsPDF({
-              orientation: 'portrait',
-              unit: 'mm',
-              format: 'a4',
-              compress: true,
-              precision: 1
-            });
-            
-            // Recreate content with smaller fonts and tighter spacing
-            compressedDoc.setFontSize(8); // Smaller font
-            compressedDoc.text('Invoice - Traditional Alley', 10, 15);
-            compressedDoc.text('Order ID: ' + txnId, 10, 25);
-            compressedDoc.text('Customer: ' + (receiverDetails.fullName || 'N/A'), 10, 35);
-            compressedDoc.text('Total: ' + currency + ' ' + formattedAmount, 10, 45);
-            compressedDoc.text('Items: ' + cartItems.length + ' products', 10, 55);
-            compressedDoc.text('Generated: ' + new Date().toLocaleDateString(), 10, 65);
-            compressedDoc.text('This is a simplified invoice due to size constraints.', 10, 80);
-            compressedDoc.text('Contact support for detailed invoice if needed.', 10, 90);
-            
-            compressedBase64 = compressedDoc.output('datauristring').split(',')[1];
-            compressedSize = compressedBase64 ? compressedBase64.length : 0;
-            
-            console.log('📦 Manual compressed size:', compressedSize, 'characters');
-          }
-          
-          if (compressedSize < originalSize) {
-            console.log('✅ Compression successful!');
-            console.log('📉 Compression ratio:', Math.round((1 - compressedSize / originalSize) * 100) + '%');
-            console.log('📦 Final compressed size:', Math.round(compressedSize * 0.75 / 1024), 'KB');
-            pdfBase64 = compressedBase64;
-          } else {
-            console.log('⚠️ Compression did not reduce size, using original');
-          }
-        } catch (compressionError) {
-          console.error('❌ Compression failed:', compressionError);
-          console.log('📄 Using original PDF without compression');
-        }
+        // Re-generate with same content but compressed settings
+        // Note: This is a simplified approach - in production you might want more sophisticated compression
+        pdfBase64 = doc.output('datauristring', { compress: true }).split(',')[1];
+        const compressedSize = pdfBase64.length;
+        console.log('📦 Compressed PDF Base64 size:', compressedSize, 'characters');
+        console.log('📦 Compression ratio:', Math.round((1 - compressedSize/originalSize) * 100) + '%');
       }
       
-      const finalSize = pdfBase64 ? pdfBase64.length : 0;
+      // Determine if we should send PDF as attachment or download link
+      const finalSize = pdfBase64.length;
+      const shouldSendAsAttachment = finalSize < (8 * 1024 * 1024); // 8MB threshold for attachment
       
-      // Check if still too large after compression (be more aggressive)
-      if (finalSize > 3000000) { // ~2.25MB base64 limit
-        console.error('❌ PDF still too large after compression:', finalSize, 'characters');
-        console.error('📊 Final estimated size:', Math.round(finalSize * 0.75 / 1024), 'KB');
-        throw new Error('PDF file is too large even after compression. Please reduce the number of items or contact support.');
-      }
-      
-      console.log('✅ PDF size acceptable:', finalSize, 'characters (', Math.round(finalSize * 0.75 / 1024), 'KB )');
+      console.log('📊 Final PDF size check:');
+      console.log('  Size:', Math.round(finalSize * 0.75 / 1024), 'KB');
+      console.log('  Send as attachment:', shouldSendAsAttachment);
       
       // First, save the PDF to the server
       console.log('💾 Saving PDF to server...');
@@ -1220,15 +1174,29 @@ const OrderManagement = () => {
       const saveResult = await saveResponse.json();
       console.log('✅ PDF saved successfully:', saveResult);
       
-      // Now send email with download link
+      // Now send email with either attachment or download link
       console.log('📤 Making API call to /api/send-invoice-email...');
-      console.log('📋 Request payload:', {
+      
+      const emailPayload = {
         customerEmail,
         customerName: receiverDetails.fullName || 'Valued Customer',
         orderId: txnId,
         amount: `${currency} ${formattedAmount}`,
         fileName,
         downloadUrl: saveResult.downloadUrl
+      };
+      
+      // Only include PDF attachment if file is small enough
+      if (shouldSendAsAttachment) {
+        emailPayload.pdfBase64 = pdfBase64;
+        console.log('📎 Including PDF as email attachment');
+      } else {
+        console.log('🔗 Sending download link only (file too large for attachment)');
+      }
+      
+      console.log('📋 Request payload:', {
+        ...emailPayload,
+        pdfBase64: emailPayload.pdfBase64 ? '[PDF_DATA_INCLUDED]' : '[NO_ATTACHMENT]'
       });
       
       const response = await fetch('/api/send-invoice-email', {
@@ -1236,14 +1204,7 @@ const OrderManagement = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          customerEmail,
-          customerName: receiverDetails.fullName || 'Valued Customer',
-          orderId: txnId,
-          amount: `${currency} ${formattedAmount}`,
-          fileName,
-          downloadUrl: saveResult.downloadUrl,
-        }),
+        body: JSON.stringify(emailPayload),
       });
       
       console.log('📥 API Response status:', response.status, response.statusText);
@@ -1269,11 +1230,7 @@ const OrderManagement = () => {
       console.error('Error sending invoice email:', error);
       
       let errorMessage = 'Unknown error occurred';
-      if (error.message.includes('PDF file is too large')) {
-        errorMessage = 'The invoice PDF is too large to send via email. This usually happens with orders containing many items. Please try reducing the number of items or contact support for assistance.';
-      } else if (error.message.includes('Failed to save PDF: 413') || error.message.includes('Request Entity Too Large')) {
-        errorMessage = 'The invoice file is too large for the server to process. Please try again or contact support if the issue persists.';
-      } else if (error.message.includes('Failed to save PDF')) {
+      if (error.message.includes('Failed to save PDF')) {
         errorMessage = 'Failed to save PDF to server. Please try again or contact support.';
       } else if (error.message.includes('Failed to fetch')) {
         errorMessage = 'Connection failed. Please check if the server is running and try again.';

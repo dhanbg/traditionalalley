@@ -1,15 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 
-// Configure API route to handle larger payloads
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb', // Allow up to 10MB for PDF uploads
-    },
-  },
-};
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -59,3 +50,12 @@ export default async function handler(req, res) {
     });
   }
 }
+
+// Increase the body size limit for large PDFs
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '15mb', // Allow up to 15MB for base64 PDFs
+    },
+  },
+};
