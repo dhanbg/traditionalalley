@@ -795,7 +795,7 @@ const OrderManagement = () => {
       doc.setFont(undefined, 'bold');
       
       // Use payment amount as primary source, fallback to order summary total amount
-      let amount = payment.amount || orderInfoSummary.totalAmount || 0;
+      let billAmount = payment.amount || orderInfoSummary.totalAmount || 0;
       
       // For Nepal orders, keep NPR amounts as-is; for international orders, convert NPR to USD
       if (!isNepal) {
@@ -804,24 +804,24 @@ const OrderManagement = () => {
           // Convert NPR to USD for bill display using live exchange rate
           const { getExchangeRate } = await import('../../utils/currency');
           const nprToUsdRate = await getExchangeRate();
-          amount = payment.amount_npr / nprToUsdRate;
-        } else if (amount > 1000) {
+          billAmount = payment.amount_npr / nprToUsdRate;
+        } else if (billAmount > 1000) {
           // If amount is large (>1000), it's likely in NPR, convert to USD
           const { getExchangeRate } = await import('../../utils/currency');
           const nprToUsdRate = await getExchangeRate();
-          amount = amount / nprToUsdRate;
+          billAmount = billAmount / nprToUsdRate;
         }
       } else {
         // For Nepal orders, use NPR amount directly
         if (payment.amount_npr) {
-          amount = payment.amount_npr;
+          billAmount = payment.amount_npr;
         }
       }
       
-      const formattedAmount = typeof amount === 'number' ? amount.toFixed(2) : amount;
+      const formattedAmount = typeof billAmount === 'number' ? billAmount.toFixed(2) : billAmount;
       
       console.log('Amount data:', { 
-        orderSummaryAmount: emailOrderSummary.totalAmount, 
+        orderSummaryAmount: orderInfoSummary.totalAmount, 
         paymentAmount: payment.amount, 
         paymentAmountNPR: payment.amount_npr,
         finalAmount: amount, 
@@ -845,7 +845,7 @@ const OrderManagement = () => {
         noteText = `Note: All amounts in NPR. Product prices converted from USD at rate 1 USD = ${currentRate.toFixed(2)} NPR`;
       } else {
         noteText = 'Note: All amounts in USD';
-        if (payment.amount_npr || amount !== (payment.amount || emailOrderSummary.totalAmount || 0)) {
+        if (payment.amount_npr || amount !== (payment.amount || orderInfoSummary.totalAmount || 0)) {
           const { getExchangeRate } = await import('../../utils/currency');
           const currentRate = await getExchangeRate();
           noteText = `Note: All amounts in USD (converted from NPR at rate 1 USD = ${currentRate.toFixed(2)} NPR)`;
@@ -913,26 +913,26 @@ const OrderManagement = () => {
       
       // Calculate amount for display
       const pdfOrderSummary = orderData.orderSummary || {};
-      let amount = payment.amount || pdfOrderSummary.totalAmount || 0;
+      let emailAmount = payment.amount || pdfOrderSummary.totalAmount || 0;
       
       // For Nepal orders, keep NPR amounts as-is; for international orders, convert NPR to USD
       if (!isNepal) {
         if (payment.amount_npr) {
           const { getExchangeRate } = await import('../../utils/currency');
           const nprToUsdRate = await getExchangeRate();
-          amount = payment.amount_npr / nprToUsdRate;
-        } else if (amount > 1000) {
+          emailAmount = payment.amount_npr / nprToUsdRate;
+        } else if (emailAmount > 1000) {
           const { getExchangeRate } = await import('../../utils/currency');
           const nprToUsdRate = await getExchangeRate();
-          amount = amount / nprToUsdRate;
+          emailAmount = emailAmount / nprToUsdRate;
         }
       } else {
         if (payment.amount_npr) {
-          amount = payment.amount_npr;
+          emailAmount = payment.amount_npr;
         }
       }
       
-      const formattedAmount = typeof amount === 'number' ? amount.toFixed(2) : amount;
+      const formattedAmount = typeof emailAmount === 'number' ? emailAmount.toFixed(2) : emailAmount;
       const txnId = payment.merchantTxnId || payment.attributes?.merchantTxnId || 'receipt';
       const fileName = `Traditional_Alley_Bill_${txnId}.pdf`;
       
@@ -1176,7 +1176,7 @@ const OrderManagement = () => {
       doc.setFont(undefined, 'bold');
       
       // Use payment amount as primary source, fallback to order summary total amount
-      let amount = payment.amount || orderInfo_orderSummary.totalAmount || 0;
+      let pdfAmount = payment.amount || orderInfo_orderSummary.totalAmount || 0;
       
       // For Nepal orders, keep NPR amounts as-is; for international orders, convert NPR to USD
       if (!isNepal) {
@@ -1184,20 +1184,20 @@ const OrderManagement = () => {
         if (payment.amount_npr) {
           // Convert NPR to USD for bill display using live exchange rate
           const nprToUsdRate = await getExchangeRate();
-          amount = payment.amount_npr / nprToUsdRate;
-        } else if (amount > 1000) {
+          pdfAmount = payment.amount_npr / nprToUsdRate;
+        } else if (pdfAmount > 1000) {
           // If amount is large (>1000), it's likely in NPR, convert to USD
           const nprToUsdRate = await getExchangeRate();
-          amount = amount / nprToUsdRate;
+          pdfAmount = pdfAmount / nprToUsdRate;
         }
       } else {
         // For Nepal orders, use NPR amount directly
         if (payment.amount_npr) {
-          amount = payment.amount_npr;
+          pdfAmount = payment.amount_npr;
         }
       }
       
-      const formattedAmount = typeof amount === 'number' ? amount.toFixed(2) : amount;
+      const formattedAmount = typeof pdfAmount === 'number' ? pdfAmount.toFixed(2) : pdfAmount;
       
       console.log('Amount data:', { 
         orderSummaryAmount: orderInfo_orderSummary.totalAmount, 
