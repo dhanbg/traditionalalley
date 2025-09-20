@@ -622,7 +622,7 @@ const OrderManagement = () => {
       doc.setFont(undefined, 'normal');
       doc.setFontSize(10);
       
-      const orderSummary = orderData.orderSummary || {};
+      const emailOrderSummary = orderData.orderSummary || {};
       
       const orderInfo = [
         `Order ID: ${payment.merchantTxnId || 'N/A'}`,
@@ -739,10 +739,10 @@ const OrderManagement = () => {
         return sum + (price * quantity);
       }, 0);
       
-      const productDiscounts = orderSummary.productDiscounts || 0;
-      const couponDiscount = orderSummary.couponDiscount || 0;
-      const shippingCost = orderSummary.shippingCost || 0;
-      const finalSubtotal = orderSummary.finalSubtotal || 0;
+      const productDiscounts = emailOrderSummary.productDiscounts || 0;
+       const couponDiscount = emailOrderSummary.couponDiscount || 0;
+       const shippingCost = emailOrderSummary.shippingCost || 0;
+       const finalSubtotal = emailOrderSummary.finalSubtotal || 0;
       
       // Convert values for Nepal orders
       let displayOriginalSubtotal = originalSubtotal;
@@ -761,7 +761,7 @@ const OrderManagement = () => {
       const breakdownItems = [
         { label: 'Subtotal:', value: displayOriginalSubtotal },
         ...(displayProductDiscounts > 0 ? [{ label: 'Product Discounts:', value: -displayProductDiscounts, isDiscount: true }] : []),
-        ...(displayCouponDiscount > 0 ? [{ label: `Coupon Discount (${orderSummary.couponCode || 'N/A'}):`, value: -displayCouponDiscount, isDiscount: true }] : []),
+        ...(displayCouponDiscount > 0 ? [{ label: `Coupon Discount (${emailOrderSummary.couponCode || 'N/A'}):`, value: -displayCouponDiscount, isDiscount: true }] : []),
         ...(displayShippingCost > 0 ? [{ label: 'Shipping Cost:', value: displayShippingCost }] : [])
       ];
       
@@ -795,7 +795,7 @@ const OrderManagement = () => {
       doc.setFont(undefined, 'bold');
       
       // Use payment amount as primary source, fallback to order summary total amount
-      let amount = payment.amount || orderSummary.totalAmount || 0;
+      let amount = payment.amount || emailOrderSummary.totalAmount || 0;
       
       // For Nepal orders, keep NPR amounts as-is; for international orders, convert NPR to USD
       if (!isNepal) {
@@ -821,7 +821,7 @@ const OrderManagement = () => {
       const formattedAmount = typeof amount === 'number' ? amount.toFixed(2) : amount;
       
       console.log('Amount data:', { 
-        orderSummaryAmount: orderSummary.totalAmount, 
+        orderSummaryAmount: emailOrderSummary.totalAmount, 
         paymentAmount: payment.amount, 
         paymentAmountNPR: payment.amount_npr,
         finalAmount: amount, 
@@ -845,7 +845,7 @@ const OrderManagement = () => {
         noteText = `Note: All amounts in NPR. Product prices converted from USD at rate 1 USD = ${currentRate.toFixed(2)} NPR`;
       } else {
         noteText = 'Note: All amounts in USD';
-        if (payment.amount_npr || amount !== (payment.amount || orderSummary.totalAmount || 0)) {
+        if (payment.amount_npr || amount !== (payment.amount || emailOrderSummary.totalAmount || 0)) {
           const { getExchangeRate } = await import('../../utils/currency');
           const currentRate = await getExchangeRate();
           noteText = `Note: All amounts in USD (converted from NPR at rate 1 USD = ${currentRate.toFixed(2)} NPR)`;
