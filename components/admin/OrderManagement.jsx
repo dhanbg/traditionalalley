@@ -1142,7 +1142,7 @@ const OrderManagement = () => {
       const breakdownItems = [
         { label: 'Subtotal:', value: displayOriginalSubtotal },
         ...(displayProductDiscounts > 0 ? [{ label: 'Product Discounts:', value: -displayProductDiscounts, isDiscount: true }] : []),
-        ...(displayCouponDiscount > 0 ? [{ label: `Coupon Discount (${orderSummary.couponCode || 'N/A'}):`, value: -displayCouponDiscount, isDiscount: true }] : []),
+        ...(displayCouponDiscount > 0 ? [{ label: `Coupon Discount (${orderInfo_orderSummary.couponCode || 'N/A'}):`, value: -displayCouponDiscount, isDiscount: true }] : []),
         ...(displayShippingCost > 0 ? [{ label: 'Shipping Cost:', value: displayShippingCost }] : [])
       ];
       
