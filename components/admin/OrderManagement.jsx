@@ -1040,78 +1040,135 @@ const OrderManagement = () => {
        
        yPosition += 10;
        
-       // Products table
-       doc.setFontSize(14);
-       doc.setTextColor(139, 69, 19);
-       doc.text('Items:', 20, yPosition);
-       yPosition += 10;
-       
-       // Table headers
-       doc.setFontSize(10);
-       doc.setTextColor(0, 0, 0);
-       doc.text('Item', 20, yPosition);
-       doc.text('Qty', 120, yPosition);
-       doc.text('Price', 140, yPosition);
-       doc.text('Total', 170, yPosition);
-       yPosition += 5;
-       
-       // Draw line under headers
-       doc.line(20, yPosition, 190, yPosition);
-       yPosition += 8;
-       
-       // Product items
+       // Products table using autoTable (same as generateBillOnly)
        const products = orderData.products || [];
-       let subtotal = 0;
+       const tableData = [];
        
-       products.forEach((product) => {
-         const productName = product.name || product.title || 'Unknown Product';
-         const quantity = product.quantity || 1;
-         const price = product.price || 0;
+       products.forEach((item) => {
+         const quantity = item.quantity || 1;
+         const price = item.price || 0;
          const total = quantity * price;
-         subtotal += total;
          
-         // Handle long product names
-         const nameLines = doc.splitTextToSize(productName, 90);
-         doc.text(nameLines, 20, yPosition);
-         doc.text(quantity.toString(), 120, yPosition);
-         doc.text(`${currency} ${price.toFixed(2)}`, 140, yPosition);
-         doc.text(`${currency} ${total.toFixed(2)}`, 170, yPosition);
-         
-         yPosition += Math.max(nameLines.length * 5, 8);
+         tableData.push([
+           item.title || item.name || 'N/A',
+           item.productDetails?.productCode || item.productCode || 'N/A',
+           item.selectedSize || 'N/A',
+           item.selectedColor || 'N/A',
+           quantity.toString(),
+           `${currency} ${price.toFixed(2)}`,
+           `${currency} ${total.toFixed(2)}`
+         ]);
        });
        
+       if (tableData.length === 0) {
+         tableData.push(['No items found', '', '', '', '', '', '']);
+       }
+       
+       autoTable(doc, {
+         head: [['Product', 'Product Code', 'Size', 'Color', 'Quantity', 'Price', 'Total']],
+         body: tableData,
+         startY: yPosition,
+         theme: 'striped',
+         headStyles: { fillColor: [255, 229, 212], textColor: [0, 0, 0] },
+         styles: { fontSize: 9 },
+         margin: { left: 20, right: 20 }
+       });
+       
+       yPosition = doc.lastAutoTable.finalY + 15;
+       
+       // Order Summary (same detailed breakdown as generateBillOnly)
+       doc.setFontSize(12);
+       doc.setFont(undefined, 'bold');
+       doc.setTextColor(0, 0, 0);
+       doc.text('Order Summary', 20, yPosition);
+       
+       yPosition += 10;
+       doc.setFontSize(10);
+       doc.setFont(undefined, 'normal');
+       
+       // Calculate values for breakdown
+       const originalSubtotal = products.reduce((sum, item) => {
+         const price = item.price || 0;
+         const quantity = item.quantity || 1;
+         return sum + (price * quantity);
+       }, 0);
+       
+       const productDiscounts = orderSummary.productDiscounts || 0;
+       const couponDiscount = orderSummary.couponDiscount || 0;
+       const shippingCost = orderSummary.shippingCost || 0;
+       
+       // Convert values for Nepal orders if needed
+       let displayOriginalSubtotal = originalSubtotal;
+       let displayProductDiscounts = productDiscounts;
+       let displayCouponDiscount = couponDiscount;
+       let displayShippingCost = shippingCost;
+       
+       if (isNepal) {
+         // For Nepal orders, convert USD to NPR if needed
+         const exchangeRate = 132; // Default rate, should match generateBillOnly
+         displayOriginalSubtotal = originalSubtotal * exchangeRate;
+         if (productDiscounts > 0) displayProductDiscounts = productDiscounts * exchangeRate;
+         if (couponDiscount > 0) displayCouponDiscount = couponDiscount * exchangeRate;
+         // Shipping cost is already in NPR for Nepal orders
+       }
+       
+       // Display breakdown
+       const breakdownItems = [
+         { label: 'Subtotal:', value: displayOriginalSubtotal },
+         ...(displayProductDiscounts > 0 ? [{ label: 'Product Discounts:', value: -displayProductDiscounts, isDiscount: true }] : []),
+         ...(displayCouponDiscount > 0 ? [{ label: `Coupon Discount (${orderSummary.couponCode || 'N/A'}):`, value: -displayCouponDiscount, isDiscount: true }] : []),
+         ...(displayShippingCost > 0 ? [{ label: 'Shipping Cost:', value: displayShippingCost }] : [])
+       ];
+       
+       breakdownItems.forEach(item => {
+         doc.text(item.label, 20, yPosition);
+         const valueText = `${currency} ${Math.abs(item.value).toFixed(2)}`;
+         const displayValue = item.isDiscount ? `- ${valueText}` : valueText;
+         
+         // Set color for discounts (green for savings)
+         if (item.isDiscount) {
+           doc.setTextColor(0, 128, 0); // Green color for discounts
+         }
+         
+         doc.text(displayValue, doc.internal.pageSize.getWidth() - 20, yPosition, { align: 'right' });
+         
+         // Reset color to black
+         doc.setTextColor(0, 0, 0);
+         
+         yPosition += 7;
+       });
+       
+       // Add separator line
        yPosition += 5;
-       doc.line(20, yPosition, 190, yPosition);
+       doc.setLineWidth(0.5);
+       doc.line(20, yPosition, doc.internal.pageSize.getWidth() - 20, yPosition);
        yPosition += 10;
        
-       // Order summary
-       const shipping = orderSummary.shippingCost || 0;
-       const tax = orderSummary.tax || 0;
-       const discount = orderSummary.discount || 0;
-       const finalTotal = parseFloat(formattedAmount);
-       
-       doc.text(`Subtotal: ${currency} ${subtotal.toFixed(2)}`, 140, yPosition);
-       yPosition += 6;
-       
-       if (shipping > 0) {
-         doc.text(`Shipping: ${currency} ${shipping.toFixed(2)}`, 140, yPosition);
-         yPosition += 6;
-       }
-       
-       if (tax > 0) {
-         doc.text(`Tax: ${currency} ${tax.toFixed(2)}`, 140, yPosition);
-         yPosition += 6;
-       }
-       
-       if (discount > 0) {
-         doc.text(`Discount: -${currency} ${discount.toFixed(2)}`, 140, yPosition);
-         yPosition += 6;
-       }
-       
-       // Total
-       doc.setFontSize(12);
+       // Total Amount
+       doc.setFontSize(14);
+       doc.setFont(undefined, 'bold');
        doc.setTextColor(139, 69, 19);
-       doc.text(`Total: ${currency} ${finalTotal}`, 140, yPosition);
+       
+       const finalTotal = parseFloat(formattedAmount);
+       doc.text(`Total Amount: ${currency} ${finalTotal}`, 
+         doc.internal.pageSize.getWidth() - 20, yPosition, { align: 'right' });
+       
+       // Add currency note
+       yPosition += 10;
+       doc.setFontSize(8);
+       doc.setFont(undefined, 'italic');
+       doc.setTextColor(102, 102, 102);
+       
+       let noteText;
+       if (isNepal) {
+         noteText = 'Note: All amounts in NPR. Product prices converted from USD at current exchange rate';
+       } else {
+         noteText = 'Note: All amounts in USD';
+       }
+       
+       const noteLines = doc.splitTextToSize(noteText, doc.internal.pageSize.getWidth() - 40);
+       doc.text(noteLines, 20, yPosition);
+       yPosition += noteLines.length * 6;
        
        // Footer
        yPosition += 20;
