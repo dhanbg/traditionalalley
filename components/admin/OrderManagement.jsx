@@ -622,7 +622,7 @@ const OrderManagement = () => {
       doc.setFont(undefined, 'normal');
       doc.setFontSize(10);
       
-      const orderInfoSummary = orderData.orderSummary || {};
+      const orderSummary = orderData.orderSummary || {};
       
       const orderInfo = [
         `Order ID: ${payment.merchantTxnId || 'N/A'}`,
@@ -739,10 +739,10 @@ const OrderManagement = () => {
         return sum + (price * quantity);
       }, 0);
       
-      const productDiscounts = orderInfoSummary.productDiscounts || 0;
-        const couponDiscount = orderInfoSummary.couponDiscount || 0;
-        const shippingCost = orderInfoSummary.shippingCost || 0;
-        const finalSubtotal = orderInfoSummary.finalSubtotal || 0;
+      const productDiscounts = orderSummary.productDiscounts || 0;
+      const couponDiscount = orderSummary.couponDiscount || 0;
+      const shippingCost = orderSummary.shippingCost || 0;
+      const finalSubtotal = orderSummary.finalSubtotal || 0;
       
       // Convert values for Nepal orders
       let displayOriginalSubtotal = originalSubtotal;
@@ -761,7 +761,7 @@ const OrderManagement = () => {
       const breakdownItems = [
         { label: 'Subtotal:', value: displayOriginalSubtotal },
         ...(displayProductDiscounts > 0 ? [{ label: 'Product Discounts:', value: -displayProductDiscounts, isDiscount: true }] : []),
-        ...(displayCouponDiscount > 0 ? [{ label: `Coupon Discount (${orderInfoSummary.couponCode || 'N/A'}):`, value: -displayCouponDiscount, isDiscount: true }] : []),
+        ...(displayCouponDiscount > 0 ? [{ label: `Coupon Discount (${orderSummary.couponCode || 'N/A'}):`, value: -displayCouponDiscount, isDiscount: true }] : []),
         ...(displayShippingCost > 0 ? [{ label: 'Shipping Cost:', value: displayShippingCost }] : [])
       ];
       
@@ -795,7 +795,7 @@ const OrderManagement = () => {
       doc.setFont(undefined, 'bold');
       
       // Use payment amount as primary source, fallback to order summary total amount
-      let billAmount = payment.amount || orderInfoSummary.totalAmount || 0;
+      let amount = payment.amount || orderSummary.totalAmount || 0;
       
       // For Nepal orders, keep NPR amounts as-is; for international orders, convert NPR to USD
       if (!isNepal) {
@@ -804,24 +804,24 @@ const OrderManagement = () => {
           // Convert NPR to USD for bill display using live exchange rate
           const { getExchangeRate } = await import('../../utils/currency');
           const nprToUsdRate = await getExchangeRate();
-          billAmount = payment.amount_npr / nprToUsdRate;
-        } else if (billAmount > 1000) {
+          amount = payment.amount_npr / nprToUsdRate;
+        } else if (amount > 1000) {
           // If amount is large (>1000), it's likely in NPR, convert to USD
           const { getExchangeRate } = await import('../../utils/currency');
           const nprToUsdRate = await getExchangeRate();
-          billAmount = billAmount / nprToUsdRate;
+          amount = amount / nprToUsdRate;
         }
       } else {
         // For Nepal orders, use NPR amount directly
         if (payment.amount_npr) {
-          billAmount = payment.amount_npr;
+          amount = payment.amount_npr;
         }
       }
       
-      const formattedBillAmount = typeof billAmount === 'number' ? billAmount.toFixed(2) : billAmount;
+      const formattedAmount = typeof amount === 'number' ? amount.toFixed(2) : amount;
       
       console.log('Amount data:', { 
-        orderSummaryAmount: orderInfoSummary.totalAmount, 
+        orderSummaryAmount: orderSummary.totalAmount, 
         paymentAmount: payment.amount, 
         paymentAmountNPR: payment.amount_npr,
         finalAmount: amount, 
@@ -829,7 +829,7 @@ const OrderManagement = () => {
         currency 
       });
       
-      doc.text(`Total Amount: ${currency} ${formattedBillAmount}`, 
+      doc.text(`Total Amount: ${currency} ${formattedAmount}`, 
         doc.internal.pageSize.getWidth() - 20, finalY, { align: 'right' });
       
       // Add currency note with live exchange rate
@@ -845,7 +845,7 @@ const OrderManagement = () => {
         noteText = `Note: All amounts in NPR. Product prices converted from USD at rate 1 USD = ${currentRate.toFixed(2)} NPR`;
       } else {
         noteText = 'Note: All amounts in USD';
-        if (payment.amount_npr || amount !== (payment.amount || orderInfoSummary.totalAmount || 0)) {
+        if (payment.amount_npr || amount !== (payment.amount || orderSummary.totalAmount || 0)) {
           const { getExchangeRate } = await import('../../utils/currency');
           const currentRate = await getExchangeRate();
           noteText = `Note: All amounts in USD (converted from NPR at rate 1 USD = ${currentRate.toFixed(2)} NPR)`;
@@ -912,27 +912,27 @@ const OrderManagement = () => {
       const currency = isNepal ? 'Rs.' : '$';
       
       // Calculate amount for display
-      const pdfOrderSummary = orderData.orderSummary || {};
-      let emailAmount = payment.amount || pdfOrderSummary.totalAmount || 0;
+      const orderSummary = orderData.orderSummary || {};
+      let amount = payment.amount || orderSummary.totalAmount || 0;
       
       // For Nepal orders, keep NPR amounts as-is; for international orders, convert NPR to USD
       if (!isNepal) {
         if (payment.amount_npr) {
           const { getExchangeRate } = await import('../../utils/currency');
           const nprToUsdRate = await getExchangeRate();
-          emailAmount = payment.amount_npr / nprToUsdRate;
-        } else if (emailAmount > 1000) {
+          amount = payment.amount_npr / nprToUsdRate;
+        } else if (amount > 1000) {
           const { getExchangeRate } = await import('../../utils/currency');
           const nprToUsdRate = await getExchangeRate();
-          emailAmount = emailAmount / nprToUsdRate;
+          amount = amount / nprToUsdRate;
         }
       } else {
         if (payment.amount_npr) {
-          emailAmount = payment.amount_npr;
+          amount = payment.amount_npr;
         }
       }
       
-      const formattedEmailAmount = typeof emailAmount === 'number' ? emailAmount.toFixed(2) : emailAmount;
+      const formattedAmount = typeof amount === 'number' ? amount.toFixed(2) : amount;
       const txnId = payment.merchantTxnId || payment.attributes?.merchantTxnId || 'receipt';
       const fileName = `Traditional_Alley_Bill_${txnId}.pdf`;
       
@@ -969,276 +969,156 @@ const OrderManagement = () => {
         logoLoaded = false;
       }
       
-      // Use the same detailed PDF generation logic as generateBillOnly
-      // Header
-      let headerY = 35;
-      
-      // Only show title if logo is not loaded
-      if (!logoLoaded) {
-        doc.setFontSize(20);
-        doc.setTextColor(139, 69, 19); // Brown color
-        doc.text('Traditional Alley', doc.internal.pageSize.getWidth() / 2, headerY, { align: 'center' });
-        headerY += 10;
-      } else {
-        // If logo is loaded, start from a lower position
-        headerY = 30;
-      }
+      // Generate the same PDF content as generateBillOnly
+       // Header
+       let headerY = 35;
+       
+       if (!logoLoaded) {
+         doc.setFontSize(20);
+         doc.setTextColor(139, 69, 19);
+         doc.text('Traditional Alley', doc.internal.pageSize.getWidth() / 2, headerY, { align: 'center' });
+         headerY += 10;
+       } else {
+         headerY = 30;
+       }
 
-      doc.setFontSize(16);
-      doc.setTextColor(0, 0, 0);
-      doc.text('INVOICE', doc.internal.pageSize.getWidth() / 2, headerY + 10, { align: 'center' });
-      
-      // Order Information and Customer Information in same row
-      let yPosition = 60;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const leftColumnX = 20;
-      const rightColumnX = pageWidth / 2 + 30;
-      
-      // Order Information (Left Column)
-      doc.setFontSize(14);
-      doc.setFont(undefined, 'bold');
-      doc.text('Order Information', leftColumnX, yPosition);
-      
-      let leftYPosition = yPosition + 10;
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(10);
-      
-      const orderInfo_orderSummary = orderData.orderSummary || {};
-      
-      const orderInfo = [
-        `Order ID: ${payment.merchantTxnId || 'N/A'}`,
-        `Gateway Reference: ${payment.gatewayReferenceNo || 'N/A'}`,
-        `Process ID: ${payment.processId || 'N/A'}`,
-        `Date: ${payment.timestamp ? new Date(payment.timestamp).toLocaleDateString() : 'N/A'}`,
-        `Payment Status: ${payment.status || 'N/A'}`,
-        `Payment Method: ${payment.instrument || 'N/A'}`,
-        `Institution: ${payment.institution || 'N/A'}`
-      ];
-      
-      orderInfo.forEach(info => {
-        doc.text(info, leftColumnX, leftYPosition);
-        leftYPosition += 6;
-      });
-      
-      // Customer Information (Right Column)
-      doc.setFontSize(14);
-      doc.setFont(undefined, 'bold');
-      doc.text('Customer Information', rightColumnX, yPosition);
-      
-      let rightYPosition = yPosition + 10;
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(10);
-      
-      // Extract data from the correct structure
-      const customerDetails = orderData.receiver_details || {};
-      const address = customerDetails.address || {};
-      
-      console.log('Customer data sources:', { orderData, customerDetails, address });
-      
-      const customerInfo = [
-        `Name: ${customerDetails.fullName || 'N/A'}`,
-        `Email: ${customerDetails.email || 'N/A'}`,
-        `Phone: ${customerDetails.countryCode || ''}${customerDetails.phone || 'N/A'}`.replace(/^\+?/, '+'),
-        `Address: ${address.addressLine1 || 'N/A'}`,
-        `City: ${address.cityName || 'N/A'}`,
-        `Postal Code: ${address.postalCode || 'N/A'}`,
-        `Country: ${address.countryCode || 'N/A'}`
-      ];
-      
-      customerInfo.forEach(info => {
-        doc.text(info, rightColumnX, rightYPosition);
-        rightYPosition += 6;
-      });
-      
-      // Set yPosition to the maximum of both columns for next section with more gap
-       yPosition = Math.max(leftYPosition, rightYPosition) + 25;
-      
-      // Products Table
-      yPosition += 15;
-      
-      const tableData = [];
-      const products = orderData.products || [];
-      
-      console.log('Product data sources:', { orderData, products });
-      
-      // Convert product prices for Nepal orders
-      const { getExchangeRate } = await import('../../utils/currency');
-      const exchangeRate = isNepal ? await getExchangeRate() : 1;
-      
-      products.forEach(item => {
-        let price = item.price || 0;
-        const quantity = item.quantity || 1;
-        let total = item.subtotal || (price * quantity);
-        
-        // Convert USD prices to NPR for Nepal orders
-        if (isNepal) {
-          price = price * exchangeRate;
-          total = total * exchangeRate;
-        }
-        
-        console.log('Processing item:', { item, originalPrice: item.price, convertedPrice: price, quantity, total, isNepal, exchangeRate });
-        
-        tableData.push([
-          item.title || 'N/A',
-          item.productDetails?.productCode || item.productCode || 'N/A',
-          item.selectedSize || 'N/A',
-          item.selectedColor || 'N/A',
-          quantity.toString(),
-          `${currency} ${price.toFixed(2)}`,
-          `${currency} ${total.toFixed(2)}`
-        ]);
-      });
-      
-      if (tableData.length === 0) {
-        tableData.push(['No items found', '', '', '', '', '', '']);
-      }
-      
-      autoTable(doc, {
-        head: [['Product', 'Product Code', 'Size', 'Color', 'Quantity', 'Price', 'Total']],
-        body: tableData,
-        startY: yPosition,
-        theme: 'striped',
-        headStyles: { fillColor: [255, 229, 212], textColor: [0, 0, 0] },
-        styles: { fontSize: 9 },
-        margin: { left: 20, right: 20 }
-      });
-      
-      // Calculation Breakdown
-      let breakdownY = doc.lastAutoTable.finalY + 15;
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
-      doc.text('Order Summary', 20, breakdownY);
-      
-      breakdownY += 10;
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      
-      // Calculate values for breakdown
-      const originalSubtotal = products.reduce((sum, item) => {
-        const price = item.price || 0;
-        const quantity = item.quantity || 1;
-        return sum + (price * quantity);
-      }, 0);
-      
-      const productDiscounts = orderInfo_orderSummary.productDiscounts || 0;
-      const couponDiscount = orderInfo_orderSummary.couponDiscount || 0;
-      const shippingCost = orderInfo_orderSummary.shippingCost || 0;
-      const finalSubtotal = orderInfo_orderSummary.finalSubtotal || 0;
-      
-      // Convert values for Nepal orders
-      let displayOriginalSubtotal = originalSubtotal;
-      let displayProductDiscounts = productDiscounts;
-      let displayCouponDiscount = couponDiscount;
-      let displayShippingCost = shippingCost;
-      
-      if (isNepal) {
-        displayOriginalSubtotal = originalSubtotal * exchangeRate;
-        if (productDiscounts > 0) displayProductDiscounts = productDiscounts * exchangeRate;
-        if (couponDiscount > 0) displayCouponDiscount = couponDiscount * exchangeRate;
-        // Shipping cost is already in NPR for Nepal orders
-      }
-      
-      // Display breakdown
-      const breakdownItems = [
-        { label: 'Subtotal:', value: displayOriginalSubtotal },
-        ...(displayProductDiscounts > 0 ? [{ label: 'Product Discounts:', value: -displayProductDiscounts, isDiscount: true }] : []),
-        ...(displayCouponDiscount > 0 ? [{ label: `Coupon Discount (${orderInfo_orderSummary.couponCode || 'N/A'}):`, value: -displayCouponDiscount, isDiscount: true }] : []),
-        ...(displayShippingCost > 0 ? [{ label: 'Shipping Cost:', value: displayShippingCost }] : [])
-      ];
-      
-      breakdownItems.forEach(item => {
-        doc.text(item.label, 20, breakdownY);
-        const valueText = `${currency} ${Math.abs(item.value).toFixed(2)}`;
-        const displayValue = item.isDiscount ? `- ${valueText}` : valueText;
-        
-        // Set color for discounts (green for savings)
-        if (item.isDiscount) {
-          doc.setTextColor(0, 128, 0); // Green color for discounts
-        }
-        
-        doc.text(displayValue, doc.internal.pageSize.getWidth() - 20, breakdownY, { align: 'right' });
-        
-        // Reset color to black
-        doc.setTextColor(0, 0, 0);
-        
-        breakdownY += 7; // Slightly more spacing
-      });
-      
-      // Add separator line
-      breakdownY += 5;
-      doc.setLineWidth(0.5);
-      doc.line(20, breakdownY, doc.internal.pageSize.getWidth() - 20, breakdownY);
-      breakdownY += 10;
-      
-      // Total Amount
-      const finalY = breakdownY;
-      doc.setFontSize(14);
-      doc.setFont(undefined, 'bold');
-      
-      // Use payment amount as primary source, fallback to order summary total amount
-      let pdfAmount = payment.amount || orderInfo_orderSummary.totalAmount || 0;
-      
-      // For Nepal orders, keep NPR amounts as-is; for international orders, convert NPR to USD
-      if (!isNepal) {
-        // Convert NPR amounts to USD for international readability
-        if (payment.amount_npr) {
-          // Convert NPR to USD for bill display using live exchange rate
-          const nprToUsdRate = await getExchangeRate();
-          pdfAmount = payment.amount_npr / nprToUsdRate;
-        } else if (pdfAmount > 1000) {
-          // If amount is large (>1000), it's likely in NPR, convert to USD
-          const nprToUsdRate = await getExchangeRate();
-          pdfAmount = pdfAmount / nprToUsdRate;
-        }
-      } else {
-        // For Nepal orders, use NPR amount directly
-        if (payment.amount_npr) {
-          pdfAmount = payment.amount_npr;
-        }
-      }
-      
-      const formattedPdfAmount = typeof pdfAmount === 'number' ? pdfAmount.toFixed(2) : pdfAmount;
-      
-      console.log('Amount data:', { 
-        orderSummaryAmount: orderInfo_orderSummary.totalAmount, 
-        paymentAmount: payment.amount, 
-        paymentAmountNPR: payment.amount_npr,
-        finalAmount: amount, 
-        isNepal, 
-        currency 
-      });
-      
-      doc.text(`Total Amount: ${currency} ${formattedPdfAmount}`, 
-        doc.internal.pageSize.getWidth() - 20, finalY, { align: 'right' });
-      
-      // Add currency note with live exchange rate
-      let noteY = finalY + 10;
-      doc.setFontSize(8);
-      doc.setFont(undefined, 'italic');
-      doc.setTextColor(102, 102, 102);
-      
-      let noteText;
-      if (isNepal) {
-        const currentRate = await getExchangeRate();
-        noteText = `Note: All amounts in NPR. Product prices converted from USD at rate 1 USD = ${currentRate.toFixed(2)} NPR`;
-      } else {
-        noteText = 'Note: All amounts in USD';
-        if (payment.amount_npr || amount !== (payment.amount || orderInfo_orderSummary.totalAmount || 0)) {
-          const currentRate = await getExchangeRate();
-          noteText = `Note: All amounts in USD (converted from NPR at rate 1 USD = ${currentRate.toFixed(2)} NPR)`;
-        }
-      }
-      
-      doc.text(noteText, 
-        doc.internal.pageSize.getWidth() - 20, noteY, { align: 'right' });
-      
-      // Footer
-      const footerY = noteY + 15;
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      doc.setTextColor(102, 102, 102);
-      doc.text('Thank you for shopping with Traditional Alley!', doc.internal.pageSize.getWidth() / 2, footerY, { align: 'center' });
-      doc.text('For any queries, please contact us at support@traditionalalley.com', doc.internal.pageSize.getWidth() / 2, footerY + 8, { align: 'center' });
+       doc.setFontSize(16);
+       doc.setTextColor(0, 0, 0);
+       doc.text('INVOICE', doc.internal.pageSize.getWidth() / 2, headerY + 10, { align: 'center' });
+       
+       // Order and Customer Information
+       let yPosition = headerY + 30;
+       
+       doc.setFontSize(12);
+       doc.setTextColor(0, 0, 0);
+       
+       // Order details
+       const txnIdDisplay = payment.merchantTxnId || payment.attributes?.merchantTxnId || 'N/A';
+       doc.text(`Order ID: ${txnIdDisplay}`, 20, yPosition);
+       yPosition += 8;
+       
+       const orderDate = payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : new Date().toLocaleDateString();
+       doc.text(`Date: ${orderDate}`, 20, yPosition);
+       yPosition += 15;
+       
+       // Customer details
+       doc.setFontSize(14);
+       doc.setTextColor(139, 69, 19);
+       doc.text('Bill To:', 20, yPosition);
+       yPosition += 8;
+       
+       doc.setFontSize(12);
+       doc.setTextColor(0, 0, 0);
+       
+       const customerName = receiverDetails.fullName || 'N/A';
+       doc.text(`Name: ${customerName}`, 20, yPosition);
+       yPosition += 6;
+       
+       if (receiverDetails.email) {
+         doc.text(`Email: ${receiverDetails.email}`, 20, yPosition);
+         yPosition += 6;
+       }
+       
+       if (receiverDetails.phone) {
+         doc.text(`Phone: ${receiverDetails.phone}`, 20, yPosition);
+         yPosition += 6;
+       }
+       
+       // Address
+       const address = receiverDetails.address || '';
+       const city = receiverDetails.city || '';
+       const state = receiverDetails.state || '';
+       const country = receiverDetails.country || '';
+       const postalCode = receiverDetails.postalCode || '';
+       
+       let fullAddress = [address, city, state, country, postalCode].filter(Boolean).join(', ');
+       if (fullAddress) {
+         const addressLines = doc.splitTextToSize(`Address: ${fullAddress}`, 170);
+         doc.text(addressLines, 20, yPosition);
+         yPosition += addressLines.length * 6;
+       }
+       
+       yPosition += 10;
+       
+       // Products table
+       doc.setFontSize(14);
+       doc.setTextColor(139, 69, 19);
+       doc.text('Items:', 20, yPosition);
+       yPosition += 10;
+       
+       // Table headers
+       doc.setFontSize(10);
+       doc.setTextColor(0, 0, 0);
+       doc.text('Item', 20, yPosition);
+       doc.text('Qty', 120, yPosition);
+       doc.text('Price', 140, yPosition);
+       doc.text('Total', 170, yPosition);
+       yPosition += 5;
+       
+       // Draw line under headers
+       doc.line(20, yPosition, 190, yPosition);
+       yPosition += 8;
+       
+       // Product items
+       const products = orderData.products || [];
+       let subtotal = 0;
+       
+       products.forEach((product) => {
+         const productName = product.name || product.title || 'Unknown Product';
+         const quantity = product.quantity || 1;
+         const price = product.price || 0;
+         const total = quantity * price;
+         subtotal += total;
+         
+         // Handle long product names
+         const nameLines = doc.splitTextToSize(productName, 90);
+         doc.text(nameLines, 20, yPosition);
+         doc.text(quantity.toString(), 120, yPosition);
+         doc.text(`${currency} ${price.toFixed(2)}`, 140, yPosition);
+         doc.text(`${currency} ${total.toFixed(2)}`, 170, yPosition);
+         
+         yPosition += Math.max(nameLines.length * 5, 8);
+       });
+       
+       yPosition += 5;
+       doc.line(20, yPosition, 190, yPosition);
+       yPosition += 10;
+       
+       // Order summary
+       const shipping = orderSummary.shippingCost || 0;
+       const tax = orderSummary.tax || 0;
+       const discount = orderSummary.discount || 0;
+       const finalTotal = parseFloat(formattedAmount);
+       
+       doc.text(`Subtotal: ${currency} ${subtotal.toFixed(2)}`, 140, yPosition);
+       yPosition += 6;
+       
+       if (shipping > 0) {
+         doc.text(`Shipping: ${currency} ${shipping.toFixed(2)}`, 140, yPosition);
+         yPosition += 6;
+       }
+       
+       if (tax > 0) {
+         doc.text(`Tax: ${currency} ${tax.toFixed(2)}`, 140, yPosition);
+         yPosition += 6;
+       }
+       
+       if (discount > 0) {
+         doc.text(`Discount: -${currency} ${discount.toFixed(2)}`, 140, yPosition);
+         yPosition += 6;
+       }
+       
+       // Total
+       doc.setFontSize(12);
+       doc.setTextColor(139, 69, 19);
+       doc.text(`Total: ${currency} ${finalTotal}`, 140, yPosition);
+       
+       // Footer
+       yPosition += 20;
+       doc.setFontSize(10);
+       doc.setTextColor(100, 100, 100);
+       doc.text('Thank you for your business!', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+       doc.text('Traditional Alley - Authentic Products, Delivered Worldwide', doc.internal.pageSize.getWidth() / 2, yPosition + 8, { align: 'center' });
       
       // Generate PDF as base64 for saving to server
       let pdfBase64 = doc.output('datauristring').split(',')[1];
@@ -1301,7 +1181,7 @@ const OrderManagement = () => {
         customerEmail,
         customerName: receiverDetails.fullName || 'Valued Customer',
         orderId: txnId,
-        amount: `${currency} ${formattedEmailAmount}`,
+        amount: `${currency} ${formattedAmount}`,
         fileName,
         downloadUrl: saveResult.downloadUrl
       };
