@@ -818,7 +818,7 @@ const OrderManagement = () => {
         }
       }
       
-      const formattedAmount = typeof billAmount === 'number' ? billAmount.toFixed(2) : billAmount;
+      const formattedBillAmount = typeof billAmount === 'number' ? billAmount.toFixed(2) : billAmount;
       
       console.log('Amount data:', { 
         orderSummaryAmount: orderInfoSummary.totalAmount, 
@@ -829,7 +829,7 @@ const OrderManagement = () => {
         currency 
       });
       
-      doc.text(`Total Amount: ${currency} ${formattedAmount}`, 
+      doc.text(`Total Amount: ${currency} ${formattedBillAmount}`, 
         doc.internal.pageSize.getWidth() - 20, finalY, { align: 'right' });
       
       // Add currency note with live exchange rate
@@ -932,7 +932,7 @@ const OrderManagement = () => {
         }
       }
       
-      const formattedAmount = typeof emailAmount === 'number' ? emailAmount.toFixed(2) : emailAmount;
+      const formattedEmailAmount = typeof emailAmount === 'number' ? emailAmount.toFixed(2) : emailAmount;
       const txnId = payment.merchantTxnId || payment.attributes?.merchantTxnId || 'receipt';
       const fileName = `Traditional_Alley_Bill_${txnId}.pdf`;
       
@@ -1197,7 +1197,7 @@ const OrderManagement = () => {
         }
       }
       
-      const formattedAmount = typeof pdfAmount === 'number' ? pdfAmount.toFixed(2) : pdfAmount;
+      const formattedPdfAmount = typeof pdfAmount === 'number' ? pdfAmount.toFixed(2) : pdfAmount;
       
       console.log('Amount data:', { 
         orderSummaryAmount: orderInfo_orderSummary.totalAmount, 
@@ -1208,7 +1208,7 @@ const OrderManagement = () => {
         currency 
       });
       
-      doc.text(`Total Amount: ${currency} ${formattedAmount}`, 
+      doc.text(`Total Amount: ${currency} ${formattedPdfAmount}`, 
         doc.internal.pageSize.getWidth() - 20, finalY, { align: 'right' });
       
       // Add currency note with live exchange rate
@@ -1301,7 +1301,7 @@ const OrderManagement = () => {
         customerEmail,
         customerName: receiverDetails.fullName || 'Valued Customer',
         orderId: txnId,
-        amount: `${currency} ${formattedAmount}`,
+        amount: `${currency} ${formattedEmailAmount}`,
         fileName,
         downloadUrl: saveResult.downloadUrl
       };
