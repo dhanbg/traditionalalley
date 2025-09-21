@@ -986,68 +986,89 @@ const OrderManagement = () => {
        doc.setTextColor(0, 0, 0);
        doc.text('INVOICE', doc.internal.pageSize.getWidth() / 2, headerY + 10, { align: 'center' });
        
-       // Order and Customer Information
-       let yPosition = headerY + 30;
+       // Order Information and Customer Information in same row (same as generateBillOnly)
+       let yPosition = 60;
+       const pageWidth = doc.internal.pageSize.getWidth();
+       const leftColumnX = 20;
+       const rightColumnX = pageWidth / 2 + 30;
        
-       doc.setFontSize(12);
-       doc.setTextColor(0, 0, 0);
-       
-       // Order details
-       const txnIdDisplay = payment.merchantTxnId || payment.attributes?.merchantTxnId || 'N/A';
-       doc.text(`Order ID: ${txnIdDisplay}`, 20, yPosition);
-       yPosition += 8;
-       
-       const orderDate = payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : new Date().toLocaleDateString();
-       doc.text(`Date: ${orderDate}`, 20, yPosition);
-       yPosition += 15;
-       
-       // Customer details
+       // Order Information (Left Column)
        doc.setFontSize(14);
-       doc.setTextColor(139, 69, 19);
-       doc.text('Bill To:', 20, yPosition);
-       yPosition += 8;
-       
-       doc.setFontSize(12);
+       doc.setFont(undefined, 'bold');
        doc.setTextColor(0, 0, 0);
+       doc.text('Order Information', leftColumnX, yPosition);
        
-       const customerName = receiverDetails.fullName || 'N/A';
-       doc.text(`Name: ${customerName}`, 20, yPosition);
-       yPosition += 6;
+       let leftYPosition = yPosition + 10;
+       doc.setFont(undefined, 'normal');
+       doc.setFontSize(10);
        
-       if (receiverDetails.email) {
-         doc.text(`Email: ${receiverDetails.email}`, 20, yPosition);
-         yPosition += 6;
-       }
+       const orderInfo = [
+         `Order ID: ${payment.merchantTxnId || 'N/A'}`,
+         `Gateway Reference: ${payment.gatewayReferenceNo || 'N/A'}`,
+         `Process ID: ${payment.processId || 'N/A'}`,
+         `Date: ${payment.timestamp ? new Date(payment.timestamp).toLocaleDateString() : new Date().toLocaleDateString()}`,
+         `Payment Status: ${payment.status || 'N/A'}`,
+         `Payment Method: ${payment.instrument || 'N/A'}`,
+         `Institution: ${payment.institution || 'N/A'}`
+       ];
        
-       if (receiverDetails.phone) {
-         doc.text(`Phone: ${receiverDetails.phone}`, 20, yPosition);
-         yPosition += 6;
-       }
+       orderInfo.forEach(info => {
+         doc.text(info, leftColumnX, leftYPosition);
+         leftYPosition += 6;
+       });
        
-       // Address
-       const address = receiverDetails.address || '';
-       const city = receiverDetails.city || '';
-       const state = receiverDetails.state || '';
-       const country = receiverDetails.country || '';
-       const postalCode = receiverDetails.postalCode || '';
+       // Customer Information (Right Column)
+       doc.setFontSize(14);
+       doc.setFont(undefined, 'bold');
+       doc.text('Customer Information', rightColumnX, yPosition);
        
-       let fullAddress = [address, city, state, country, postalCode].filter(Boolean).join(', ');
-       if (fullAddress) {
-         const addressLines = doc.splitTextToSize(`Address: ${fullAddress}`, 170);
-         doc.text(addressLines, 20, yPosition);
-         yPosition += addressLines.length * 6;
-       }
+       let rightYPosition = yPosition + 10;
+       doc.setFont(undefined, 'normal');
+       doc.setFontSize(10);
        
-       yPosition += 10;
+       // Extract data from the correct structure
+       const customerDetails = orderData.receiver_details || {};
+       const address = customerDetails.address || {};
+       
+       const customerInfo = [
+         `Name: ${customerDetails.fullName || 'N/A'}`,
+         `Email: ${customerDetails.email || 'N/A'}`,
+         `Phone: ${customerDetails.countryCode || ''}${customerDetails.phone || 'N/A'}`.replace(/^\+?/, '+'),
+         `Address: ${address.addressLine1 || 'N/A'}`,
+         `City: ${address.cityName || 'N/A'}`,
+         `Postal Code: ${address.postalCode || 'N/A'}`,
+         `Country: ${address.countryCode || 'N/A'}`
+       ];
+       
+       customerInfo.forEach(info => {
+         doc.text(info, rightColumnX, rightYPosition);
+         rightYPosition += 6;
+       });
+       
+       // Set yPosition to the maximum of both columns for next section with more gap
+       yPosition = Math.max(leftYPosition, rightYPosition) + 25;
+       
+       // Products Table section starts here
+       yPosition += 15;
        
        // Products table using autoTable (same as generateBillOnly)
        const products = orderData.products || [];
        const tableData = [];
        
+       // Convert product prices for Nepal orders (same logic as generateBillOnly)
+       const { getExchangeRate } = await import('../../utils/currency');
+       const exchangeRate = isNepal ? await getExchangeRate() : 1;
+       
        products.forEach((item) => {
+         let price = item.price || 0;
          const quantity = item.quantity || 1;
-         const price = item.price || 0;
-         const total = quantity * price;
+         let total = item.subtotal || (price * quantity);
+         
+         // Convert USD prices to NPR for Nepal orders
+         if (isNepal) {
+           price = price * exchangeRate;
+           total = total * exchangeRate;
+         }
          
          tableData.push([
            item.title || item.name || 'N/A',
@@ -1097,15 +1118,13 @@ const OrderManagement = () => {
        const couponDiscount = orderSummary.couponDiscount || 0;
        const shippingCost = orderSummary.shippingCost || 0;
        
-       // Convert values for Nepal orders if needed
+       // Convert values for Nepal orders (same logic as generateBillOnly)
        let displayOriginalSubtotal = originalSubtotal;
        let displayProductDiscounts = productDiscounts;
        let displayCouponDiscount = couponDiscount;
        let displayShippingCost = shippingCost;
        
        if (isNepal) {
-         // For Nepal orders, convert USD to NPR if needed
-         const exchangeRate = 132; // Default rate, should match generateBillOnly
          displayOriginalSubtotal = originalSubtotal * exchangeRate;
          if (productDiscounts > 0) displayProductDiscounts = productDiscounts * exchangeRate;
          if (couponDiscount > 0) displayCouponDiscount = couponDiscount * exchangeRate;
@@ -1153,7 +1172,7 @@ const OrderManagement = () => {
        doc.text(`Total Amount: ${currency} ${finalTotal}`, 
          doc.internal.pageSize.getWidth() - 20, yPosition, { align: 'right' });
        
-       // Add currency note
+       // Add currency note with live exchange rate (same as generateBillOnly)
        yPosition += 10;
        doc.setFontSize(8);
        doc.setFont(undefined, 'italic');
@@ -1161,9 +1180,12 @@ const OrderManagement = () => {
        
        let noteText;
        if (isNepal) {
-         noteText = 'Note: All amounts in NPR. Product prices converted from USD at current exchange rate';
+         noteText = `Note: All amounts in NPR. Product prices converted from USD at rate 1 USD = ${exchangeRate.toFixed(2)} NPR`;
        } else {
          noteText = 'Note: All amounts in USD';
+         if (payment.amount_npr || amount !== (payment.amount || orderSummary.totalAmount || 0)) {
+           noteText += `. Converted from NPR at rate 1 USD = ${exchangeRate.toFixed(2)} NPR`;
+         }
        }
        
        const noteLines = doc.splitTextToSize(noteText, doc.internal.pageSize.getWidth() - 40);
