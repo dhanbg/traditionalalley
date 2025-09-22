@@ -701,7 +701,6 @@ const OrderManagement = () => {
           item.title || 'N/A',
           item.productDetails?.productCode || item.productCode || 'N/A',
           item.selectedSize || 'N/A',
-          item.selectedColor || 'N/A',
           quantity.toString(),
           `${currency} ${price.toFixed(2)}`,
           `${currency} ${total.toFixed(2)}`
@@ -709,11 +708,11 @@ const OrderManagement = () => {
       });
       
       if (tableData.length === 0) {
-        tableData.push(['No items found', '', '', '', '', '', '']);
+        tableData.push(['No items found', '', '', '', '', '']);
       }
       
       autoTable(doc, {
-        head: [['Product', 'Product Code', 'Size', 'Color', 'Quantity', 'Price', 'Total']],
+        head: [['Product', 'Product Code', 'Size', 'Quantity', 'Price', 'Total']],
         body: tableData,
         startY: yPosition,
         theme: 'striped',
@@ -860,8 +859,9 @@ const OrderManagement = () => {
       doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
       doc.setTextColor(102, 102, 102);
-      doc.text('Thank you for shopping with Traditional Alley!', doc.internal.pageSize.getWidth() / 2, footerY, { align: 'center' });
-      doc.text('For any queries, please contact us at support@traditionalalley.com', doc.internal.pageSize.getWidth() / 2, footerY + 8, { align: 'center' });
+      const footerText = 'Thank you for shopping with Traditional Alley! For any queries, please contact us at contact@traditionalalley.com';
+      const footerLines = doc.splitTextToSize(footerText, doc.internal.pageSize.getWidth() - 40);
+      doc.text(footerLines, doc.internal.pageSize.getWidth() / 2, footerY, { align: 'center' });
       
       // Save the PDF
       const txnId = payment.merchantTxnId || payment.attributes?.merchantTxnId || 'receipt';
@@ -1074,7 +1074,6 @@ const OrderManagement = () => {
            item.title || item.name || 'N/A',
            item.productDetails?.productCode || item.productCode || 'N/A',
            item.selectedSize || 'N/A',
-           item.selectedColor || 'N/A',
            quantity.toString(),
            `${currency} ${price.toFixed(2)}`,
            `${currency} ${total.toFixed(2)}`
@@ -1082,11 +1081,11 @@ const OrderManagement = () => {
        });
        
        if (tableData.length === 0) {
-         tableData.push(['No items found', '', '', '', '', '', '']);
+         tableData.push(['No items found', '', '', '', '', '']);
        }
        
        autoTable(doc, {
-         head: [['Product', 'Product Code', 'Size', 'Color', 'Quantity', 'Price', 'Total']],
+         head: [['Product', 'Product Code', 'Size', 'Quantity', 'Price', 'Total']],
          body: tableData,
          startY: yPosition,
          theme: 'striped',
@@ -1196,8 +1195,9 @@ const OrderManagement = () => {
        yPosition += 20;
        doc.setFontSize(10);
        doc.setTextColor(100, 100, 100);
-       doc.text('Thank you for your business!', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-       doc.text('Traditional Alley - Authentic Products, Delivered Worldwide', doc.internal.pageSize.getWidth() / 2, yPosition + 8, { align: 'center' });
+       const footerText = 'Thank you for shopping with Traditional Alley! For any queries, please contact us at contact@traditionalalley.com';
+       const footerLines = doc.splitTextToSize(footerText, doc.internal.pageSize.getWidth() - 40);
+       doc.text(footerLines, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
       
       // Generate PDF as base64 for saving to server
       let pdfBase64 = doc.output('datauristring').split(',')[1];
