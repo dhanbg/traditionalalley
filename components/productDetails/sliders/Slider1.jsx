@@ -116,20 +116,24 @@ export default function Slider1({
         });
       }
     } else {
-      newItems = [...slideItems].filter(item => item.src && typeof item.src === 'string' && item.src.trim() !== ''); // Filter out empty URLs
+      // When slideItems exist (variant images), don't show them in main product view
+      // Only show main product images to prevent variant images from appearing in main product sub-images
+      newItems = [];
       
-      // Replace first item with firstItem if provided
-      if (firstItem && typeof firstItem === 'string' && firstItem.trim() !== '' && newItems[0]) {
-        newItems[0] = {
-          ...newItems[0],
+      // Add the main product image and hover image only
+      if (firstItem && typeof firstItem === 'string' && firstItem.trim() !== '') {
+        newItems.push({
+          id: 0,
           src: firstItem,
-          thumbnailSrc: generateThumbnailUrl(firstItem)
-        };
+          thumbnailSrc: generateThumbnailUrl(firstItem),
+          alt: "Main product image",
+          color: activeColor,
+          width: 600,
+          height: 800
+        });
       }
-      
-      // Insert imgHover as second item if provided and different from firstItem
       if (imgHover && typeof imgHover === 'string' && imgHover.trim() !== '' && imgHover !== firstItem) {
-        const hoverItem = {
+        newItems.push({
           id: 1,
           src: imgHover,
           thumbnailSrc: generateThumbnailUrl(imgHover),
@@ -137,21 +141,8 @@ export default function Slider1({
           color: activeColor,
           width: 600,
           height: 800
-        };
-        
-        // Insert at position 1 (second position)
-        if (newItems.length > 1) {
-          newItems.splice(1, 0, hoverItem);
-        } else {
-          newItems.push(hoverItem);
-        }
+        });
       }
-      
-      // Add thumbnailSrc to existing items if not present
-      newItems = newItems.map(item => ({
-        ...item,
-        thumbnailSrc: item.thumbnailSrc || generateThumbnailUrl(item.src) || item.src
-      }));
     }
     setItems(newItems);
   }, [useGallery, gallery, slideItems, firstItem, imgHover]);
