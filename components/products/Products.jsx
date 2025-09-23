@@ -4,7 +4,7 @@ import LayoutHandler from "./LayoutHandler";
 import Sorting from "./Sorting";
 import Listview from "./Listview";
 import GridView from "./GridView";
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useReducer, useState, useRef, useCallback } from "react";
 import FilterModal from "./FilterModal";
 import { initialState, reducer } from "@/reducer/filterReducer";
 import { productWomen } from "@/data/productsWomen";
@@ -39,6 +39,9 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
     ],
     priceRange: [20, 300]
   });
+  
+  // Ref for intersection observer
+  const loadMoreRef = useRef(null);
 
   // Fetch all products with variants for a category
   useEffect(() => {
@@ -544,23 +547,50 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
     setLoadedItems(sorted.slice(0, 8));
   }, [sorted]);
 
-  const handleLoad = () => {
-    if (!sorted || !Array.isArray(sorted) || loadedItems.length >= sorted.length) {
-      return; // No more items to load
+  const handleLoad = useCallback(() => {
+    if (!sorted || !Array.isArray(sorted) || loadedItems.length >= sorted.length || loading) {
+      return; // No more items to load or already loading
     }
     
     setLoading(true);
     
     setTimeout(() => {
       // Load more products from the sorted items
-        setLoadedItems((pre) => [
-          ...pre,
-          ...sorted.slice(pre.length, pre.length + 4),
-        ]);
+      setLoadedItems((pre) => [
+        ...pre,
+        ...sorted.slice(pre.length, pre.length + 4),
+      ]);
       
       setLoading(false);
     }, 1000);
-  };
+  }, [sorted, loadedItems.length, loading]);
+  
+  // Intersection Observer for auto-loading
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting) {
+          handleLoad();
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '100px'
+      }
+    );
+    
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+    
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [handleLoad]);
 
   // Fetch filter options for this category
   useEffect(() => {
@@ -671,18 +701,19 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
             ) : activeLayout == 1 ? (
               <div className="tf-list-layout wrapper-shop" id="listLayout">
                 <Listview pagination={false} products={loadedItems} />
-                {(productDetails.length > 0 && loadedItems.length === productDetails.length) || 
-                 (productDetails.length === 0 && sorted.length === loadedItems.length) ? (
-                  ""
-                ) : (
-                  <button
-                    className={`load-more-btn btn-out-line tf-loading ${
-                      loading ? "loading" : ""
-                    } `}
-                  >
-                    <span className="text-btn">Load more</span>
-                  </button>
-                )}
+                {/* Auto-loading trigger element */}
+                {(productDetails.length > 0 && loadedItems.length < productDetails.length) || 
+                 (productDetails.length === 0 && sorted.length > loadedItems.length) ? (
+                  <div ref={loadMoreRef} className="d-flex justify-content-center align-items-center py-4">
+                    {loading && (
+                      <div className="auto-load-spinner">
+                        <div className="spinner-border text-primary" role="status">
+                          <span className="visually-hidden">Loading more products...</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
               </div>
             ) : (
               <div
@@ -690,23 +721,19 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
                 id="gridLayout"
               >
                 <GridView pagination={false} products={loadedItems} />
-                {(productDetails.length > 0 && loadedItems.length === productDetails.length) || 
-                 (productDetails.length === 0 && sorted.length === loadedItems.length) ? (
-                  ""
-                ) : (
-                  <div
-                    className="wd-load d-flex justify-content-center"
-                    onClick={() => handleLoad()}
-                  >
-                    <button
-                      className={`load-more-btn btn-out-line tf-loading ${
-                        loading ? "loading" : ""
-                      } `}
-                    >
-                      <span className="text-btn">Load more</span>
-                    </button>
+                {/* Auto-loading trigger element */}
+                {(productDetails.length > 0 && loadedItems.length < productDetails.length) || 
+                 (productDetails.length === 0 && sorted.length > loadedItems.length) ? (
+                  <div ref={loadMoreRef} className="d-flex justify-content-center align-items-center py-4" style={{gridColumn: '1 / -1'}}>
+                    {loading && (
+                      <div className="auto-load-spinner">
+                        <div className="spinner-border text-primary" role="status">
+                          <span className="visually-hidden">Loading more products...</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
+                ) : null}
               </div>
             )}
             
