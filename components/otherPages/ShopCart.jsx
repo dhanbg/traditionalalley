@@ -8,6 +8,7 @@ import { fetchDataFromApi } from "@/utils/api";
 import { PRODUCT_BY_DOCUMENT_ID_API } from "@/utils/urls";
 import { getBestImageUrl } from "@/utils/imageUtils";
 import PriceDisplay from "@/components/common/PriceDisplay";
+import TopPicksEmptyCart from "@/components/common/TopPicksEmptyCart";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
 
@@ -98,6 +99,7 @@ const getThumbnailImageUrl = (imgSrc) => {
 export default function ShopCart() {
   const [activeDiscountIndex, setActiveDiscountIndex] = useState(1);
   const [selectedOption, setSelectedOption] = useState(shippingOptions[0]);
+  const [showTopPicks, setShowTopPicks] = useState(false);
   const {
     cartProducts,
     setCartProducts,
@@ -480,12 +482,32 @@ export default function ShopCart() {
                   </div> */}
                 </form>
               ) : (
-                <div className="empty-cart text-center">
-                  <h3 className="mt-5 mb-3">Your cart is empty</h3>
-                  <p className="mb-5">Add some products to your cart to continue shopping</p>
-                  <Link href="/shop-default-grid" className="tf-btn">
-                    <span className="text">Shop Now</span>
-                  </Link>
+                <div className="empty-cart-section">
+                  {!showTopPicks ? (
+                    <div className="empty-cart text-center">
+                      <h3 className="mt-5 mb-3">Your cart is empty</h3>
+                      <p className="mb-5">Add some products to your cart to continue shopping</p>
+                      <button 
+                        className="tf-btn"
+                        onClick={() => setShowTopPicks(true)}
+                      >
+                        <span className="text">Shop Now</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="top-picks-section">
+                      <div className="d-flex justify-content-between align-items-center mb-4">
+                        <h3 className="mb-0">Top Picks for You</h3>
+                        <button 
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={() => setShowTopPicks(false)}
+                        >
+                          Back to Cart
+                        </button>
+                      </div>
+                      <TopPicksEmptyCart isModal={false} maxProducts={8} />
+                    </div>
+                  )}
                 </div>
               )}
             </div>

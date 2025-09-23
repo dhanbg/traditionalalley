@@ -126,6 +126,7 @@ export default function Checkout() {
 
   // Add state for DHL shipping
   const [shippingCost, setShippingCost] = useState(0); // Will be set by actual DHL/NCM rates
+  const [shippingCostNPR, setShippingCostNPR] = useState(0); // Always store original NPR amount
   const [shippingRatesObtained, setShippingRatesObtained] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState('');
 
@@ -1345,11 +1346,13 @@ export default function Checkout() {
     if (nprExchangeRate) {
       // Product total needs conversion from USD to NPR (using finalTotal to include coupon discount)
       const productTotalNPR = convertUsdToNpr(finalTotal, nprExchangeRate);
-      // Shipping cost is already in NPR, so add directly
-      return productTotalNPR + shippingCost;
+      
+      // Always use the original NPR shipping cost for NPR amount calculation
+      // This prevents currency switching issues
+      return productTotalNPR + shippingCostNPR;
     }
     return finalTotal + shippingCost; // Fallback to USD if no rate available
-  }, [finalTotal, shippingCost, nprExchangeRate]);
+  }, [finalTotal, shippingCostNPR, nprExchangeRate]);
 
   // Effect to fetch exchange rate
   React.useEffect(() => {
@@ -1367,6 +1370,19 @@ export default function Checkout() {
       fetchRate();
     }
   }, []);
+
+  // Effect to update display shipping cost when currency changes
+   React.useEffect(() => {
+     if (shippingRatesObtained && shippingCostNPR > 0 && nprExchangeRate) {
+       if (userCurrency === 'USD') {
+         // Convert NPR to USD for display
+         setShippingCost(shippingCostNPR / nprExchangeRate);
+       } else {
+         // Show original NPR amount
+         setShippingCost(shippingCostNPR);
+       }
+     }
+   }, [userCurrency, shippingCostNPR, nprExchangeRate, shippingRatesObtained]);
 
   // Calculate total discounts: subtotal - actualTotal (if positive)
   const totalDiscounts = subtotal > actualTotal ? Math.round((subtotal - actualTotal) * 100) / 100 : 0;
@@ -1550,15 +1566,19 @@ export default function Checkout() {
                   onRateCalculated={(rateInfo) => {
                     console.log('Rate calculated:', rateInfo);
                     // Use actual shipping rate from DHL/NCM calculation
-                    let actualShippingCost = parseFloat(rateInfo.price) || 0;
+                    const originalShippingCostNPR = parseFloat(rateInfo.price) || 0;
                     
-                    // Convert shipping cost based on user currency preference
+                    // Store original NPR amount for NPR payment calculations
+                    setShippingCostNPR(originalShippingCostNPR);
+                    
+                    // Convert shipping cost based on user currency preference for display
                     // DHL rates come in NPR, so convert to USD if user is in USD mode
+                    let displayShippingCost = originalShippingCostNPR;
                     if (userCurrency === 'USD' && nprExchangeRate) {
-                      actualShippingCost = actualShippingCost / nprExchangeRate;
+                      displayShippingCost = originalShippingCostNPR / nprExchangeRate;
                     }
                     
-                    setShippingCost(actualShippingCost);
+                    setShippingCost(displayShippingCost);
                     setShippingRatesObtained(true);
                   }}
                   onReceiverChange={setReceiverDetails}
@@ -1822,7 +1842,7 @@ export default function Checkout() {
                             price={shippingCost}
                             className="text-button"
                             size="normal"
-                            isNPR={true}
+                            isNPR={userCurrency === 'NPR'}
                           />
                         ) : (
                           'Get Shipping Rates'
@@ -1843,7 +1863,7 @@ export default function Checkout() {
                           />
                         ) : (
                           <PriceDisplay 
-                              price={finalTotal + (shippingCost / (nprExchangeRate || 134.5))}
+                              price={finalTotal + shippingCost}
                               className="text-button"
                               size="normal"
                             />
