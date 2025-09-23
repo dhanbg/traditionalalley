@@ -485,6 +485,16 @@ export default function Details1({ product, variants = [], preferredVariantId = 
     if (!user) {
       signIn();
     } else {
+      // Check if product has sizes and require size selection
+      const hasSizes = (currentProduct.size_stocks) || 
+                      (activeVariant && activeVariant.size_stocks) || 
+                      (safeProduct.sizes && safeProduct.sizes.length > 0);
+      
+      if (hasSizes && !selectedSize) {
+        setSizeSelectionError("Please select a size before adding to cart.");
+        return;
+      }
+      
       // Create unique cart ID based on product, variant, and size
       let uniqueCartId;
       const baseId = safeProduct.documentId || safeProduct.id;
