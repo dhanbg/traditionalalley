@@ -117,10 +117,36 @@ export default function Slider1({
       }
     } else {
       newItems = [...slideItems].filter(item => item.src && typeof item.src === 'string' && item.src.trim() !== ''); // Filter out empty URLs
+      
+      // Replace first item with firstItem if provided
       if (firstItem && typeof firstItem === 'string' && firstItem.trim() !== '' && newItems[0]) {
-        newItems[0].src = firstItem;
-        newItems[0].thumbnailSrc = generateThumbnailUrl(firstItem); // Generate thumbnail for main product
+        newItems[0] = {
+          ...newItems[0],
+          src: firstItem,
+          thumbnailSrc: generateThumbnailUrl(firstItem)
+        };
       }
+      
+      // Insert imgHover as second item if provided and different from firstItem
+      if (imgHover && typeof imgHover === 'string' && imgHover.trim() !== '' && imgHover !== firstItem) {
+        const hoverItem = {
+          id: 1,
+          src: imgHover,
+          thumbnailSrc: generateThumbnailUrl(imgHover),
+          alt: "Product hover image",
+          color: activeColor,
+          width: 600,
+          height: 800
+        };
+        
+        // Insert at position 1 (second position)
+        if (newItems.length > 1) {
+          newItems.splice(1, 0, hoverItem);
+        } else {
+          newItems.push(hoverItem);
+        }
+      }
+      
       // Add thumbnailSrc to existing items if not present
       newItems = newItems.map(item => ({
         ...item,

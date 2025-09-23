@@ -335,7 +335,7 @@ export async function sendInvoiceEmail(
           <p>Thank you for shopping with us. We truly appreciate your trust!</p>
           <p style="margin-top: 30px;">Best wishes,<br>Traditional Alley</p>
           <div style="margin-top: 30px; text-align: left;">
-            <img src="https://res.cloudinary.com/dvytbqhm5/image/upload/v1758268516/favicon_removebg_preview_a701788c31.png" alt="Traditional Alley Logo" style="width: 80px; height: 80px;">
+            <img src="${process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000'}/logo.png" alt="Traditional Alley Logo" style="width: 80px; height: 80px;">
           </div>
         </div>
       `,

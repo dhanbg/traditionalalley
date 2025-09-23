@@ -254,17 +254,20 @@ export default function Details1({ product, variants = [], preferredVariantId = 
   
   // Memoize slideItems to prevent infinite re-renders
   const slideItems = useMemo(() => {
-    // Map variants to slideItems format if they have imgSrc
+    // Map variants to slideItems format if they have imgSrc, but exclude the main product variant
     if (variants && variants.length > 0) {
-      return variants.map((variant, index) => ({
-        id: index + 1,
-        src: processImageUrl(variant.imgSrc),
-        alt: extractDesignFromVariant(variant),
-        color: extractDesignFromVariant(variant),
-        width: 600,
-        height: 800,
-        imgSrc: processImageUrl(variant.imgSrc)
-      }));
+      return variants
+        .filter(variant => !variant.isCurrentProduct) // Filter out the main product variant to avoid duplicates
+        .map((variant, index) => ({
+          id: index + 1,
+          src: processImageUrl(variant.imgSrc),
+          alt: extractDesignFromVariant(variant),
+          color: extractDesignFromVariant(variant),
+          width: 600,
+          height: 800,
+          imgSrc: processImageUrl(variant.imgSrc),
+          imgHover: processImageUrl(variant.imgHover) || processImageUrl(variant.imgSrc)
+        }));
     }
     // Fallback to original color mapping
     if (safeProduct.colors && safeProduct.colors.length > 0 && safeProduct.colors[0].imgSrc) {
@@ -553,7 +556,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
       setCurrentProduct({
         ...safeProduct,
         imgSrc: processImageUrl(variant.imgSrc),
-        imgHover: processImageUrl(variant.imgHover) || processImageUrl(variant.imgSrc),
+        imgHover: processImageUrl(variant.imgHover) || processImageUrl(safeProduct.imgHover),
         gallery: processGalleryItems(variant.gallery && variant.gallery.length > 0 ? variant.gallery : safeProduct.gallery),
         inStock: calculateInStock(variant),
         quantity: variant.quantity
