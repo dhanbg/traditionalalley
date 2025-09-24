@@ -362,8 +362,28 @@ export default function CartModal() {
           setServerTotalPrice(totalPrice);
           setServerCartLoading(false);
           
-          // Replace the context cartProducts with our server data
-          setCartProducts(productsWithDetails);
+          // Merge server data with local cart instead of replacing entirely
+          // This prevents newly added items from disappearing during server sync
+          setCartProducts(prevCartProducts => {
+            // Create a map of server products by ID for quick lookup
+            const serverProductsMap = new Map();
+            productsWithDetails.forEach(product => {
+              serverProductsMap.set(product.id, product);
+            });
+            
+            // Start with server products as the base
+            const mergedProducts = [...productsWithDetails];
+            
+            // Add any local products that aren't in server data yet
+            // (these are likely recently added items that haven't synced yet)
+            prevCartProducts.forEach(localProduct => {
+              if (!serverProductsMap.has(localProduct.id)) {
+                mergedProducts.push(localProduct);
+              }
+            });
+            
+            return mergedProducts;
+          });
           
         } catch (error) {
           setServerCartLoading(false);
@@ -546,6 +566,28 @@ export default function CartModal() {
               
               setServerCartProducts(productsWithDetails);
               setServerTotalPrice(totalPrice);
+              
+              // Also merge with context cart to ensure consistency
+              setCartProducts(prevCartProducts => {
+                // Create a map of server products by ID for quick lookup
+                const serverProductsMap = new Map();
+                productsWithDetails.forEach(product => {
+                  serverProductsMap.set(product.id, product);
+                });
+                
+                // Start with server products as the base
+                const mergedProducts = [...productsWithDetails];
+                
+                // Add any local products that aren't in server data yet
+                // (these are likely recently added items that haven't synced yet)
+                prevCartProducts.forEach(localProduct => {
+                  if (!serverProductsMap.has(localProduct.id)) {
+                    mergedProducts.push(localProduct);
+                  }
+                });
+                
+                return mergedProducts;
+              });
             }
             
             setServerCartLoading(false);
