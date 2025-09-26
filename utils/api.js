@@ -3,10 +3,8 @@ import { generateLocalTimestamp } from './timezone';
 
 // Helper function to construct proper image URLs
 export const getImageUrl = (imageObj) => {
-  // Default placeholder that's built into Next.js
-  const defaultPlaceholder = "/vercel.svg";
-  
-  if (!imageObj) return defaultPlaceholder;
+  // Only return null if truly no image data is available
+  if (!imageObj) return null;
   
   // If imageObj is a string, handle as direct or relative URL
   if (typeof imageObj === 'string') {
@@ -45,8 +43,8 @@ export const getImageUrl = (imageObj) => {
     }
   }
   
-  // Return placeholder if no valid URL found
-  return defaultPlaceholder;
+  // Return null if no valid URL found - let the component handle fallback
+  return null;
 }
 
 // Helper function to get optimized image URL based on the image object structure

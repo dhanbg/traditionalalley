@@ -3,6 +3,6 @@
 import { useContextElement } from "@/context/Context";
 
 export default function CartLength() {
-  const { cartProducts } = useContextElement();
-  return <>{cartProducts.length}</>;
+  const { getSelectedCartItems } = useContextElement();
+  return <>{getSelectedCartItems().length}</>;
 }

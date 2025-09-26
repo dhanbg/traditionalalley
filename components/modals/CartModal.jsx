@@ -690,7 +690,7 @@ export default function CartModal() {
                           </div>
                           <h6>{allCartProducts.length > 0 ? 'No items selected' : 'Your cart is empty'}</h6>
                           <p>{allCartProducts.length > 0 
-                            ? 'Select items from your cart to view them here and proceed to checkout.' 
+                            ? `You have ${allCartProducts.length} item${allCartProducts.length > 1 ? 's' : ''} in your cart. Select the items you want to purchase and they will appear here for checkout.` 
                             : 'Looks like you haven\'t added any items to your cart yet.'}</p>
                           <button 
                             className="tf-button-2 style-1"

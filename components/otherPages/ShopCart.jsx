@@ -41,6 +41,9 @@ const shippingOptions = [
 
 // Function to get small format image URL from product image object
 const getThumbnailImageUrl = (imgSrc) => {
+  // Return null if no image source provided - let component handle fallback
+  if (!imgSrc) return null;
+  
   // If it's already a string URL, check if we can convert it to small format
   if (typeof imgSrc === 'string') {
     // If it contains medium_ or large_, replace with small_
@@ -92,8 +95,8 @@ const getThumbnailImageUrl = (imgSrc) => {
     }
   }
   
-  // Return fallback image if nothing works
-  return '/images/products/default-product.jpg';
+  // Return null if nothing works - let component handle fallback
+  return null;
 };
 
 export default function ShopCart() {
@@ -354,7 +357,7 @@ export default function ShopCart() {
                             >
                               <Image
                                 alt="product"
-                                src={getThumbnailImageUrl(elm.variantInfo?.imgSrc || elm.imgSrc)}
+                                src={getThumbnailImageUrl(elm.variantInfo?.imgSrc || elm.imgSrc) || '/images/products/default-product.jpg'}
                                 width={600}
                                 height={800}
                                 priority={i < 3}

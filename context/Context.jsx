@@ -2462,10 +2462,8 @@ export default function Context({ children }) {
 
   // Helper function to get the most appropriate image URL, preferring smaller formats for better performance
   const getOptimizedImageUrl = (imageObj) => {
-    // Default placeholder that's built into Next.js
-    const defaultPlaceholder = "/vercel.svg";
-    
-    if (!imageObj) return defaultPlaceholder;
+    // Only return null if truly no image data is available
+    if (!imageObj) return null;
     
     // Handle the case where the URL is already a full URL
     if (imageObj.url && imageObj.url.startsWith("http")) {
@@ -2514,8 +2512,8 @@ export default function Context({ children }) {
       return directUrl.startsWith('http') ? directUrl : `${API_URL}${directUrl}`;
     }
     
-    // Return placeholder if no valid URL found
-    return defaultPlaceholder;
+    // Return null if no valid URL found - let the component handle fallback
+    return null;
   }
 
   // Cleanup effect for when component unmounts (browser closes)

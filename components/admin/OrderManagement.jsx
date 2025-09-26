@@ -15,7 +15,9 @@ const OrderManagement = () => {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showNCMForm, setShowNCMForm] = useState(false);
   const [ncmOrders, setNcmOrders] = useState([]);
-  const [activeTab, setActiveTab] = useState('pending');
+  const [activeTab, setActiveTab] = useState('success');
+  const [showPending, setShowPending] = useState(false);
+  const [showFailed, setShowFailed] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(0);
   const [isLoadingPagination, setIsLoadingPagination] = useState(false);
@@ -79,11 +81,11 @@ const OrderManagement = () => {
     return 'pending';
   };
 
-  // Sort user bags with latest orders at bottom
+  // Sort user bags with latest orders at top
   const sortedUserBags = [...userBags].sort((a, b) => {
     const dateA = new Date(a.attributes?.createdAt || a.createdAt || 0);
     const dateB = new Date(b.attributes?.createdAt || b.createdAt || 0);
-    return dateA - dateB; // Ascending order (oldest first, latest at bottom)
+    return dateB - dateA; // Descending order (latest first, oldest at bottom)
   });
 
   // Get all payments with their status
@@ -113,12 +115,12 @@ const OrderManagement = () => {
       console.log('  userBag.createdAt:', payment.userBag.attributes?.createdAt);
     });
     
-    // Sort payments by their individual timestamps (oldest first)
+    // Sort payments by their individual timestamps (latest first)
     allPayments.sort((a, b) => {
       const dateA = new Date(a.timestamp || a.createdAt || a.userBag.attributes?.createdAt || 0);
       const dateB = new Date(b.timestamp || b.createdAt || b.userBag.attributes?.createdAt || 0);
       console.log(`Comparing ${a.orderData?.receiver_details?.fullName} (${dateA.toISOString()}) vs ${b.orderData?.receiver_details?.fullName} (${dateB.toISOString()})`);
-      return dateA - dateB;
+      return dateB - dateA;
     });
     
     console.log('\n=== FINAL SORTED ORDER ===');
@@ -134,8 +136,17 @@ const OrderManagement = () => {
   const allPayments = getAllPayments();
   console.log('✅ getAllPayments completed, found', allPayments.length, 'payments');
 
-  // Filter payments based on active tab
-  const filteredPayments = allPayments.filter(payment => payment.computedStatus === activeTab);
+  // Filter payments based on active tab and visibility states
+  const filteredPayments = allPayments.filter(payment => {
+    if (activeTab === 'success') {
+      // Always show success, plus pending/failed if their buttons are clicked
+      return payment.computedStatus === 'success' || 
+             (showPending && payment.computedStatus === 'pending') ||
+             (showFailed && payment.computedStatus === 'failed');
+    }
+    // For shipped tab, show only shipped orders
+    return payment.computedStatus === activeTab;
+  });
 
   // Get counts for each tab
   const getTabCounts = () => {
@@ -496,6 +507,11 @@ const OrderManagement = () => {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setCurrentPage(0);
+    // Reset visibility states when switching away from success tab
+    if (tab !== 'success') {
+      setShowPending(false);
+      setShowFailed(false);
+    }
   };
 
   // Get proper product image (variant vs main)
@@ -1431,17 +1447,8 @@ const OrderManagement = () => {
           {/* Tab Navigation */}
           <div className="mb-6">
             <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8">
-                <button
-                  onClick={() => handleTabChange('pending')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'pending'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Pending ({tabCounts.pending})
-                </button>
+              <nav className="-mb-px flex space-x-8 items-center">
+                {/* Success Tab - Always Active */}
                 <button
                   onClick={() => handleTabChange('success')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -1452,16 +1459,8 @@ const OrderManagement = () => {
                 >
                   Success ({tabCounts.success})
                 </button>
-                <button
-                  onClick={() => handleTabChange('failed')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'failed'
-                      ? 'border-red-500 text-red-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Failed ({tabCounts.failed})
-                </button>
+                
+                {/* Shipped Tab */}
                 <button
                   onClick={() => handleTabChange('shipped')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -1472,21 +1471,60 @@ const OrderManagement = () => {
                 >
                   Shipped ({tabCounts.shipped})
                 </button>
+                
+                {/* Divider */}
+                <div className="h-6 w-px bg-gray-300 mx-4"></div>
+                
+                {/* Toggle Buttons for Pending and Failed */}
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => {
+                      if (activeTab !== 'success') handleTabChange('success');
+                      setShowPending(!showPending);
+                      setCurrentPage(0);
+                    }}
+                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                      showPending
+                        ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                        : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-blue-50 hover:text-blue-600'
+                    }`}
+                  >
+                    {showPending ? 'Hide' : 'Show'} Pending ({tabCounts.pending})
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      if (activeTab !== 'success') handleTabChange('success');
+                      setShowFailed(!showFailed);
+                      setCurrentPage(0);
+                    }}
+                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                      showFailed
+                        ? 'bg-red-100 text-red-700 border border-red-300'
+                        : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-red-50 hover:text-red-600'
+                    }`}
+                  >
+                    {showFailed ? 'Hide' : 'Show'} Failed ({tabCounts.failed})
+                  </button>
+                </div>
               </nav>
             </div>
           </div>
 
           <h3 className="text-lg font-medium text-gray-900 mb-4">
-            {activeTab === 'pending' && 'Pending Orders'}
-            {activeTab === 'success' && 'Successful Orders'}
-            {activeTab === 'failed' && 'Failed Orders'}
+            {activeTab === 'success' && (
+              <>Successful Orders
+                {showPending && ' + Pending'}
+                {showFailed && ' + Failed'}
+              </>
+            )}
             {activeTab === 'shipped' && 'Shipped Orders'}
             (Showing {Math.min(filteredPayments.length - currentPage * ordersPerPage, ordersPerPage)} of {filteredPayments.length} - Page {currentPage + 1})
           </h3>
           <div className="space-y-4">
             {filteredPayments.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <p>No orders with {activeTab} status.</p>
+                <p>No orders found{activeTab === 'success' ? ' for the selected view' : ` with ${activeTab} status`}.</p>
               </div>
             ) : (
               filteredPayments.slice(currentPage * ordersPerPage, (currentPage + 1) * ordersPerPage).map((payment, globalIndex) => (
