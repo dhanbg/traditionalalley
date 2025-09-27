@@ -113,7 +113,9 @@ export default function ShopCart() {
     toggleCartItemSelection,
     selectAllCartItems,
     getSelectedCartItems,
-    getSelectedItemsTotal
+    getSelectedItemsTotal,
+    isCartLoading,
+    cartLoadedOnce
   } = useContextElement();
   const [selectedColors, setSelectedColors] = useState({});
   const [selectedSizes, setSelectedSizes] = useState({});
@@ -309,7 +311,14 @@ export default function ShopCart() {
           
           <div className="row">
             <div className="col-xl-8">
-              {cartProducts.length ? (
+              {isCartLoading ? (
+                <div className="cart-loading text-center">
+                  <div className="spinner-border" role="status">
+                    <span className="visually-hidden">Loading cart...</span>
+                  </div>
+                  <p className="mt-3">Loading your cart...</p>
+                </div>
+              ) : cartProducts.length ? (
                 <form onSubmit={(e) => e.preventDefault()}>
                   <table className="tf-table-page-cart">
                     <thead>
@@ -355,15 +364,40 @@ export default function ShopCart() {
                               href={`/product-detail/${elm.documentId || elm.baseProductId}`}
                               className="img-box"
                             >
-                              <Image
-                                alt="product"
-                                src={getThumbnailImageUrl(elm.variantInfo?.imgSrc || elm.imgSrc) || '/images/products/default-product.jpg'}
-                                width={600}
-                                height={800}
-                                priority={i < 3}
-                                loading={i < 3 ? "eager" : "lazy"}
-                                style={{ objectFit: 'cover' }}
-                              />
+                              {!isCartLoading && (elm.variantInfo?.imgSrc || elm.imgSrc) ? (
+                                <Image
+                                  alt="product"
+                                  src={getThumbnailImageUrl(elm.variantInfo?.imgSrc || elm.imgSrc) || '/images/products/default-product.jpg'}
+                                  width={600}
+                                  height={800}
+                                  priority={true}
+                                  loading="eager"
+                                  style={{ objectFit: 'cover' }}
+                                  unoptimized={false}
+                                  placeholder="empty"
+                                  onError={(e) => {
+                                    console.log('Image failed to load:', e.target.src);
+                                    e.target.src = '/images/products/default-product.jpg';
+                                  }}
+                                />
+                              ) : (
+                                <div 
+                                  style={{ 
+                                    width: '100%', 
+                                    height: '200px', 
+                                    backgroundColor: '#f8f9fa',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    border: '1px solid #dee2e6',
+                                    borderRadius: '4px'
+                                  }}
+                                >
+                                  <div className="spinner-border spinner-border-sm" role="status">
+                                    <span className="visually-hidden">Loading image...</span>
+                                  </div>
+                                </div>
+                              )}
                             </Link>
                             <div className="cart-info">
                               <Link
@@ -515,17 +549,25 @@ export default function ShopCart() {
               )}
             </div>
             <div className="col-xl-4">
-              <div className="fl-sidebar-cart">
-                <div className="box-order bg-surface">
-                  <h5 className="title">Order Summary</h5>
-                  <div className="subtotal text-button d-flex justify-content-between align-items-center">
-                    <span>Selected Items ({selectedItemsCount}/{cartProducts.length})</span>
+              {isCartLoading ? (
+                <div className="cart-summary-loading text-center">
+                  <div className="spinner-border spinner-border-sm" role="status">
+                    <span className="visually-hidden">Loading...</span>
                   </div>
-                  <div className="subtotal text-button d-flex justify-content-between align-items-center">
-                    <span>Subtotal</span>
-                    <span className="total">
-                      <PriceDisplay 
-                        price={getSelectedItemsTotal()}
+                  <p className="mt-2">Loading cart summary...</p>
+                </div>
+              ) : (
+                <div className="fl-sidebar-cart">
+                  <div className="box-order bg-surface">
+                    <h5 className="title">Order Summary</h5>
+                    <div className="subtotal text-button d-flex justify-content-between align-items-center">
+                      <span>Selected Items ({selectedItemsCount}/{cartProducts.length})</span>
+                    </div>
+                    <div className="subtotal text-button d-flex justify-content-between align-items-center">
+                      <span>Subtotal</span>
+                      <span className="total">
+                        <PriceDisplay 
+                          price={getSelectedItemsTotal()}
                         className="text-button"
                         size="normal"
                       />
@@ -580,6 +622,7 @@ export default function ShopCart() {
                   </div>
                 </div>
               </div>
+            )}
             </div>
           </div>
         </div>

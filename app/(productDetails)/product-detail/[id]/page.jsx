@@ -196,7 +196,7 @@ function transformProduct(rawProduct) {
   if (!rawProduct) return null;
   
   // Pass through the original imgSrc object
-  const imgSrc = rawProduct.imgSrc || '/vercel.svg';
+  const imgSrc = rawProduct.imgSrc || null;
   
   // Handle hover image: prefer original, then medium, then small
   let imgHover = imgSrc; // Default to main image
@@ -238,8 +238,8 @@ function transformProduct(rawProduct) {
   // Extract gallery images if available, prefer original > medium > small
   const gallery = Array.isArray(rawProduct.gallery) 
     ? rawProduct.gallery.map(img => {
-        if (!img) return { id: 0, url: '/vercel.svg' };
-        let imageUrl = '/vercel.svg';
+        if (!img) return { id: 0, url: null };
+        let imageUrl = null;
         if (img.url && img.url.startsWith('http')) {
           imageUrl = img.url;
         } else if (img.url) {

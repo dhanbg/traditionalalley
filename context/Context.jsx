@@ -32,21 +32,21 @@ export default function Context({ children }) {
   const [isWishlistLoading, setIsWishlistLoading] = useState(false);
   const [compareItem, setCompareItem] = useState([]);
   
-  // Initialize cart image preloader
-  const cartImagePreloader = useCartImagePreloader(cartProducts, {
-    autoPreload: true,
-    delay: 200,
-    preloadOptions: {
-      timeout: 8000,
-      crossOrigin: 'anonymous'
-    },
-    onComplete: (stats) => {
-      console.log(`🖼️ Cart images preloaded: ${stats.successful}/${stats.total}`);
-    },
-    onError: (error) => {
-      console.warn('Cart image preloading error:', error);
-    }
-  });
+  // Remove cart image preloader initialization
+  // const cartImagePreloader = useCartImagePreloader(cartProducts, {
+  //   autoPreload: true,
+  //   delay: 200,
+  //   preloadOptions: {
+  //     timeout: 8000,
+  //     crossOrigin: 'anonymous'
+  //   },
+  //   onComplete: (stats) => {
+  //     console.log(`🖼️ Cart images preloaded: ${stats.successful}/${stats.total}`);
+  //   },
+  //   onError: (error) => {
+  //     console.warn('Cart image preloading error:', error);
+  //   }
+  // });
 
 
   const [totalPrice, setTotalPrice] = useState(0);
@@ -1726,25 +1726,9 @@ export default function Context({ children }) {
             
             setCartProducts(backendCarts);
             
-            // Preload cart images immediately after setting cart products
-            if (backendCarts.length > 0) {
-              try {
-                // Import preloadCartImages dynamically to avoid circular dependencies
-                const { preloadCartImages } = await import('@/utils/imagePreloader');
-                
-                // Trigger image preloading in the background
-                preloadCartImages(backendCarts, {
-                  timeout: 8000,
-                  crossOrigin: 'anonymous'
-                }).then((results) => {
-                  // Image preloading completed
-                }).catch((error) => {
-                  // Image preloading failed
-                });
-              } catch (importError) {
-                // Failed to import image preloader
-              }
-            }
+            // Remove image preloading to prevent interference with initial display
+            // Images will load naturally through the Next.js Image component
+            
           } else {
             setCartProducts([]);
           }
