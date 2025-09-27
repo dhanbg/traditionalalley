@@ -136,13 +136,20 @@
   
   /* Better spacing for mobile product cards */
   .card-product {
-    margin-bottom: 16px;
+    margin-bottom: 8px;
   }
   
   /* Improve text readability on mobile */
   .card-product-info .title.link {
     color: #1a1a1a;
     text-decoration: none;
+  }
+}
+
+/* Additional mobile spacing optimizations for smaller screens */
+@media (max-width: 575px) {
+  .card-product {
+    margin-bottom: 6px;
   }
   
   .card-product-info .title.link:hover {

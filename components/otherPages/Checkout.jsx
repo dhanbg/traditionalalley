@@ -757,6 +757,7 @@ export default function Checkout() {
     email: "",
     phone: "",
     countryCode: "",
+    customHeight: "",
     address: {
       addressLine1: "",
       cityName: "",

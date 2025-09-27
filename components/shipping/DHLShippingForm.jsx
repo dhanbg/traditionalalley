@@ -153,6 +153,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         email: formData.recipient.email || "",
         phone: formData.recipient.phone || "",
         countryCode: getActualCountryCode(formData.recipient.countryCode) || "",
+        customHeight: formData.recipient.customHeight || "",
         address: {
           addressLine1: formData.destinationAddress.addressLine1 || "",
           cityName: formData.destinationAddress.cityName || "",
@@ -757,15 +758,17 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
   };
 
   const isFormValid = () => {
-    const { destinationAddress, serviceType } = formData;
+    const { destinationAddress, serviceType, recipient } = formData;
     
-    // Only check for country, city, and service type (except for Nepal)
+    // Check for required fields: country, city, email, phone, and service type (except for Nepal)
     const countryValid = destinationAddress.countryCode && destinationAddress.countryCode.trim() !== '';
     const cityValid = destinationAddress.cityName && destinationAddress.cityName.trim() !== '';
+    const emailValid = recipient.email && recipient.email.trim() !== '' && recipient.email.includes('@');
+    const phoneValid = recipient.phone && recipient.phone.trim() !== '';
     const actualCountryCode = getActualCountryCode(destinationAddress.countryCode);
     const serviceTypeValid = actualCountryCode === 'NP' || (serviceType && serviceType.trim() !== '');
     
-    return countryValid && cityValid && serviceTypeValid;
+    return countryValid && cityValid && emailValid && phoneValid && serviceTypeValid;
   };
 
   const getRates = async () => {
@@ -1490,6 +1493,53 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                 />
                   </div>
             )}
+
+            {/* Custom Height Field */}
+            <div>
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: '#374151',
+                marginBottom: '0.5rem'
+              }}>
+                <span style={{ marginRight: '0.5rem' }}>📏</span>
+                Custom Height (meters)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="Enter height in meters (e.g., 1.75)"
+                value={formData.recipient.customHeight || ''}
+                onChange={(e) => handleInputChange('recipient', 'customHeight', e.target.value)}
+                style={{
+                  width: '100%',
+                  fontSize: isMobile ? '1rem' : '1rem',
+                  minWidth: 0,
+                  padding: '0.5rem 0.75rem',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '0.75rem',
+                  fontSize: '1rem',
+                  background: 'white',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                  transition: 'all 0.2s',
+                  lineHeight: '42px',
+                  minHeight: '42px'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#eab308'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+              />
+              <div style={{
+                fontSize: '0.75rem',
+                color: '#6b7280',
+                marginTop: '0.25rem',
+                fontStyle: 'italic'
+              }}>
+                Optional: Specify custom height for special requirements
+              </div>
+            </div>
                 </div>
                 </div>
                 </div>
