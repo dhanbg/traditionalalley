@@ -40,6 +40,13 @@ const nextConfig = {
     // Use the modern Sass API to fix the deprecation warning
     api: "modern",
   },
+  // API configuration for handling large request bodies
+  api: {
+    bodyParser: {
+      sizeLimit: '15mb', // Allow up to 15MB for PDF uploads
+    },
+    responseLimit: '15mb',
+  },
 };
 
 export default nextConfig;

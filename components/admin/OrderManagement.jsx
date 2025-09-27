@@ -15,7 +15,9 @@ const OrderManagement = () => {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showNCMForm, setShowNCMForm] = useState(false);
   const [ncmOrders, setNcmOrders] = useState([]);
-  const [activeTab, setActiveTab] = useState('pending');
+  const [activeTab, setActiveTab] = useState('success');
+  const [showPending, setShowPending] = useState(false);
+  const [showFailed, setShowFailed] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(0);
   const [isLoadingPagination, setIsLoadingPagination] = useState(false);
@@ -79,11 +81,11 @@ const OrderManagement = () => {
     return 'pending';
   };
 
-  // Sort user bags with latest orders at bottom
+  // Sort user bags with latest orders at top
   const sortedUserBags = [...userBags].sort((a, b) => {
     const dateA = new Date(a.attributes?.createdAt || a.createdAt || 0);
     const dateB = new Date(b.attributes?.createdAt || b.createdAt || 0);
-    return dateA - dateB; // Ascending order (oldest first, latest at bottom)
+    return dateB - dateA; // Descending order (latest first, oldest at bottom)
   });
 
   // Get all payments with their status
@@ -113,12 +115,12 @@ const OrderManagement = () => {
       console.log('  userBag.createdAt:', payment.userBag.attributes?.createdAt);
     });
     
-    // Sort payments by their individual timestamps (oldest first)
+    // Sort payments by their individual timestamps (latest first)
     allPayments.sort((a, b) => {
       const dateA = new Date(a.timestamp || a.createdAt || a.userBag.attributes?.createdAt || 0);
       const dateB = new Date(b.timestamp || b.createdAt || b.userBag.attributes?.createdAt || 0);
       console.log(`Comparing ${a.orderData?.receiver_details?.fullName} (${dateA.toISOString()}) vs ${b.orderData?.receiver_details?.fullName} (${dateB.toISOString()})`);
-      return dateA - dateB;
+      return dateB - dateA;
     });
     
     console.log('\n=== FINAL SORTED ORDER ===');
@@ -134,8 +136,17 @@ const OrderManagement = () => {
   const allPayments = getAllPayments();
   console.log('✅ getAllPayments completed, found', allPayments.length, 'payments');
 
-  // Filter payments based on active tab
-  const filteredPayments = allPayments.filter(payment => payment.computedStatus === activeTab);
+  // Filter payments based on active tab and visibility states
+  const filteredPayments = allPayments.filter(payment => {
+    if (activeTab === 'success') {
+      // Always show success, plus pending/failed if their buttons are clicked
+      return payment.computedStatus === 'success' || 
+             (showPending && payment.computedStatus === 'pending') ||
+             (showFailed && payment.computedStatus === 'failed');
+    }
+    // For shipped tab, show only shipped orders
+    return payment.computedStatus === activeTab;
+  });
 
   // Get counts for each tab
   const getTabCounts = () => {
@@ -496,6 +507,11 @@ const OrderManagement = () => {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setCurrentPage(0);
+    // Reset visibility states when switching away from success tab
+    if (tab !== 'success') {
+      setShowPending(false);
+      setShowFailed(false);
+    }
   };
 
   // Get proper product image (variant vs main)
@@ -701,7 +717,6 @@ const OrderManagement = () => {
           item.title || 'N/A',
           item.productDetails?.productCode || item.productCode || 'N/A',
           item.selectedSize || 'N/A',
-          item.selectedColor || 'N/A',
           quantity.toString(),
           `${currency} ${price.toFixed(2)}`,
           `${currency} ${total.toFixed(2)}`
@@ -709,11 +724,11 @@ const OrderManagement = () => {
       });
       
       if (tableData.length === 0) {
-        tableData.push(['No items found', '', '', '', '', '', '']);
+        tableData.push(['No items found', '', '', '', '', '']);
       }
       
       autoTable(doc, {
-        head: [['Product', 'Product Code', 'Size', 'Color', 'Quantity', 'Price', 'Total']],
+        head: [['Product', 'Product Code', 'Size', 'Quantity', 'Price', 'Total']],
         body: tableData,
         startY: yPosition,
         theme: 'striped',
@@ -860,8 +875,9 @@ const OrderManagement = () => {
       doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
       doc.setTextColor(102, 102, 102);
-      doc.text('Thank you for shopping with Traditional Alley!', doc.internal.pageSize.getWidth() / 2, footerY, { align: 'center' });
-      doc.text('For any queries, please contact us at support@traditionalalley.com', doc.internal.pageSize.getWidth() / 2, footerY + 8, { align: 'center' });
+      const footerText = 'Thank you for shopping with Traditional Alley! For any queries, please contact us at contact@traditionalalley.com';
+      const footerLines = doc.splitTextToSize(footerText, doc.internal.pageSize.getWidth() - 40);
+      doc.text(footerLines, doc.internal.pageSize.getWidth() / 2, footerY, { align: 'center' });
       
       // Save the PDF
       const txnId = payment.merchantTxnId || payment.attributes?.merchantTxnId || 'receipt';
@@ -986,146 +1002,251 @@ const OrderManagement = () => {
        doc.setTextColor(0, 0, 0);
        doc.text('INVOICE', doc.internal.pageSize.getWidth() / 2, headerY + 10, { align: 'center' });
        
-       // Order and Customer Information
-       let yPosition = headerY + 30;
+       // Order Information and Customer Information in same row (same as generateBillOnly)
+       let yPosition = 60;
+       const pageWidth = doc.internal.pageSize.getWidth();
+       const leftColumnX = 20;
+       const rightColumnX = pageWidth / 2 + 30;
        
-       doc.setFontSize(12);
-       doc.setTextColor(0, 0, 0);
-       
-       // Order details
-       const txnIdDisplay = payment.merchantTxnId || payment.attributes?.merchantTxnId || 'N/A';
-       doc.text(`Order ID: ${txnIdDisplay}`, 20, yPosition);
-       yPosition += 8;
-       
-       const orderDate = payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : new Date().toLocaleDateString();
-       doc.text(`Date: ${orderDate}`, 20, yPosition);
-       yPosition += 15;
-       
-       // Customer details
+       // Order Information (Left Column)
        doc.setFontSize(14);
-       doc.setTextColor(139, 69, 19);
-       doc.text('Bill To:', 20, yPosition);
-       yPosition += 8;
-       
-       doc.setFontSize(12);
+       doc.setFont(undefined, 'bold');
        doc.setTextColor(0, 0, 0);
+       doc.text('Order Information', leftColumnX, yPosition);
        
-       const customerName = receiverDetails.fullName || 'N/A';
-       doc.text(`Name: ${customerName}`, 20, yPosition);
-       yPosition += 6;
-       
-       if (receiverDetails.email) {
-         doc.text(`Email: ${receiverDetails.email}`, 20, yPosition);
-         yPosition += 6;
-       }
-       
-       if (receiverDetails.phone) {
-         doc.text(`Phone: ${receiverDetails.phone}`, 20, yPosition);
-         yPosition += 6;
-       }
-       
-       // Address
-       const address = receiverDetails.address || '';
-       const city = receiverDetails.city || '';
-       const state = receiverDetails.state || '';
-       const country = receiverDetails.country || '';
-       const postalCode = receiverDetails.postalCode || '';
-       
-       let fullAddress = [address, city, state, country, postalCode].filter(Boolean).join(', ');
-       if (fullAddress) {
-         const addressLines = doc.splitTextToSize(`Address: ${fullAddress}`, 170);
-         doc.text(addressLines, 20, yPosition);
-         yPosition += addressLines.length * 6;
-       }
-       
-       yPosition += 10;
-       
-       // Products table
-       doc.setFontSize(14);
-       doc.setTextColor(139, 69, 19);
-       doc.text('Items:', 20, yPosition);
-       yPosition += 10;
-       
-       // Table headers
+       let leftYPosition = yPosition + 10;
+       doc.setFont(undefined, 'normal');
        doc.setFontSize(10);
-       doc.setTextColor(0, 0, 0);
-       doc.text('Item', 20, yPosition);
-       doc.text('Qty', 120, yPosition);
-       doc.text('Price', 140, yPosition);
-       doc.text('Total', 170, yPosition);
-       yPosition += 5;
        
-       // Draw line under headers
-       doc.line(20, yPosition, 190, yPosition);
-       yPosition += 8;
+       const orderInfo = [
+         `Order ID: ${payment.merchantTxnId || 'N/A'}`,
+         `Gateway Reference: ${payment.gatewayReferenceNo || 'N/A'}`,
+         `Process ID: ${payment.processId || 'N/A'}`,
+         `Date: ${payment.timestamp ? new Date(payment.timestamp).toLocaleDateString() : new Date().toLocaleDateString()}`,
+         `Payment Status: ${payment.status || 'N/A'}`,
+         `Payment Method: ${payment.instrument || 'N/A'}`,
+         `Institution: ${payment.institution || 'N/A'}`
+       ];
        
-       // Product items
-       const products = orderData.products || [];
-       let subtotal = 0;
-       
-       products.forEach((product) => {
-         const productName = product.name || product.title || 'Unknown Product';
-         const quantity = product.quantity || 1;
-         const price = product.price || 0;
-         const total = quantity * price;
-         subtotal += total;
-         
-         // Handle long product names
-         const nameLines = doc.splitTextToSize(productName, 90);
-         doc.text(nameLines, 20, yPosition);
-         doc.text(quantity.toString(), 120, yPosition);
-         doc.text(`${currency} ${price.toFixed(2)}`, 140, yPosition);
-         doc.text(`${currency} ${total.toFixed(2)}`, 170, yPosition);
-         
-         yPosition += Math.max(nameLines.length * 5, 8);
+       orderInfo.forEach(info => {
+         doc.text(info, leftColumnX, leftYPosition);
+         leftYPosition += 6;
        });
        
+       // Customer Information (Right Column)
+       doc.setFontSize(14);
+       doc.setFont(undefined, 'bold');
+       doc.text('Customer Information', rightColumnX, yPosition);
+       
+       let rightYPosition = yPosition + 10;
+       doc.setFont(undefined, 'normal');
+       doc.setFontSize(10);
+       
+       // Extract data from the correct structure
+       const customerDetails = orderData.receiver_details || {};
+       const address = customerDetails.address || {};
+       
+       const customerInfo = [
+         `Name: ${customerDetails.fullName || 'N/A'}`,
+         `Email: ${customerDetails.email || 'N/A'}`,
+         `Phone: ${customerDetails.countryCode || ''}${customerDetails.phone || 'N/A'}`.replace(/^\+?/, '+'),
+         `Address: ${address.addressLine1 || 'N/A'}`,
+         `City: ${address.cityName || 'N/A'}`,
+         `Postal Code: ${address.postalCode || 'N/A'}`,
+         `Country: ${address.countryCode || 'N/A'}`
+       ];
+       
+       customerInfo.forEach(info => {
+         doc.text(info, rightColumnX, rightYPosition);
+         rightYPosition += 6;
+       });
+       
+       // Set yPosition to the maximum of both columns for next section with more gap
+       yPosition = Math.max(leftYPosition, rightYPosition) + 25;
+       
+       // Products Table section starts here
+       yPosition += 15;
+       
+       // Products table using autoTable (same as generateBillOnly)
+       const products = orderData.products || [];
+       const tableData = [];
+       
+       // Convert product prices for Nepal orders (same logic as generateBillOnly)
+       const { getExchangeRate } = await import('../../utils/currency');
+       const exchangeRate = isNepal ? await getExchangeRate() : 1;
+       
+       products.forEach((item) => {
+         let price = item.price || 0;
+         const quantity = item.quantity || 1;
+         let total = item.subtotal || (price * quantity);
+         
+         // Convert USD prices to NPR for Nepal orders
+         if (isNepal) {
+           price = price * exchangeRate;
+           total = total * exchangeRate;
+         }
+         
+         tableData.push([
+           item.title || item.name || 'N/A',
+           item.productDetails?.productCode || item.productCode || 'N/A',
+           item.selectedSize || 'N/A',
+           quantity.toString(),
+           `${currency} ${price.toFixed(2)}`,
+           `${currency} ${total.toFixed(2)}`
+         ]);
+       });
+       
+       if (tableData.length === 0) {
+         tableData.push(['No items found', '', '', '', '', '']);
+       }
+       
+       autoTable(doc, {
+         head: [['Product', 'Product Code', 'Size', 'Quantity', 'Price', 'Total']],
+         body: tableData,
+         startY: yPosition,
+         theme: 'striped',
+         headStyles: { fillColor: [255, 229, 212], textColor: [0, 0, 0] },
+         styles: { fontSize: 9 },
+         margin: { left: 20, right: 20 }
+       });
+       
+       yPosition = doc.lastAutoTable.finalY + 15;
+       
+       // Order Summary (same detailed breakdown as generateBillOnly)
+       doc.setFontSize(12);
+       doc.setFont(undefined, 'bold');
+       doc.setTextColor(0, 0, 0);
+       doc.text('Order Summary', 20, yPosition);
+       
+       yPosition += 10;
+       doc.setFontSize(10);
+       doc.setFont(undefined, 'normal');
+       
+       // Calculate values for breakdown
+       const originalSubtotal = products.reduce((sum, item) => {
+         const price = item.price || 0;
+         const quantity = item.quantity || 1;
+         return sum + (price * quantity);
+       }, 0);
+       
+       const productDiscounts = orderSummary.productDiscounts || 0;
+       const couponDiscount = orderSummary.couponDiscount || 0;
+       const shippingCost = orderSummary.shippingCost || 0;
+       
+       // Convert values for Nepal orders (same logic as generateBillOnly)
+       let displayOriginalSubtotal = originalSubtotal;
+       let displayProductDiscounts = productDiscounts;
+       let displayCouponDiscount = couponDiscount;
+       let displayShippingCost = shippingCost;
+       
+       if (isNepal) {
+         displayOriginalSubtotal = originalSubtotal * exchangeRate;
+         if (productDiscounts > 0) displayProductDiscounts = productDiscounts * exchangeRate;
+         if (couponDiscount > 0) displayCouponDiscount = couponDiscount * exchangeRate;
+         // Shipping cost is already in NPR for Nepal orders
+       }
+       
+       // Display breakdown
+       const breakdownItems = [
+         { label: 'Subtotal:', value: displayOriginalSubtotal },
+         ...(displayProductDiscounts > 0 ? [{ label: 'Product Discounts:', value: -displayProductDiscounts, isDiscount: true }] : []),
+         ...(displayCouponDiscount > 0 ? [{ label: `Coupon Discount (${orderSummary.couponCode || 'N/A'}):`, value: -displayCouponDiscount, isDiscount: true }] : []),
+         ...(displayShippingCost > 0 ? [{ label: 'Shipping Cost:', value: displayShippingCost }] : [])
+       ];
+       
+       breakdownItems.forEach(item => {
+         doc.text(item.label, 20, yPosition);
+         const valueText = `${currency} ${Math.abs(item.value).toFixed(2)}`;
+         const displayValue = item.isDiscount ? `- ${valueText}` : valueText;
+         
+         // Set color for discounts (green for savings)
+         if (item.isDiscount) {
+           doc.setTextColor(0, 128, 0); // Green color for discounts
+         }
+         
+         doc.text(displayValue, doc.internal.pageSize.getWidth() - 20, yPosition, { align: 'right' });
+         
+         // Reset color to black
+         doc.setTextColor(0, 0, 0);
+         
+         yPosition += 7;
+       });
+       
+       // Add separator line
        yPosition += 5;
-       doc.line(20, yPosition, 190, yPosition);
+       doc.setLineWidth(0.5);
+       doc.line(20, yPosition, doc.internal.pageSize.getWidth() - 20, yPosition);
        yPosition += 10;
        
-       // Order summary
-       const shipping = orderSummary.shippingCost || 0;
-       const tax = orderSummary.tax || 0;
-       const discount = orderSummary.discount || 0;
-       const finalTotal = parseFloat(formattedAmount);
-       
-       doc.text(`Subtotal: ${currency} ${subtotal.toFixed(2)}`, 140, yPosition);
-       yPosition += 6;
-       
-       if (shipping > 0) {
-         doc.text(`Shipping: ${currency} ${shipping.toFixed(2)}`, 140, yPosition);
-         yPosition += 6;
-       }
-       
-       if (tax > 0) {
-         doc.text(`Tax: ${currency} ${tax.toFixed(2)}`, 140, yPosition);
-         yPosition += 6;
-       }
-       
-       if (discount > 0) {
-         doc.text(`Discount: -${currency} ${discount.toFixed(2)}`, 140, yPosition);
-         yPosition += 6;
-       }
-       
-       // Total
-       doc.setFontSize(12);
+       // Total Amount
+       doc.setFontSize(14);
+       doc.setFont(undefined, 'bold');
        doc.setTextColor(139, 69, 19);
-       doc.text(`Total: ${currency} ${finalTotal}`, 140, yPosition);
+       
+       const finalTotal = parseFloat(formattedAmount);
+       doc.text(`Total Amount: ${currency} ${finalTotal}`, 
+         doc.internal.pageSize.getWidth() - 20, yPosition, { align: 'right' });
+       
+       // Add currency note with live exchange rate (same as generateBillOnly)
+       yPosition += 10;
+       doc.setFontSize(8);
+       doc.setFont(undefined, 'italic');
+       doc.setTextColor(102, 102, 102);
+       
+       let noteText;
+       if (isNepal) {
+         noteText = `Note: All amounts in NPR. Product prices converted from USD at rate 1 USD = ${exchangeRate.toFixed(2)} NPR`;
+       } else {
+         noteText = 'Note: All amounts in USD';
+         if (payment.amount_npr || amount !== (payment.amount || orderSummary.totalAmount || 0)) {
+           noteText += `. Converted from NPR at rate 1 USD = ${exchangeRate.toFixed(2)} NPR`;
+         }
+       }
+       
+       const noteLines = doc.splitTextToSize(noteText, doc.internal.pageSize.getWidth() - 40);
+       doc.text(noteLines, 20, yPosition);
+       yPosition += noteLines.length * 6;
        
        // Footer
        yPosition += 20;
        doc.setFontSize(10);
        doc.setTextColor(100, 100, 100);
-       doc.text('Thank you for your business!', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-       doc.text('Traditional Alley - Authentic Products, Delivered Worldwide', doc.internal.pageSize.getWidth() / 2, yPosition + 8, { align: 'center' });
+       const footerText = 'Thank you for shopping with Traditional Alley! For any queries, please contact us at contact@traditionalalley.com';
+       const footerLines = doc.splitTextToSize(footerText, doc.internal.pageSize.getWidth() - 40);
+       doc.text(footerLines, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
       
       // Generate PDF as base64 for saving to server
-      const pdfBase64 = doc.output('datauristring').split(',')[1];
-      const payloadSize = pdfBase64 ? pdfBase64.length : 0;
+      let pdfBase64 = doc.output('datauristring').split(',')[1];
+      const originalSize = pdfBase64 ? pdfBase64.length : 0;
       
-      console.log('📦 PDF Base64 size:', payloadSize, 'characters');
-      console.log('📦 Estimated PDF size:', Math.round(payloadSize * 0.75 / 1024), 'KB');
+      console.log('📦 Original PDF Base64 size:', originalSize, 'characters');
+      console.log('📦 Original estimated PDF size:', Math.round(originalSize * 0.75 / 1024), 'KB');
+      
+      // Compress PDF if it's too large (over 10MB base64 = ~7.5MB actual)
+      const maxSize = 10 * 1024 * 1024; // 10MB in characters
+      if (originalSize > maxSize) {
+        console.log('⚠️ PDF too large, attempting compression...');
+        // Generate PDF with lower quality/compression
+        const compressedPdf = new jsPDF({
+          compress: true,
+          precision: 2
+        });
+        
+        // Re-generate with same content but compressed settings
+        // Note: This is a simplified approach - in production you might want more sophisticated compression
+        pdfBase64 = doc.output('datauristring', { compress: true }).split(',')[1];
+        const compressedSize = pdfBase64.length;
+        console.log('📦 Compressed PDF Base64 size:', compressedSize, 'characters');
+        console.log('📦 Compression ratio:', Math.round((1 - compressedSize/originalSize) * 100) + '%');
+      }
+      
+      // Determine if we should send PDF as attachment or download link
+      const finalSize = pdfBase64.length;
+      const shouldSendAsAttachment = finalSize < (8 * 1024 * 1024); // 8MB threshold for attachment
+      
+      console.log('📊 Final PDF size check:');
+      console.log('  Size:', Math.round(finalSize * 0.75 / 1024), 'KB');
+      console.log('  Send as attachment:', shouldSendAsAttachment);
       
       // First, save the PDF to the server
       console.log('💾 Saving PDF to server...');
@@ -1148,15 +1269,29 @@ const OrderManagement = () => {
       const saveResult = await saveResponse.json();
       console.log('✅ PDF saved successfully:', saveResult);
       
-      // Now send email with download link
+      // Now send email with either attachment or download link
       console.log('📤 Making API call to /api/send-invoice-email...');
-      console.log('📋 Request payload:', {
+      
+      const emailPayload = {
         customerEmail,
         customerName: receiverDetails.fullName || 'Valued Customer',
         orderId: txnId,
         amount: `${currency} ${formattedAmount}`,
         fileName,
         downloadUrl: saveResult.downloadUrl
+      };
+      
+      // Only include PDF attachment if file is small enough
+      if (shouldSendAsAttachment) {
+        emailPayload.pdfBase64 = pdfBase64;
+        console.log('📎 Including PDF as email attachment');
+      } else {
+        console.log('🔗 Sending download link only (file too large for attachment)');
+      }
+      
+      console.log('📋 Request payload:', {
+        ...emailPayload,
+        pdfBase64: emailPayload.pdfBase64 ? '[PDF_DATA_INCLUDED]' : '[NO_ATTACHMENT]'
       });
       
       const response = await fetch('/api/send-invoice-email', {
@@ -1164,14 +1299,7 @@ const OrderManagement = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          customerEmail,
-          customerName: receiverDetails.fullName || 'Valued Customer',
-          orderId: txnId,
-          amount: `${currency} ${formattedAmount}`,
-          fileName,
-          downloadUrl: saveResult.downloadUrl,
-        }),
+        body: JSON.stringify(emailPayload),
       });
       
       console.log('📥 API Response status:', response.status, response.statusText);
@@ -1319,17 +1447,8 @@ const OrderManagement = () => {
           {/* Tab Navigation */}
           <div className="mb-6">
             <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8">
-                <button
-                  onClick={() => handleTabChange('pending')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'pending'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Pending ({tabCounts.pending})
-                </button>
+              <nav className="-mb-px flex space-x-8 items-center">
+                {/* Success Tab - Always Active */}
                 <button
                   onClick={() => handleTabChange('success')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -1340,16 +1459,8 @@ const OrderManagement = () => {
                 >
                   Success ({tabCounts.success})
                 </button>
-                <button
-                  onClick={() => handleTabChange('failed')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'failed'
-                      ? 'border-red-500 text-red-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Failed ({tabCounts.failed})
-                </button>
+                
+                {/* Shipped Tab */}
                 <button
                   onClick={() => handleTabChange('shipped')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -1360,21 +1471,60 @@ const OrderManagement = () => {
                 >
                   Shipped ({tabCounts.shipped})
                 </button>
+                
+                {/* Divider */}
+                <div className="h-6 w-px bg-gray-300 mx-4"></div>
+                
+                {/* Toggle Buttons for Pending and Failed */}
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => {
+                      if (activeTab !== 'success') handleTabChange('success');
+                      setShowPending(!showPending);
+                      setCurrentPage(0);
+                    }}
+                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                      showPending
+                        ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                        : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-blue-50 hover:text-blue-600'
+                    }`}
+                  >
+                    {showPending ? 'Hide' : 'Show'} Pending ({tabCounts.pending})
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      if (activeTab !== 'success') handleTabChange('success');
+                      setShowFailed(!showFailed);
+                      setCurrentPage(0);
+                    }}
+                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                      showFailed
+                        ? 'bg-red-100 text-red-700 border border-red-300'
+                        : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-red-50 hover:text-red-600'
+                    }`}
+                  >
+                    {showFailed ? 'Hide' : 'Show'} Failed ({tabCounts.failed})
+                  </button>
+                </div>
               </nav>
             </div>
           </div>
 
           <h3 className="text-lg font-medium text-gray-900 mb-4">
-            {activeTab === 'pending' && 'Pending Orders'}
-            {activeTab === 'success' && 'Successful Orders'}
-            {activeTab === 'failed' && 'Failed Orders'}
+            {activeTab === 'success' && (
+              <>Successful Orders
+                {showPending && ' + Pending'}
+                {showFailed && ' + Failed'}
+              </>
+            )}
             {activeTab === 'shipped' && 'Shipped Orders'}
             (Showing {Math.min(filteredPayments.length - currentPage * ordersPerPage, ordersPerPage)} of {filteredPayments.length} - Page {currentPage + 1})
           </h3>
           <div className="space-y-4">
             {filteredPayments.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <p>No orders with {activeTab} status.</p>
+                <p>No orders found{activeTab === 'success' ? ' for the selected view' : ` with ${activeTab} status`}.</p>
               </div>
             ) : (
               filteredPayments.slice(currentPage * ordersPerPage, (currentPage + 1) * ordersPerPage).map((payment, globalIndex) => (

@@ -116,16 +116,33 @@ export default function Slider1({
         });
       }
     } else {
-      newItems = [...slideItems].filter(item => item.src && typeof item.src === 'string' && item.src.trim() !== ''); // Filter out empty URLs
-      if (firstItem && typeof firstItem === 'string' && firstItem.trim() !== '' && newItems[0]) {
-        newItems[0].src = firstItem;
-        newItems[0].thumbnailSrc = generateThumbnailUrl(firstItem); // Generate thumbnail for main product
+      // When slideItems exist (variant images), don't show them in main product view
+      // Only show main product images to prevent variant images from appearing in main product sub-images
+      newItems = [];
+      
+      // Add the main product image and hover image only
+      if (firstItem && typeof firstItem === 'string' && firstItem.trim() !== '') {
+        newItems.push({
+          id: 0,
+          src: firstItem,
+          thumbnailSrc: generateThumbnailUrl(firstItem),
+          alt: "Main product image",
+          color: activeColor,
+          width: 600,
+          height: 800
+        });
       }
-      // Add thumbnailSrc to existing items if not present
-      newItems = newItems.map(item => ({
-        ...item,
-        thumbnailSrc: item.thumbnailSrc || generateThumbnailUrl(item.src) || item.src
-      }));
+      if (imgHover && typeof imgHover === 'string' && imgHover.trim() !== '' && imgHover !== firstItem) {
+        newItems.push({
+          id: 1,
+          src: imgHover,
+          thumbnailSrc: generateThumbnailUrl(imgHover),
+          alt: "Product hover image",
+          color: activeColor,
+          width: 600,
+          height: 800
+        });
+      }
     }
     setItems(newItems);
   }, [useGallery, gallery, slideItems, firstItem, imgHover]);

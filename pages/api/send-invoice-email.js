@@ -67,3 +67,12 @@ export default async function handler(req, res) {
     res.status(500).json({ success: false, error: error.message });
   }
 }
+
+// Increase the body size limit for large PDFs
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '15mb', // Allow up to 15MB for PDF uploads
+    },
+  },
+};

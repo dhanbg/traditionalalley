@@ -54,7 +54,7 @@ export default function ShopGram({ parentClass = "" }) {
             id: 3,
             link: 'https://instagram.com/p/test3',
             media: {
-              url: 'https://res.cloudinary.com/dqmhtibfm/image/upload/v1756706432/sample_image_1.jpg',
+              url: '/images/sample-instagram-1.jpg',
               mime: 'image/jpeg',
               alternativeText: 'Sample Instagram Image 1'
             }
@@ -63,12 +63,12 @@ export default function ShopGram({ parentClass = "" }) {
             id: 4,
             link: 'https://instagram.com/p/test4',
             media: {
-              url: 'https://res.cloudinary.com/dqmhtibfm/video/upload/v1756706432/sample_video_3.mp4',
+              url: '/videos/sample-video-3.mp4',
               mime: 'video/mp4',
               alternativeText: 'Sample Instagram Video 3',
               formats: {
                 thumbnail: {
-                  url: 'https://res.cloudinary.com/dqmhtibfm/image/upload/v1756706432/sample_thumb_3.jpg'
+                  url: '/images/sample-thumb-3.jpg'
                 }
               }
             }
@@ -77,7 +77,7 @@ export default function ShopGram({ parentClass = "" }) {
             id: 5,
             link: 'https://instagram.com/p/test5',
             media: {
-              url: 'https://res.cloudinary.com/dqmhtibfm/image/upload/v1756706432/sample_image_2.jpg',
+              url: '/images/sample-instagram-2.jpg',
               mime: 'image/jpeg',
               alternativeText: 'Sample Instagram Image 2'
             }

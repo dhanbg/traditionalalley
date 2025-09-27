@@ -13,6 +13,7 @@ import PriceDisplay from "@/components/common/PriceDisplay";
 import { useCartImagePreloader } from "@/hooks/useCartImagePreloader";
 import imagePreloader from "@/utils/imagePreloader";
 import FallbackImage from "@/components/common/FallbackImage";
+import TopPicksEmptyCart from "@/components/common/TopPicksEmptyCart";
 
 export default function CartModal() {
   const {
@@ -37,6 +38,7 @@ export default function CartModal() {
   const router = useRouter();
   const [isAgreed, setIsAgreed] = useState(false);
   const [isViewCartLoading, setIsViewCartLoading] = useState(false);
+  const [showTopPicks, setShowTopPicks] = useState(false);
   
   // Initialize image preloader for cart modal
   const modalImagePreloader = useCartImagePreloader(serverCartProducts, {
@@ -111,9 +113,22 @@ export default function CartModal() {
 
   // Handle Continue Shopping
   const handleContinueShopping = () => {
-    closeCartModal();
-    router.push('/shop-default-grid');
+    if (allCartProducts.length === 0) {
+      // Show top picks instead of navigating away when cart is empty
+      setShowTopPicks(true);
+    } else {
+      closeCartModal();
+      router.push('/shop-default-grid');
+    }
   };
+  
+  const handleProductClick = (product) => {
+    // Close modal and navigate to product page
+    closeCartModal();
+    router.push(`/product-detail/${product.id}`);
+  };
+  
+
 
   // Helper function to fetch fresh variant data
   const fetchFreshVariantData = async (variantId, productDocumentId) => {
@@ -347,8 +362,28 @@ export default function CartModal() {
           setServerTotalPrice(totalPrice);
           setServerCartLoading(false);
           
-          // Replace the context cartProducts with our server data
-          setCartProducts(productsWithDetails);
+          // Merge server data with local cart instead of replacing entirely
+          // This prevents newly added items from disappearing during server sync
+          setCartProducts(prevCartProducts => {
+            // Create a map of server products by ID for quick lookup
+            const serverProductsMap = new Map();
+            productsWithDetails.forEach(product => {
+              serverProductsMap.set(product.id, product);
+            });
+            
+            // Start with server products as the base
+            const mergedProducts = [...productsWithDetails];
+            
+            // Add any local products that aren't in server data yet
+            // (these are likely recently added items that haven't synced yet)
+            prevCartProducts.forEach(localProduct => {
+              if (!serverProductsMap.has(localProduct.id)) {
+                mergedProducts.push(localProduct);
+              }
+            });
+            
+            return mergedProducts;
+          });
           
         } catch (error) {
           setServerCartLoading(false);
@@ -531,6 +566,28 @@ export default function CartModal() {
               
               setServerCartProducts(productsWithDetails);
               setServerTotalPrice(totalPrice);
+              
+              // Also merge with context cart to ensure consistency
+              setCartProducts(prevCartProducts => {
+                // Create a map of server products by ID for quick lookup
+                const serverProductsMap = new Map();
+                productsWithDetails.forEach(product => {
+                  serverProductsMap.set(product.id, product);
+                });
+                
+                // Start with server products as the base
+                const mergedProducts = [...productsWithDetails];
+                
+                // Add any local products that aren't in server data yet
+                // (these are likely recently added items that haven't synced yet)
+                prevCartProducts.forEach(localProduct => {
+                  if (!serverProductsMap.has(localProduct.id)) {
+                    mergedProducts.push(localProduct);
+                  }
+                });
+                
+                return mergedProducts;
+              });
             }
             
             setServerCartLoading(false);
@@ -625,38 +682,58 @@ export default function CartModal() {
                       <p className="loading-text">Loading your cart...</p>
                     </div>
                   ) : displayProducts.length < 1 ? (
-                    <div className="empty-cart-message">
-                      <div className="empty-cart-icon">
-                        <i className="icon-bag2"></i>
+                    <div className="empty-cart-content">
+                      {!showTopPicks ? (
+                        <div className="empty-cart-message">
+                          <div className="empty-cart-icon">
+                            <i className="icon-bag2"></i>
                           </div>
-                      <h6>{allCartProducts.length > 0 ? 'No items selected' : 'Your cart is empty'}</h6>
-                      <p>{allCartProducts.length > 0 
-                        ? 'Select items from your cart to view them here and proceed to checkout.' 
-                        : 'Looks like you haven\'t added any items to your cart yet.'}</p>
-                      <button 
-                        className="tf-button-2 style-1"
-                        onClick={allCartProducts.length > 0 ? handleViewCart : handleContinueShopping}
-                        disabled={isViewCartLoading}
-                        data-navigation={allCartProducts.length > 0 ? "view-cart" : "continue-shopping"}
-                        style={{
-                          ...(allCartProducts.length > 0 ? { background: '#f7d2ca', color: '#333' } : {}),
-                          opacity: isViewCartLoading ? 0.7 : 1,
-                          cursor: isViewCartLoading ? 'not-allowed' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px'
-                        }}
-                      >
-                        {isViewCartLoading && allCartProducts.length > 0 && (
-                          <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" style={{ width: '16px', height: '16px' }} />
-                        )}
-                        {allCartProducts.length > 0 
-                          ? (isViewCartLoading ? 'Loading...' : 'View Full Cart') 
-                          : 'Start Shopping'
-                        }
-                      </button>
-                            </div>
+                          <h6>{allCartProducts.length > 0 ? 'No items selected' : 'Your cart is empty'}</h6>
+                          <p>{allCartProducts.length > 0 
+                            ? `You have ${allCartProducts.length} item${allCartProducts.length > 1 ? 's' : ''} in your cart. Select the items you want to purchase and they will appear here for checkout.` 
+                            : 'Looks like you haven\'t added any items to your cart yet.'}</p>
+                          <button 
+                            className="tf-button-2 style-1"
+                            onClick={allCartProducts.length > 0 ? handleViewCart : handleContinueShopping}
+                            disabled={isViewCartLoading}
+                            data-navigation={allCartProducts.length > 0 ? "view-cart" : "continue-shopping"}
+                            style={{
+                              ...(allCartProducts.length > 0 ? { background: '#f7d2ca', color: '#333' } : {}),
+                              opacity: isViewCartLoading ? 0.7 : 1,
+                              cursor: isViewCartLoading ? 'not-allowed' : 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px'
+                            }}
+                          >
+                            {isViewCartLoading && allCartProducts.length > 0 && (
+                              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" style={{ width: '16px', height: '16px' }} />
+                            )}
+                            {allCartProducts.length > 0 
+                              ? (isViewCartLoading ? 'Loading...' : 'View Full Cart') 
+                              : 'Start Shopping'
+                            }
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="top-picks-modal-section">
+                          <div className="top-picks-header">
+                            <button 
+                              className="back-button"
+                              onClick={() => setShowTopPicks(false)}
+                            >
+                              <i className="icon-arrow-left"></i> Back
+                            </button>
+                          </div>
+                          <TopPicksEmptyCart 
+                            isModal={true} 
+                            maxProducts={4} 
+                            onProductClick={handleProductClick}
+                          />
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     <div className="cart-items-list">
                       {displayProducts.map((elm, i) => {
@@ -1128,6 +1205,35 @@ export default function CartModal() {
         
         .w-100 {
           width: 100%;
+        }
+        
+        .top-picks-header {
+          padding: 10px 0 20px 0;
+          border-bottom: 1px solid var(--cart-border-color);
+          margin-bottom: 20px;
+        }
+        
+        .back-button {
+          background: none;
+          border: none;
+          color: var(--cart-text-secondary);
+          font-size: 14px;
+          cursor: pointer;
+          padding: 8px 12px;
+          border-radius: 6px;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        
+        .back-button:hover {
+          background: var(--cart-bg-light);
+          color: var(--cart-text-color);
+        }
+        
+        .top-picks-modal-section {
+          padding: 0;
         }
         
         @media (max-width: 768px) {
