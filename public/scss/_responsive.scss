@@ -1803,7 +1803,7 @@
     padding-right: 15px;
   }
   .grid-card-product {
-    gap: 12px;
+    gap: 20px;
   }
   .tf-shop-control {
     .tf-control-layout {
@@ -2688,10 +2688,6 @@
 }
 
 @media only screen and (max-width: 575px) {
-  .grid-card-product {
-    gap: 8px;
-  }
-  
   .form-sticky-atc {
     .tf-sticky-atc-infos {
       flex-wrap: wrap;
