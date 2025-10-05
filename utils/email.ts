@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import * as nodemailer from 'nodemailer';
 
 // Email configuration
 const emailConfig = {
@@ -293,31 +293,12 @@ export async function sendInvoiceEmail(
   orderDetails: any
 ) {
   try {
-    const { downloadUrl } = orderDetails || {};
     const hasAttachment = invoicePdfBuffer && invoicePdfBuffer.length > 0;
-    const hasDownloadUrl = downloadUrl && downloadUrl.trim().length > 0;
     
-    console.log('📧 Email method:', { hasAttachment, hasDownloadUrl, downloadUrl });
+    console.log('📧 Email method:', { hasAttachment });
     
-    // Determine the invoice access method
-    let invoiceAccessText = '';
-    let invoiceAccessHtml = '';
-    
-    // We'll use the same message format regardless of delivery method
+    // Always use attached method since we're removing download links
     let invoiceAccessMethod = 'attached';
-    let downloadLinkHtml = '';
-    
-    if (hasDownloadUrl) {
-      const fullDownloadUrl = downloadUrl.startsWith('http') ? downloadUrl : `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}${downloadUrl}`;
-      invoiceAccessMethod = 'available for download';
-      downloadLinkHtml = `
-        <div style="background-color: #e8f5e8; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745;">
-          <p><strong>📄 Download Your Invoice:</strong></p>
-          <p><a href="${fullDownloadUrl}" style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">📥 Download Invoice PDF</a></p>
-          <p style="font-size: 12px; color: #666; margin-top: 10px;">Click the button above to download your invoice. The link will be available for 30 days.</p>
-        </div>
-      `;
-    }
     
     const mailOptions: any = {
       from: process.env.HOSTINGER_SMTP_FROM || '"Traditional Alley" <support@traditionalalley.com.np>',
@@ -328,14 +309,13 @@ export async function sendInvoiceEmail(
           <h1 style="color: #333; font-size: 28px; margin-bottom: 10px;">Hi ${customerName},</h1>
           <p>Thank you for your purchase! 🎉</p>
           <p>We're happy to let you know that your order has been successfully placed and payment has been received.</p>
-          <p>📄 Please find your <strong>invoice ${invoiceAccessMethod}</strong> for reference.</p>
-          ${downloadLinkHtml}
           <p>Please wait for another email with your <strong>tracking number details</strong>.</p>
           <p>If you have any questions, feel free to reply to this email.</p>
           <p>Thank you for shopping with us. We truly appreciate your trust!</p>
+          <p>📄 Please find your <strong>invoice attached</strong> for reference.</p>
           <p style="margin-top: 30px;">Best wishes,<br>Traditional Alley</p>
           <div style="margin-top: 30px; text-align: left;">
-            <img src="${process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000'}/logo.png" alt="Traditional Alley Logo" style="width: 80px; height: 80px;">
+            <img src="https://admin.traditionalalley.com.np/uploads/talogo_2a1971baf9.png" alt="Traditional Alley Logo" style="width: 80px; height: 80px;">
           </div>
         </div>
       `,
@@ -345,13 +325,13 @@ export async function sendInvoiceEmail(
         Thank you for your purchase! 🎉
         We're happy to let you know that your order has been successfully placed and payment has been received.
         
-        Please find your invoice ${invoiceAccessMethod} for reference.${hasDownloadUrl ? `\n        Download link: ${downloadUrl.startsWith('http') ? downloadUrl : `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}${downloadUrl}`}` : ''}
-        
         Please wait for another email with your tracking number details.
         
         If you have any questions, feel free to reply to this email.
         
         Thank you for shopping with us. We truly appreciate your trust!
+        
+        Please find your invoice attached for reference.
         
         Best wishes,
         Traditional Alley
@@ -371,6 +351,62 @@ export async function sendInvoiceEmail(
 
     const info = await hostingerTransporter.sendMail(mailOptions);
     console.log('✅ Invoice email sent successfully:', info.messageId);
+
+    // Send notification email to support team
+    try {
+      const supportMailOptions: any = {
+        from: process.env.HOSTINGER_SMTP_FROM || '"Traditional Alley" <support@traditionalalley.com.np>',
+        to: 'support@traditionalalley.com.np',
+        subject: `🔔 New Order Notification - Order #${orderId}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #333; font-size: 24px; margin-bottom: 20px;">🔔 New Order Received</h1>
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <h2 style="color: #495057; font-size: 18px; margin-bottom: 15px;">Order Details:</h2>
+              <p><strong>Order ID:</strong> #${orderId}</p>
+              <p><strong>Customer:</strong> ${customerName}</p>
+              <p><strong>Email:</strong> ${customerEmail}</p>
+              <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+            </div>
+            <p>A new order has been placed and the invoice has been sent to the customer.</p>
+            <p style="margin-top: 30px; color: #6c757d; font-size: 14px;">
+              This is an automated notification from Traditional Alley order system.
+            </p>
+          </div>
+        `,
+        text: `
+          New Order Notification - Order #${orderId}
+          
+          Order Details:
+          - Order ID: #${orderId}
+          - Customer: ${customerName}
+          - Email: ${customerEmail}
+          - Date: ${new Date().toLocaleString()}
+          
+          A new order has been placed and the invoice has been sent to the customer.
+          
+          This is an automated notification from Traditional Alley order system.
+        `
+      };
+
+      // Add attachment to support email as well if available
+      if (hasAttachment) {
+        supportMailOptions.attachments = [
+          {
+            filename: `Invoice-${orderId}.pdf`,
+            content: invoicePdfBuffer,
+            contentType: 'application/pdf'
+          }
+        ];
+      }
+
+      const supportInfo = await hostingerTransporter.sendMail(supportMailOptions);
+      console.log('✅ Support notification email sent successfully:', supportInfo.messageId);
+    } catch (supportError) {
+      console.error('⚠️ Failed to send support notification email:', supportError);
+      // Don't fail the main function if support email fails
+    }
+
     return {
       success: true,
       messageId: info.messageId

@@ -1034,11 +1034,12 @@ export default function Checkout() {
         console.log("Products to process:", purchasedProducts.length);
         
         if (purchasedProducts.length > 0) {
-          // Use the same logic as the "Update Stock & Delete" button
+          // Use the same logic as the "Update Stock & Delete" button with email automation
           const processingResult = await processPostPaymentStockAndCart(
             purchasedProducts, 
             user, 
-            clearPurchasedItemsFromCart
+            clearPurchasedItemsFromCart,
+            codPaymentData // Pass payment data for automatic email sending
           );
           
           console.log("✅ Post-payment processing completed for COD:", {
@@ -1050,18 +1051,23 @@ export default function Checkout() {
             },
             cartClear: {
               success: processingResult.cartClear.success
+            },
+            emailSend: {
+              success: processingResult.emailSend?.success || false
             }
           });
           
           // Log results for admin visibility
-          if (processingResult.stockUpdate.success && processingResult.cartClear.success) {
-            console.log(`✅ COD Order: Stock updated for ${processingResult.stockUpdate.successCount} products and cart cleared`);
+          if (processingResult.stockUpdate.success && processingResult.cartClear.success && processingResult.emailSend?.success) {
+            console.log(`✅ COD Order: Stock updated for ${processingResult.stockUpdate.successCount} products, cart cleared, and invoice email sent`);
+          } else if (processingResult.stockUpdate.success && processingResult.cartClear.success) {
+            console.log(`✅ COD Order: Stock updated for ${processingResult.stockUpdate.successCount} products and cart cleared, but email ${processingResult.emailSend?.success ? 'succeeded' : 'failed'}`);
           } else if (processingResult.stockUpdate.success) {
-            console.log(`✅ COD Order: Stock updated but cart clearing ${processingResult.cartClear.success ? 'succeeded' : 'failed'}`);
+            console.log(`✅ COD Order: Stock updated but cart clearing ${processingResult.cartClear.success ? 'succeeded' : 'failed'}, email ${processingResult.emailSend?.success ? 'succeeded' : 'failed'}`);
           } else if (processingResult.cartClear.success) {
-            console.log(`⚠️ COD Order: Cart cleared but ${processingResult.stockUpdate.failureCount} stock updates failed`);
+            console.log(`⚠️ COD Order: Cart cleared but ${processingResult.stockUpdate.failureCount} stock updates failed, email ${processingResult.emailSend?.success ? 'succeeded' : 'failed'}`);
           } else {
-            console.log(`⚠️ COD Order: Post-payment processing completed with issues`);
+            console.log(`⚠️ COD Order: Post-payment processing completed with issues (email ${processingResult.emailSend?.success ? 'succeeded' : 'failed'})`);
           }
           
         } else {

@@ -37,7 +37,7 @@ const NPSCallbackContent = () => {
   }, [isProcessingCoupon]);
 
   // Production-safe automatic stock update and cart cleanup using CURRENT cart data with comprehensive debug logging
-  const handleAutomaticUpdateStockAndDelete = async (user: any, clearPurchasedItemsFromCart: any) => {
+  const handleAutomaticUpdateStockAndDelete = async (user: any, clearPurchasedItemsFromCart: any, paymentData?: any) => {
     if (autoUpdateCompletedRef.current) {
       console.log("🚫 Auto-update already completed, skipping");
       return true;
@@ -209,7 +209,7 @@ const NPSCallbackContent = () => {
       console.log(`🚀 [${debugId}] Calling processPostPaymentStockAndCart utility...`);
       const utilityStart = Date.now();
       
-      const utilityResult = await processPostPaymentStockAndCart(selectedProducts, user, clearPurchasedItemsFromCart);
+      const utilityResult = await processPostPaymentStockAndCart(selectedProducts, user, clearPurchasedItemsFromCart, paymentData);
       
       const utilityTime = Date.now() - utilityStart;
       console.log(`📊 [${debugId}] Utility execution completed in ${utilityTime}ms`);
@@ -220,6 +220,7 @@ const NPSCallbackContent = () => {
         stockUpdateSuccess: utilityResult?.stockUpdate?.success,
         stockUpdateCount: utilityResult?.stockUpdate?.successCount,
         cartClearSuccess: utilityResult?.cartClear?.success,
+        emailSendSuccess: utilityResult?.emailSend?.success,
         fullResult: utilityResult
       });
       
@@ -591,7 +592,7 @@ const NPSCallbackContent = () => {
             // Ensure auto-update doesn't block coupon logic execution
             let autoUpdateResult: boolean | undefined = undefined;
             try {
-              autoUpdateResult = await handleAutomaticUpdateStockAndDelete(user, clearPurchasedItemsFromCart);
+              autoUpdateResult = await handleAutomaticUpdateStockAndDelete(user, clearPurchasedItemsFromCart, paymentData);
               if (autoUpdateResult === true) {
                 console.log("✅ Auto-update completed successfully - proceeding to coupon logic");
               } else if (autoUpdateResult === false) {

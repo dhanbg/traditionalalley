@@ -1,14 +1,276 @@
 import { fetchDataFromApi, updateData } from './api';
 
 /**
+ * Automated email sending function that replicates the "Send Email" functionality
+ * This function sends invoice emails automatically after successful payment
+ * @param {Object} paymentData - Payment data containing order and customer information
+ * @returns {Object} - Email sending result with success/failure details
+ */
+const sendAutomaticInvoiceEmail = async (paymentData) => {
+  console.log('📧 [AUTO-EMAIL] Starting automatic invoice email sending...');
+  console.log('📋 [AUTO-EMAIL] Payment data received:', JSON.stringify(paymentData, null, 2));
+  
+  try {
+    // Validate payment data
+    if (!paymentData) {
+      console.error('❌ [AUTO-EMAIL] Payment data is missing');
+      throw new Error('Payment data is missing');
+    }
+    
+    // Extract orderData from payment
+    const orderData = paymentData.orderData || {};
+    console.log('📦 [AUTO-EMAIL] Order data extracted:', JSON.stringify(orderData, null, 2));
+    
+    // Check if receiver details exist
+    const receiverDetails = orderData.receiver_details || {};
+    console.log('👤 [AUTO-EMAIL] Receiver details:', JSON.stringify(receiverDetails, null, 2));
+    console.log('📧 [AUTO-EMAIL] Customer email found:', receiverDetails.email || 'NO EMAIL FOUND');
+    
+    const customerEmail = receiverDetails.email;
+    
+    if (!customerEmail) {
+      console.warn('⚠️ [AUTO-EMAIL] No customer email found. Cannot send invoice email.');
+      return { success: false, error: 'No customer email found' };
+    }
+    
+    // Detect if delivery is to Nepal for currency formatting
+    const isNepal = isNepalDestination(paymentData);
+    const currency = isNepal ? 'Rs.' : '$';
+    
+    // Calculate amount for display
+    const orderSummary = orderData.orderSummary || {};
+    let amount = paymentData.amount || orderSummary.totalAmount || 0;
+    
+    // For Nepal orders, keep NPR amounts as-is; for international orders, convert NPR to USD
+    if (!isNepal) {
+      if (paymentData.amount_npr) {
+        const { getExchangeRate } = await import('./currency');
+        const nprToUsdRate = await getExchangeRate();
+        amount = paymentData.amount_npr / nprToUsdRate;
+      } else if (amount > 1000) {
+        const { getExchangeRate } = await import('./currency');
+        const nprToUsdRate = await getExchangeRate();
+        amount = amount / nprToUsdRate;
+      }
+    } else {
+      if (paymentData.amount_npr) {
+        amount = paymentData.amount_npr;
+      }
+    }
+    
+    const formattedAmount = typeof amount === 'number' ? amount.toFixed(2) : amount;
+    const txnId = paymentData.merchantTxnId || paymentData.attributes?.merchantTxnId || 'receipt';
+    const fileName = `Traditional_Alley_Bill_${txnId}.pdf`;
+    
+    console.log('📧 [AUTO-EMAIL] Preparing to send invoice email to:', customerEmail);
+    console.log('💰 [AUTO-EMAIL] Amount:', `${currency} ${formattedAmount}`);
+    console.log('📄 [AUTO-EMAIL] File name:', fileName);
+    
+    // Generate PDF for email (simplified version for automation)
+    const jsPDF = (await import('jspdf')).default;
+    const doc = new jsPDF();
+    
+    // Add Traditional Alley logo
+    let logoLoaded = false;
+    try {
+      const logoImg = new Image();
+      logoImg.crossOrigin = 'anonymous';
+      logoImg.src = '/logo.png';
+      await new Promise((resolve, reject) => {
+        logoImg.onload = () => {
+          const logoWidth = 40;
+          const logoHeight = 10;
+          const pageWidth = doc.internal.pageSize.getWidth();
+          const logoX = (pageWidth - logoWidth) / 2;
+          doc.addImage(logoImg, 'PNG', logoX, 10, logoWidth, logoHeight);
+          logoLoaded = true;
+          resolve();
+        };
+        logoImg.onerror = () => {
+          console.warn('⚠️ [AUTO-EMAIL] Could not load logo, continuing without it');
+          logoLoaded = false;
+          resolve();
+        };
+      });
+    } catch (error) {
+      console.warn('⚠️ [AUTO-EMAIL] Logo loading failed:', error);
+      logoLoaded = false;
+    }
+    
+    // Generate PDF content (simplified version)
+    let headerY = 35;
+    
+    if (!logoLoaded) {
+      doc.setFontSize(20);
+      doc.setTextColor(139, 69, 19);
+      doc.text('Traditional Alley', doc.internal.pageSize.getWidth() / 2, headerY, { align: 'center' });
+      headerY += 10;
+    } else {
+      headerY = 30;
+    }
+
+    doc.setFontSize(16);
+    doc.setTextColor(0, 0, 0);
+    doc.text('INVOICE', doc.internal.pageSize.getWidth() / 2, headerY + 10, { align: 'center' });
+    
+    // Add basic order and customer information
+    let yPosition = 60;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const leftColumnX = 20;
+    const rightColumnX = pageWidth / 2 + 30;
+    
+    // Order Information (Left Column)
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Order Information', leftColumnX, yPosition);
+    
+    let leftYPosition = yPosition + 10;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
+    
+    const orderInfo = [
+      `Order ID: ${paymentData.merchantTxnId || 'N/A'}`,
+      `Gateway Reference: ${paymentData.gatewayReferenceNo || 'N/A'}`,
+      `Process ID: ${paymentData.processId || 'N/A'}`,
+      `Date: ${paymentData.timestamp ? new Date(paymentData.timestamp).toLocaleDateString() : new Date().toLocaleDateString()}`,
+      `Payment Status: ${paymentData.status || 'N/A'}`,
+      `Payment Method: ${paymentData.instrument || 'N/A'}`,
+      `Institution: ${paymentData.institution || 'N/A'}`
+    ];
+    
+    orderInfo.forEach(info => {
+      doc.text(info, leftColumnX, leftYPosition);
+      leftYPosition += 6;
+    });
+    
+    // Customer Information (Right Column)
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('Customer Information', rightColumnX, yPosition);
+    
+    let rightYPosition = yPosition + 10;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
+    
+    const address = receiverDetails.address || {};
+    const customerInfo = [
+      `Name: ${receiverDetails.fullName || 'N/A'}`,
+      `Email: ${receiverDetails.email || 'N/A'}`,
+      `Phone: ${receiverDetails.contactNumber || 'N/A'}`,
+      `Address: ${address.street || 'N/A'}`,
+      `City: ${address.city || 'N/A'}`,
+      `Country: ${address.country || 'N/A'}`,
+      `Postal Code: ${address.postalCode || 'N/A'}`
+    ];
+    
+    customerInfo.forEach(info => {
+      doc.text(info, rightColumnX, rightYPosition);
+      rightYPosition += 6;
+    });
+    
+    // Add products table (simplified)
+    const products = orderData.products || [];
+    if (products.length > 0) {
+      yPosition = Math.max(leftYPosition, rightYPosition) + 20;
+      
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('Products', leftColumnX, yPosition);
+      
+      yPosition += 10;
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(10);
+      
+      products.forEach((product, index) => {
+        const productText = `${index + 1}. ${product.title || 'N/A'} - Size: ${product.selectedSize || 'N/A'} - Qty: ${product.quantity || 1}`;
+        doc.text(productText, leftColumnX, yPosition);
+        yPosition += 6;
+      });
+    }
+    
+    // Add total amount
+    yPosition += 10;
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(`Total Amount: ${currency} ${formattedAmount}`, leftColumnX, yPosition);
+    
+    // Convert PDF to base64
+    const pdfBase64 = doc.output('datauristring').split(',')[1];
+    
+    // Prepare email payload
+    const emailPayload = {
+      customerEmail,
+      customerName: receiverDetails.fullName || 'Valued Customer',
+      orderId: txnId,
+      amount: `${currency} ${formattedAmount}`,
+      fileName,
+      pdfBase64
+    };
+    
+    console.log('📤 [AUTO-EMAIL] Making API call to /api/send-invoice-email...');
+    
+    // Send email via API
+    const response = await fetch('/api/send-invoice-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(emailPayload),
+    });
+    
+    console.log('📥 [AUTO-EMAIL] API Response status:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ [AUTO-EMAIL] API Error Response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, response: ${errorText}`);
+    }
+    
+    const emailResult = await response.json();
+    console.log('📧 [AUTO-EMAIL] Email API Result:', emailResult);
+    
+    if (emailResult.success) {
+      console.log('✅ [AUTO-EMAIL] Invoice email sent successfully!');
+      return { success: true, result: emailResult };
+    } else {
+      console.warn('❌ [AUTO-EMAIL] Email API returned failure:', emailResult.error);
+      return { success: false, error: emailResult.error || 'Unknown error' };
+    }
+    
+  } catch (error) {
+    console.error('❌ [AUTO-EMAIL] Error sending automatic invoice email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Helper function to detect if delivery is to Nepal
+ * @param {Object} payment - Payment data
+ * @returns {boolean} - True if delivery is to Nepal
+ */
+const isNepalDestination = (payment) => {
+  const orderData = payment.orderData || {};
+  const receiverDetails = orderData.receiver_details || {};
+  const address = receiverDetails.address || {};
+  
+  // Check if country is Nepal or if it's a domestic order
+  return address.country === 'Nepal' || 
+         address.country === 'NP' || 
+         !address.country || 
+         address.country === '';
+};
+
+/**
  * Post-payment processing function that replicates the "Update Stock & Delete" functionality
  * This function updates product stock and clears purchased items from cart after successful payment
  * @param {Array} selectedProducts - Array of products that were purchased
  * @param {Object} user - User object with authentication info
  * @param {Function} clearPurchasedItemsFromCart - Function to clear items from cart
+ * @param {Object} paymentData - Optional payment data for email automation
  * @returns {Object} - Processing results with success/failure details
  */
-export const processPostPaymentStockAndCart = async (selectedProducts, user, clearPurchasedItemsFromCart) => {
+export const processPostPaymentStockAndCart = async (selectedProducts, user, clearPurchasedItemsFromCart, paymentData = null) => {
   console.log('🔄 [POST-PAYMENT] Starting post-payment stock update and cart clearing...');
   console.log('📦 [POST-PAYMENT] Products to process:', selectedProducts.length);
   console.log('🔍 [POST-PAYMENT] Input validation:', {
@@ -32,6 +294,7 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
   const results = {
     stockUpdate: { success: false, results: [] },
     cartClear: { success: false },
+    emailSend: { success: false },
     totalProducts: selectedProducts.length
   };
 
@@ -419,6 +682,26 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
       });
       results.cartClear.success = false;
       results.cartClear.error = cartError.message;
+    }
+
+    // Step 3: Send automatic invoice email (if payment data is provided)
+    if (paymentData) {
+      console.log('📧 [POST-PAYMENT] Step 3: Sending automatic invoice email...');
+      try {
+        const emailResult = await sendAutomaticInvoiceEmail(paymentData);
+        console.log('📧 [POST-PAYMENT] Email sending result:', emailResult);
+        results.emailSend.success = emailResult.success;
+        results.emailSend.result = emailResult.result;
+        if (!emailResult.success) {
+          results.emailSend.error = emailResult.error;
+        }
+      } catch (emailError) {
+        console.error('❌ [POST-PAYMENT] Error sending automatic email:', emailError);
+        results.emailSend.success = false;
+        results.emailSend.error = emailError.message;
+      }
+    } else {
+      console.log('ℹ️ [POST-PAYMENT] No payment data provided, skipping automatic email sending');
     }
 
     console.log('🎉 [POST-PAYMENT] Post-payment processing completed!');
