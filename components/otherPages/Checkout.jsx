@@ -129,6 +129,7 @@ export default function Checkout() {
   const [shippingCostNPR, setShippingCostNPR] = useState(0); // Always store original NPR amount
   const [shippingRatesObtained, setShippingRatesObtained] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState('');
+  const [deliveryType, setDeliveryType] = useState(''); // Store delivery type (Economy/Express)
 
   // Add state for loading and success states
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
@@ -214,6 +215,7 @@ export default function Checkout() {
       // Shipping information
       shipping: {
         method: "DHL Express",
+        deliveryType: deliveryType || "Express", // Add delivery type information
         cost: shippingCost,
         currency: userCurrency || "NPR",
         estimatedDelivery: "3-5 business days"
@@ -938,6 +940,7 @@ export default function Checkout() {
           method: {
             carrier: "Cash on Delivery", // COD carrier
             service: "COD Standard",
+            deliveryType: deliveryType || "Standard", // Add delivery type information
             estimatedDays: receiverDetails.address.country === "Nepal" ? "3-5" : "7-10",
             cost: shippingCost,
             currency: userCurrency || "NPR",
@@ -1576,6 +1579,12 @@ export default function Checkout() {
                     
                     // Store original NPR amount for NPR payment calculations
                     setShippingCostNPR(originalShippingCostNPR);
+                    
+                    // Store delivery type from rate info
+                    const serviceType = rateInfo.rateDetails?.service_type || 
+                                      (rateInfo.productName?.includes('Express') ? 'Express' : 
+                                       rateInfo.productName?.includes('Economy') ? 'Economy' : 'Standard');
+                    setDeliveryType(serviceType);
                     
                     // Convert shipping cost based on user currency preference for display
                     // DHL rates come in NPR, so convert to USD if user is in USD mode

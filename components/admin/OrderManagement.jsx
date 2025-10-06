@@ -1025,7 +1025,8 @@ const OrderManagement = () => {
          `Date: ${payment.timestamp ? new Date(payment.timestamp).toLocaleDateString() : new Date().toLocaleDateString()}`,
          `Payment Status: ${payment.status || 'N/A'}`,
          `Payment Method: ${payment.instrument || 'N/A'}`,
-         `Institution: ${payment.institution || 'N/A'}`
+         `Institution: ${payment.institution || 'N/A'}`,
+         `Delivery Type: ${orderData.shipping?.deliveryType || orderData.shipping?.method?.deliveryType || 'Standard'}`
        ];
        
        orderInfo.forEach(info => {
