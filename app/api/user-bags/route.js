@@ -8,7 +8,7 @@ export async function GET(request) {
     const populate = searchParams.get('populate') || '*';
 
     // Construct the URL for the Strapi API
-    strapiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/user-bags?pagination[pageSize]=100&populate=${populate}`;
+    strapiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/user-bags?pagination[pageSize]=1000&populate=${populate}`;
 
     // Fetch user bags from Strapi
     const response = await fetch(strapiUrl, {

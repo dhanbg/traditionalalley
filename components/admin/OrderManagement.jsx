@@ -195,7 +195,7 @@ const OrderManagement = () => {
   const fetchUserBags = async () => {
     setLoadingUserBags(true);
     try {
-      const response = await axios.get('/api/user-bags?pagination[pageSize]=100&populate=*');
+      const response = await axios.get('/api/user-bags?pagination[pageSize]=1000&populate=*');
       if (response.data && response.data.data) {
         setUserBags(response.data.data); 
       }
