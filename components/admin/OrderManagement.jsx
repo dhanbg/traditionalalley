@@ -136,30 +136,56 @@ const OrderManagement = () => {
   const allPayments = getAllPayments();
   console.log('✅ getAllPayments completed, found', allPayments.length, 'payments');
 
+  // Separate pending and non-pending payments for performance optimization
+  const pendingPayments = allPayments.filter(payment => payment.computedStatus === 'pending');
+  const nonPendingPayments = allPayments.filter(payment => payment.computedStatus !== 'pending');
+  
+  // Limit pending payments to latest 1000 for performance
+  const limitedPendingPayments = pendingPayments.slice(0, 1000);
+  const totalPendingCount = pendingPayments.length;
+  
+  console.log(`📊 Pending payments: ${totalPendingCount} total, showing latest ${Math.min(totalPendingCount, 1000)}`);
+
   // Filter payments based on active tab and visibility states
-  const filteredPayments = allPayments.filter(payment => {
-    if (activeTab === 'success') {
-      // Always show success, plus pending/failed if their buttons are clicked
-      return payment.computedStatus === 'success' || 
-             (showPending && payment.computedStatus === 'pending') ||
-             (showFailed && payment.computedStatus === 'failed');
+  const filteredPayments = (() => {
+    if (activeTab === 'pending') {
+      return limitedPendingPayments;
     }
-    // For shipped tab, show only shipped orders
-    return payment.computedStatus === activeTab;
-  });
+    
+    const basePayments = nonPendingPayments.filter(payment => {
+      if (activeTab === 'success') {
+        return payment.computedStatus === 'success';
+      }
+      return payment.computedStatus === activeTab;
+    });
+    
+    if (activeTab === 'success') {
+      // Add pending/failed if their buttons are clicked
+      const additionalPayments = [];
+      if (showPending) additionalPayments.push(...limitedPendingPayments);
+      if (showFailed) additionalPayments.push(...nonPendingPayments.filter(p => p.computedStatus === 'failed'));
+      return [...basePayments, ...additionalPayments];
+    }
+    
+    return basePayments;
+  })();
 
   // Get counts for each tab
   const getTabCounts = () => {
     const counts = { pending: 0, success: 0, failed: 0, shipped: 0 };
     
-    allPayments.forEach(payment => {
+    // Count non-pending payments normally
+    nonPendingPayments.forEach(payment => {
       counts[payment.computedStatus]++;
     });
+    
+    // For pending, show the total count (not limited)
+    counts.pending = totalPendingCount;
     
     console.log('\n=== PAYMENT COUNTS ===');
     console.log('Total payments found:', allPayments.length);
     console.log('Tab counts:', counts);
-    console.log('Expected: Success=7, Pending=5, Failed=1');
+    console.log(`Pending: ${totalPendingCount} total, displaying latest ${Math.min(totalPendingCount, 1000)}`);
     
     return counts;
   };
@@ -1490,7 +1516,7 @@ const OrderManagement = () => {
                         : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-blue-50 hover:text-blue-600'
                     }`}
                   >
-                    {showPending ? 'Hide' : 'Show'} Pending ({tabCounts.pending})
+                    {showPending ? 'Hide' : 'Show'} Pending ({totalPendingCount > 1000 ? `1000/${totalPendingCount}` : tabCounts.pending})
                   </button>
                   
                   <button
