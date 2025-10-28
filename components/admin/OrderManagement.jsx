@@ -195,7 +195,8 @@ const OrderManagement = () => {
   const fetchUserBags = async () => {
     setLoadingUserBags(true);
     try {
-      const response = await axios.get('/api/user-bags?pagination[pageSize]=1000&populate=*');
+      // Fetch latest 1000 user-bags sorted by updatedAt (most recently updated first)
+      const response = await axios.get('/api/user-bags?pagination[pageSize]=1000&populate=*&sort=updatedAt:desc');
       if (response.data && response.data.data) {
         setUserBags(response.data.data); 
       }
