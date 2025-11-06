@@ -6,9 +6,10 @@ export async function GET(request) {
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const populate = searchParams.get('populate') || '*';
+    const sort = searchParams.get('sort') || 'updatedAt:desc';
 
-    // Construct the URL for the Strapi API
-    strapiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/user-bags?pagination[pageSize]=100&populate=${populate}`;
+    // Construct the URL for the Strapi API - fetch latest 1000 user-bags
+    strapiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/user-bags?pagination[pageSize]=1000&populate=${populate}&sort=${sort}`;
 
     // Fetch user bags from Strapi
     const response = await fetch(strapiUrl, {
