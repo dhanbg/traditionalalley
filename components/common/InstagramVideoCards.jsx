@@ -7,22 +7,42 @@ import { Pagination } from "swiper/modules";
 import { fetchDataFromApi } from "@/utils/api";
 import { API_URL } from "@/utils/urls";
 
-// Custom AutoplayVideo component as fallback
-const AutoplayVideo = ({ src, poster, style, className, ...props }) => {
+// Custom AutoplayVideo component with mobile/iOS autoplay support
+const AutoplayVideo = ({ src, poster, style, className, type = 'video/mp4', ...props }) => {
   const videoRef = useRef(null);
   const playPromiseRef = useRef(null);
   const [isInView, setIsInView] = useState(false);
+  const isiOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+
+    // Ensure inline playback on iOS Safari
+    try {
+      video.setAttribute('playsinline', '');
+      video.setAttribute('webkit-playsinline', '');
+      video.muted = true;
+      // Preload metadata for faster start
+      video.preload = 'metadata';
+    } catch (_) {}
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         setIsInView(entry.isIntersecting);
         if (entry.isIntersecting) {
           // Store the play promise to handle it properly
-          playPromiseRef.current = video.play().catch(console.error);
+          // iOS sometimes requires a load() before play()
+          if (isiOS) {
+            try { video.load(); } catch (_) {}
+          }
+          playPromiseRef.current = video.play().catch(() => {
+            // As a fallback, try setting autoplay attribute and retry
+            try {
+              video.setAttribute('autoplay', '');
+              video.play().catch(() => {});
+            } catch (_) {}
+          });
         } else {
           // Wait for play promise to resolve before pausing
           if (playPromiseRef.current) {
@@ -38,7 +58,7 @@ const AutoplayVideo = ({ src, poster, style, className, ...props }) => {
           }
         }
       },
-      { threshold: 0.5 }
+      { threshold: 0.1 }
     );
 
     observer.observe(video);
@@ -48,16 +68,23 @@ const AutoplayVideo = ({ src, poster, style, className, ...props }) => {
   return (
     <video
       ref={videoRef}
-      src={src}
       poster={poster}
       style={style}
       className={className}
       muted
       loop
+      autoPlay
       playsInline
       preload="metadata"
+      // Helpful to coax autoplay on some Android browsers
+      disablePictureInPicture
+      controlsList="nodownload noplaybackrate"
       {...props}
-    />
+    >
+      <source src={src} type={type} />
+      {/* Fallback for iOS Safari */}
+      <source src={src} type="video/mp4" />
+    </video>
   );
 };
 
