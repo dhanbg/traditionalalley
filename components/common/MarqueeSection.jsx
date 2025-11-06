@@ -18,7 +18,15 @@ export default function MarqueeSection() {
   return (
     <section className="pt-0">
       <div className="tf-marquee marquee-style2 marquee-animation-right" style={marqueeStyle}>
-        <div className="marquee-wrapper" style={{ display: 'flex', width: '200%' }}>
+        <div
+          className="marquee-wrapper"
+          style={{
+            display: 'flex',
+            width: '200%',
+            // Make marquee faster
+            animation: 'infiniteScrollRight 16s linear infinite'
+          }}
+        >
           <div className="initial-child-container" style={{ display: 'flex', minWidth: '50%', flexShrink: 0 }}>
             {/* First set of marquee items */}
             <div className="marquee-child-item">
@@ -27,8 +35,10 @@ export default function MarqueeSection() {
             <div className="marquee-child-item">
               <span className="icon icon-tag" style={iconStyle} />
             </div>
+            
+            {/* Added: Above 8000 happy customers */}
             <div className="marquee-child-item">
-              <h3 className="text-uppercase" style={textStyle}>EXCLUSIVE DEALS</h3>
+              <h3 className="text-uppercase" style={textStyle}>ABOVE 8000 HAPPY CUSTOMERS</h3>
             </div>
             <div className="marquee-child-item">
               <span className="icon icon-lightning" style={iconStyle} />
@@ -41,8 +51,10 @@ export default function MarqueeSection() {
             <div className="marquee-child-item">
               <span className="icon icon-tag" style={iconStyle} />
             </div>
+            
+            {/* Added: Above 8000 happy customers */}
             <div className="marquee-child-item">
-              <h3 className="text-uppercase" style={textStyle}>EXCLUSIVE DEALS</h3>
+              <h3 className="text-uppercase" style={textStyle}>ABOVE 8000 HAPPY CUSTOMERS</h3>
             </div>
             <div className="marquee-child-item">
               <span className="icon icon-lightning" style={iconStyle} />
@@ -55,8 +67,10 @@ export default function MarqueeSection() {
             <div className="marquee-child-item">
               <span className="icon icon-tag" style={iconStyle} />
             </div>
+            
+            {/* Added: Above 8000 happy customers */}
             <div className="marquee-child-item">
-              <h3 className="text-uppercase" style={textStyle}>EXCLUSIVE DEALS</h3>
+              <h3 className="text-uppercase" style={textStyle}>ABOVE 8000 HAPPY CUSTOMERS</h3>
             </div>
             <div className="marquee-child-item">
               <span className="icon icon-lightning" style={iconStyle} />
@@ -69,8 +83,9 @@ export default function MarqueeSection() {
             <div className="marquee-child-item">
               <span className="icon icon-tag" style={iconStyle} />
             </div>
+            {/* Added: Above 8000 happy customers */}
             <div className="marquee-child-item">
-              <h3 className="text-uppercase" style={textStyle}>EXCLUSIVE DEALS</h3>
+              <h3 className="text-uppercase" style={textStyle}>ABOVE 8000 HAPPY CUSTOMERS</h3>
             </div>
             <div className="marquee-child-item">
               <span className="icon icon-lightning" style={iconStyle} />
@@ -86,8 +101,10 @@ export default function MarqueeSection() {
             <div className="marquee-child-item">
               <span className="icon icon-tag" style={iconStyle} />
             </div>
+            
+            {/* Added: Above 8000 happy customers */}
             <div className="marquee-child-item">
-              <h3 className="text-uppercase" style={textStyle}>EXCLUSIVE DEALS</h3>
+              <h3 className="text-uppercase" style={textStyle}>ABOVE 8000 HAPPY CUSTOMERS</h3>
             </div>
             <div className="marquee-child-item">
               <span className="icon icon-lightning" style={iconStyle} />
@@ -100,8 +117,10 @@ export default function MarqueeSection() {
             <div className="marquee-child-item">
               <span className="icon icon-tag" style={iconStyle} />
             </div>
+            
+            {/* Added: Above 8000 happy customers */}
             <div className="marquee-child-item">
-              <h3 className="text-uppercase" style={textStyle}>EXCLUSIVE DEALS</h3>
+              <h3 className="text-uppercase" style={textStyle}>ABOVE 8000 HAPPY CUSTOMERS</h3>
             </div>
             <div className="marquee-child-item">
               <span className="icon icon-lightning" style={iconStyle} />
@@ -114,8 +133,10 @@ export default function MarqueeSection() {
             <div className="marquee-child-item">
               <span className="icon icon-tag" style={iconStyle} />
             </div>
+            
+            {/* Added: Above 8000 happy customers */}
             <div className="marquee-child-item">
-              <h3 className="text-uppercase" style={textStyle}>EXCLUSIVE DEALS</h3>
+              <h3 className="text-uppercase" style={textStyle}>ABOVE 8000 HAPPY CUSTOMERS</h3>
             </div>
             <div className="marquee-child-item">
               <span className="icon icon-lightning" style={iconStyle} />
@@ -128,8 +149,9 @@ export default function MarqueeSection() {
             <div className="marquee-child-item">
               <span className="icon icon-tag" style={iconStyle} />
             </div>
+            {/* Added: Above 8000 happy customers */}
             <div className="marquee-child-item">
-              <h3 className="text-uppercase" style={textStyle}>EXCLUSIVE DEALS</h3>
+              <h3 className="text-uppercase" style={textStyle}>ABOVE 8000 HAPPY CUSTOMERS</h3>
             </div>
             <div className="marquee-child-item">
               <span className="icon icon-lightning" style={iconStyle} />
@@ -137,6 +159,14 @@ export default function MarqueeSection() {
           </div>
         </div>
       </div>
+      {/* Mobile-only speed boost */}
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .tf-marquee.marquee-style2.marquee-animation-right .marquee-wrapper {
+            animation: infiniteScrollRight 10s linear infinite !important;
+          }
+        }
+      `}</style>
     </section>
   );
 }

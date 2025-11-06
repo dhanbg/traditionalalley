@@ -282,6 +282,42 @@
   }
 }
 
+/* Banner spacing overrides */
+.page-title {
+  padding-top: 24px !important;
+  padding-bottom: 24px !important;
+  min-height: 160px !important;
+  height: 160px !important;
+}
+
+/* Similar banners across pages */
+.flat-banner-parallax,
+.flat-banner-parallax-v2,
+.flat-banner-parallax-v3 {
+  padding-top: 40px !important;
+  padding-bottom: 40px !important;
+}
+
+@media (max-width: 768px) {
+  .page-title {
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
+    min-height: 130px !important;
+    height: 130px !important;
+  }
+
+  .page-title .heading {
+    margin-bottom: 8px !important;
+  }
+
+  .flat-banner-parallax,
+  .flat-banner-parallax-v2,
+  .flat-banner-parallax-v3 {
+    padding-top: 24px !important;
+    padding-bottom: 24px !important;
+  }
+}
+
 /* Mobile styles */
 @media (max-width: 991px) {
   .drift-zoom-pane {
@@ -332,4 +368,63 @@
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+}
+
+/* Product mobile spacing overrides */
+@media (max-width: 768px) {
+  /* Reduce vertical and horizontal gaps in product grid further */
+  .tf-grid-layout {
+    row-gap: 6px !important;
+    column-gap: 8px !important;
+  }
+
+  /* Tighten spacing between list items */
+  .wrapper-control-shop .tf-list-layout .card-product {
+    margin-bottom: 8px !important;
+    padding-bottom: 8px !important;
+  }
+
+  /* Make product cards height follow content on grid (remove fixed aspect) */
+  .tf-grid-layout .card-product .card-product-wrapper {
+    aspect-ratio: auto !important;
+  }
+  .tf-grid-layout .card-product .product-img {
+    height: auto !important;
+    align-items: center !important;
+  }
+  .tf-grid-layout .card-product .card-product-wrapper img {
+    height: auto !important;
+    width: 100% !important;
+  }
+
+  /* Modern price overlay inside product image (mobile) */
+  .card-product .price-overlay-modern {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    z-index: 6;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
+    padding: 4px 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  }
+  .card-product .price-overlay-modern .current-price {
+    color: #111 !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.1px;
+  }
+  .card-product .price-overlay-modern .old-price {
+    color: #6b7280 !important;
+  }
+  .card-product .price-overlay-modern .discount-badge {
+    background: #ef4444 !important;
+    color: white !important;
+    border-radius: 10px !important;
+    padding: 2px 6px !important;
+    font-size: 10px !important;
+  }
 }

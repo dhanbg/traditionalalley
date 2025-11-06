@@ -112,6 +112,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
   const [inView, setInView] = useState(false);
   const [showSizeSelection, setShowSizeSelection] = useState(false);
   const [selectedSize, setSelectedSize] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
   const cardRef = useRef(null);
 
   const {
@@ -129,6 +130,24 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
     // Ensure we never set an empty string as the currentImage
     setCurrentImage(safeProduct.imgSrc || DEFAULT_IMAGE);
   }, [safeProduct]);
+
+  useEffect(() => {
+    // Detect mobile viewport
+    const checkMobile = () => {
+      if (typeof window !== 'undefined') {
+        setIsMobile(window.innerWidth <= 768);
+      }
+    };
+    checkMobile();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', checkMobile);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', checkMobile);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -260,7 +279,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
       style={{ animationDelay: `${index * 0.12 + 0.1}s` }}
       ref={cardRef}
       onMouseEnter={() => {
-        if (hasAvailableSizes) {
+        if (hasAvailableSizes && !isMobile) {
           setShowSizeSelection(true);
         }
       }}
@@ -269,12 +288,16 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
         setSelectedSize(''); // Reset selection when mouse leaves
       }}
       onTouchStart={(e) => {
+        // On mobile, don't show size selection on touch - prefer navigation
+        if (isMobile) return;
         // Only handle touch for size selection, don't interfere with navigation
         if (hasAvailableSizes && !e.target.closest('.product-img') && !e.target.closest('.title.link')) {
           setShowSizeSelection(true);
         }
       }}
       onTouchEnd={(e) => {
+        // On mobile, don't show size selection on touch - prefer navigation
+        if (isMobile) return;
         // Only reset size selection if not clicking on navigation elements
         if (hasAvailableSizes && !e.target.closest('.product-img') && !e.target.closest('.title.link')) {
           setTimeout(() => {
@@ -456,8 +479,20 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
             Out of Stock
           </div>
         )}
+
+        {isMobile && (
+          <div className="price-overlay-modern" aria-hidden="true">
+            <PriceDisplay
+              price={safeProduct.price}
+              oldPrice={safeProduct.oldPrice}
+              size="small"
+              className="price-overlay"
+              showConversion={false}
+            />
+          </div>
+        )}
         {/* Size Selection on Hover - Top Right */}
-        {hasAvailableSizes && showSizeSelection && isInStock && (
+        {hasAvailableSizes && showSizeSelection && isInStock && !isMobile && (
           <div className="size-selection-hover-clean" style={{
             position: 'absolute',
             top: '8px',
@@ -508,7 +543,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
             </div>
           </div>
         )}
-        {isInStock && (
+        {isInStock && !isMobile && (
           <div className="list-btn-main">
             <a
               className={`btn-main-product ${
@@ -615,43 +650,16 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
         >
           {safeProduct.title || 'Product'}
         </Link>
-        <PriceDisplay 
-          price={safeProduct.price}
-          oldPrice={safeProduct.oldPrice}
-          className="product-card-price"
-          size="normal"
-          showConversion={false}
-        />
-        {safeProduct.colors && Array.isArray(safeProduct.colors) && safeProduct.colors.length > 0 && (
-          <ul className="list-color-product">
-            {safeProduct.colors.map((color, index) => {
-              // Skip rendering if no image source or it's an empty string
-              // Or if color isn't an object with imgSrc property
-              if (!color || typeof color !== 'object' || !color.imgSrc || color.imgSrc === "") {
-                return null;
-              }
-              
-              return (
-                <li
-                  key={index}
-                  className={`list-color-item color-swatch ${
-                    currentImage == color.imgSrc ? "active" : ""
-                  } ${color.bgColor == "bg-white" ? "line" : ""}`}
-                  onMouseOver={() => setCurrentImage(color.imgSrc || DEFAULT_IMAGE)}
-                >
-                  <span className={`swatch-value ${color.bgColor}`} />
-                  <Image
-                    className="lazyload"
-                    src={color.imgSrc && color.imgSrc !== "" ? color.imgSrc : DEFAULT_IMAGE}
-                    alt={`${safeProduct.title} - ${color.name || "color variant"}`}
-                    width={600}
-                    height={800}
-                  />
-                </li>
-              );
-            })}
-          </ul>
+        {!isMobile && (
+          <PriceDisplay 
+            price={safeProduct.price}
+            oldPrice={safeProduct.oldPrice}
+            className="product-card-price"
+            size="normal"
+            showConversion={false}
+          />
         )}
+        {/* Color swatches removed as requested */}
       </div>
       
       {/* Remove from Wishlist Button */}
@@ -682,6 +690,25 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
           </button>
         </div>
       )}
+      {/* Mobile-only smaller title and price */}
+      <style jsx global>{`
+        @media (max-width: 768px) {
+          /* Title size in product list cards */
+          .card-product .card-product-info .title.link {
+            font-size: 13px !important;
+            line-height: 1.3;
+          }
+
+          /* Price size in product list cards (PriceDisplay component) */
+          .card-product .product-card-price .price-main .current-price,
+          .card-product .product-card-price .current-price {
+            font-size: 13px !important;
+          }
+          .card-product .product-card-price .old-price {
+            font-size: 12px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

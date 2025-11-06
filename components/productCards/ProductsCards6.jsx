@@ -60,6 +60,7 @@ export default function ProductsCards6({ product }) {
 
   const [currentImage, setCurrentImage] = useState(safeProduct.imgSrc);
   const [selectedSize, setSelectedSize] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
 
   const {
     addToCompareItem,
@@ -76,6 +77,23 @@ export default function ProductsCards6({ product }) {
     // Ensure we never set an empty string as the currentImage
     setCurrentImage(safeProduct.imgSrc || DEFAULT_IMAGE);
   }, [safeProduct]);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      if (typeof window !== 'undefined') {
+        setIsMobile(window.innerWidth <= 768);
+      }
+    };
+    checkMobile();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', checkMobile);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', checkMobile);
+      }
+    };
+  }, []);
 
   return (
     <div
@@ -168,7 +186,7 @@ export default function ProductsCards6({ product }) {
               ))}
             </ul>
           )}
-          {hasAvailableSizes && (
+          {hasAvailableSizes && !isMobile && (
             <div className="size-box list-product-btn">
               {availableSizes.map((size) => (
                 <span 
@@ -191,6 +209,7 @@ export default function ProductsCards6({ product }) {
               ))}
             </div>
           )}
+          {!isMobile && (
           <div className="list-product-btn">
             {isInStock && (
               <a
@@ -274,8 +293,10 @@ export default function ProductsCards6({ product }) {
             </a>
 
           </div>
+          )}
         </div>
       </div>
+      
     </div>
   );
 }

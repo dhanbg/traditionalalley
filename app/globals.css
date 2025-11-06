@@ -136,7 +136,7 @@
   
   /* Better spacing for mobile product cards */
   .card-product {
-    margin-bottom: 16px;
+    margin-bottom: 8px;
   }
   
   /* Improve text readability on mobile */
@@ -246,6 +246,22 @@ body {
   font-weight: 400;
   letter-spacing: 0;
   color: var(--secondary);
+}
+
+/* Mobile overrides for list-style product cards (ProductsCards6) */
+@media (max-width: 768px) {
+  .card-product.style-list .card-product-info .title.link {
+    font-size: 13px !important;
+    line-height: 1.3;
+  }
+  .card-product.style-list .price-display .price-main .current-price,
+  .card-product.style-list .price-display .current-price,
+  .card-product.style-list .price.current-price {
+    font-size: 13px !important;
+  }
+  .card-product.style-list .price-display .old-price {
+    font-size: 12px !important;
+  }
 }
 
 .text-body-small {
