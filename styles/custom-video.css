@@ -1,0 +1,7 @@
+.no-video-controls::-webkit-media-controls {
+  display: none !important;
+}
+
+.no-video-controls {
+  pointer-events: none;
+}

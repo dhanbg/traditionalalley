@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Pagination } from "swiper/modules";
 import { fetchDataFromApi } from "@/utils/api";
 import { API_URL } from "@/utils/urls";
+import "../../styles/custom-video.css";
 
 // Custom AutoplayVideo component with mobile/iOS autoplay support
 const AutoplayVideo = ({ src, poster, style, className, type = 'video/mp4', ...props }) => {
@@ -70,12 +71,13 @@ const AutoplayVideo = ({ src, poster, style, className, type = 'video/mp4', ...p
       ref={videoRef}
       poster={poster}
       style={style}
-      className={className}
+      className={`${className} no-video-controls`}
       muted
       loop
       autoPlay
       playsInline
       preload="metadata"
+      controls={false}
       // Helpful to coax autoplay on some Android browsers
       disablePictureInPicture
       controlsList="nodownload noplaybackrate"
