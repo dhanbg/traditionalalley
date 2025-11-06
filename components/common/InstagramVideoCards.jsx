@@ -191,10 +191,11 @@ export default function InstagramVideoCards({ parentClass = "" }) {
             768: { slidesPerView: 3 },
             0: { slidesPerView: 2 },
           }}
+          loop={true}
           modules={[Pagination]}
           pagination={{
             clickable: true,
-            el: ".spb333",
+            el: ".spd-instagram",
           }}
         >
           {loading ? (
@@ -233,6 +234,13 @@ export default function InstagramVideoCards({ parentClass = "" }) {
                 }
               }
               const isVideo = item.media?.mime?.startsWith('video/');
+              // ensure every video has a poster for mobile
+              const posterSrc = item.media?.formats?.thumbnail?.url
+                ? (item.media.formats.thumbnail.url.startsWith('http')
+                    ? item.media.formats.thumbnail.url
+                    : `${process.env.NEXT_PUBLIC_API_URL || API_URL}${item.media.formats.thumbnail.url}`
+                  )
+                : '/images/placeholder-thumb.jpg';
               
               return (
                 <SwiperSlide key={item.id || i}>
@@ -259,12 +267,7 @@ export default function InstagramVideoCards({ parentClass = "" }) {
                     {isVideo ? (
                       <AutoplayVideo
                         src={mediaUrl}
-                        poster={item.media?.formats?.thumbnail?.url ? 
-                          (item.media.formats.thumbnail.url.startsWith('http') ? 
-                            item.media.formats.thumbnail.url : 
-                            `${process.env.NEXT_PUBLIC_API_URL || API_URL}${item.media.formats.thumbnail.url}`
-                          ) : undefined
-                        }
+                        poster={posterSrc}
                         style={{
                           width: '100%',
                           height: '100%',
@@ -328,8 +331,9 @@ export default function InstagramVideoCards({ parentClass = "" }) {
             })
           )}
         </Swiper>
+        <div className="d-flex d-lg-none sw-pagination-collection sw-dots type-circle justify-content-center spd-instagram" />
         
-        <div className="sw-dots style-2 sw-pagination-gallery justify-content-center spb333"></div>
+        
 
       </div>
     </section>

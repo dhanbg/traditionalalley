@@ -1,10 +1,10 @@
 "use client";
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, EffectFade, Pagination } from "swiper/modules";
+import { Autoplay, EffectFade } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/effect-fade";
-import "swiper/css/pagination";
+
 import "swiper/css/autoplay";
 import Image from "next/image";
 import Link from "next/link";
@@ -279,13 +279,10 @@ export default function Hero() {
         spaceBetween={0}
         slidesPerView={1}
         loop={slides.length > 1} // Enable loop only if there are enough slides
-        modules={[EffectFade, Autoplay, Pagination]}
+        modules={[EffectFade, Autoplay]}
         autoplay={false}
         style={{ height: '100%' }} // Ensure Swiper fills the parent container
-        pagination={{
-          clickable: true,
-          el: ".spd55",
-        }}
+
         onSlideChange={handleSlideChange}
         onSwiper={(swiper) => {
               // Store swiper reference
@@ -483,11 +480,6 @@ export default function Hero() {
           )
         })}
       </Swiper>
-      <div className="wrap-pagination">
-        <div className="container">
-          <div className="sw-dots sw-pagination-slider type-circle white-circle justify-content-center spd55" />
-        </div>
-      </div>
       </section>
     </>
   );
