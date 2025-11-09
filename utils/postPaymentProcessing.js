@@ -70,27 +70,44 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
     const jsPDF = (await import('jspdf')).default;
     const doc = new jsPDF({ compress: true });
     
-    // Add Traditional Alley logo
+    // Add Traditional Alley logo (prefer JPEG for smaller filesize, fallback to PNG)
     let logoLoaded = false;
     try {
-      const logoImg = new Image();
-      logoImg.crossOrigin = 'anonymous';
-      logoImg.src = '/logo.png';
-      await new Promise((resolve, reject) => {
-        logoImg.onload = () => {
-          const logoWidth = 40;
-          const logoHeight = 10;
-          const pageWidth = doc.internal.pageSize.getWidth();
-          const logoX = (pageWidth - logoWidth) / 2;
-          doc.addImage(logoImg, 'PNG', logoX, 10, logoWidth, logoHeight);
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const logoWidth = 40;
+      const logoHeight = 10;
+      const logoX = (pageWidth - logoWidth) / 2;
+
+      await new Promise((resolve) => {
+        const tryPngFallback = () => {
+          const pngImg = new Image();
+          pngImg.crossOrigin = 'anonymous';
+          pngImg.onload = () => {
+            doc.addImage(pngImg, 'PNG', logoX, 10, logoWidth, logoHeight);
+            logoLoaded = true;
+            resolve();
+          };
+          pngImg.onerror = () => {
+            console.warn('⚠️ [AUTO-EMAIL] Could not load PNG logo, continuing without it');
+            logoLoaded = false;
+            resolve();
+          };
+          pngImg.src = '/logo.png';
+        };
+
+        const jpegImg = new Image();
+        jpegImg.crossOrigin = 'anonymous';
+        jpegImg.onload = () => {
+          // Use MEDIUM compression hint for JPEG embedding
+          doc.addImage(jpegImg, 'JPEG', logoX, 10, logoWidth, logoHeight, undefined, 'MEDIUM');
           logoLoaded = true;
           resolve();
         };
-        logoImg.onerror = () => {
-          console.warn('⚠️ [AUTO-EMAIL] Could not load logo, continuing without it');
-          logoLoaded = false;
-          resolve();
+        jpegImg.onerror = () => {
+          // Fallback to PNG
+          tryPngFallback();
         };
+        jpegImg.src = '/logo.jpg';
       });
     } catch (error) {
       console.warn('⚠️ [AUTO-EMAIL] Logo loading failed:', error);

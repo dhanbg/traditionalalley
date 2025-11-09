@@ -66,7 +66,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
       phone: '9844594187',
       countryCode: '+977'
     },
-    recipient: { companyName: '', fullName: '', email: '', phone: '', countryCode: '', height: '' },
+    recipient: { companyName: '', fullName: '', email: '', phone: '', countryCode: '', height: 'No' },
     packages: initialPackages.length > 0 ? initialPackages : [{ weight: 1, length: 10, width: 10, height: 10, description: '', declaredValue: 0, quantity: 1, commodityCode: '', manufacturingCountryCode: 'NP' }]
   });
 
@@ -75,6 +75,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
   const [selectedRate, setSelectedRate] = useState(null);
   const [dhlLoading, setDhlLoading] = useState(false);
   const [dhlError, setDhlError] = useState('');
+  const [customHeightOption, setCustomHeightOption] = useState('No');
 
   // Shipping rates from /api/shipping-rates endpoint
   const [shippingRates, setShippingRates] = useState([]);
@@ -765,8 +766,12 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
     const cityValid = destinationAddress.cityName && destinationAddress.cityName.trim() !== '';
     const actualCountryCode = getActualCountryCode(destinationAddress.countryCode);
     const serviceTypeValid = actualCountryCode === 'NP' || (serviceType && serviceType.trim() !== '');
-    
-    return countryValid && cityValid && serviceTypeValid;
+    // Require custom height inches input to proceed
+    const heightValid = customHeightOption === 'Yes'
+      ? (formData.recipient.height && String(formData.recipient.height).trim() !== '' && Number(formData.recipient.height) > 0)
+      : false;
+
+    return countryValid && cityValid && serviceTypeValid && heightValid;
   };
 
   const getRates = async () => {
@@ -1464,30 +1469,70 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                 marginBottom: '0.5rem'
               }}>
                 <span style={{ marginRight: '0.5rem' }}>📏</span>
-                Custom Height
+                Want custom height?
               </label>
-              <input
-                 type="text"
-                 placeholder="Enter your height (e.g., 5'6&quot;, 170cm)"
-                 value={formData.recipient.height}
-                 onChange={(e) => handleInputChange('recipient', 'height', e.target.value)}
-                style={{
+              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.5rem', alignItems: 'center' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="customHeightOption"
+                    value="Yes"
+                    checked={customHeightOption === 'Yes'}
+                    onChange={() => { setCustomHeightOption('Yes'); handleInputChange('recipient', 'height', ''); }}
+                  />
+                  <span>Yes</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="customHeightOption"
+                    value="No"
+                    checked={customHeightOption === 'No'}
+                    onChange={() => { setCustomHeightOption('No'); handleInputChange('recipient', 'height', 'No'); }}
+                  />
+                  <span>No</span>
+                </label>
+              </div>
+              {customHeightOption === 'Yes' ? (
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  placeholder="Enter height in inches"
+                  value={formData.recipient.height === 'No' ? '' : formData.recipient.height}
+                  onChange={(e) => handleInputChange('recipient', 'height', e.target.value)}
+                  style={{
+                    width: '100%',
+                    fontSize: isMobile ? '1rem' : '1rem',
+                    minWidth: 0,
+                    padding: '0.5rem 0.75rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '0.75rem',
+                    fontSize: '1rem',
+                    background: 'white',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    transition: 'all 0.2s',
+                    lineHeight: '42px',
+                    minHeight: '42px'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#eab308'}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  required
+                />
+              ) : (
+                <div style={{
                   width: '100%',
-                  fontSize: isMobile ? '1rem' : '1rem',
-                  minWidth: 0,
                   padding: '0.5rem 0.75rem',
                   border: '2px solid #e5e7eb',
                   borderRadius: '0.75rem',
-                  fontSize: '1rem',
-                  background: 'white',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                  transition: 'all 0.2s',
+                  background: '#f9fafb',
+                  color: '#374151',
                   lineHeight: '42px',
                   minHeight: '42px'
-                }}
-                onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-              />
+                }}>
+                  No
+                </div>
+              )}
             </div>
                 </div>
                 </div>

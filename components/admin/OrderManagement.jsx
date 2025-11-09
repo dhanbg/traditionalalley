@@ -628,28 +628,44 @@ const OrderManagement = () => {
       
       const doc = new jsPDF();
       
-      // Add Traditional Alley logo
+      // Add Traditional Alley logo (prefer JPEG for smaller filesize, fallback to PNG)
       let logoLoaded = false;
       try {
-        const logoImg = new Image();
-        logoImg.crossOrigin = 'anonymous';
-        logoImg.src = '/logo.png';
-        await new Promise((resolve, reject) => {
-          logoImg.onload = () => {
-            // Add logo to PDF (centered at top)
-            const logoWidth = 40;
-            const logoHeight = 10;
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const logoX = (pageWidth - logoWidth) / 2;
-            doc.addImage(logoImg, 'PNG', logoX, 10, logoWidth, logoHeight);
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const logoWidth = 40;
+        const logoHeight = 10;
+        const logoX = (pageWidth - logoWidth) / 2;
+
+        await new Promise((resolve) => {
+          const tryPngFallback = () => {
+            const pngImg = new Image();
+            pngImg.crossOrigin = 'anonymous';
+            pngImg.onload = () => {
+              doc.addImage(pngImg, 'PNG', logoX, 10, logoWidth, logoHeight);
+              logoLoaded = true;
+              resolve();
+            };
+            pngImg.onerror = () => {
+              console.warn('Could not load PNG logo, continuing without it');
+              logoLoaded = false;
+              resolve();
+            };
+            pngImg.src = '/logo.png';
+          };
+
+          const jpegImg = new Image();
+          jpegImg.crossOrigin = 'anonymous';
+          jpegImg.onload = () => {
+            // Use MEDIUM compression hint for JPEG embedding
+            doc.addImage(jpegImg, 'JPEG', logoX, 10, logoWidth, logoHeight, undefined, 'MEDIUM');
             logoLoaded = true;
             resolve();
           };
-          logoImg.onerror = () => {
-            console.warn('Could not load logo, continuing without it');
-            logoLoaded = false;
-            resolve();
+          jpegImg.onerror = () => {
+            // Fallback to PNG
+            tryPngFallback();
           };
+          jpegImg.src = '/logo.jpg';
         });
       } catch (error) {
         console.warn('Logo loading failed:', error);
@@ -702,6 +718,33 @@ const OrderManagement = () => {
       ];
       
       orderInfo.forEach(info => {
+        doc.text(info, leftColumnX, leftYPosition);
+        leftYPosition += 6;
+      });
+
+      // Shipping Information (Left Column under Order Info)
+      const shippingInfo = orderData.shipping || {};
+      const shippingCostRaw = orderSummary.shippingCost || 0;
+      // Use same currency symbol as invoice
+      const shippingCostText = shippingCostRaw > 0 
+        ? `${currency} ${Number(shippingCostRaw).toFixed(2)}`
+        : 'Not set';
+
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('Shipping Information', leftColumnX, leftYPosition + 4);
+      leftYPosition += 10;
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(10);
+
+      const shippingInfoLines = [
+        `Method: ${shippingInfo.method || 'N/A'}`,
+        `Delivery Type: ${shippingInfo.deliveryType || 'Standard'}`,
+        `Cost: ${shippingCostText}`,
+        `Estimated Delivery: ${shippingInfo.estimatedDelivery || 'N/A'}`
+      ];
+
+      shippingInfoLines.forEach(info => {
         doc.text(info, leftColumnX, leftYPosition);
         leftYPosition += 6;
       });
@@ -1082,6 +1125,32 @@ const OrderManagement = () => {
        ];
        
        orderInfo.forEach(info => {
+         doc.text(info, leftColumnX, leftYPosition);
+         leftYPosition += 6;
+       });
+
+       // Shipping Information (Left Column under Order Info)
+       const shippingInfo = orderData.shipping || {};
+       const shippingCostRaw = (orderData.orderSummary?.shippingCost) || 0;
+       const shippingCostText = shippingCostRaw > 0 
+         ? `${currency} ${Number(shippingCostRaw).toFixed(2)}`
+         : 'Not set';
+
+       doc.setFontSize(12);
+       doc.setFont(undefined, 'bold');
+       doc.text('Shipping Information', leftColumnX, leftYPosition + 4);
+       leftYPosition += 10;
+       doc.setFont(undefined, 'normal');
+       doc.setFontSize(10);
+
+       const shippingInfoLines = [
+         `Method: ${shippingInfo.method || 'N/A'}`,
+         `Delivery Type: ${shippingInfo.deliveryType || 'Standard'}`,
+         `Cost: ${shippingCostText}`,
+         `Estimated Delivery: ${shippingInfo.estimatedDelivery || 'N/A'}`
+       ];
+
+       shippingInfoLines.forEach(info => {
          doc.text(info, leftColumnX, leftYPosition);
          leftYPosition += 6;
        });
