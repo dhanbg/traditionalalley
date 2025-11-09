@@ -21,6 +21,18 @@ const AdminSidebar = () => {
       description: 'General analytics overview'
     },
     {
+      href: '/dashboard/orders',
+      icon: '📋',
+      label: 'Order Management',
+      description: 'Manage orders and payments'
+    },
+    {
+      href: '/dashboard/cod',
+      icon: '💵',
+      label: 'Cash on Delivery',
+      description: 'Manage COD orders and deliveries'
+    },
+    {
       href: '/dashboard/sales',
       icon: '💰',
       label: 'Sales Analytics',
@@ -43,12 +55,6 @@ const AdminSidebar = () => {
       icon: '🚚',
       label: 'Shipping Analytics',
       description: 'Shipping and logistics data'
-    },
-    {
-      href: '/dashboard/orders',
-      icon: '📋',
-      label: 'Order Management',
-      description: 'Manage orders and payments'
     }
   ];
 

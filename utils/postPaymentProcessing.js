@@ -68,7 +68,7 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
     
     // Generate PDF for email (simplified version for automation)
     const jsPDF = (await import('jspdf')).default;
-    const doc = new jsPDF();
+    const doc = new jsPDF({ compress: true });
     
     // Add Traditional Alley logo
     let logoLoaded = false;
@@ -153,15 +153,16 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
     doc.setFont(undefined, 'normal');
     doc.setFontSize(10);
     
-    const address = receiverDetails.address || {};
-    const customerInfo = [
+  const address = receiverDetails.address || {};
+  const customerInfo = [
       `Name: ${receiverDetails.fullName || 'N/A'}`,
       `Email: ${receiverDetails.email || 'N/A'}`,
-      `Phone: ${receiverDetails.contactNumber || 'N/A'}`,
-      `Address: ${address.street || 'N/A'}`,
-      `City: ${address.city || 'N/A'}`,
-      `Country: ${address.country || 'N/A'}`,
-      `Postal Code: ${address.postalCode || 'N/A'}`
+      `Phone: ${(receiverDetails.countryCode || '')}${receiverDetails.phone || 'N/A'}`.replace(/^\+?/, '+'),
+      `Height: ${receiverDetails.height || 'N/A'}`,
+      `Address: ${address.addressLine1 || 'N/A'}`,
+      `City: ${address.cityName || 'N/A'}`,
+      `Postal Code: ${address.postalCode || 'N/A'}`,
+      `Country: ${address.countryCode || 'N/A'}`
     ];
     
     customerInfo.forEach(info => {
@@ -169,31 +170,132 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
       rightYPosition += 6;
     });
     
-    // Add products table (simplified)
+    // Products table with identical layout to dashboard
     const products = orderData.products || [];
-    if (products.length > 0) {
-      yPosition = Math.max(leftYPosition, rightYPosition) + 20;
-      
-      doc.setFontSize(14);
-      doc.setFont(undefined, 'bold');
-      doc.text('Products', leftColumnX, yPosition);
-      
-      yPosition += 10;
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(10);
-      
-      products.forEach((product, index) => {
-        const productText = `${index + 1}. ${product.title || 'N/A'} - Size: ${product.selectedSize || 'N/A'} - Qty: ${product.quantity || 1}`;
-        doc.text(productText, leftColumnX, yPosition);
-        yPosition += 6;
-      });
-    }
-    
-    // Add total amount
-    yPosition += 10;
+    const { default: autoTable } = await import('jspdf-autotable');
+    const tableData = [];
+
+    // Exchange rate handling to mirror dashboard
+    const { getExchangeRate } = await import('./currency');
+    const exchangeRate = isNepal ? await getExchangeRate() : 1;
+
+    products.forEach(item => {
+      let price = item.price || 0;
+      const quantity = item.quantity || 1;
+      let total = item.subtotal || (price * quantity);
+      if (isNepal) {
+        price = price * exchangeRate;
+        total = total * exchangeRate;
+      }
+      tableData.push([
+        item.title || 'N/A',
+        item.productDetails?.productCode || item.productCode || 'N/A',
+        item.selectedSize || 'N/A',
+        quantity.toString(),
+        `${currency} ${Number(price).toFixed(2)}`,
+        `${currency} ${Number(total).toFixed(2)}`
+      ]);
+    });
+
+    // Render table
+    yPosition = Math.max(leftYPosition, rightYPosition) + 20;
+    autoTable(doc, {
+      head: [['Product', 'Product Code', 'Size', 'Quantity', 'Price', 'Total']],
+      body: tableData.length > 0 ? tableData : [['No items found', '', '', '', '', '']],
+      startY: yPosition,
+      theme: 'striped',
+      headStyles: { fillColor: [255, 229, 212], textColor: [0, 0, 0] },
+      styles: { fontSize: 9 },
+      margin: { left: 20, right: 20 }
+    });
+
+    // Order Summary block identical to dashboard
+    let breakdownY = (doc.lastAutoTable && doc.lastAutoTable.finalY ? doc.lastAutoTable.finalY : Math.max(leftYPosition, rightYPosition)) + 15;
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
-    doc.text(`Total Amount: ${currency} ${formattedAmount}`, leftColumnX, yPosition);
+    doc.text('Order Summary', 20, breakdownY);
+
+    breakdownY += 10;
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+
+    const originalSubtotal = products.reduce((sum, item) => {
+      const p = item.price || 0;
+      const q = item.quantity || 1;
+      return sum + (p * q);
+    }, 0);
+
+    const productDiscounts = orderSummary.productDiscounts || 0;
+    const couponDiscount = orderSummary.couponDiscount || 0;
+    const shippingCost = orderSummary.shippingCost || 0;
+
+    let displayOriginalSubtotal = originalSubtotal;
+    let displayProductDiscounts = productDiscounts;
+    let displayCouponDiscount = couponDiscount;
+    let displayShippingCost = shippingCost;
+
+    if (isNepal) {
+      displayOriginalSubtotal = originalSubtotal * exchangeRate;
+      if (productDiscounts > 0) displayProductDiscounts = productDiscounts * exchangeRate;
+      if (couponDiscount > 0) displayCouponDiscount = couponDiscount * exchangeRate;
+      // Shipping stays as-is for Nepal orders
+    }
+
+    const breakdownItems = [
+      { label: 'Subtotal:', value: displayOriginalSubtotal },
+      ...(displayProductDiscounts > 0 ? [{ label: 'Product Discounts:', value: -displayProductDiscounts, isDiscount: true }] : []),
+      ...(displayCouponDiscount > 0 ? [{ label: `Coupon Discount (${orderSummary.couponCode || 'N/A'}):`, value: -displayCouponDiscount, isDiscount: true }] : []),
+      ...(displayShippingCost > 0 ? [{ label: 'Shipping Cost:', value: displayShippingCost }] : [])
+    ];
+
+    breakdownItems.forEach(item => {
+      doc.text(item.label, 20, breakdownY);
+      const valueText = `${currency} ${Math.abs(item.value).toFixed(2)}`;
+      const displayValue = item.isDiscount ? `- ${valueText}` : valueText;
+      if (item.isDiscount) {
+        doc.setTextColor(0, 128, 0);
+      }
+      doc.text(displayValue, doc.internal.pageSize.getWidth() - 20, breakdownY, { align: 'right' });
+      doc.setTextColor(0, 0, 0);
+      breakdownY += 7;
+    });
+
+    breakdownY += 5;
+    doc.setLineWidth(0.5);
+    doc.line(20, breakdownY, doc.internal.pageSize.getWidth() - 20, breakdownY);
+    breakdownY += 10;
+
+    // Total amount aligned to right, same as dashboard
+    const finalY = breakdownY;
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text(`Total Amount: ${currency} ${formattedAmount}`,
+      doc.internal.pageSize.getWidth() - 20, finalY, { align: 'right' });
+
+    // Currency note alignment to right, matching dashboard
+    let noteY = finalY + 10;
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'italic');
+    doc.setTextColor(102, 102, 102);
+    let noteText;
+    if (isNepal) {
+      noteText = `Note: All amounts in NPR. Product prices converted from USD at rate 1 USD = ${exchangeRate.toFixed(2)} NPR`;
+    } else {
+      noteText = 'Note: All amounts in USD';
+      if (paymentData.amount_npr || amount !== (paymentData.amount || orderSummary.totalAmount || 0)) {
+        noteText = `Note: All amounts in USD (converted from NPR at rate 1 USD = ${exchangeRate.toFixed(2)} NPR)`;
+      }
+    }
+    doc.text(noteText, doc.internal.pageSize.getWidth() - 20, noteY, { align: 'right' });
+
+    // Footer centered
+    const footerY = noteY + 15;
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(102, 102, 102);
+    const footerText = 'Thank you for shopping with Traditional Alley! For any queries, please contact us at contact@traditionalalley.com';
+    const footerLines = doc.splitTextToSize(footerText, doc.internal.pageSize.getWidth() - 40);
+    doc.text(footerLines, doc.internal.pageSize.getWidth() / 2, footerY, { align: 'center' });
     
     // Convert PDF to base64
     const pdfBase64 = doc.output('datauristring').split(',')[1];
@@ -250,15 +352,12 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
  * @returns {boolean} - True if delivery is to Nepal
  */
 const isNepalDestination = (payment) => {
-  const orderData = payment.orderData || {};
-  const receiverDetails = orderData.receiver_details || {};
-  const address = receiverDetails.address || {};
-  
-  // Check if country is Nepal or if it's a domestic order
-  return address.country === 'Nepal' || 
-         address.country === 'NP' || 
-         !address.country || 
-         address.country === '';
+  try {
+    const countryCode = payment?.orderData?.receiver_details?.address?.countryCode || '';
+    return countryCode.toUpperCase() === 'NP';
+  } catch (error) {
+    return false;
+  }
 };
 
 /**

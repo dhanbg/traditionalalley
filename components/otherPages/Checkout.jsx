@@ -7,7 +7,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import NPSPaymentForm from "../payments/NPSPaymentForm";
 import DHLShippingForm from "../shipping/DHLShippingForm";
-import { fetchDataFromApi, updateData, updateUserBagWithPayment, createOrderRecord, updateProductStock, deleteData } from "@/utils/api";
+import { fetchDataFromApi, updateData, updateUserBagWithPayment, updateUserBagWithCOD, createOrderRecord, updateProductStock, deleteData } from "@/utils/api";
 import { checkWelcomeCouponUsage, getWelcomeCouponForAutoSelection } from "@/utils/productVariantUtils";
 import { processPostPaymentStockAndCart } from "@/utils/postPaymentProcessing";
 import { useSession } from "next-auth/react";
@@ -153,7 +153,7 @@ export default function Checkout() {
     return {
       // Order Summary
       orderSummary: {
-        totalItems: selectedProducts.reduce((sum, product) => sum + product.quantity, 0),
+        totalItems: selectedProducts.reduce((sum, product) => sum + (product?.quantity || 0), 0),
         totalProducts: selectedProducts.length,
         subtotal: finalTotal,
         productDiscounts: totalDiscounts,
@@ -214,8 +214,8 @@ export default function Checkout() {
 
       // Shipping information
       shipping: {
-        method: "DHL Express",
-        deliveryType: deliveryType || "Express", // Add delivery type information
+        method: receiverDetails.address?.countryCode === 'NP' ? "Nepal Can Move" : "Namaste Cargo",
+        deliveryType: receiverDetails.address?.countryCode === 'NP' ? "Local" : (deliveryType || "Express"),
         cost: shippingCost,
         currency: userCurrency || "NPR",
         estimatedDelivery: "3-5 business days"
@@ -223,10 +223,12 @@ export default function Checkout() {
 
       // Additional metadata
       shippingPrice: shippingCost,
-      receiver_details: receiverDetails || {
-        name: "Customer",
-        email: user?.email || "Not provided",
-        phone: "Not provided"
+      receiver_details: {
+        name: receiverDetails.fullName || "Customer",
+        email: receiverDetails.email || user?.email || "Not provided",
+        phone: receiverDetails.phone || "Not provided",
+        height: receiverDetails.height || "",
+        address: receiverDetails.address || {}
       }
     };
   };
@@ -760,6 +762,7 @@ export default function Checkout() {
     email: "",
     phone: "",
     countryCode: "",
+    height: "",
     address: {
       addressLine1: "",
       cityName: "",
@@ -841,14 +844,7 @@ export default function Checkout() {
                                ? (typeof product.colors[0] === 'string' ? product.colors[0] : product.colors[0].name || "default")
                                : "default");
         
-        console.log(`📦 Processing product for order:`, {
-          productId: product.id,
-          documentId: product.documentId,
-          title: product.title,
-          selectedSize: availableSize,
-          selectedColor: availableColor,
-          variantInfo: product.variantInfo
-        });
+
 
         return {
           // Basic Product Info
@@ -916,7 +912,7 @@ export default function Checkout() {
       const orderData = {
         // Order Summary
         orderSummary: {
-          totalItems: selectedProducts.reduce((sum, product) => sum + product.quantity, 0),
+          totalItems: selectedProducts.reduce((sum, product) => sum + (product?.quantity || 0), 0),
           totalProducts: selectedProducts.length,
           subtotal: finalTotal,
           productDiscounts: totalDiscounts,
@@ -925,7 +921,7 @@ export default function Checkout() {
           totalDiscounts: totalDiscounts + couponDiscount,
           finalSubtotal: finalTotal,
           shippingCost: shippingCost,
-          totalAmount: finalTotal + shippingCost,
+          totalAmount: nprAmount,
           currency: userCurrency || "NPR",
           orderDate: new Date().toISOString(),
           orderTimezone: "Asia/Kathmandu"
@@ -941,7 +937,7 @@ export default function Checkout() {
             carrier: "Cash on Delivery", // COD carrier
             service: "COD Standard",
             deliveryType: deliveryType || "Standard", // Add delivery type information
-            estimatedDays: receiverDetails.address.country === "Nepal" ? "3-5" : "7-10",
+            estimatedDays: receiverDetails?.address?.country === "Nepal" || receiverDetails?.address?.countryCode === "NP" ? "3-5" : "7-10",
             cost: shippingCost,
             currency: userCurrency || "NPR",
             trackingAvailable: false, // COD usually doesn't have tracking
@@ -953,22 +949,22 @@ export default function Checkout() {
           package: {
             totalWeight: selectedProducts.reduce((total, product) => {
               const fetchedProduct = productsWithOldPrice[product.id];
-              return total + ((fetchedProduct?.weight || 1) * product.quantity); // Now using parsed weight from Strapi
+              return total + ((fetchedProduct?.weight || 1) * (product?.quantity || 0)); // Now using parsed weight from Strapi
             }, 0),
             totalVolume: selectedProducts.reduce((total, product) => {
               const fetchedProduct = productsWithOldPrice[product.id];
               // Use parsed dimensions object or fallback to 10x10x10
               const dimensions = fetchedProduct?.dimensions || { length: 10, width: 10, height: 10 };
               const volume = dimensions.length * dimensions.width * dimensions.height;
-              return total + ((volume * product.quantity) / 1000000); // Convert cm³ to m³
+              return total + ((volume * (product?.quantity || 0)) / 1000000); // Convert cm³ to m³
             }, 0),
             packageType: "Box",
             packagingMaterial: "Cardboard Box with Bubble Wrap",
-            specialInstructions: receiverDetails.note || "",
+            specialInstructions: receiverDetails?.note || "",
             declaredValue: actualTotal,
             contentDescription: `Traditional Alley Products - ${selectedProducts.length} items (COD)`,
             dangerousGoods: false,
-            customsDeclaration: receiverDetails.address.country !== "Nepal"
+            customsDeclaration: receiverDetails?.address?.country !== "Nepal" && receiverDetails?.address?.countryCode !== "NP"
           },
           
           // Admin Processing Info
@@ -982,7 +978,7 @@ export default function Checkout() {
             photographRequired: actualTotal > 25000, // Photo documentation for high-value orders
             adminAssigned: null, // To be assigned by admin
             packingNotes: "COD Order - Payment to be collected upon delivery",
-            codAmount: finalTotal + shippingCost // Amount to collect
+            codAmount: nprAmount // Amount to collect
           }
         },
         
@@ -995,98 +991,46 @@ export default function Checkout() {
       const codPaymentData = {
         provider: "cod",
         merchantTxnId: `COD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        amount: finalTotal + shippingCost,
-        status: "Pending", // COD orders are pending until payment is received
+        amount: nprAmount,
         timestamp: new Date().toISOString(),
         orderData: orderData
       };
 
-      // Save COD order to user bag
-      await updateUserBagWithPayment(userBagDocumentId, codPaymentData);
-
-      console.log('COD order saved:', codPaymentData);
+      // Save COD order to user bag cod field
+      await updateUserBagWithCOD(userBagDocumentId, codPaymentData);
       
       // Create individual order record in Strapi user_orders collection for COD
-      console.log("=== CREATING COD ORDER RECORD IN STRAPI USER_ORDERS COLLECTION ===");
       
       try {
         const orderRecord = await createOrderRecord(codPaymentData, user?.id);
         if (orderRecord) {
-          console.log("✅ COD Order record created successfully:", orderRecord.data?.documentId);
-          console.log("COD Order details:", {
-            orderId: orderRecord.data?.orderId,
-            totalAmount: orderRecord.data?.totalAmount,
-            productCount: orderRecord.data?.productSummary?.totalProducts,
-            customerName: orderRecord.data?.customerInfo?.fullName,
-            paymentMethod: "Cash on Delivery",
-            codAmount: orderRecord.data?.processingInfo?.codAmount
-          });
+          // COD Order record created successfully
         } else {
-          console.warn("⚠️ COD Order record creation returned null");
+          // COD Order record creation returned null
         }
       } catch (orderRecordError) {
-        console.error("❌ Error creating COD order record:", orderRecordError);
         // Don't fail the entire process if order record creation fails
       }
       
-      // Process post-payment stock update and cart clearing (same as "Update Stock & Delete" button)
-      console.log("=== STARTING POST-PAYMENT PROCESSING FOR COD ORDER (STOCK UPDATE & CART CLEARING) ===");
-      
-      try {
-        const purchasedProducts = orderData.products || [];
-        console.log("Products to process:", purchasedProducts.length);
-        
-        if (purchasedProducts.length > 0) {
-          // Use the same logic as the "Update Stock & Delete" button with email automation
-          const processingResult = await processPostPaymentStockAndCart(
-            purchasedProducts, 
-            user, 
-            clearPurchasedItemsFromCart,
-            codPaymentData // Pass payment data for automatic email sending
-          );
-          
-          console.log("✅ Post-payment processing completed for COD:", {
-            totalProducts: processingResult.totalProducts,
-            stockUpdate: {
-              success: processingResult.stockUpdate.success,
-              successCount: processingResult.stockUpdate.successCount,
-              failureCount: processingResult.stockUpdate.failureCount
-            },
-            cartClear: {
-              success: processingResult.cartClear.success
-            },
-            emailSend: {
-              success: processingResult.emailSend?.success || false
-            }
-          });
-          
-          // Log results for admin visibility
-          if (processingResult.stockUpdate.success && processingResult.cartClear.success && processingResult.emailSend?.success) {
-            console.log(`✅ COD Order: Stock updated for ${processingResult.stockUpdate.successCount} products, cart cleared, and invoice email sent`);
-          } else if (processingResult.stockUpdate.success && processingResult.cartClear.success) {
-            console.log(`✅ COD Order: Stock updated for ${processingResult.stockUpdate.successCount} products and cart cleared, but email ${processingResult.emailSend?.success ? 'succeeded' : 'failed'}`);
-          } else if (processingResult.stockUpdate.success) {
-            console.log(`✅ COD Order: Stock updated but cart clearing ${processingResult.cartClear.success ? 'succeeded' : 'failed'}, email ${processingResult.emailSend?.success ? 'succeeded' : 'failed'}`);
-          } else if (processingResult.cartClear.success) {
-            console.log(`⚠️ COD Order: Cart cleared but ${processingResult.stockUpdate.failureCount} stock updates failed, email ${processingResult.emailSend?.success ? 'succeeded' : 'failed'}`);
-          } else {
-            console.log(`⚠️ COD Order: Post-payment processing completed with issues (email ${processingResult.emailSend?.success ? 'succeeded' : 'failed'})`);
-          }
-          
-        } else {
-          console.log("⚠️ No products found in order data for post-payment processing");
-        }
-      } catch (processingError) {
-        console.error("❌ Error in post-payment processing for COD:", processingError);
-        // Don't fail the entire process if post-payment processing fails
-      }
+      // COD orders don't require automatic stock updates, cart clearing, or email sending
+      // These will be handled manually when the order is confirmed
       
       setOrderSuccess(true);
       
-      alert('Order placed successfully! Admin will create your DHL shipment and provide tracking details.');
+      // Redirect to Thank You page with order details
+      const thankYouUrl = new URL('/thank-you', window.location.origin);
+      thankYouUrl.searchParams.set('orderId', codPaymentData.merchantTxnId);
+      thankYouUrl.searchParams.set('amount', nprAmount.toString());
+      thankYouUrl.searchParams.set('paymentMethod', 'cod');
+      
+      // Show success message briefly before redirect
+      // alert('Order placed successfully! Redirecting to confirmation page...');
+      
+      setTimeout(() => {
+        window.location.href = thankYouUrl.toString();
+      }, 1500);
       
     } catch (error) {
-      console.error('Error processing cash payment order:', error);
       alert('Failed to place order. Please try again.');
     } finally {
       setIsProcessingOrder(false);
@@ -1095,8 +1039,6 @@ export default function Checkout() {
 
   // Function to handle NPS payment success
   const handleNPSPaymentSuccess = (response) => {
-    console.log('NPS Payment Success:', response);
-    
     // The NPSPaymentForm will handle the redirect to NPS gateway
     // The actual payment processing will happen in the nps-callback page
     // after the user completes payment and returns from NPS
@@ -1104,7 +1046,6 @@ export default function Checkout() {
 
   // Function to handle NPS payment error
   const handleNPSPaymentError = (error) => {
-    console.error('NPS Payment Error:', error);
     
     let errorMessage = 'Payment failed. Please try again.';
     
@@ -1264,11 +1205,11 @@ export default function Checkout() {
   const subtotal = selectedProducts.reduce((acc, product) => {
     const fetchedProduct = productsWithOldPrice[product.id];
     const priceToUse = fetchedProduct?.oldPrice ? parseFloat(fetchedProduct.oldPrice) : parseFloat(product.price);
-    return acc + priceToUse * product.quantity;
+    return acc + priceToUse * (product?.quantity || 0);
   }, 0);
 
   // Calculate actual total: sum of price * quantity
-  const actualTotal = selectedProducts.reduce((acc, product) => acc + parseFloat(product.price) * product.quantity, 0);
+  const actualTotal = selectedProducts.reduce((acc, product) => acc + parseFloat(product.price) * (product?.quantity || 0), 0);
 
   // Calculate final total with coupon discount
   const finalTotal = Math.max(0, actualTotal - couponDiscount);
@@ -1891,6 +1832,60 @@ export default function Checkout() {
                 </div>
               </div>
               <div className="wrap">
+                {/* Payment Method Selection */}
+                <div style={{
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                  padding: '24px',
+                  borderRadius: '12px',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                  marginBottom: '20px'
+                }}>
+                  <h5 className="title" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '20px' }}>💳</span>
+                    Payment Method
+                  </h5>
+                  
+                  <div className={styles.paymentMethods}>
+                    {/* NPS Online Payment */}
+                    <div className={`${styles.paymentMethodCard} ${selectedPaymentMethod === 'nps' ? styles.selected : ''}`}>
+                      <input 
+                        type="radio" 
+                        id="nps-payment" 
+                        name="paymentMethod" 
+                        value="nps"
+                        checked={selectedPaymentMethod === 'nps'}
+                        onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                      />
+                      <label htmlFor="nps-payment">
+                        <div className={styles.paymentMethodHeader}>
+                          <div className={styles.paymentIcon}>💳</div>
+                          <span>Online Payment (NPS)</span>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Cash on Delivery */}
+                    <div className={`${styles.paymentMethodCard} ${selectedPaymentMethod === 'cod' ? styles.selected : ''}`}>
+                      <input 
+                        type="radio" 
+                        id="cod-payment" 
+                        name="paymentMethod" 
+                        value="cod"
+                        checked={selectedPaymentMethod === 'cod'}
+                        onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                      />
+                      <label htmlFor="cod-payment">
+                        <div className={styles.paymentMethodHeader}>
+                          <div className={styles.paymentIcon}>💵</div>
+                          <span>Cash on Delivery</span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Form Section */}
                 <div style={{
                   background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
                   padding: '24px',
@@ -1898,14 +1893,56 @@ export default function Checkout() {
                   border: '1px solid #e2e8f0',
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
                 }}>
-                  <NPSPaymentForm
-                    amount={nprAmount}
-                    onSuccess={handleNPSPaymentSuccess}
-                    onError={handleNPSPaymentError}
-                    orderData={constructOrderData()}
-                    transactionRemarks={`Payment for ${selectedProducts.length} items`}
-                    shippingRatesObtained={shippingRatesObtained}
-                  />
+                  {selectedPaymentMethod === 'nps' ? (
+                    <NPSPaymentForm
+                      amount={nprAmount}
+                      onSuccess={handleNPSPaymentSuccess}
+                      onError={handleNPSPaymentError}
+                      orderData={constructOrderData()}
+                      transactionRemarks={`Payment for ${selectedProducts.length} items`}
+                      shippingRatesObtained={shippingRatesObtained}
+                    />
+                  ) : (
+                    <div>
+                      <h5 className="title" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '20px' }}>💵</span>
+                        Cash on Delivery
+                      </h5>
+                      
+                      <button 
+                        className="tf-btn btn-fill animate-hover-btn radius-3 w-100 justify-content-center"
+                        onClick={handleCashPaymentOrder}
+                        disabled={isProcessingOrder || !shippingRatesObtained || selectedProducts.length === 0}
+                        style={{
+                          padding: '12px 24px',
+                          fontSize: '16px',
+                          fontWeight: '600',
+                          opacity: (isProcessingOrder || !shippingRatesObtained || selectedProducts.length === 0) ? 0.6 : 1,
+                          cursor: (isProcessingOrder || !shippingRatesObtained || selectedProducts.length === 0) ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        {isProcessingOrder ? (
+                          <span>Processing Order...</span>
+                        ) : (
+                          <span>Place Cash on Delivery Order</span>
+                        )}
+                      </button>
+
+                      {!shippingRatesObtained && (
+                        <div style={{ 
+                          marginTop: '12px', 
+                          padding: '12px', 
+                          background: '#f8d7da', 
+                          color: '#721c24', 
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          textAlign: 'center'
+                        }}>
+                          Please get shipping rates first before placing your order
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -131,7 +131,7 @@ export interface PaymentData {
   merchantTxnId: string;
   gatewayReferenceNo?: string; // Only for NPS
   amount: number;
-  status: "Success" | "Fail" | "Pending";
+  status?: "Success" | "Fail" | "Pending"; // Optional for COD, required for NPS
   institution?: string; // Only for NPS
   instrument?: string; // Only for NPS
   serviceCharge?: string; // Only for NPS
@@ -213,4 +213,4 @@ export interface NPSWebhookPayload {
 export interface NPSResponsePayload {
   MerchantTxnId: string;
   GatewayTxnId: string;
-} 
+}

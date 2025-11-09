@@ -7,9 +7,19 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const populate = searchParams.get('populate') || '*';
     const sort = searchParams.get('sort') || 'updatedAt:desc';
+    const pageSize = searchParams.get('pagination[pageSize]') || '1000';
+    const page = searchParams.get('pagination[page]');
 
-    // Construct the URL for the Strapi API - fetch latest 1000 user-bags
-    strapiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/user-bags?pagination[pageSize]=1000&populate=${populate}&sort=${sort}`;
+    // Construct the URL for the Strapi API with passthrough pagination params
+    const queryParts = [
+      `pagination[pageSize]=${pageSize}`,
+      `populate=${populate}`,
+      `sort=${sort}`
+    ];
+    if (page) {
+      queryParts.push(`pagination[page]=${page}`);
+    }
+    strapiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/user-bags?${queryParts.join('&')}`;
 
     // Fetch user bags from Strapi
     const response = await fetch(strapiUrl, {

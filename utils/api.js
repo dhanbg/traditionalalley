@@ -511,11 +511,9 @@ export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) =
         ...paymentData,
         timestamp: generateLocalTimestamp() // Update timestamp for the update
       };
-      console.log(`Updating existing payment with identifier: ${paymentIdentifier}`);
     } else {
       // Add new payment
       updatedPayments = [...existingPayments, paymentData];
-      console.log(`Adding new payment with identifier: ${paymentIdentifier}`);
     }
     
     // Update the user_orders
@@ -533,11 +531,9 @@ export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) =
 
     const updateResponse = await updateData(`/api/user-bags/${userBagDocumentId}`, updatePayload);
     
-    console.log('Successfully updated user-bag with payment data:', updateResponse);
     return updateResponse;
     
   } catch (error) {
-    console.error('Error updating user-bag with payment data:', error);
     throw error;
   }
 };
@@ -548,27 +544,19 @@ export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) =
 
 // Function to update product stock after successful payment
 export const updateProductStock = async (purchasedProducts) => {
-  console.log('=== STARTING PRODUCT STOCK UPDATE ===');
-  console.log('Products to update:', purchasedProducts.length);
-  
   const updateResults = [];
   
   for (const product of purchasedProducts) {
     try {
-      console.log(`Updating stock for product: ${product.title} (${product.documentId})`);
-      console.log(`Size: ${product.selectedSize || product.size}, Quantity purchased: ${product.quantity}`);
-      
       // Fetch current product data to get latest stock information
       const currentProductResponse = await fetchDataFromApi(`/api/products/${product.documentId}?populate=*`);
       
       if (!currentProductResponse || !currentProductResponse.data) {
-        console.error(`❌ Failed to fetch current product data for ${product.documentId}`);
         updateResults.push({ productId: product.documentId, success: false, error: 'Product not found' });
         continue;
       }
       
       const currentProduct = currentProductResponse.data;
-      console.log('Current product data fetched:', currentProduct.documentId);
       
       // Determine which stock to update (product or variant)
       let stockToUpdate = null;
@@ -580,7 +568,6 @@ export const updateProductStock = async (purchasedProducts) => {
         // Find the specific variant
         const variant = currentProduct.variants.find(v => v.documentId === product.variantId);
         if (variant && variant.size_stocks) {
-          console.log('Updating variant stock:', variant.documentId);
           stockToUpdate = variant;
           updateEndpoint = `/api/variants/${variant.documentId}`;
           sizeStocks = variant.size_stocks;
@@ -589,14 +576,12 @@ export const updateProductStock = async (purchasedProducts) => {
       
       // If no variant or variant doesn't have size_stocks, use main product
       if (!stockToUpdate && currentProduct.size_stocks) {
-        console.log('Updating main product stock:', currentProduct.documentId);
         stockToUpdate = currentProduct;
         updateEndpoint = `/api/products/${currentProduct.documentId}`;
         sizeStocks = currentProduct.size_stocks;
       }
       
       if (!stockToUpdate || !sizeStocks) {
-        console.warn(`⚠️ No size_stocks found for product ${product.documentId}`);
         updateResults.push({ productId: product.documentId, success: false, error: 'No size_stocks available' });
         continue;
       }
@@ -607,7 +592,6 @@ export const updateProductStock = async (purchasedProducts) => {
         try {
           parsedSizeStocks = JSON.parse(sizeStocks);
         } catch (parseError) {
-          console.error(`❌ Error parsing size_stocks for ${product.documentId}:`, parseError);
           updateResults.push({ productId: product.documentId, success: false, error: 'Invalid size_stocks format' });
           continue;
         }
@@ -616,14 +600,12 @@ export const updateProductStock = async (purchasedProducts) => {
       // Get the size to update
       const sizeToUpdate = product.selectedSize || product.size;
       if (!sizeToUpdate) {
-        console.warn(`⚠️ No size specified for product ${product.documentId}`);
         updateResults.push({ productId: product.documentId, success: false, error: 'No size specified' });
         continue;
       }
       
       // Check if the size exists in stock
       if (!(sizeToUpdate in parsedSizeStocks)) {
-        console.warn(`⚠️ Size ${sizeToUpdate} not found in stock for product ${product.documentId}`);
         updateResults.push({ productId: product.documentId, success: false, error: `Size ${sizeToUpdate} not in stock` });
         continue;
       }
@@ -632,8 +614,6 @@ export const updateProductStock = async (purchasedProducts) => {
       const currentStock = parseInt(parsedSizeStocks[sizeToUpdate]) || 0;
       const quantityPurchased = parseInt(product.quantity) || 1;
       const newStock = Math.max(0, currentStock - quantityPurchased); // Ensure stock doesn't go negative
-      
-      console.log(`Stock update: ${sizeToUpdate} - Current: ${currentStock}, Purchased: ${quantityPurchased}, New: ${newStock}`);
       
       // Update the size_stocks object
       const updatedSizeStocks = {
@@ -652,7 +632,6 @@ export const updateProductStock = async (purchasedProducts) => {
       const updateResponse = await updateData(updateEndpoint, updateData);
       
       if (updateResponse && updateResponse.data) {
-        console.log(`✅ Stock updated successfully for ${product.documentId} - ${sizeToUpdate}: ${newStock}`);
         updateResults.push({ 
           productId: product.documentId, 
           success: true, 
@@ -662,28 +641,17 @@ export const updateProductStock = async (purchasedProducts) => {
           quantityPurchased: quantityPurchased
         });
       } else {
-        console.error(`❌ Failed to update stock for ${product.documentId}`);
         updateResults.push({ productId: product.documentId, success: false, error: 'Update request failed' });
       }
       
     } catch (error) {
-      console.error(`❌ Error updating stock for product ${product.documentId}:`, error);
       updateResults.push({ productId: product.documentId, success: false, error: error.message });
     }
   }
   
-  // Log summary
+  // Calculate summary
   const successCount = updateResults.filter(r => r.success).length;
   const failureCount = updateResults.filter(r => !r.success).length;
-  
-  console.log('=== STOCK UPDATE SUMMARY ===');
-  console.log(`Total products: ${purchasedProducts.length}`);
-  console.log(`Successfully updated: ${successCount}`);
-  console.log(`Failed to update: ${failureCount}`);
-  
-  if (failureCount > 0) {
-    console.log('Failed updates:', updateResults.filter(r => !r.success));
-  }
   
   return {
     totalProducts: purchasedProducts.length,
@@ -718,7 +686,38 @@ export const createOrderRecord = async (orderData, userId) => {
     const result = await response.json();
     return result;
   } catch (error) {
-    console.error('Error creating order record:', error);
+    throw error;
+  }
+};
+
+// Function to update user-bag with COD order data
+export const updateUserBagWithCOD = async (userBagDocumentId, codOrderData) => {
+  try {
+    // First, fetch the current user-bag to get existing COD orders
+    const currentBagResponse = await fetchDataFromApi(`/api/user-bags/${userBagDocumentId}?populate=*`);
+    
+    if (!currentBagResponse || !currentBagResponse.data) {
+      throw new Error(`User bag with documentId ${userBagDocumentId} not found`);
+    }
+
+    const currentBag = currentBagResponse.data;
+    const existingCodOrders = currentBag.cod || [];
+    
+    // Add the new COD order to the existing array
+    const updatedCodOrders = [...existingCodOrders, codOrderData];
+
+    // Update the user-bag with the new cod data
+    const updatePayload = {
+      data: {
+        cod: updatedCodOrders
+      }
+    };
+
+    const updateResponse = await updateData(`/api/user-bags/${userBagDocumentId}`, updatePayload);
+    
+    return updateResponse;
+    
+  } catch (error) {
     throw error;
   }
 };

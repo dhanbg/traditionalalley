@@ -93,8 +93,26 @@ const OrderManagement = () => {
     const allPayments = [];
     
     sortedUserBags.forEach(userBag => {
-      if (userBag && userBag.user_orders?.payments) {
-        userBag.user_orders.payments.forEach((payment, index) => {
+      // Support both direct fields and Strapi v4 attributes shape
+      const userOrders = userBag?.user_orders || userBag?.attributes?.user_orders;
+      const paymentsRaw = userOrders?.payments;
+
+      if (Array.isArray(paymentsRaw)) {
+        // Sort payments within each bag by latest timestamp/createdAt
+        const paymentsSorted = [...paymentsRaw].sort((a, b) => {
+          const dateA = new Date(
+            a.timestamp || a.createdAt || userBag.attributes?.createdAt || userBag.createdAt || 0
+          );
+          const dateB = new Date(
+            b.timestamp || b.createdAt || userBag.attributes?.createdAt || userBag.createdAt || 0
+          );
+          return dateB - dateA; // latest first
+        });
+
+        // Limit to latest 10 payments per bag
+        const paymentsLimited = paymentsSorted.slice(0, 10);
+
+        paymentsLimited.forEach((payment, index) => {
           const status = getPaymentStatus(payment, userBag);
           allPayments.push({
             ...payment,
@@ -117,15 +135,21 @@ const OrderManagement = () => {
     
     // Sort payments by their individual timestamps (latest first)
     allPayments.sort((a, b) => {
-      const dateA = new Date(a.timestamp || a.createdAt || a.userBag.attributes?.createdAt || 0);
-      const dateB = new Date(b.timestamp || b.createdAt || b.userBag.attributes?.createdAt || 0);
+      const dateA = new Date(
+        a.timestamp || a.createdAt || a.userBag.attributes?.createdAt || a.userBag.createdAt || 0
+      );
+      const dateB = new Date(
+        b.timestamp || b.createdAt || b.userBag.attributes?.createdAt || b.userBag.createdAt || 0
+      );
       console.log(`Comparing ${a.orderData?.receiver_details?.fullName} (${dateA.toISOString()}) vs ${b.orderData?.receiver_details?.fullName} (${dateB.toISOString()})`);
       return dateB - dateA;
     });
     
     console.log('\n=== FINAL SORTED ORDER ===');
     allPayments.forEach((payment, index) => {
-      const sortDate = new Date(payment.timestamp || payment.createdAt || payment.userBag.attributes?.createdAt || 0);
+      const sortDate = new Date(
+        payment.timestamp || payment.createdAt || payment.userBag.attributes?.createdAt || payment.userBag.createdAt || 0
+      );
       console.log(`${index + 1}. ${payment.orderData?.receiver_details?.fullName} - ${sortDate.toISOString()}`);
     });
     
@@ -195,8 +219,8 @@ const OrderManagement = () => {
   const fetchUserBags = async () => {
     setLoadingUserBags(true);
     try {
-      // Fetch latest 1000 user-bags sorted by updatedAt (most recently updated first)
-      const response = await axios.get('/api/user-bags?pagination[pageSize]=1000&populate=*&sort=updatedAt:desc');
+      // Fetch latest 100 user-bags sorted by updatedAt (most recently updated first)
+      const response = await axios.get('/api/user-bags?pagination[pageSize]=100&populate=*&sort=updatedAt:desc');
       if (response.data && response.data.data) {
         setUserBags(response.data.data); 
       }
@@ -701,6 +725,7 @@ const OrderManagement = () => {
         `Name: ${customerDetails.fullName || 'N/A'}`,
         `Email: ${customerDetails.email || 'N/A'}`,
         `Phone: ${customerDetails.countryCode || ''}${customerDetails.phone || 'N/A'}`.replace(/^\+?/, '+'),
+        `Height: ${customerDetails.height || 'N/A'}`,
         `Address: ${address.addressLine1 || 'N/A'}`,
         `City: ${address.cityName || 'N/A'}`,
         `Postal Code: ${address.postalCode || 'N/A'}`,
@@ -1078,6 +1103,7 @@ const OrderManagement = () => {
          `Name: ${customerDetails.fullName || 'N/A'}`,
          `Email: ${customerDetails.email || 'N/A'}`,
          `Phone: ${customerDetails.countryCode || ''}${customerDetails.phone || 'N/A'}`.replace(/^\+?/, '+'),
+         `Height: ${customerDetails.height || 'N/A'}`,
          `Address: ${address.addressLine1 || 'N/A'}`,
          `City: ${address.cityName || 'N/A'}`,
          `Postal Code: ${address.postalCode || 'N/A'}`,
@@ -1503,36 +1529,37 @@ const OrderManagement = () => {
                 {/* Divider */}
                 <div className="h-6 w-px bg-gray-300 mx-4"></div>
                 
-                {/* Toggle Buttons for Pending and Failed */}
-                <div className="flex space-x-3">
+                {/* Pending & Failed Tabs */}
+                <div className="-mb-px flex space-x-8 items-center">
                   <button
                     onClick={() => {
-                      if (activeTab !== 'success') handleTabChange('success');
-                      setShowPending(!showPending);
+                      handleTabChange('pending');
+                      setShowPending(false);
+                      setShowFailed(false);
                       setCurrentPage(0);
                     }}
-                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                      showPending
-                        ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                        : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-blue-50 hover:text-blue-600'
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'pending'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    {showPending ? 'Hide' : 'Show'} Pending ({totalPendingCount > 1000 ? `1000/${totalPendingCount}` : tabCounts.pending})
+                    Pending ({tabCounts.pending})
                   </button>
-                  
                   <button
                     onClick={() => {
-                      if (activeTab !== 'success') handleTabChange('success');
-                      setShowFailed(!showFailed);
+                      handleTabChange('failed');
+                      setShowPending(false);
+                      setShowFailed(false);
                       setCurrentPage(0);
                     }}
-                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                      showFailed
-                        ? 'bg-red-100 text-red-700 border border-red-300'
-                        : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-red-50 hover:text-red-600'
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'failed'
+                        ? 'border-red-500 text-red-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    {showFailed ? 'Hide' : 'Show'} Failed ({tabCounts.failed})
+                    Failed ({tabCounts.failed})
                   </button>
                 </div>
               </nav>
@@ -1546,6 +1573,8 @@ const OrderManagement = () => {
                 {showFailed && ' + Failed'}
               </>
             )}
+            {activeTab === 'pending' && 'Pending Orders'}
+            {activeTab === 'failed' && 'Failed Orders'}
             {activeTab === 'shipped' && 'Shipped Orders'}
             (Showing {Math.min(filteredPayments.length - currentPage * ordersPerPage, ordersPerPage)} of {filteredPayments.length} - Page {currentPage + 1})
           </h3>
@@ -1579,11 +1608,14 @@ const OrderManagement = () => {
                             {payment.orderData.products.map((product, index) => (
                               <div key={index} className="mb-1">
                                 <div>Product: {product.title}</div>
-                                <div>Size: {
-                                  product.selectedSize || 
-                                  (product.selectedVariant && product.selectedVariant.size) || 
-                                  'N/A'
-                                }</div>
+                                <div className="flex flex-wrap gap-2">
+                                  <span>Size: {
+                                    product.selectedSize || 
+                                    (product.selectedVariant && product.selectedVariant.size) || 
+                                    'N/A'
+                                  }</span>
+                                  <span>| Height: {payment?.orderData?.receiver_details?.height ?? 'N/A'}</span>
+                                </div>
                                 <div>Product Code: {
                                   product.productDetails?.productCode || 
                                   product.productCode || 

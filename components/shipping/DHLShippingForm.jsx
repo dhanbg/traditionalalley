@@ -66,7 +66,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
       phone: '9844594187',
       countryCode: '+977'
     },
-    recipient: { companyName: '', fullName: '', email: '', phone: '', countryCode: '' },
+    recipient: { companyName: '', fullName: '', email: '', phone: '', countryCode: '', height: '' },
     packages: initialPackages.length > 0 ? initialPackages : [{ weight: 1, length: 10, width: 10, height: 10, description: '', declaredValue: 0, quantity: 1, commodityCode: '', manufacturingCountryCode: 'NP' }]
   });
 
@@ -153,6 +153,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         email: formData.recipient.email || "",
         phone: formData.recipient.phone || "",
         countryCode: getActualCountryCode(formData.recipient.countryCode) || "",
+        height: formData.recipient.height || "",
         address: {
           addressLine1: formData.destinationAddress.addressLine1 || "",
           cityName: formData.destinationAddress.cityName || "",
@@ -1453,43 +1454,41 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
               </div>
             </div>
 
-            {formData.destinationAddress.countryCode !== 'NP' && (
-              <div>
-                    <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      fontSize: '0.875rem',
-                      fontWeight: 600,
-                      color: '#374151',
-                      marginBottom: '0.5rem'
-                    }}>
-                      <span style={{ marginRight: '0.5rem' }}>🏢</span>
-                      Company (Optional)
-                    </label>
-                <input
-                  type="text"
-                  placeholder="Company name"
-                  value={formData.recipient.companyName}
-                  onChange={(e) => handleInputChange('recipient', 'companyName', e.target.value)}
-                  style={{
-                    width: '100%',
-                    fontSize: isMobile ? '1rem' : '1rem',
-                    minWidth: 0,
-                    padding: '0.5rem 0.75rem',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '0.75rem',
-                    fontSize: '1rem',
-                    background: 'white',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                    transition: 'all 0.2s',
-                    lineHeight: '42px',
-                    minHeight: '42px'
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                />
-                  </div>
-            )}
+            <div>
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: '#374151',
+                marginBottom: '0.5rem'
+              }}>
+                <span style={{ marginRight: '0.5rem' }}>📏</span>
+                Custom Height
+              </label>
+              <input
+                 type="text"
+                 placeholder="Enter your height (e.g., 5'6&quot;, 170cm)"
+                 value={formData.recipient.height}
+                 onChange={(e) => handleInputChange('recipient', 'height', e.target.value)}
+                style={{
+                  width: '100%',
+                  fontSize: isMobile ? '1rem' : '1rem',
+                  minWidth: 0,
+                  padding: '0.5rem 0.75rem',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '0.75rem',
+                  fontSize: '1rem',
+                  background: 'white',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                  transition: 'all 0.2s',
+                  lineHeight: '42px',
+                  minHeight: '42px'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#eab308'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+              />
+            </div>
                 </div>
                 </div>
                 </div>
