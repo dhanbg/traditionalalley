@@ -766,10 +766,10 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
     const cityValid = destinationAddress.cityName && destinationAddress.cityName.trim() !== '';
     const actualCountryCode = getActualCountryCode(destinationAddress.countryCode);
     const serviceTypeValid = actualCountryCode === 'NP' || (serviceType && serviceType.trim() !== '');
-    // Require custom height inches input to proceed
+    // Require custom height inches input only when "Yes" is selected
     const heightValid = customHeightOption === 'Yes'
-      ? (formData.recipient.height && String(formData.recipient.height).trim() !== '' && Number(formData.recipient.height) > 0)
-      : false;
+      ? (formData.recipient.height && String(formData.recipient.height).trim() !== '')
+      : true;
 
     return countryValid && cityValid && serviceTypeValid && heightValid;
   };
@@ -1495,9 +1495,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
               </div>
               {customHeightOption === 'Yes' ? (
                 <input
-                  type="number"
-                  inputMode="numeric"
-                  min="0"
+                  type="text"
                   placeholder="Enter height in inches"
                   value={formData.recipient.height === 'No' ? '' : formData.recipient.height}
                   onChange={(e) => handleInputChange('recipient', 'height', e.target.value)}
@@ -1519,20 +1517,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                   onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                   required
                 />
-              ) : (
-                <div style={{
-                  width: '100%',
-                  padding: '0.5rem 0.75rem',
-                  border: '2px solid #e5e7eb',
-                  borderRadius: '0.75rem',
-                  background: '#f9fafb',
-                  color: '#374151',
-                  lineHeight: '42px',
-                  minHeight: '42px'
-                }}>
-                  No
-                </div>
-              )}
+              ) : null}
             </div>
                 </div>
                 </div>

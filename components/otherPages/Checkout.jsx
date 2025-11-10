@@ -776,9 +776,18 @@ export default function Checkout() {
     if (!user?.id) return null;
     
     try {
-      const currentUserData = await fetchDataFromApi(
-        `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag`
-      );
+      // Use Next.js server route to avoid client-side token/CORS issues
+      const res = await fetch(`/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag`, {
+        method: 'GET',
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error('Failed to fetch user-data via server route:', res.status, text);
+        return null;
+      }
+
+      const currentUserData = await res.json();
 
       if (!currentUserData?.data || currentUserData.data.length === 0) {
         console.error("User data not found");
@@ -1922,9 +1931,9 @@ export default function Checkout() {
                         }}
                       >
                         {isProcessingOrder ? (
-                          <span>Processing Order...</span>
+                          <span className="text">Processing Order...</span>
                         ) : (
-                          <span>Place Cash on Delivery Order</span>
+                          <span className="text">Place Order</span>
                         )}
                       </button>
 

@@ -664,11 +664,11 @@ export const updateProductStock = async (purchasedProducts) => {
 // Create order record in Strapi user_orders collection
 export const createOrderRecord = async (orderData, userId) => {
   try {
-    const response = await fetch(`${API_URL}/api/user-orders`, {
+    // Use Next.js server proxy route to avoid client-side token and CORS issues
+    const response = await fetch(`/api/user-orders`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${STRAPI_API_TOKEN}`
       },
       body: JSON.stringify({
         data: {
@@ -680,7 +680,8 @@ export const createOrderRecord = async (orderData, userId) => {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const text = await response.text();
+      throw new Error(`Order record creation failed: ${response.status} ${text}`);
     }
 
     const result = await response.json();
@@ -693,31 +694,63 @@ export const createOrderRecord = async (orderData, userId) => {
 // Function to update user-bag with COD order data
 export const updateUserBagWithCOD = async (userBagDocumentId, codOrderData) => {
   try {
-    // First, fetch the current user-bag to get existing COD orders
-    const currentBagResponse = await fetchDataFromApi(`/api/user-bags/${userBagDocumentId}?populate=*`);
-    
+    // Prefer Next.js server routes to avoid CORS and client-side token issues in production
+    const currentBagRes = await fetch(`/api/user-bags/${userBagDocumentId}?populate=*`, {
+      method: 'GET',
+    });
+
+    if (!currentBagRes.ok) {
+      const text = await currentBagRes.text();
+      throw new Error(`Failed to fetch user bag via server route: ${currentBagRes.status} ${text}`);
+    }
+
+    const currentBagResponse = await currentBagRes.json();
     if (!currentBagResponse || !currentBagResponse.data) {
       throw new Error(`User bag with documentId ${userBagDocumentId} not found`);
     }
 
     const currentBag = currentBagResponse.data;
     const existingCodOrders = currentBag.cod || [];
-    
-    // Add the new COD order to the existing array
+
     const updatedCodOrders = [...existingCodOrders, codOrderData];
 
-    // Update the user-bag with the new cod data
     const updatePayload = {
       data: {
-        cod: updatedCodOrders
-      }
+        cod: updatedCodOrders,
+      },
     };
 
-    const updateResponse = await updateData(`/api/user-bags/${userBagDocumentId}`, updatePayload);
-    
+    // Update through Next.js API route to leverage server-side auth
+    const updateRes = await fetch(`/api/user-bags/${userBagDocumentId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatePayload),
+    });
+
+    if (!updateRes.ok) {
+      const text = await updateRes.text();
+      throw new Error(`Failed to update user bag via server route: ${updateRes.status} ${text}`);
+    }
+
+    const updateResponse = await updateRes.json();
     return updateResponse;
-    
   } catch (error) {
-    throw error;
+    // If server route fails unexpectedly, attempt direct Strapi update as a fallback
+    try {
+      const currentBagResponse = await fetchDataFromApi(`/api/user-bags/${userBagDocumentId}?populate=*`);
+      if (!currentBagResponse || !currentBagResponse.data) {
+        throw new Error(`User bag with documentId ${userBagDocumentId} not found`);
+      }
+
+      const currentBag = currentBagResponse.data;
+      const existingCodOrders = currentBag.cod || [];
+      const updatedCodOrders = [...existingCodOrders, codOrderData];
+
+      const updatePayload = { data: { cod: updatedCodOrders } };
+      const updateResponse = await updateData(`/api/user-bags/${userBagDocumentId}`, updatePayload);
+      return updateResponse;
+    } catch (fallbackError) {
+      throw fallbackError;
+    }
   }
 };
