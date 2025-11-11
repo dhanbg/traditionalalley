@@ -33,6 +33,22 @@ export default function TopPicks({ parentClass = "flat-spacing-3 pt-5 pb-2" }) {
           setError("No active top picks found");
           setProducts([]);
         }
+
+        // Fetch Top Picks metadata (heading/subheading) from Strapi
+        try {
+          const metaResponse = await fetchDataFromApi('/api/top-picks?fields=heading,subheading,isActive');
+          if (metaResponse?.data && metaResponse.data.length > 0) {
+            const meta = metaResponse.data[0];
+            if (meta?.isActive !== false) {
+              setTopPicksData({ heading: meta.heading, subheading: meta.subheading });
+            } else {
+              setTopPicksData(null);
+            }
+          }
+        } catch (metaErr) {
+          // Non-blocking: if metadata fails, keep default heading
+          console.warn('Top Picks heading fetch failed:', metaErr);
+        }
         
         setLoading(false);
       } catch (error) {

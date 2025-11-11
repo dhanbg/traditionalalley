@@ -6,6 +6,14 @@ import { API_URL } from "@/utils/urls";
 export default function SizeGuideModal({ isOpen, onClose }) {
   const modalRef = useRef(null);
   const [enlargedImage, setEnlargedImage] = useState(false);
+  const [gender, setGender] = useState("women");
+
+  // Ensure enlarged image overlay is closed when switching to men
+  useEffect(() => {
+    if (gender === "men" && enlargedImage) {
+      setEnlargedImage(false);
+    }
+  }, [gender, enlargedImage]);
 
   // Close modal when clicking outside
   useEffect(() => {
@@ -119,165 +127,382 @@ export default function SizeGuideModal({ isOpen, onClose }) {
               overflowY: "auto"
             }}
           >
-            <div className="size-guide-content">
-              {/* Size measurement diagram */}
-              <div style={{ 
-                textAlign: "center", 
-                marginBottom: "25px", 
-                padding: "10px",
-                backgroundColor: "#f9f9f9",
-                borderRadius: "8px"
-              }}>
-                <div 
-                  style={{ 
-                    position: "relative", 
-                    width: "100%", 
-                    height: "300px", 
-                    marginBottom: "10px",
-                    cursor: "pointer",
-                    transition: "transform 0.3s ease"
-                  }}
-                  onClick={() => setEnlargedImage(true)}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.transform = "scale(1.02)";
-                    e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)";
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.transform = "scale(1)";
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
-                >
-                  <Image 
-                    src={sizeChartImageUrl}
-                    alt="Body Measurement Diagram"
-                    fill
-                    style={{ 
-                      objectFit: "contain"
-                    }}
-                    onError={(e) => {
-                      // Fallback to a placeholder if image fails to load
-                      e.target.src = "/images/placeholder.png";
-                    }}
-                  />
-                  <div 
-                    style={{
-                      position: "absolute",
-                      bottom: "10px",
-                      right: "10px",
-                      backgroundColor: "rgba(0,0,0,0.5)",
-                      color: "white",
-                      padding: "5px 10px",
-                      borderRadius: "4px",
-                      fontSize: "12px"
-                    }}
-                  >
-                    Click to enlarge
-                  </div>
-                </div>
-                <p style={{ 
-                  fontSize: "14px", 
-                  fontStyle: "italic", 
-                  color: "#666",
-                  margin: "0"
-                }}>
-                  Reference body measurement guide
-                </p>
-              </div>
-
-              <table
+            {/* Gender toggle */}
+            <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+              <button
+                type="button"
+                onClick={() => setGender("women")}
                 style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  textAlign: "center",
-                  fontFamily: "Arial, sans-serif"
+                  padding: "6px 12px",
+                  borderRadius: "20px",
+                  border: gender === "women" ? "1px solid #181818" : "1px solid #ddd",
+                  backgroundColor: gender === "women" ? "#181818" : "#fff",
+                  color: gender === "women" ? "#fff" : "#181818",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  transition: "all 0.2s ease"
+                }}
+                onMouseOver={(e) => {
+                  if (gender !== "women") e.currentTarget.style.backgroundColor = "#f2f2f2";
+                }}
+                onMouseOut={(e) => {
+                  if (gender !== "women") e.currentTarget.style.backgroundColor = "#fff";
                 }}
               >
-                <thead>
-                  <tr
-                    style={{
-                      backgroundColor: "#f8f8f8",
-                      borderBottom: "2px solid #ddd"
+                Women
+              </button>
+              <button
+                type="button"
+                onClick={() => setGender("men")}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: "20px",
+                  border: gender === "men" ? "1px solid #181818" : "1px solid #ddd",
+                  backgroundColor: gender === "men" ? "#181818" : "#fff",
+                  color: gender === "men" ? "#fff" : "#181818",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  transition: "all 0.2s ease"
+                }}
+                onMouseOver={(e) => {
+                  if (gender !== "men") e.currentTarget.style.backgroundColor = "#f2f2f2";
+                }}
+                onMouseOut={(e) => {
+                  if (gender !== "men") e.currentTarget.style.backgroundColor = "#fff";
+                }}
+              >
+                Men
+              </button>
+            </div>
+
+            <div className="size-guide-content">
+              {/* Measurement diagram: visible for Women only */}
+              {gender === "women" && (
+                <div style={{ 
+                  textAlign: "center", 
+                  marginBottom: "25px", 
+                  padding: "10px",
+                  backgroundColor: "#f9f9f9",
+                  borderRadius: "8px"
+                }}>
+                  <div 
+                    style={{ 
+                      position: "relative", 
+                      width: "100%", 
+                      height: "300px", 
+                      marginBottom: "10px",
+                      cursor: "pointer",
+                      transition: "transform 0.3s ease"
+                    }}
+                    onClick={() => setEnlargedImage(true)}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.transform = "scale(1.02)";
+                      e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)";
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.transform = "scale(1)";
+                      e.currentTarget.style.boxShadow = "none";
                     }}
                   >
-                    <th style={{ padding: "12px", fontWeight: "600" }}>Size</th>
-                    <th style={{ padding: "12px", fontWeight: "600" }}>US</th>
-                    <th style={{ padding: "12px", fontWeight: "600" }}>Bust</th>
-                    <th style={{ padding: "12px", fontWeight: "600" }}>Waist</th>
-                    <th style={{ padding: "12px", fontWeight: "600" }}>Low Hip</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "12px", fontWeight: "500" }}>XS</td>
-                    <td style={{ padding: "12px" }}>2</td>
-                    <td style={{ padding: "12px" }}>32</td>
-                    <td style={{ padding: "12px" }}>24 - 25</td>
-                    <td style={{ padding: "12px" }}>33 - 34</td>
-                  </tr>
-                  <tr style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "12px", fontWeight: "500" }}>S</td>
-                    <td style={{ padding: "12px" }}>4</td>
-                    <td style={{ padding: "12px" }}>34 - 35</td>
-                    <td style={{ padding: "12px" }}>26 - 27</td>
-                    <td style={{ padding: "12px" }}>35 - 36</td>
-                  </tr>
-                  <tr style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "12px", fontWeight: "500" }}>M</td>
-                    <td style={{ padding: "12px" }}>6</td>
-                    <td style={{ padding: "12px" }}>36 - 37</td>
-                    <td style={{ padding: "12px" }}>28 - 29</td>
-                    <td style={{ padding: "12px" }}>38 - 40</td>
-                  </tr>
-                  <tr style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "12px", fontWeight: "500" }}>L</td>
-                    <td style={{ padding: "12px" }}>8</td>
-                    <td style={{ padding: "12px" }}>38 - 40</td>
-                    <td style={{ padding: "12px" }}>30 - 31</td>
-                    <td style={{ padding: "12px" }}>42 - 44</td>
-                  </tr>
-                  <tr style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "12px", fontWeight: "500" }}>XL</td>
-                    <td style={{ padding: "12px" }}>10</td>
-                    <td style={{ padding: "12px" }}>40 - 41</td>
-                    <td style={{ padding: "12px" }}>32 - 33</td>
-                    <td style={{ padding: "12px" }}>45 - 47</td>
-                  </tr>
-                  <tr style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "12px", fontWeight: "500" }}>XXL</td>
-                    <td style={{ padding: "12px" }}>12</td>
-                    <td style={{ padding: "12px" }}>42 - 43</td>
-                    <td style={{ padding: "12px" }}>34 - 35</td>
-                    <td style={{ padding: "12px" }}>48 - 50</td>
-                  </tr>
-                </tbody>
-              </table>
-              
-              <div 
-                style={{ 
-                  marginTop: "20px", 
-                  fontSize: "14px",
-                  color: "#666" 
-                }}
-              >
-                <p style={{ marginBottom: "10px" }}>
-                  <strong>How to Measure:</strong>
-                </p>
-                <ul style={{ paddingLeft: "20px", lineHeight: "1.5" }}>
-                  <li><strong>Bust:</strong> Measure around the fullest part of your bust, keeping the tape parallel to the floor.</li>
-                  <li><strong>Waist:</strong> Measure around the narrowest part of your natural waist.</li>
-                  <li><strong>Low Hip:</strong> Measure around the fullest part of your hips, about 8" below your natural waist.</li>
-                </ul>
-                <p style={{ marginTop: "15px", fontStyle: "italic" }}>
-                  All measurements are in inches. For the best fit, we recommend taking your measurements over your undergarments.
-                </p>
-              </div>
+                    <Image 
+                      src={sizeChartImageUrl}
+                      alt="Body Measurement Diagram"
+                      fill
+                      style={{ 
+                        objectFit: "contain"
+                      }}
+                      onError={(e) => {
+                        // Fallback to a placeholder if image fails to load
+                        e.target.src = "/images/placeholder.png";
+                      }}
+                    />
+                    <div 
+                      style={{
+                        position: "absolute",
+                        bottom: "10px",
+                        right: "10px",
+                        backgroundColor: "rgba(0,0,0,0.5)",
+                        color: "white",
+                        padding: "5px 10px",
+                        borderRadius: "4px",
+                        fontSize: "12px"
+                      }}
+                    >
+                      Click to enlarge
+                    </div>
+                  </div>
+                  <p style={{ 
+                    fontSize: "14px", 
+                    fontStyle: "italic", 
+                    color: "#666",
+                    margin: "0"
+                  }}>
+                    Reference body measurement guide
+                  </p>
+                </div>
+              )}
+
+              {gender === "women" ? (
+                <>
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      textAlign: "center",
+                      fontFamily: "Arial, sans-serif"
+                    }}
+                  >
+                    <thead>
+                      <tr
+                        style={{
+                          backgroundColor: "#f8f8f8",
+                          borderBottom: "2px solid #ddd"
+                        }}
+                      >
+                        <th style={{ padding: "12px", fontWeight: "600" }}>Size</th>
+                        <th style={{ padding: "12px", fontWeight: "600" }}>US</th>
+                        <th style={{ padding: "12px", fontWeight: "600" }}>Bust</th>
+                        <th style={{ padding: "12px", fontWeight: "600" }}>Waist</th>
+                        <th style={{ padding: "12px", fontWeight: "600" }}>Low Hip</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: "500" }}>XS</td>
+                        <td style={{ padding: "12px" }}>2</td>
+                        <td style={{ padding: "12px" }}>32</td>
+                        <td style={{ padding: "12px" }}>24 - 25</td>
+                        <td style={{ padding: "12px" }}>33 - 34</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: "500" }}>S</td>
+                        <td style={{ padding: "12px" }}>4</td>
+                        <td style={{ padding: "12px" }}>34 - 35</td>
+                        <td style={{ padding: "12px" }}>26 - 27</td>
+                        <td style={{ padding: "12px" }}>35 - 36</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: "500" }}>M</td>
+                        <td style={{ padding: "12px" }}>6</td>
+                        <td style={{ padding: "12px" }}>36 - 37</td>
+                        <td style={{ padding: "12px" }}>28 - 29</td>
+                        <td style={{ padding: "12px" }}>38 - 40</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: "500" }}>L</td>
+                        <td style={{ padding: "12px" }}>8</td>
+                        <td style={{ padding: "12px" }}>38 - 40</td>
+                        <td style={{ padding: "12px" }}>30 - 31</td>
+                        <td style={{ padding: "12px" }}>42 - 44</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: "500" }}>XL</td>
+                        <td style={{ padding: "12px" }}>10</td>
+                        <td style={{ padding: "12px" }}>40 - 41</td>
+                        <td style={{ padding: "12px" }}>32 - 33</td>
+                        <td style={{ padding: "12px" }}>45 - 47</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: "500" }}>XXL</td>
+                        <td style={{ padding: "12px" }}>12</td>
+                        <td style={{ padding: "12px" }}>42 - 43</td>
+                        <td style={{ padding: "12px" }}>34 - 35</td>
+                        <td style={{ padding: "12px" }}>48 - 50</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <div 
+                    style={{ 
+                      marginTop: "20px", 
+                      fontSize: "14px",
+                      color: "#666" 
+                    }}
+                  >
+                    <p style={{ marginBottom: "10px" }}>
+                      <strong>How to Measure:</strong>
+                    </p>
+                    <ul style={{ paddingLeft: "20px", lineHeight: "1.5" }}>
+                      <li><strong>Bust:</strong> Measure around the fullest part of your bust, keeping the tape parallel to the floor.</li>
+                      <li><strong>Waist:</strong> Measure around the narrowest part of your natural waist.</li>
+                      <li><strong>Low Hip:</strong> Measure around the fullest part of your hips, about 8" below your natural waist.</li>
+                    </ul>
+                    <p style={{ marginTop: "15px", fontStyle: "italic" }}>
+                      All measurements are in inches. For the best fit, we recommend taking your measurements over your undergarments.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h6 style={{ marginBottom: "10px", fontWeight: 600 }}>Men's Slim Fit (Top)</h6>
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      textAlign: "center",
+                      fontFamily: "Arial, sans-serif",
+                      marginBottom: "16px"
+                    }}
+                  >
+                    <thead>
+                      <tr
+                        style={{
+                          backgroundColor: "#f8f8f8",
+                          borderBottom: "2px solid #ddd"
+                        }}
+                      >
+                        <th style={{ padding: "12px", fontWeight: "600" }}>Size</th>
+                        <th style={{ padding: "12px", fontWeight: "600" }}>Chest</th>
+                        <th style={{ padding: "12px", fontWeight: "600" }}>Waist</th>
+                        <th style={{ padding: "12px", fontWeight: "600" }}>Shoulder</th>
+                        <th style={{ padding: "12px", fontWeight: "600" }}>Sleeve Length</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: 500 }}>S</td>
+                        <td style={{ padding: "12px" }}>35-37</td>
+                        <td style={{ padding: "12px" }}>29-32</td>
+                        <td style={{ padding: "12px" }}>17</td>
+                        <td style={{ padding: "12px" }}>24.5</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: 500 }}>M</td>
+                        <td style={{ padding: "12px" }}>37-39</td>
+                        <td style={{ padding: "12px" }}>37-40</td>
+                        <td style={{ padding: "12px" }}>17.5</td>
+                        <td style={{ padding: "12px" }}>24.75-25</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: 500 }}>L</td>
+                        <td style={{ padding: "12px" }}>40-42</td>
+                        <td style={{ padding: "12px" }}>35-38</td>
+                        <td style={{ padding: "12px" }}>18.5</td>
+                        <td style={{ padding: "12px" }}>25-25.25</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: 500 }}>XL</td>
+                        <td style={{ padding: "12px" }}>42-44</td>
+                        <td style={{ padding: "12px" }}>38-42</td>
+                        <td style={{ padding: "12px" }}>19.5</td>
+                        <td style={{ padding: "12px" }}>25.5-25.75</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: 500 }}>2XL</td>
+                        <td style={{ padding: "12px" }}>44-46</td>
+                        <td style={{ padding: "12px" }}>42-45</td>
+                        <td style={{ padding: "12px" }}>20.5</td>
+                        <td style={{ padding: "12px" }}>25.75-26</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: 500 }}>3XL</td>
+                        <td style={{ padding: "12px" }}>46-48</td>
+                        <td style={{ padding: "12px" }}>45-47</td>
+                        <td style={{ padding: "12px" }}>21</td>
+                        <td style={{ padding: "12px" }}>26</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: 500 }}>4XL</td>
+                        <td style={{ padding: "12px" }}>48-51</td>
+                        <td style={{ padding: "12px" }}>47-50</td>
+                        <td style={{ padding: "12px" }}>22</td>
+                        <td style={{ padding: "12px" }}>26.5</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <h6 style={{ marginBottom: "10px", fontWeight: 600 }}>Men's Pants (Jeans)</h6>
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      textAlign: "center",
+                      fontFamily: "Arial, sans-serif"
+                    }}
+                  >
+                    <thead>
+                      <tr
+                        style={{
+                          backgroundColor: "#f8f8f8",
+                          borderBottom: "2px solid #ddd"
+                        }}
+                      >
+                        <th style={{ padding: "12px", fontWeight: "600" }}>Size</th>
+                        <th style={{ padding: "12px", fontWeight: "600" }}>Waist (inches)</th>
+                        <th style={{ padding: "12px", fontWeight: "600" }}>Hip</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: 500 }}>S</td>
+                        <td style={{ padding: "12px" }}>28-30</td>
+                        <td style={{ padding: "12px" }}>—</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: 500 }}>M</td>
+                        <td style={{ padding: "12px" }}>31.5-32</td>
+                        <td style={{ padding: "12px" }}>40</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: 500 }}>L</td>
+                        <td style={{ padding: "12px" }}>33.5-34</td>
+                        <td style={{ padding: "12px" }}>41</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: 500 }}>XL</td>
+                        <td style={{ padding: "12px" }}>34.5-36</td>
+                        <td style={{ padding: "12px" }}>42</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: 500 }}>2XL</td>
+                        <td style={{ padding: "12px" }}>36.5-38</td>
+                        <td style={{ padding: "12px" }}>44</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: 500 }}>3XL</td>
+                        <td style={{ padding: "12px" }}>38.5-40</td>
+                        <td style={{ padding: "12px" }}>46</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", fontWeight: 500 }}>4XL</td>
+                        <td style={{ padding: "12px" }}>40.5-42</td>
+                        <td style={{ padding: "12px" }}>48.5</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <div 
+                    style={{ 
+                      marginTop: "20px", 
+                      fontSize: "14px",
+                      color: "#666" 
+                    }}
+                  >
+                    <p style={{ marginBottom: "10px" }}>
+                      <strong>How to Measure (Men):</strong>
+                    </p>
+                    <ul style={{ paddingLeft: "20px", lineHeight: "1.5" }}>
+                      <li><strong>Chest:</strong> Measure around the fullest part of the chest.</li>
+                      <li><strong>Waist:</strong> Measure around the natural waistline.</li>
+                      <li><strong>Shoulder:</strong> Measure from shoulder tip to shoulder tip across the back.</li>
+                      <li><strong>Sleeve Length:</strong> Measure from shoulder seam to wrist.</li>
+                      <li><strong>Hip (Jeans):</strong> Measure around the fullest part of the hips.</li>
+                    </ul>
+                    <p style={{ marginTop: "15px", fontStyle: "italic" }}>
+                      All measurements are in inches.
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Enlarged image overlay */}
-      {enlargedImage && (
+      {/* Enlarged image overlay (Women only) */}
+      {gender === "women" && enlargedImage && (
         <div 
           className="enlarged-image-overlay"
           style={{

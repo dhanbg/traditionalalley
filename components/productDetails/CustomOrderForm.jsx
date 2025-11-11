@@ -844,7 +844,7 @@ export default function CustomOrderForm({ isOpen, onClose, product }) {
                   >
                     Cancel
                   </button>
-                  {!showWhatsappLink && (
+                  {!showWhatsAppLink && (
                     <button
                       type="submit"
                       style={{
