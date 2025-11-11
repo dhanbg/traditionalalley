@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import emailjs from "@emailjs/browser";
 import { footerLinks, socialLinks } from "@/data/footerLinks";
+import FooterFaq from "@/components/footers/FooterFaq";
 import { usePathname } from "next/navigation";
 
 export default function Footer1({
@@ -83,6 +84,9 @@ export default function Footer1({
         <div className={`footer-wrap ${!border ? "border-0" : ""}`}>
           <div className="footer-body">
             <div className="container">
+              {/* Footer FAQ Section placed above footer links */}
+              <FooterFaq />
+              <div className="footer-faqs-spacer" aria-hidden="true" />
               <div className="row">
                 <div className="col-lg-4">
                   <div className="footer-infor">

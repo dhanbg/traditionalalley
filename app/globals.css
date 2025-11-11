@@ -1430,3 +1430,70 @@ img {
 }
 
 /* Spinner animations removed - circular loading indicator disabled */
+
+/* Footer FAQ overrides */
+.footer-faqs {
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+.footer-faqs + .row {
+  margin-top: 24px !important;
+}
+.footer-faqs-spacer {
+  height: 24px;
+}
+.footer-faqs .accordion-product-wrap.style-faqs .accordion-product-item {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.footer-faqs .accordion-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.footer-faqs .accordion-title h6 {
+  margin: 0;
+  font-size: 16px;
+}
+@media (min-width: 992px) {
+  .footer-faqs {
+    margin-bottom: 40px;
+  }
+  .footer-faqs + .row {
+    margin-top: 40px !important;
+  }
+  .footer-faqs-spacer {
+    height: 40px;
+  }
+  .footer-faqs .accordion-title h6 {
+    font-size: 20px;
+  }
+  .footer-faqs .accordion-faqs-content p {
+    font-size: 16px;
+  }
+}
+
+/* Replace plus icon with dropdown caret specific to footer FAQ */
+.footer-faqs .btn-open-sub {
+  position: relative;
+  width: 0;
+  height: 0;
+}
+.footer-faqs .btn-open-sub::before,
+.footer-faqs .btn-open-sub::after {
+  content: "";
+}
+.footer-faqs .btn-open-sub::after {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 7px solid var(--main);
+  transition: transform 0.2s ease;
+}
+.footer-faqs .accordion-title:not(.collapsed) .btn-open-sub::after {
+  transform: rotate(180deg);
+}
