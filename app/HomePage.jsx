@@ -117,7 +117,13 @@ function PaymentMessageHandler() {
   );
 }
 
-export default function Home() {
+export default function Home({
+  initialHeroSlidesRaw = [],
+  initialOfferData = null,
+  initialTopPicks = [],
+  initialTopPicksMeta = null,
+  initialInstagramPosts = []
+}) {
   return (
     <>
       {/* Customization Popup */}
@@ -131,14 +137,14 @@ export default function Home() {
       {/* <Topbar /> */}
       <Header1 />
       <MarqueeSection />
-      <Hero />
+      <Hero initialSlidesRaw={initialHeroSlidesRaw} />
       {/* <Collections /> */}
       {/* <Products /> */}
       {/* <BannerCollection /> */}
-      <BannerCountdown />
+      <BannerCountdown initialOfferData={initialOfferData} />
       {/* <Testimonials3 /> */}
-      <TopPicks />
-      <InstagramVideoCards />
+      <TopPicks initialProducts={initialTopPicks} initialMeta={initialTopPicksMeta} />
+      <InstagramVideoCards initialPosts={initialInstagramPosts} />
       {/* <Features /> */}
       {/* <Blogs /> */}
       <Footer1 hasPaddingBottom />

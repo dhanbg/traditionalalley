@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-export default function BannerCountdown() {
+export default function BannerCountdown({ initialOfferData = null }) {
   
   // State declarations
   const [offerData, setOfferData] = useState(null);
@@ -356,17 +356,11 @@ export default function BannerCountdown() {
       try {
         const endpoint = '/api/offers?populate=*';
         const response = await fetch(endpoint);
-        
         if (!response.ok) {
           throw new Error(`Failed to fetch offer data: ${response.status} ${response.statusText}`);
         }
-        
         const data = await response.json();
-        
-        // Get the first offer (regardless of isActive status)
         const firstOffer = data.data && data.data.length > 0 ? data.data[0] : null;
-        
-        // Always set the first offer so we can check isActive property
         if (firstOffer) {
           setOfferData(firstOffer);
         }
@@ -377,18 +371,21 @@ export default function BannerCountdown() {
       }
     };
 
+    if (initialOfferData) {
+      setOfferData(initialOfferData);
+      setLoading(false);
+      return;
+    }
     fetchOfferData();
-  }, []);
+  }, [initialOfferData]);
 
 
 
   // Get banner images URLs (max 3 images)
   const getBannerImages = () => {
     if (!offerData?.banner_image || offerData.banner_image.length === 0) {
-      return [{
-        url: "/images/banner/img-countdown1.png",
-        alternativeText: "banner"
-      }]; // fallback
+      // No fallback: only return real images from the offer data
+      return [];
     }
     
     // Limit to maximum 3 images
@@ -440,17 +437,8 @@ export default function BannerCountdown() {
 
   // Show loading state
   if (loading) {
-    return (
-      <section className="bg-surface flat-countdown-banner">
-        <div className="container">
-          <div className="row align-items-center">
-            <div className="col-12 text-center">
-              <p>Loading offer...</p>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
+    // Do not render loading placeholders on homepage offers
+    return null;
   }
   
   // Early return if offer exists and is not active
@@ -465,126 +453,8 @@ export default function BannerCountdown() {
 
   // Show error state or fallback to default content
   if (error || !offerData) {
-    
-    // Use fallback images when no offer data
-    const fallbackImages = [{
-      url: "/images/banner/img-countdown1.png",
-      alternativeText: "banner"
-    }];
-    
-    return (
-      <section className="bg-surface" style={{ marginBottom: '60px' }}>
-        <div className={`banner-countdown-responsive ${fallbackImages.length > 2 ? 'three-images' : ''}`}>
-          {fallbackImages.length > 2 ? (
-            // Layout for 3+ images: images on left, content + timer centered on right
-            <>
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <div className="banner-img" style={{ display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'center', maxWidth: '100%', overflow: 'hidden' }}>
-                  {fallbackImages.map((image, index) => (
-                    <div key={index} style={{ flex: 1, display: 'flex', justifyContent: 'center', maxWidth: '300px' }}>
-                      <Image
-                        className="lazyload"
-                        data-src={image.url}
-                        alt={image.alternativeText}
-                        src={image.url}
-                        width={607}
-                        height={655}
-                        style={{ 
-                         width: '100%',
-                         height: '350px',
-                         objectFit: 'cover',
-                         borderRadius: '8px'
-                       }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
-                <div className={`banner-left ${getTextSizeClass()}`}>
-                  <div className="box-title" style={{ marginBottom: '24px' }}>
-                    <h3 className="wow fadeInUp" style={{ marginBottom: '16px', fontSize: '1.8rem', display: 'flex', alignItems: 'center', gap: '15px', justifyContent: 'center', lineHeight: '1.2' }}>
-                       <div className="discount-badge" style={{
-                         width: '60px',
-                         height: '60px',
-                         borderRadius: '50%',
-                         background: 'linear-gradient(135deg, #ff6b6b, #ee5a24)',
-                         display: 'flex',
-                         flexDirection: 'column',
-                         alignItems: 'center',
-                         justifyContent: 'center',
-                         color: 'white',
-                         fontWeight: 'bold',
-                         boxShadow: '0 4px 15px rgba(255, 107, 107, 0.4)',
-                         animation: 'pulse 2s infinite',
-                         flexShrink: 0,
-                         padding: '2px'
-                       }}>
-                         <span style={{ fontSize: '14px', lineHeight: '0.9', textAlign: 'center', margin: '0' }}>50%</span>
-                          <span style={{ fontSize: '7px', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', margin: '0', marginTop: '1px' }}>OFF</span>
-                       </div>
-                       <span>Limited-Time Deals On!</span>
-                     </h3>
-                    <p className="text-secondary wow fadeInUp" style={{ fontSize: '0.9rem' }}>
-                      Up to 50% Off Selected Styles. Don't Miss Out.
-                    </p>
-                  </div>
-                  <div className="btn-banner wow fadeInUp">
-                    <Link href={`/shop-default-grid`} className="tf-btn btn-fill" style={{ fontSize: '0.85rem', padding: '8px 16px' }}>
-                      <span className="text">Shop Now</span>
-                      <i className="icon icon-arrowUpRight" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </>
-          ) : (
-            // Original layout for 1-2 images
-            <>
-              <div style={{ flex: '0 0 auto' }}>
-                <div className={`banner-left ${getTextSizeClass()}`}>
-                  <div className="box-title" style={{ marginBottom: '24px' }}>
-                    <h3 className="wow fadeInUp" style={{ marginBottom: '16px' }}>Limited-Time Deals On!</h3>
-                    <p className="text-secondary wow fadeInUp">
-                      Up to 50% Off Selected Styles. Don't Miss Out.
-                    </p>
-                  </div>
-                  <div className="btn-banner wow fadeInUp">
-                    <Link href={`/shop-default-grid`} className="tf-btn btn-fill">
-                      <span className="text">Shop Now</span>
-                      <i className="icon icon-arrowUpRight" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <div className="banner-img" style={{ display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'center', maxWidth: '100%', overflow: 'hidden' }}>
-                  {fallbackImages.map((image, index) => (
-                    <div key={index} style={{ flex: 1, display: 'flex', justifyContent: 'center', maxWidth: '300px' }}>
-                      <Image
-                        className="lazyload"
-                        data-src={image.url}
-                        alt={image.alternativeText}
-                        src={image.url}
-                        width={607}
-                        height={655}
-                        style={{ 
-                         width: '100%',
-                         height: '350px',
-                         objectFit: 'cover',
-                         borderRadius: '8px'
-                       }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-            </>
-          )}
-        </div>
-      </section>
-    );
+    // Do not render fallback content for offers
+    return null;
   }
 
   return (

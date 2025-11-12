@@ -1,4 +1,9 @@
 import HomePage from './HomePage';
+import { fetchDataFromApi } from '@/utils/api';
+import { fetchFromStrapi } from '@/lib/analytics-api';
+import { fetchTopPicksItems } from '@/utils/productVariantUtils';
+
+export const revalidate = 0;
 
 // Metadata for the home page
 export const metadata = {
@@ -28,6 +33,37 @@ export const metadata = {
   },
 };
 
-export default function Page() {
-  return <HomePage />;
+export default async function Page() {
+  // Fetch all homepage content from Strapi before rendering
+  // Gate rendering until all requests resolve
+  const [heroRes, offersRes, topPicksMetaRes, instagramRes] = await Promise.all([
+    // Strapi collection: hero-slides
+    fetchDataFromApi('/api/hero-slides?populate=*'),
+    // Strapi collection: offers
+    fetchDataFromApi('/api/offers?populate=*'),
+    // Strapi single/collection: top-picks meta
+    fetchDataFromApi('/api/top-picks?fields=heading,subheading,isActive'),
+    // Fetch Instagram posts via direct Strapi call to avoid server-side relative URL issues
+    fetchFromStrapi('instagrams?populate=*'),
+  ]);
+
+  const initialHeroSlidesRaw = Array.isArray(heroRes?.data) ? heroRes.data : [];
+  const initialOfferData = Array.isArray(offersRes?.data) && offersRes.data.length > 0 ? offersRes.data[0] : null;
+  const initialTopPicksMeta = Array.isArray(topPicksMetaRes?.data) && topPicksMetaRes.data.length > 0
+    ? (topPicksMetaRes.data[0]?.isActive === false ? null : { heading: topPicksMetaRes.data[0]?.heading, subheading: topPicksMetaRes.data[0]?.subheading })
+    : null;
+  const initialInstagramPosts = Array.isArray(instagramRes?.data) ? instagramRes.data : [];
+
+  // Top picks items (products + variants) require transformation; fetch separately
+  const initialTopPicks = await fetchTopPicksItems();
+
+  return (
+    <HomePage
+      initialHeroSlidesRaw={initialHeroSlidesRaw}
+      initialOfferData={initialOfferData}
+      initialTopPicks={initialTopPicks}
+      initialTopPicksMeta={initialTopPicksMeta}
+      initialInstagramPosts={initialInstagramPosts}
+    />
+  );
 }

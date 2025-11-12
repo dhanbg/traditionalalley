@@ -90,9 +90,10 @@ const AutoplayVideo = ({ src, poster, style, className, type = 'video/mp4', ...p
   );
 };
 
-export default function InstagramVideoCards({ parentClass = "" }) {
-  const [instagramPosts, setInstagramPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function InstagramVideoCards({ parentClass = "", initialPosts = null }) {
+  // Seed initial state from server props to avoid loading skeleton flicker
+  const [instagramPosts, setInstagramPosts] = useState(Array.isArray(initialPosts) ? initialPosts : []);
+  const [loading, setLoading] = useState(!Array.isArray(initialPosts));
 
   useEffect(() => {
     const fetchInstagramPosts = async () => {
@@ -102,77 +103,19 @@ export default function InstagramVideoCards({ parentClass = "" }) {
         setInstagramPosts(response.data || []);
       } catch (error) {
         console.error('Failed to fetch Instagram posts:', error);
-        // Use mock data for testing when API fails
-        const mockData = [
-          {
-            id: 1,
-            link: 'https://instagram.com/p/test1',
-            media: {
-              url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-              mime: 'video/mp4',
-              alternativeText: 'Sample Instagram Video 1 - Big Buck Bunny',
-              formats: {
-                thumbnail: {
-                  url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images_480x270/BigBuckBunny.jpg'
-                }
-              }
-            }
-          },
-          {
-            id: 2,
-            link: 'https://instagram.com/p/test2',
-            media: {
-              url: 'https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4',
-              mime: 'video/mp4',
-              alternativeText: 'Sample Instagram Video 2',
-              formats: {
-                thumbnail: {
-                  url: 'https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4'
-                }
-              }
-            }
-          },
-          {
-            id: 3,
-            link: 'https://instagram.com/p/test3',
-            media: {
-              url: '/images/sample-instagram-1.jpg',
-              mime: 'image/jpeg',
-              alternativeText: 'Sample Instagram Image 1'
-            }
-          },
-          {
-            id: 4,
-            link: 'https://instagram.com/p/test4',
-            media: {
-              url: '/videos/sample-video-3.mp4',
-              mime: 'video/mp4',
-              alternativeText: 'Sample Instagram Video 3',
-              formats: {
-                thumbnail: {
-                  url: '/images/sample-thumb-3.jpg'
-                }
-              }
-            }
-          },
-          {
-            id: 5,
-            link: 'https://instagram.com/p/test5',
-            media: {
-              url: '/images/sample-instagram-2.jpg',
-              mime: 'image/jpeg',
-              alternativeText: 'Sample Instagram Image 2'
-            }
-          }
-        ];
-        setInstagramPosts(mockData);
+        // Do not use mock data; render nothing if API fails
+        setInstagramPosts([]);
       } finally {
         setLoading(false);
       }
     };
-
+    if (initialPosts && Array.isArray(initialPosts)) {
+      setInstagramPosts(initialPosts);
+      setLoading(false);
+      return;
+    }
     fetchInstagramPosts();
-  }, []);
+  }, [initialPosts]);
 
   return (
     <section className={parentClass} style={{ marginTop: '60px', marginBottom: '60px' }}>

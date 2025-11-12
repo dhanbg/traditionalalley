@@ -8,12 +8,10 @@ import "swiper/css/effect-fade";
 import "swiper/css/autoplay";
 import Image from "next/image";
 import Link from "next/link";
-import { fetchDataFromApi } from "@/utils/api";
 import { getImageUrl } from "@/utils/imageUtils";
-import { slides as staticSlides } from "@/data/heroSlides";
  
 
-export default function Hero() {
+export default function Hero({ initialSlidesRaw = null }) {
   const [slides, setSlides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -64,30 +62,19 @@ export default function Hero() {
 
     const fetchSlides = async () => {
       try {
-        if (typeof window !== "undefined") {
-          const endpoint = "/api/hero-slides?populate=*";
-          
-          // Use Next.js API route with direct fetch
-          const response = await fetch(endpoint);
-          const data = await response.json();
-          
-          const transformedSlides = data.data.map((item, index) => {
-            // Select media based on screen size
+        if (initialSlidesRaw && Array.isArray(initialSlidesRaw)) {
+          const transformedSlides = initialSlidesRaw.map((item) => {
             const selectedMedia = isMobile && item.mobileMedia ? item.mobileMedia : item.media;
-            
+
             const media = selectedMedia;
             let mediaUrl = "";
             let mediaType = "image";
             let fallbackImageUrl = "";
-            
+
             if (media) {
-              // Handle media field which can contain images, videos, or audio
               mediaUrl = media.url || media.formats?.large?.url || "";
-              
-              // Determine media type based on MIME type or file extension
               const mimeType = media.mime || "";
               const fileExt = media.ext || "";
-              
               if (mimeType.startsWith("video/") || ['.mp4', '.webm', '.mov', '.avi'].includes(fileExt.toLowerCase())) {
                 mediaType = "video";
               } else if (mimeType.startsWith("audio/") || ['.mp3', '.wav', '.ogg'].includes(fileExt.toLowerCase())) {
@@ -96,33 +83,67 @@ export default function Hero() {
                 mediaType = "image";
               }
             }
-            
-            // For video/audio, we might need a fallback image
+
             fallbackImageUrl = item.poster?.url || item.poster?.formats?.large?.url || mediaUrl;
-            
-            const result = {
+
+            return {
               id: item.id,
               documentId: item.documentId,
               imgSrc: getImageUrl(mediaType === 'image' ? mediaUrl : fallbackImageUrl),
               videoSrc: mediaType === 'video' ? getImageUrl(mediaUrl) : null,
               audioSrc: mediaType === 'audio' ? getImageUrl(mediaUrl) : null,
-              mediaType: mediaType,
+              mediaType,
               alt: item.alt || "fashion-slideshow",
               subheading: item.subheading || "",
               heading: item.heading?.replace("<br/>", "\n") || "",
               btnText: item.btnText || "Shop Now",
               poster: item.poster ? getImageUrl(item.poster?.url || item.poster?.formats?.large?.url) : getImageUrl(fallbackImageUrl),
             };
-            
-
-            
-            return result;
+          });
+          setSlides(transformedSlides);
+        } else if (typeof window !== "undefined") {
+          const endpoint = "/api/hero-slides?populate=*";
+          const response = await fetch(endpoint);
+          const data = await response.json();
+          const transformedSlides = data.data.map((item) => {
+            const selectedMedia = isMobile && item.mobileMedia ? item.mobileMedia : item.media;
+            const media = selectedMedia;
+            let mediaUrl = "";
+            let mediaType = "image";
+            let fallbackImageUrl = "";
+            if (media) {
+              mediaUrl = media.url || media.formats?.large?.url || "";
+              const mimeType = media.mime || "";
+              const fileExt = media.ext || "";
+              if (mimeType.startsWith("video/") || ['.mp4', '.webm', '.mov', '.avi'].includes(fileExt.toLowerCase())) {
+                mediaType = "video";
+              } else if (mimeType.startsWith("audio/") || ['.mp3', '.wav', '.ogg'].includes(fileExt.toLowerCase())) {
+                mediaType = "audio";
+              } else {
+                mediaType = "image";
+              }
+            }
+            fallbackImageUrl = item.poster?.url || item.poster?.formats?.large?.url || mediaUrl;
+            return {
+              id: item.id,
+              documentId: item.documentId,
+              imgSrc: getImageUrl(mediaType === 'image' ? mediaUrl : fallbackImageUrl),
+              videoSrc: mediaType === 'video' ? getImageUrl(mediaUrl) : null,
+              audioSrc: mediaType === 'audio' ? getImageUrl(mediaUrl) : null,
+              mediaType,
+              alt: item.alt || "fashion-slideshow",
+              subheading: item.subheading || "",
+              heading: item.heading?.replace("<br/>", "\n") || "",
+              btnText: item.btnText || "Shop Now",
+              poster: item.poster ? getImageUrl(item.poster?.url || item.poster?.formats?.large?.url) : getImageUrl(fallbackImageUrl),
+            };
           });
           setSlides(transformedSlides);
         }
       } catch (error) {
-        // Fallback to static slides if API fails
-        setSlides(staticSlides);
+        // Do not use any fallback slides; only render real data
+        console.error('Failed to load hero slides:', error);
+        setSlides([]);
       } finally {
         setLoading(false);
       }
@@ -136,7 +157,7 @@ export default function Hero() {
         clearTimeout(slideTimeoutRef.current);
       }
     };
-  }, [isMobile, mobileDetected]); // Re-fetch when isMobile changes or mobile detection completes
+  }, [isMobile, mobileDetected, initialSlidesRaw]); // Re-fetch when isMobile/mobile detection changes or initial slides provided
 
   // Handle video/audio play/pause on slide change with lazy loading
   const handleSlideChange = (swiper) => {
@@ -257,6 +278,11 @@ export default function Hero() {
     overflow: 'visible' // Changed from hidden to visible to prevent cutting content
   };
 
+  // If there are no slides after loading, do not render the hero at all
+  if (!loading && slides.length === 0) {
+    return null;
+  }
+
   return (
     <>
       {/* CSS for shimmer animation */}
@@ -374,15 +400,6 @@ export default function Hero() {
                           )}
                         </>
                       )}
-                      {/* Fallback image if video fails to load */}
-                      <Image
-                        alt={slide.alt}
-                        src={slide.imgSrc}
-                        width={1920}
-                        height={803}
-                        quality={100}
-                        priority={index === 0}
-                      />
                     </video>
                   </>
                 ) : slide.mediaType === 'audio' && slide.audioSrc ? (
@@ -439,7 +456,7 @@ export default function Hero() {
                     width={1920}
                     height={803}
                     quality={100}
-                    priority={index === 0 || slide.imgSrc.includes('p2_2215d1f166.jpg')}
+                    priority={index === 0}
                     style={{
                       width: '100%',
                       height: '100%',
