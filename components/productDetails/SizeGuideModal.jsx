@@ -60,8 +60,8 @@ export default function SizeGuideModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  // Image for size chart
-  const sizeChartImageUrl = "/inverted_triangle.jpg";
+  // Image for size chart (Women)
+  const sizeChartImageUrl = "https://admin.traditionalalley.com.np/uploads/inverted_triangle_60c890dd3e.jpg";
 
   return (
     <>
