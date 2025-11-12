@@ -54,10 +54,24 @@ jobs:
 
       - name: Pull and run Docker image on VPS
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
-            docker login docker.io -u ${{ secrets.REGISTRY_USERNAME }} -p ${{ secrets.REGISTRY_PASSWORD }}
+          ssh \
+            -o StrictHostKeyChecking=no \
+            -o TCPKeepAlive=yes \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=6 \
+            -o ConnectTimeout=30 \
+            -tt ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
+            set -euo pipefail
+
+            # Safer docker login to avoid TTY issues and warnings
+            printf "%s\n" "${{ secrets.REGISTRY_PASSWORD }}" | docker login docker.io -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+
+            # Pull latest image and (re)start container
             docker pull docker.io/traditionalalley/ta-frontend:latest
             docker stop nextjs-app || true
             docker rm nextjs-app || true
             docker run -d --name nextjs-app -p 3000:3000 --env-file ~/traditional_frontend/prod/.env docker.io/traditionalalley/ta-frontend:latest
+
+            # Verify container is running
+            docker ps --filter "name=nextjs-app" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
           ENDSSH
