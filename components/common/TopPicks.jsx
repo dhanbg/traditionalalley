@@ -10,10 +10,9 @@ import { Navigation, Pagination } from "swiper/modules";
 const DEFAULT_IMAGE = '/logo.png';
 
 export default function TopPicks({ parentClass = "flat-spacing-3 pt-5 pb-2", initialProducts = null, initialMeta = null }) {
-  // Seed initial state from server-provided props to avoid flicker on hydration
-  const [topPicksData, setTopPicksData] = useState(initialMeta || null);
-  const [products, setProducts] = useState(Array.isArray(initialProducts) ? initialProducts : []);
-  const [loading, setLoading] = useState(!Array.isArray(initialProducts));
+  const [topPicksData, setTopPicksData] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // We're now using fetchProductsWithVariants which handles all the transformation
@@ -53,7 +52,6 @@ export default function TopPicks({ parentClass = "flat-spacing-3 pt-5 pb-2", ini
       }
     };
 
-    // If server already provided data, skip client-side fetching entirely
     if (initialProducts && Array.isArray(initialProducts)) {
       setProducts(initialProducts);
       setTopPicksData(initialMeta || null);
@@ -68,11 +66,9 @@ export default function TopPicks({ parentClass = "flat-spacing-3 pt-5 pb-2", ini
     <section className={`flat-spacing ${parentClass}`}>
       <div className="container">
         <div className="heading-section text-center wow fadeInUp" data-wow-delay="0s">
-          {topPicksData?.heading && (
-            <h3 className="heading">
-              {topPicksData.heading}
-            </h3>
-          )}
+          <h3 className="heading">
+            {topPicksData?.heading || "Top Picks"}
+          </h3>
           {topPicksData?.subheading && (
             <p className="sub-title wow fadeInUp" data-wow-delay="0.1s">
               {topPicksData.subheading}

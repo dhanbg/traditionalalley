@@ -91,9 +91,8 @@ const AutoplayVideo = ({ src, poster, style, className, type = 'video/mp4', ...p
 };
 
 export default function InstagramVideoCards({ parentClass = "", initialPosts = null }) {
-  // Seed initial state from server props to avoid loading skeleton flicker
-  const [instagramPosts, setInstagramPosts] = useState(Array.isArray(initialPosts) ? initialPosts : []);
-  const [loading, setLoading] = useState(!Array.isArray(initialPosts));
+  const [instagramPosts, setInstagramPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchInstagramPosts = async () => {
