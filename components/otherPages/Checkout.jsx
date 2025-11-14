@@ -1040,7 +1040,9 @@ export default function Checkout() {
       }, 1500);
       
     } catch (error) {
-      alert('Failed to place order. Please try again.');
+      console.error('COD order placement error:', error);
+      const message = error?.message || 'Failed to place order. Please try again.';
+      alert(message);
     } finally {
       setIsProcessingOrder(false);
     }

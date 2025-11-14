@@ -9,7 +9,7 @@ import { Navigation, Pagination } from "swiper/modules";
 
 const DEFAULT_IMAGE = '/logo.png';
 
-export default function TopPicks({ parentClass = "flat-spacing-3 pt-5 pb-2" }) {
+export default function TopPicks({ parentClass = "flat-spacing-3 pt-5 pb-2", initialProducts = null, initialMeta = null }) {
   const [topPicksData, setTopPicksData] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,10 +22,7 @@ export default function TopPicks({ parentClass = "flat-spacing-3 pt-5 pb-2" }) {
     const fetchTopPicks = async () => {
       try {
         setLoading(true);
-        
-        // Use the new function that handles both products and variants
         const topPicksItems = await fetchTopPicksItems();
-        
         if (topPicksItems && topPicksItems.length > 0) {
           setProducts(topPicksItems);
           setError(null);
@@ -33,8 +30,6 @@ export default function TopPicks({ parentClass = "flat-spacing-3 pt-5 pb-2" }) {
           setError("No active top picks found");
           setProducts([]);
         }
-
-        // Fetch Top Picks metadata (heading/subheading) from Strapi
         try {
           const metaResponse = await fetchDataFromApi('/api/top-picks?fields=heading,subheading,isActive');
           if (metaResponse?.data && metaResponse.data.length > 0) {
@@ -46,10 +41,8 @@ export default function TopPicks({ parentClass = "flat-spacing-3 pt-5 pb-2" }) {
             }
           }
         } catch (metaErr) {
-          // Non-blocking: if metadata fails, keep default heading
           console.warn('Top Picks heading fetch failed:', metaErr);
         }
-        
         setLoading(false);
       } catch (error) {
         console.error('Error fetching top picks:', error);
@@ -59,8 +52,15 @@ export default function TopPicks({ parentClass = "flat-spacing-3 pt-5 pb-2" }) {
       }
     };
 
+    if (initialProducts && Array.isArray(initialProducts)) {
+      setProducts(initialProducts);
+      setTopPicksData(initialMeta || null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     fetchTopPicks();
-  }, []);
+  }, [initialProducts, initialMeta]);
 
   return (
     <section className={`flat-spacing ${parentClass}`}>
