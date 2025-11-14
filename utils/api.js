@@ -672,7 +672,11 @@ export const createOrderRecord = async (orderData, userId) => {
       },
       body: JSON.stringify({
         data: {
+          // Align with server route expectations
+          // The API at /api/user-orders requires `authUserId` to match the session user id
+          // Keep legacy `userId` alongside for backward compatibility
           ...orderData,
+          authUserId: userId,
           userId: userId,
           createdAt: new Date().toISOString()
         }
