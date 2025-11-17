@@ -17,12 +17,12 @@ export default function SizeGuideModal({ isOpen, onClose }) {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Ensure enlarged image overlay is closed when switching to men
+  // Close enlarged image overlay when switching gender for consistency
   useEffect(() => {
-    if (gender === "men" && enlargedImage) {
+    if (enlargedImage) {
       setEnlargedImage(false);
     }
-  }, [gender, enlargedImage]);
+  }, [gender]);
 
   // Close modal when clicking outside
   useEffect(() => {
@@ -60,8 +60,10 @@ export default function SizeGuideModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  // Image for size chart
-  const sizeChartImageUrl = "/inverted_triangle.jpg";
+  // Image for size chart (Women)
+  const sizeChartImageUrl = "https://admin.traditionalalley.com.np/uploads/inverted_triangle_60c890dd3e.jpg";
+  // Image for size chart (Men)
+  const sizeChartImageUrlMen = "https://admin.traditionalalley.com.np/uploads/Chat_GPT_Image_Nov_14_2025_10_15_22_PM_4553010230.jpg";
 
   return (
     <>
@@ -377,6 +379,71 @@ export default function SizeGuideModal({ isOpen, onClose }) {
                 </>
               ) : (
                 <>
+                  {/* Measurement diagram: visible for Men only */}
+                  {!isMobile && (
+                    <div style={{ 
+                      textAlign: "center", 
+                      marginBottom: "25px", 
+                      padding: "10px",
+                      backgroundColor: "#f9f9f9",
+                      borderRadius: "8px"
+                    }}>
+                      <div 
+                        style={{ 
+                          position: "relative", 
+                          width: "100%", 
+                          height: "300px", 
+                          marginBottom: "10px",
+                          cursor: "pointer",
+                          transition: "transform 0.3s ease"
+                        }}
+                        onClick={() => !isMobile && setEnlargedImage(true)}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.transform = "scale(1.02)";
+                          e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)";
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.transform = "scale(1)";
+                          e.currentTarget.style.boxShadow = "none";
+                        }}
+                      >
+                        <Image 
+                          src={sizeChartImageUrlMen}
+                          alt="Body Measurement Diagram (Men)"
+                          fill
+                          style={{ 
+                            objectFit: "contain"
+                          }}
+                          onError={(e) => {
+                            // Fallback to a placeholder if image fails to load
+                            e.target.src = "/images/placeholder.png";
+                          }}
+                        />
+                        <div 
+                          style={{
+                            position: "absolute",
+                            bottom: "10px",
+                            right: "10px",
+                            backgroundColor: "rgba(0,0,0,0.5)",
+                            color: "white",
+                            padding: "5px 10px",
+                            borderRadius: "4px",
+                            fontSize: "12px"
+                          }}
+                        >
+                          Click to enlarge
+                        </div>
+                      </div>
+                      <p style={{ 
+                        fontSize: "14px", 
+                        fontStyle: "italic", 
+                        color: "#666",
+                        margin: "0"
+                      }}>
+                        Reference body measurement guide
+                      </p>
+                    </div>
+                  )}
                   <h6 style={{ marginBottom: isMobile ? "8px" : "10px", fontWeight: 600 }}>Men's Slim Fit (Top)</h6>
                   <table
                     style={{
@@ -578,6 +645,92 @@ export default function SizeGuideModal({ isOpen, onClose }) {
             <Image 
               src={sizeChartImageUrl}
               alt="Body Measurement Diagram"
+              fill
+              style={{ 
+                objectFit: "contain"
+              }}
+              onError={(e) => {
+                e.target.src = "/images/placeholder.png";
+              }}
+            />
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setEnlargedImage(false);
+              }}
+              style={{
+                position: "absolute",
+                top: "20px",
+                right: "20px",
+                backgroundColor: "rgba(255,255,255,0.3)",
+                color: "white",
+                border: "none",
+                borderRadius: "50%",
+                width: "44px",
+                height: "44px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                transition: "all 0.3s ease",
+                padding: 0,
+                lineHeight: 0
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = "#e53637";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.3)";
+              }}
+            >
+              <svg 
+                width="20" 
+                height="20" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="3" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Enlarged image overlay (Men only) */}
+      {gender === "men" && enlargedImage && (
+        <div 
+          className="enlarged-image-overlay"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.9)",
+            zIndex: 10000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer"
+          }}
+          onClick={() => setEnlargedImage(false)}
+        >
+          <div 
+            style={{
+              position: "relative",
+              width: "90%",
+              height: "90%",
+              maxWidth: "1200px"
+            }}
+          >
+            <Image 
+              src={sizeChartImageUrlMen}
+              alt="Body Measurement Diagram (Men)"
               fill
               style={{ 
                 objectFit: "contain"
