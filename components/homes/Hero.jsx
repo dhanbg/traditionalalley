@@ -86,19 +86,21 @@ export default function Hero({ initialSlidesRaw = null }) {
 
             fallbackImageUrl = item.poster?.url || item.poster?.formats?.large?.url || mediaUrl;
 
-            return {
-              id: item.id,
-              documentId: item.documentId,
-              imgSrc: getImageUrl(mediaType === 'image' ? mediaUrl : fallbackImageUrl),
-              videoSrc: mediaType === 'video' ? getImageUrl(mediaUrl) : null,
-              audioSrc: mediaType === 'audio' ? getImageUrl(mediaUrl) : null,
-              mediaType,
-              alt: item.alt || "fashion-slideshow",
-              subheading: item.subheading || "",
-              heading: item.heading?.replace("<br/>", "\n") || "",
-              btnText: item.btnText || "Shop Now",
-              poster: item.poster ? getImageUrl(item.poster?.url || item.poster?.formats?.large?.url) : getImageUrl(fallbackImageUrl),
-            };
+          return {
+            id: item.id,
+            documentId: item.documentId,
+            imgSrc: getImageUrl(mediaType === 'image' ? mediaUrl : fallbackImageUrl),
+            videoSrc: mediaType === 'video' ? getImageUrl(mediaUrl) : null,
+            audioSrc: mediaType === 'audio' ? getImageUrl(mediaUrl) : null,
+            mediaType,
+            alt: item.alt || "fashion-slideshow",
+            subheading: item.subheading || "",
+            heading: item.heading?.replace("<br/>", "\n") || "",
+            btnText: item.btnText || "Shop Now",
+            poster: item.poster ? getImageUrl(item.poster?.url || item.poster?.formats?.large?.url) : getImageUrl(fallbackImageUrl),
+            // Carry forward videoName for product filtering (prefer mobileMedia name)
+            videoName: item.videoName || item?.mobileMedia?.name || null,
+          };
           });
           setSlides(transformedSlides);
         } else if (typeof window !== "undefined") {
@@ -483,7 +485,7 @@ export default function Hero({ initialSlidesRaw = null }) {
                     </div>
                     <div className="fade-item fade-item-3 box-btn-slider">
                       <Link
-                        href={`/hero-products?slideId=${slide.documentId || slide.id}&btnText=${encodeURIComponent(slide.btnText)}`}
+                        href={`/hero-products?slideId=${slide.documentId || slide.id}&btnText=${encodeURIComponent(slide.btnText)}${slide.videoName ? `&videoName=${encodeURIComponent(slide.videoName)}` : ''}`}
                         className="tf-btn btn-fill btn-white"
                       >
                         <span className="text">{slide.btnText}</span>

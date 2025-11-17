@@ -26,8 +26,9 @@ export async function generateMetadata({ params }) {
       
       if (product && product.isActive !== false) {
         const title = `${product.title} | Traditional Alley`;
-        const description = product.description 
-          ? `${product.description.substring(0, 155)}...` 
+        const descRaw = normalizeText(product.description);
+        const description = descRaw 
+          ? `${descRaw.substring(0, 155)}...` 
           : `Shop ${product.title} at Traditional Alley. Premium quality traditional and modern fashion.`;
         
         return {
@@ -64,7 +65,12 @@ export default async function page({ params, searchParams }) {
   
   // Fetch product by documentId with variants
   const timestamp = Date.now();
-  const response = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*&timestamp=${timestamp}`);
+  let response = null;
+  try {
+    response = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*&timestamp=${timestamp}`);
+  } catch (error) {
+    console.error('Error fetching product:', error);
+  }
   let product = null;
   let variants = [];
   
@@ -416,4 +422,17 @@ function extractColorFromTitle(title) {
   }
   
   return null;
+}
+
+function normalizeText(input) {
+  if (!input) return '';
+  if (typeof input === 'string') return input;
+  if (Array.isArray(input)) return input.filter(x => typeof x === 'string').join(' ');
+  if (typeof input === 'object') {
+    if (typeof input.value === 'string') return input.value;
+    if (typeof input.text === 'string') return input.text;
+    if (typeof input.description === 'string') return input.description;
+    return Object.values(input).filter(v => typeof v === 'string').join(' ');
+  }
+  try { return String(input); } catch { return ''; }
 }

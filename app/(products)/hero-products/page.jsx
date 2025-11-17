@@ -14,6 +14,7 @@ export default async function HeroProductsPage({ searchParams }) {
   const params = await searchParams;
   const slideId = params?.slideId;
   const btnText = params?.btnText || "Featured Collection";
+  const videoName = params?.videoName || null;
 
   return (
     <>
@@ -57,7 +58,7 @@ export default async function HeroProductsPage({ searchParams }) {
       </div>
       
       <Suspense fallback={<div>Loading products...</div>}>
-        <HeroProducts slideId={slideId} btnText={btnText} />
+        <HeroProducts slideId={slideId} btnText={btnText} videoName={videoName} />
       </Suspense>
       <Footer1 />
     </>

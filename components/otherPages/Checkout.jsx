@@ -776,18 +776,9 @@ export default function Checkout() {
     if (!user?.id) return null;
     
     try {
-      // Use Next.js server route to avoid client-side token/CORS issues
-      const res = await fetch(`/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag`, {
-        method: 'GET',
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        console.error('Failed to fetch user-data via server route:', res.status, text);
-        return null;
-      }
-
-      const currentUserData = await res.json();
+      const currentUserData = await fetchDataFromApi(
+        `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag`
+      );
 
       if (!currentUserData?.data || currentUserData.data.length === 0) {
         console.error("User data not found");
@@ -1040,9 +1031,7 @@ export default function Checkout() {
       }, 1500);
       
     } catch (error) {
-      console.error('COD order placement error:', error);
-      const message = error?.message || 'Failed to place order. Please try again.';
-      alert(message);
+      alert('Failed to place order. Please try again.');
     } finally {
       setIsProcessingOrder(false);
     }

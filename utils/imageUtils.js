@@ -16,8 +16,13 @@ export const getImageUrl = (imageUrl) => {
     return urlString;
   }
   
-  // Otherwise, prepend the API_URL
-  return `${API_URL}${urlString}`;
+  // If the path points to Strapi uploads, prepend API_URL
+  if (urlString.startsWith('/uploads/')) {
+    return `${API_URL}${urlString}`;
+  }
+
+  // Otherwise, treat as a local public asset path and return unchanged
+  return urlString;
 };
 
 /**

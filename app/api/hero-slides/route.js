@@ -7,16 +7,27 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const populate = searchParams.get('populate') || '*';
-    
-    // Build the query string for Strapi
-    let queryString = `populate=${populate}`;
-    
-    // Handle specific populate parameters
+
+    // Build query string by passing through all query params, expanding populate[media] alias
+    const params = new URLSearchParams();
+
+    // If the caller requested the media alias, expand to include media, mobileMedia, and poster
     if (searchParams.has('populate[media]')) {
-      queryString = 'populate[media]=*&populate[mobileMedia]=*&populate[poster]=*';
+      params.append('populate[media]', '*');
+      params.append('populate[mobileMedia]', '*');
+      params.append('populate[poster]', '*');
+    } else {
+      // Default populate
+      params.append('populate', populate);
     }
-    
-    const url = `${STRAPI_URL}/api/hero-slides?${queryString}`;
+
+    // Preserve any provided filters, sort, pagination, publicationState, etc.
+    for (const [key, value] of searchParams.entries()) {
+      if (key === 'populate' || key === 'populate[media]') continue; // already handled
+      params.append(key, value);
+    }
+
+    const url = `${STRAPI_URL}/api/hero-slides?${params.toString()}`;
     
     console.log('🔍 Fetching from Strapi:', url);
     
