@@ -23,14 +23,23 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
   const [videoLoadingStates, setVideoLoadingStates] = useState(new Map());
   const [showIntroImage, setShowIntroImage] = useState(true);
   const [firstVideoReady, setFirstVideoReady] = useState(false);
-  const [firstVideoPlaying, setFirstVideoPlaying] = useState(false);
   const [firstMediaReady, setFirstMediaReady] = useState(false);
   const videoRefs = useRef([]);
   const playPromisesRef = useRef([]);
   const swiperRef = useRef(null);
   const slideTimeoutRef = useRef(null);
 
-  // Removed remote HEAD validation to avoid iOS CORS/autoplay quirks
+  // Function to validate video source
+  const validateVideoSource = async (videoSrc) => {
+    if (!videoSrc) return false;
+    try {
+      const response = await fetch(videoSrc, { method: 'HEAD' });
+      return response.ok;
+    } catch (error) {
+      console.warn('Video source validation failed:', error);
+      return false;
+    }
+  };
 
   // Hook to detect mobile screen size
   const checkMobile = useCallback(() => {
@@ -59,13 +68,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
       try {
         if (initialSlidesRaw && Array.isArray(initialSlidesRaw)) {
           const transformedSlides = initialSlidesRaw.map((item) => {
-            // Prefer mobileMedia only if it is a video; otherwise use primary media
-            const mobileCandidate = item.mobileMedia;
-            const mobileIsVideo = !!mobileCandidate && (
-              (mobileCandidate.mime?.startsWith("video/")) ||
-              ['.mp4', '.webm', '.mov', '.avi'].includes((mobileCandidate.ext || '').toLowerCase())
-            );
-            const selectedMedia = isMobile && mobileIsVideo ? mobileCandidate : item.media;
+            const selectedMedia = isMobile && item.mobileMedia ? item.mobileMedia : item.media;
 
             const media = selectedMedia;
             let mediaUrl = "";
@@ -109,12 +112,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
           const response = await fetch(endpoint);
           const data = await response.json();
           const transformedSlides = data.data.map((item) => {
-            const mobileCandidate = item.mobileMedia;
-            const mobileIsVideo = !!mobileCandidate && (
-              (mobileCandidate.mime?.startsWith("video/")) ||
-              ['.mp4', '.webm', '.mov', '.avi'].includes((mobileCandidate.ext || '').toLowerCase())
-            );
-            const selectedMedia = isMobile && mobileIsVideo ? mobileCandidate : item.media;
+            const selectedMedia = isMobile && item.mobileMedia ? item.mobileMedia : item.media;
             const media = selectedMedia;
             let mediaUrl = "";
             let mediaType = "image";
@@ -168,14 +166,14 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
   }, [isMobile, mobileDetected, initialSlidesRaw]); // Re-fetch when isMobile/mobile detection changes or initial slides provided
 
   // Hide the intro image when appropriate:
-  // - If the first slide is a video: when the first video is actually playing
+  // - If the first slide is a video: when the first video is ready
   // - Otherwise (image/audio): when the first media is ready
   useEffect(() => {
     const firstIsVideo = slides[0]?.mediaType === 'video';
-    if ((firstIsVideo && firstVideoPlaying) || (!firstIsVideo && firstMediaReady)) {
+    if ((firstIsVideo && firstVideoReady) || (!firstIsVideo && firstMediaReady)) {
       setShowIntroImage(false);
     }
-  }, [slides, firstVideoPlaying, firstMediaReady]);
+  }, [slides, firstVideoReady, firstMediaReady]);
 
   // Handle video/audio play/pause on slide change with lazy loading
   const handleSlideChange = (swiper) => {
@@ -387,8 +385,8 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                       autoPlay={index === activeSlideIndex}
                       muted
                       playsInline
-                      webkit-playsinline={true}
-                      disablePictureInPicture
+                      disableRemotePlayback
+                      webkit-playsinline="true"
                       preload={loadedVideos.has(index) || index === activeSlideIndex ? "auto" : "none"}
                       poster={index === 0 ? (isMobile ? '/images/tamfall.jpg' : '/images/tafall.jpg') : (slide.poster || slide.imgSrc)}
                       style={{
@@ -400,17 +398,24 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                       }}
                       onLoadedData={() => {
                         setImageLoaded(true);
-                        // Ensure iOS starts playback once data is available
-                        const video = videoRefs.current[index];
-                        if (video && video.paused) {
-                          playPromisesRef.current[index] = video.play().catch(() => {});
-                        }
                       }}
-                      onLoadStart={() => {
+                      onLoadStart={async () => {
                         // Show loading state for current slide
                         setVideoLoadingStates(prev => new Map(prev.set(index, 'loading')));
                         if (index === activeSlideIndex) {
                           setImageLoaded(false);
+                        }
+                        
+                        // Validate video source
+                        if (slide.videoSrc) {
+                          const isValid = await validateVideoSource(slide.videoSrc);
+                          if (!isValid) {
+                            console.warn(`Video source validation failed for slide ${index}:`, slide.videoSrc);
+                            setVideoLoadingStates(prev => new Map(prev.set(index, 'error')));
+                            if (index === activeSlideIndex) {
+                              setImageLoaded(true);
+                            }
+                          }
                         }
                       }}
                       onCanPlay={() => {
@@ -421,18 +426,23 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                           // Auto-play if this is the active slide and video is ready
                           const video = videoRefs.current[index];
                           if (video && video.paused) {
-                            playPromisesRef.current[index] = video.play().catch(() => {});
-                          }
-                          // Mark first video as ready; overlay hides after min duration
-                          if (index === 0) {
-                            setFirstVideoReady(true);
-                            // Do not hide overlay on readiness; wait for actual play event
+                            playPromisesRef.current[index] = video.play().then(() => {
+                              // Mark first video as truly playing; hide overlay now
+                              if (index === 0) {
+                                setFirstVideoReady(true);
+                                setFirstMediaReady(true);
+                              }
+                            }).catch(() => {
+                              // Autoplay might be blocked; keep overlay until user interaction
+                            });
                           }
                         }
                       }}
-                      onPlaying={() => {
+                      onPlay={() => {
+                        // Fallback in case play() promise didn't resolve (Safari quirks)
                         if (index === 0 && index === activeSlideIndex) {
-                          setFirstVideoPlaying(true);
+                          setFirstVideoReady(true);
+                          setFirstMediaReady(true);
                         }
                       }}
                       onError={(e) => {
