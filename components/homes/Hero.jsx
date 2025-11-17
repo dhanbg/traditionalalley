@@ -23,6 +23,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
   const [videoLoadingStates, setVideoLoadingStates] = useState(new Map());
   const [showIntroImage, setShowIntroImage] = useState(true);
   const [firstVideoReady, setFirstVideoReady] = useState(false);
+  const [firstVideoPlaying, setFirstVideoPlaying] = useState(false);
   const [firstMediaReady, setFirstMediaReady] = useState(false);
   const videoRefs = useRef([]);
   const playPromisesRef = useRef([]);
@@ -166,14 +167,14 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
   }, [isMobile, mobileDetected, initialSlidesRaw]); // Re-fetch when isMobile/mobile detection changes or initial slides provided
 
   // Hide the intro image when appropriate:
-  // - If the first slide is a video: when the first video is ready
+  // - If the first slide is a video: when the first video is actually playing
   // - Otherwise (image/audio): when the first media is ready
   useEffect(() => {
     const firstIsVideo = slides[0]?.mediaType === 'video';
-    if ((firstIsVideo && firstVideoReady) || (!firstIsVideo && firstMediaReady)) {
+    if ((firstIsVideo && firstVideoPlaying) || (!firstIsVideo && firstMediaReady)) {
       setShowIntroImage(false);
     }
-  }, [slides, firstVideoReady, firstMediaReady]);
+  }, [slides, firstVideoPlaying, firstMediaReady]);
 
   // Handle video/audio play/pause on slide change with lazy loading
   const handleSlideChange = (swiper) => {
@@ -429,8 +430,13 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                           // Mark first video as ready; overlay hides after min duration
                           if (index === 0) {
                             setFirstVideoReady(true);
-                            setFirstMediaReady(true);
+                            // Do not hide overlay on readiness; wait for actual play event
                           }
+                        }
+                      }}
+                      onPlaying={() => {
+                        if (index === 0 && index === activeSlideIndex) {
+                          setFirstVideoPlaying(true);
                         }
                       }}
                       onError={(e) => {
