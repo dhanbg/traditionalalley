@@ -62,7 +62,7 @@ export const slidesWithMedia = [
   {
     // Image slide example
     media: {
-      url: "/images/slider/slider-women3.jpg",
+      url: "/images/slider/slider-women2.jpg",
       mime: "image/jpeg",
       ext: ".jpg"
     },
@@ -93,7 +93,7 @@ export const slidesWithVideo = [
     btnText: "Watch & Shop",
   },
   {
-    imgSrc: "/images/slider/slider-women3.jpg",
+    imgSrc: "/images/slider/slider-women2.jpg",
     alt: "fashion-slideshow",
     subheading: "SUMMER STYLES",
     heading: "Trending Now",

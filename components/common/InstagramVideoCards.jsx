@@ -108,7 +108,8 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
         setLoading(false);
       }
     };
-    if (initialPosts && Array.isArray(initialPosts)) {
+    // Only use initial posts if non-empty; otherwise fetch client-side
+    if (initialPosts && Array.isArray(initialPosts) && initialPosts.length > 0) {
       setInstagramPosts(initialPosts);
       setLoading(false);
       return;
@@ -164,6 +165,27 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
                 </div>
               </SwiperSlide>
             ))
+          ) : instagramPosts.length === 0 ? (
+            <SwiperSlide>
+              <div className="gallery-item hover-overlay hover-img">
+                <div className="img-style">
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '640px',
+                      backgroundColor: '#fff7e6',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#b36b00',
+                      fontWeight: 500
+                    }}
+                  >
+                    Instagram posts are not available right now.
+                  </div>
+                </div>
+              </div>
+            </SwiperSlide>
           ) : (
             instagramPosts.slice(0, 5).map((item, i) => {
               // Improved image URL construction for production
@@ -184,7 +206,7 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
                     ? item.media.formats.thumbnail.url
                     : `${process.env.NEXT_PUBLIC_API_URL || API_URL}${item.media.formats.thumbnail.url}`
                   )
-                : '/images/placeholder-thumb.jpg';
+                : '/images/placeholder.jpg';
               
               return (
                 <SwiperSlide key={item.id || i}>

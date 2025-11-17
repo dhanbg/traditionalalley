@@ -46,7 +46,7 @@ export const localHeroSlides = [
       name: "tam2.mp4",
     },
     poster: {
-      url: "/images/slider/slider-women3.jpg",
+  url: "/images/slider/slider-women2.jpg",
     },
     alt: "hero-video-2",
     subheading: "",

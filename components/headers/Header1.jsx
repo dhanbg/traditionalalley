@@ -84,9 +84,10 @@ export default function Header1({ fullWidth = false }) {
                 width={180} 
                 height={48} 
                 alt="Logo" 
+                priority
                 style={{ 
                   width: '180px', 
-                  height: '48px',
+                  height: 'auto',
                   filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))'
                 }} 
               />

@@ -122,7 +122,8 @@ export default function Home({
   initialOfferData = null,
   initialTopPicks = [],
   initialTopPicksMeta = null,
-  initialInstagramPosts = []
+  initialInstagramPosts = [],
+  isMobileInitial = false
 }) {
   return (
     <>
@@ -137,7 +138,7 @@ export default function Home({
       {/* <Topbar /> */}
       <Header1 />
       <MarqueeSection />
-      <Hero initialSlidesRaw={initialHeroSlidesRaw} />
+      <Hero initialSlidesRaw={initialHeroSlidesRaw} isMobileInitial={isMobileInitial} />
       {/* <Collections /> */}
       {/* <Products /> */}
       {/* <BannerCollection /> */}

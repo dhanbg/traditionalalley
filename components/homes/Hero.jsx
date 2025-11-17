@@ -11,15 +11,19 @@ import Link from "next/link";
 import { getImageUrl } from "@/utils/imageUtils";
  
 
-export default function Hero({ initialSlidesRaw = null }) {
+export default function Hero({ initialSlidesRaw = null, isMobileInitial = false }) {
   const [slides, setSlides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [mobileDetected, setMobileDetected] = useState(false);
+  // Use server-provided initial mobile flag to avoid hydration mismatch
+  const [isMobile, setIsMobile] = useState(isMobileInitial);
+  const [mobileDetected, setMobileDetected] = useState(true);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [loadedVideos, setLoadedVideos] = useState(new Set());
   const [videoLoadingStates, setVideoLoadingStates] = useState(new Map());
+  const [showIntroImage, setShowIntroImage] = useState(true);
+  const [firstVideoReady, setFirstVideoReady] = useState(false);
+  const [firstMediaReady, setFirstMediaReady] = useState(false);
   const videoRefs = useRef([]);
   const playPromisesRef = useRef([]);
   const swiperRef = useRef(null);
@@ -46,13 +50,13 @@ export default function Hero({ initialSlidesRaw = null }) {
   }, []);
 
   useEffect(() => {
-    checkMobile();
     window.addEventListener('resize', checkMobile);
-    
     return () => {
       window.removeEventListener('resize', checkMobile);
     };
   }, [checkMobile]);
+
+  // Removed intro overlay minimum display timer; overlay hides when media is ready
 
   useEffect(() => {
     // Only fetch slides after mobile detection is complete
@@ -161,6 +165,16 @@ export default function Hero({ initialSlidesRaw = null }) {
     };
   }, [isMobile, mobileDetected, initialSlidesRaw]); // Re-fetch when isMobile/mobile detection changes or initial slides provided
 
+  // Hide the intro image when appropriate:
+  // - If the first slide is a video: when the first video is ready
+  // - Otherwise (image/audio): when the first media is ready
+  useEffect(() => {
+    const firstIsVideo = slides[0]?.mediaType === 'video';
+    if ((firstIsVideo && firstVideoReady) || (!firstIsVideo && firstMediaReady)) {
+      setShowIntroImage(false);
+    }
+  }, [slides, firstVideoReady, firstMediaReady]);
+
   // Handle video/audio play/pause on slide change with lazy loading
   const handleSlideChange = (swiper) => {
     // Store swiper reference
@@ -203,11 +217,12 @@ export default function Hero({ initialSlidesRaw = null }) {
       if (currentMedia && currentMedia.tagName === 'VIDEO') {
         // For video slides: wait for video to end
         playPromisesRef.current[currentIndex] = currentMedia.play().catch(() => {
-          // Handle autoplay restrictions - if video can't play, advance after delay
-          slideTimeoutRef.current = setTimeout(() => {
-            handleVideoEnd();
-          }, 5000);
+          // Autoplay restrictions; rely on fallback timer below
         });
+        // Fallback: advance after a fixed duration even if video is playing
+        slideTimeoutRef.current = setTimeout(() => {
+          handleVideoEnd();
+        }, 7000);
       }
       
       // Preload next and previous videos
@@ -249,6 +264,10 @@ export default function Hero({ initialSlidesRaw = null }) {
 
   // Handle video ended event
   const onVideoEnded = () => {
+    if (slideTimeoutRef.current) {
+      clearTimeout(slideTimeoutRef.current);
+      slideTimeoutRef.current = null;
+    }
     handleVideoEnd();
   };
 
@@ -302,6 +321,36 @@ export default function Hero({ initialSlidesRaw = null }) {
       `}</style>
       
       <section className="tf-slideshow slider-default slider-position slider-effect-fade" style={heroWrapperStyle}>
+      {/* Intro overlay image shown instantly before videos are ready */}
+      {showIntroImage && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: 5
+          }}
+        >
+          <Image
+            alt={"hero-intro"}
+            src={isMobile ? '/images/tamfall.jpg' : '/images/tafall.jpg'}
+            width={1920}
+            height={803}
+            priority
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: isMobile ? 'center bottom' : 'center center'
+            }}
+            onLoad={() => {
+              setImageLoaded(true);
+            }}
+                  />
+        </div>
+      )}
       <Swiper
         effect="fade"
         spaceBetween={0}
@@ -337,7 +386,7 @@ export default function Hero({ initialSlidesRaw = null }) {
                       muted
                       playsInline
                       preload={loadedVideos.has(index) || index === activeSlideIndex ? "auto" : "none"}
-                      poster={slide.poster || slide.imgSrc}
+                      poster={index === 0 ? (isMobile ? '/images/tamfall.jpg' : '/images/tafall.jpg') : (slide.poster || slide.imgSrc)}
                       style={{
                         width: '100%',
                         height: '100%',
@@ -376,6 +425,11 @@ export default function Hero({ initialSlidesRaw = null }) {
                           const video = videoRefs.current[index];
                           if (video && video.paused) {
                             playPromisesRef.current[index] = video.play().catch(() => {});
+                          }
+                          // Mark first video as ready; overlay hides after min duration
+                          if (index === 0) {
+                            setFirstVideoReady(true);
+                            setFirstMediaReady(true);
                           }
                         }
                       }}
@@ -465,7 +519,10 @@ export default function Hero({ initialSlidesRaw = null }) {
                       objectFit: 'cover',
                       objectPosition: isMobile ? 'center bottom' : 'center center'
                     }}
-                    onLoad={() => setImageLoaded(true)}
+                    onLoad={() => {
+                      setImageLoaded(true);
+                      if (index === 0) setFirstMediaReady(true);
+                    }}
                   />
                 )}
                 <div className="box-content" style={contentStyle}>
