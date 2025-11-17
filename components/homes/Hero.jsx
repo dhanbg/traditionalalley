@@ -30,17 +30,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
   const swiperRef = useRef(null);
   const slideTimeoutRef = useRef(null);
 
-  // Function to validate video source
-  const validateVideoSource = async (videoSrc) => {
-    if (!videoSrc) return false;
-    try {
-      const response = await fetch(videoSrc, { method: 'HEAD' });
-      return response.ok;
-    } catch (error) {
-      console.warn('Video source validation failed:', error);
-      return false;
-    }
-  };
+  // Removed remote HEAD validation to avoid iOS CORS/autoplay quirks
 
   // Hook to detect mobile screen size
   const checkMobile = useCallback(() => {
@@ -69,7 +59,13 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
       try {
         if (initialSlidesRaw && Array.isArray(initialSlidesRaw)) {
           const transformedSlides = initialSlidesRaw.map((item) => {
-            const selectedMedia = isMobile && item.mobileMedia ? item.mobileMedia : item.media;
+            // Prefer mobileMedia only if it is a video; otherwise use primary media
+            const mobileCandidate = item.mobileMedia;
+            const mobileIsVideo = !!mobileCandidate && (
+              (mobileCandidate.mime?.startsWith("video/")) ||
+              ['.mp4', '.webm', '.mov', '.avi'].includes((mobileCandidate.ext || '').toLowerCase())
+            );
+            const selectedMedia = isMobile && mobileIsVideo ? mobileCandidate : item.media;
 
             const media = selectedMedia;
             let mediaUrl = "";
@@ -113,7 +109,12 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
           const response = await fetch(endpoint);
           const data = await response.json();
           const transformedSlides = data.data.map((item) => {
-            const selectedMedia = isMobile && item.mobileMedia ? item.mobileMedia : item.media;
+            const mobileCandidate = item.mobileMedia;
+            const mobileIsVideo = !!mobileCandidate && (
+              (mobileCandidate.mime?.startsWith("video/")) ||
+              ['.mp4', '.webm', '.mov', '.avi'].includes((mobileCandidate.ext || '').toLowerCase())
+            );
+            const selectedMedia = isMobile && mobileIsVideo ? mobileCandidate : item.media;
             const media = selectedMedia;
             let mediaUrl = "";
             let mediaType = "image";
@@ -386,6 +387,8 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                       autoPlay={index === activeSlideIndex}
                       muted
                       playsInline
+                      webkit-playsinline={true}
+                      disablePictureInPicture
                       preload={loadedVideos.has(index) || index === activeSlideIndex ? "auto" : "none"}
                       poster={index === 0 ? (isMobile ? '/images/tamfall.jpg' : '/images/tafall.jpg') : (slide.poster || slide.imgSrc)}
                       style={{
@@ -397,24 +400,17 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                       }}
                       onLoadedData={() => {
                         setImageLoaded(true);
+                        // Ensure iOS starts playback once data is available
+                        const video = videoRefs.current[index];
+                        if (video && video.paused) {
+                          playPromisesRef.current[index] = video.play().catch(() => {});
+                        }
                       }}
-                      onLoadStart={async () => {
+                      onLoadStart={() => {
                         // Show loading state for current slide
                         setVideoLoadingStates(prev => new Map(prev.set(index, 'loading')));
                         if (index === activeSlideIndex) {
                           setImageLoaded(false);
-                        }
-                        
-                        // Validate video source
-                        if (slide.videoSrc) {
-                          const isValid = await validateVideoSource(slide.videoSrc);
-                          if (!isValid) {
-                            console.warn(`Video source validation failed for slide ${index}:`, slide.videoSrc);
-                            setVideoLoadingStates(prev => new Map(prev.set(index, 'error')));
-                            if (index === activeSlideIndex) {
-                              setImageLoaded(true);
-                            }
-                          }
                         }
                       }}
                       onCanPlay={() => {
