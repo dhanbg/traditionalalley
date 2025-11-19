@@ -68,30 +68,6 @@ const AutoplayVideo = ({ src, poster, style, className, type = 'video/mp4', ...p
     return () => observer.disconnect();
   }, []);
 
-  // iOS Safari: guarantee autoplay on first user interaction anywhere
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const isiOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (!isiOS) return;
-    const onFirstInteraction = () => {
-      const v = videoRef.current;
-      if (!v) return;
-      try {
-        v.muted = true;
-        v.setAttribute('muted', '');
-        v.setAttribute('playsinline', '');
-        v.setAttribute('webkit-playsinline', '');
-        v.play().catch(() => {});
-      } catch (_) {}
-    };
-    window.addEventListener('touchstart', onFirstInteraction, { once: true });
-    window.addEventListener('click', onFirstInteraction, { once: true });
-    return () => {
-      window.removeEventListener('touchstart', onFirstInteraction);
-      window.removeEventListener('click', onFirstInteraction);
-    };
-  }, []);
-
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       {/* Poster overlay stays visible until the video actually starts playing */}

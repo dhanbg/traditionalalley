@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,7 +12,6 @@ export default function ShopGram({ parentClass = "" }) {
   const [instagramPosts, setInstagramPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState({});
-  const videoRefs = useRef({});
 
   useEffect(() => {
     const fetchInstagramPosts = async () => {
@@ -92,32 +91,6 @@ export default function ShopGram({ parentClass = "" }) {
     };
 
     fetchInstagramPosts();
-  }, []);
-
-  // iOS Safari: guarantee autoplay on first user interaction anywhere
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const isiOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (!isiOS) return;
-    const onFirstInteraction = () => {
-      const refs = videoRefs.current || {};
-      Object.values(refs).forEach((v) => {
-        if (!v) return;
-        try {
-          v.muted = true;
-          v.setAttribute('muted', '');
-          v.setAttribute('playsinline', '');
-          v.setAttribute('webkit-playsinline', '');
-          v.play().catch(() => {});
-        } catch (_) {}
-      });
-    };
-    window.addEventListener('touchstart', onFirstInteraction, { once: true });
-    window.addEventListener('click', onFirstInteraction, { once: true });
-    return () => {
-      window.removeEventListener('touchstart', onFirstInteraction);
-      window.removeEventListener('click', onFirstInteraction);
-    };
   }, []);
   return (
     <section className={parentClass}>
@@ -219,7 +192,6 @@ export default function ShopGram({ parentClass = "" }) {
                             width={640}
                             height={640}
                             style={{ objectFit: 'cover', width: '100%', height: '100%', backgroundColor: 'transparent' }}
-                            ref={(el) => { videoRefs.current[i] = el; }}
                             muted
                             loop
                             autoPlay
