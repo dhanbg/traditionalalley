@@ -10,7 +10,7 @@ import Collections from "@/components/homes/Categories";
 import Features from "@/components/common/Features";
 import Hero from "@/components/homes/Hero";
 import Products from "@/components/common/Products3";
-import InstagramVideoCards from "@/components/common/InstagramVideoCards";
+import InstagramAutoPlayVideos from "@/components/common/InstagramAutoPlayVideos";
 import TopPicks from "@/components/common/TopPicks";
 
 import Testimonials3 from "@/components/common/Testimonials3";
@@ -145,7 +145,11 @@ export default function Home({
       <BannerCountdown initialOfferData={initialOfferData} />
       {/* <Testimonials3 /> */}
       <TopPicks initialProducts={initialTopPicks} initialMeta={initialTopPicksMeta} />
-      <InstagramVideoCards initialPosts={initialInstagramPosts} />
+      <InstagramAutoPlayVideos
+        initialPosts={initialInstagramPosts}
+        heading="As Seen on Instagram"
+        subheading="Real customers, real style — watch and shop trending looks"
+      />
       {/* <Features /> */}
       {/* <Blogs /> */}
       <Footer1 hasPaddingBottom />

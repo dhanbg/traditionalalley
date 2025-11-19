@@ -90,7 +90,7 @@ const AutoplayVideo = ({ src, poster, style, className, type = 'video/mp4', ...p
   );
 };
 
-export default function InstagramVideoCards({ parentClass = "", initialPosts = null }) {
+export default function InstagramVideoCards({ parentClass = "", initialPosts = null, hideHeading = false }) {
   const [instagramPosts, setInstagramPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -120,12 +120,14 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
   return (
     <section className={parentClass} style={{ marginTop: '60px', marginBottom: '60px' }}>
       <div className="container" style={{ paddingTop: '40px', paddingBottom: '40px' }}>
-        <div className="heading-section text-center">
-          <h3 className="heading wow fadeInUp">Explore Instagram</h3>
-          <p className="subheading text-secondary wow fadeInUp">
-            Elevate your wardrobe with fresh finds today!
-          </p>
-        </div>
+        {!hideHeading && (
+          <div className="heading-section text-center">
+            <h3 className="heading wow fadeInUp">Explore Instagram</h3>
+            <p className="subheading text-secondary wow fadeInUp">
+              Elevate your wardrobe with fresh finds today!
+            </p>
+          </div>
+        )}
         
         <Swiper
           dir="ltr"

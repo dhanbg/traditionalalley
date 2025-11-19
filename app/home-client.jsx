@@ -10,7 +10,6 @@ import Collections from "@/components/homes/Categories";
 import Features from "@/components/common/Features";
 import Hero from "@/components/homes/Hero";
 import Products from "@/components/common/Products3";
-import InstagramVideoCards from "@/components/common/InstagramVideoCards";
 import TopPicks from "@/components/common/TopPicks";
 
 import Testimonials3 from "@/components/common/Testimonials3";
@@ -138,7 +137,6 @@ export default function Home() {
       <BannerCountdown />
       {/* <Testimonials3 /> */}
       <TopPicks />
-      <InstagramVideoCards />
       {/* <Features /> */}
       {/* <Blogs /> */}
       <Footer1 hasPaddingBottom />
