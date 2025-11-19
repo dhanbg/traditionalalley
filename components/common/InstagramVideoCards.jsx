@@ -13,6 +13,8 @@ const AutoplayVideo = ({ src, poster, style, className, type = 'video/mp4', ...p
   const videoRef = useRef(null);
   const playPromiseRef = useRef(null);
   const [isInView, setIsInView] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const isiOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
   useEffect(() => {
@@ -66,27 +68,84 @@ const AutoplayVideo = ({ src, poster, style, className, type = 'video/mp4', ...p
     return () => observer.disconnect();
   }, []);
 
+  // iOS Safari: guarantee autoplay on first user interaction anywhere
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const isiOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (!isiOS) return;
+    const onFirstInteraction = () => {
+      const v = videoRef.current;
+      if (!v) return;
+      try {
+        v.muted = true;
+        v.setAttribute('muted', '');
+        v.setAttribute('playsinline', '');
+        v.setAttribute('webkit-playsinline', '');
+        v.play().catch(() => {});
+      } catch (_) {}
+    };
+    window.addEventListener('touchstart', onFirstInteraction, { once: true });
+    window.addEventListener('click', onFirstInteraction, { once: true });
+    return () => {
+      window.removeEventListener('touchstart', onFirstInteraction);
+      window.removeEventListener('click', onFirstInteraction);
+    };
+  }, []);
+
   return (
-    <video
-      ref={videoRef}
-      poster={poster}
-      style={style}
-      className={`${className} no-video-controls`}
-      muted
-      loop
-      autoPlay
-      playsInline
-      preload="metadata"
-      controls={false}
-      // Helpful to coax autoplay on some Android browsers
-      disablePictureInPicture
-      controlsList="nodownload noplaybackrate"
-      {...props}
-    >
-      <source src={src} type={type} />
-      {/* Fallback for iOS Safari */}
-      <source src={src} type="video/mp4" />
-    </video>
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      {/* Poster overlay stays visible until the video actually starts playing */}
+      {poster && (
+        <img
+          src={poster}
+          alt="Instagram video poster"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            transition: 'opacity 180ms ease',
+            opacity: isPlaying ? 0 : 1,
+            pointerEvents: 'none',
+            zIndex: 2,
+          }}
+        />
+      )}
+      <video
+        ref={videoRef}
+        poster={poster}
+        style={{
+          ...style,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          backgroundColor: 'transparent',
+        }}
+        className={`${className} no-video-controls`}
+        muted
+        loop
+        autoPlay
+        playsInline
+        preload="metadata"
+        controls={false}
+        // Encourage inline playback on iOS
+        disableRemotePlayback
+        // Some React versions pass custom attributes through to the DOM
+        webkit-playsinline="true"
+        crossOrigin="anonymous"
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onWaiting={() => setIsPlaying(false)}
+        onLoadedData={() => setHasLoaded(true)}
+        onError={() => setIsPlaying(false)}
+        {...props}
+      >
+        <source src={src} type={type} />
+        {/* Fallback for iOS Safari */}
+        <source src={src} type="video/mp4" />
+      </video>
+    </div>
   );
 };
 

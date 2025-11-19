@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,6 +11,8 @@ import { API_URL } from "@/utils/urls";
 export default function ShopGram({ parentClass = "" }) {
   const [instagramPosts, setInstagramPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [playing, setPlaying] = useState({});
+  const videoRefs = useRef({});
 
   useEffect(() => {
     const fetchInstagramPosts = async () => {
@@ -91,6 +93,32 @@ export default function ShopGram({ parentClass = "" }) {
 
     fetchInstagramPosts();
   }, []);
+
+  // iOS Safari: guarantee autoplay on first user interaction anywhere
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const isiOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (!isiOS) return;
+    const onFirstInteraction = () => {
+      const refs = videoRefs.current || {};
+      Object.values(refs).forEach((v) => {
+        if (!v) return;
+        try {
+          v.muted = true;
+          v.setAttribute('muted', '');
+          v.setAttribute('playsinline', '');
+          v.setAttribute('webkit-playsinline', '');
+          v.play().catch(() => {});
+        } catch (_) {}
+      });
+    };
+    window.addEventListener('touchstart', onFirstInteraction, { once: true });
+    window.addEventListener('click', onFirstInteraction, { once: true });
+    return () => {
+      window.removeEventListener('touchstart', onFirstInteraction);
+      window.removeEventListener('click', onFirstInteraction);
+    };
+  }, []);
   return (
     <section className={parentClass}>
       <div className="container">
@@ -153,6 +181,11 @@ export default function ShopGram({ parentClass = "" }) {
                 }
               }
               const isVideo = item.media?.mime?.startsWith('video/');
+              const posterSrc = item.media?.formats?.thumbnail?.url
+                ? (item.media.formats.thumbnail.url.startsWith('http')
+                    ? item.media.formats.thumbnail.url
+                    : `${process.env.NEXT_PUBLIC_API_URL || API_URL}${item.media.formats.thumbnail.url}`)
+                : '/images/placeholder.jpg';
               
               return (
                 <SwiperSlide key={item.id || i}>
@@ -160,36 +193,60 @@ export default function ShopGram({ parentClass = "" }) {
                     className="gallery-item hover-overlay hover-img wow fadeInUp"
                     data-wow-delay={`${(i + 1) * 0.1}s`}
                   >
-                    <div className="img-style">
+                    <div className="img-style" style={{ position: 'relative' }}>
                       {isVideo ? (
-                        <video
-                          className="lazyload img-hover"
-                          width={640}
-                          height={640}
-                          style={{ objectFit: 'cover' }}
-                          muted
-                          loop
-                          autoPlay
-                          playsInline
-                          preload="metadata"
-                          poster={item.media?.formats?.thumbnail?.url ? 
-                            (item.media.formats.thumbnail.url.startsWith('http') ? 
-                              item.media.formats.thumbnail.url : 
-                              `${process.env.NEXT_PUBLIC_API_URL || API_URL}${item.media.formats.thumbnail.url}`
-                            ) : undefined
-                          }
-                          onLoadStart={(event) => {
-                            // iOS Safari video loading fix
-                            if (typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
-                              const video = event.target;
-                              video.load();
-                            }
-                          }}
-                        >
-                          <source src={mediaUrl} type={item.media?.mime || 'video/mp4'} />
-                          {/* Fallback for iOS Safari */}
-                          <source src={mediaUrl} type="video/mp4" />
-                        </video>
+                        <>
+                          {/* Poster overlay stays until video actually plays */}
+                          {posterSrc && (
+                            <img
+                              src={posterSrc}
+                              alt={item.media?.alternativeText || 'Instagram video poster'}
+                              style={{
+                                position: 'absolute',
+                                inset: 0,
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                transition: 'opacity 180ms ease',
+                                opacity: playing[i] ? 0 : 1,
+                                pointerEvents: 'none',
+                                zIndex: 2,
+                              }}
+                            />
+                          )}
+                          <video
+                            className="lazyload img-hover"
+                            width={640}
+                            height={640}
+                            style={{ objectFit: 'cover', width: '100%', height: '100%', backgroundColor: 'transparent' }}
+                            ref={(el) => { videoRefs.current[i] = el; }}
+                            muted
+                            loop
+                            autoPlay
+                            playsInline
+                            preload="metadata"
+                            poster={posterSrc}
+                            // Encourage inline playback on iOS
+                            disableRemotePlayback
+                            webkit-playsinline="true"
+                            crossOrigin="anonymous"
+                            onLoadStart={(event) => {
+                              // iOS Safari video loading fix
+                              if (typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                                const video = event.target;
+                                try { video.load(); } catch (_) {}
+                              }
+                            }}
+                            onPlay={() => setPlaying(prev => ({ ...prev, [i]: true }))}
+                            onPause={() => setPlaying(prev => ({ ...prev, [i]: false }))}
+                            onWaiting={() => setPlaying(prev => ({ ...prev, [i]: false }))}
+                            onError={() => setPlaying(prev => ({ ...prev, [i]: false }))}
+                          >
+                            <source src={mediaUrl} type={item.media?.mime || 'video/mp4'} />
+                            {/* Fallback for iOS Safari */}
+                            <source src={mediaUrl} type="video/mp4" />
+                          </video>
+                        </>
                       ) : (
                         <Image
                           className="lazyload img-hover"
@@ -197,7 +254,7 @@ export default function ShopGram({ parentClass = "" }) {
                           src={mediaUrl}
                           width={640}
                           height={640}
-                          style={{ objectFit: 'cover' }}
+                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                         />
                       )}
                     </div>

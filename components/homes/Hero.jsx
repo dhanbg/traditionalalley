@@ -28,6 +28,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
   const playPromisesRef = useRef([]);
   const swiperRef = useRef(null);
   const slideTimeoutRef = useRef(null);
+  const iosAutoplayPrimedRef = useRef(false);
 
   // Function to validate video source
   const validateVideoSource = async (videoSrc) => {
@@ -174,6 +175,41 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
       setShowIntroImage(false);
     }
   }, [slides, firstVideoReady, firstMediaReady]);
+
+  // iOS Safari: prime autoplay on first user interaction anywhere on the page
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (!isiOS) return;
+
+    const primeAutoplay = () => {
+      if (iosAutoplayPrimedRef.current) return;
+      iosAutoplayPrimedRef.current = true;
+      // Attempt to play the active slide's video
+      const video = videoRefs.current[activeSlideIndex] || videoRefs.current[0];
+      if (video) {
+        try {
+          video.muted = true;
+          video.setAttribute('muted', '');
+          video.setAttribute('playsinline', '');
+          video.setAttribute('webkit-playsinline', '');
+          video.play().then(() => {
+            if (activeSlideIndex === 0) {
+              setFirstVideoReady(true);
+              setFirstMediaReady(true);
+            }
+          }).catch(() => {});
+        } catch (_) {}
+      }
+    };
+
+    window.addEventListener('touchstart', primeAutoplay, { once: true });
+    window.addEventListener('click', primeAutoplay, { once: true });
+    return () => {
+      window.removeEventListener('touchstart', primeAutoplay);
+      window.removeEventListener('click', primeAutoplay);
+    };
+  }, [activeSlideIndex]);
 
   // Handle video/audio play/pause on slide change with lazy loading
   const handleSlideChange = (swiper) => {
