@@ -38,7 +38,7 @@ export default function MarqueeSection() {
             
             {/* Added: Above 8000 happy customers */}
             <div className="marquee-child-item">
-              <h3 className="text-uppercase" style={textStyle}>ABOVE 8000 HAPPY CUSTOMERS</h3>
+              <h3 className="text-uppercase" style={textStyle}>8000 + HAPPY CUSTOMERS</h3>
             </div>
             <div className="marquee-child-item">
               <span className="icon icon-lightning" style={iconStyle} />
@@ -54,7 +54,7 @@ export default function MarqueeSection() {
             
             {/* Added: Above 8000 happy customers */}
             <div className="marquee-child-item">
-              <h3 className="text-uppercase" style={textStyle}>ABOVE 8000 HAPPY CUSTOMERS</h3>
+              <h3 className="text-uppercase" style={textStyle}>8000 + HAPPY CUSTOMERS</h3>
             </div>
             <div className="marquee-child-item">
               <span className="icon icon-lightning" style={iconStyle} />
@@ -70,7 +70,7 @@ export default function MarqueeSection() {
             
             {/* Added: Above 8000 happy customers */}
             <div className="marquee-child-item">
-              <h3 className="text-uppercase" style={textStyle}>ABOVE 8000 HAPPY CUSTOMERS</h3>
+              <h3 className="text-uppercase" style={textStyle}>8000 + HAPPY CUSTOMERS</h3>
             </div>
             <div className="marquee-child-item">
               <span className="icon icon-lightning" style={iconStyle} />
@@ -85,7 +85,7 @@ export default function MarqueeSection() {
             </div>
             {/* Added: Above 8000 happy customers */}
             <div className="marquee-child-item">
-              <h3 className="text-uppercase" style={textStyle}>ABOVE 8000 HAPPY CUSTOMERS</h3>
+              <h3 className="text-uppercase" style={textStyle}>8000 + HAPPY CUSTOMERS</h3>
             </div>
             <div className="marquee-child-item">
               <span className="icon icon-lightning" style={iconStyle} />
@@ -104,7 +104,7 @@ export default function MarqueeSection() {
             
             {/* Added: Above 8000 happy customers */}
             <div className="marquee-child-item">
-              <h3 className="text-uppercase" style={textStyle}>ABOVE 8000 HAPPY CUSTOMERS</h3>
+              <h3 className="text-uppercase" style={textStyle}>8000 + HAPPY CUSTOMERS</h3>
             </div>
             <div className="marquee-child-item">
               <span className="icon icon-lightning" style={iconStyle} />
@@ -120,7 +120,7 @@ export default function MarqueeSection() {
             
             {/* Added: Above 8000 happy customers */}
             <div className="marquee-child-item">
-              <h3 className="text-uppercase" style={textStyle}>ABOVE 8000 HAPPY CUSTOMERS</h3>
+              <h3 className="text-uppercase" style={textStyle}>8000 + HAPPY CUSTOMERS</h3>
             </div>
             <div className="marquee-child-item">
               <span className="icon icon-lightning" style={iconStyle} />
@@ -136,7 +136,7 @@ export default function MarqueeSection() {
             
             {/* Added: Above 8000 happy customers */}
             <div className="marquee-child-item">
-              <h3 className="text-uppercase" style={textStyle}>ABOVE 8000 HAPPY CUSTOMERS</h3>
+              <h3 className="text-uppercase" style={textStyle}>8000 + HAPPY CUSTOMERS</h3>
             </div>
             <div className="marquee-child-item">
               <span className="icon icon-lightning" style={iconStyle} />
@@ -151,7 +151,7 @@ export default function MarqueeSection() {
             </div>
             {/* Added: Above 8000 happy customers */}
             <div className="marquee-child-item">
-              <h3 className="text-uppercase" style={textStyle}>ABOVE 8000 HAPPY CUSTOMERS</h3>
+              <h3 className="text-uppercase" style={textStyle}>8000 + HAPPY CUSTOMERS</h3>
             </div>
             <div className="marquee-child-item">
               <span className="icon icon-lightning" style={iconStyle} />
