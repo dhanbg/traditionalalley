@@ -585,17 +585,6 @@ const OrderManagement = () => {
     return product.image || product.mainImage || '/images/placeholder.jpg';
   };
 
-  // Get display title preferring variant title when available
-  const getProductDisplayTitle = (product) => {
-    try {
-      if (product?.variantInfo?.title) return product.variantInfo.title;
-      if (product?.selectedVariant?.title) return product.selectedVariant.title;
-      return product?.title || 'N/A';
-    } catch (e) {
-      return product?.title || 'N/A';
-    }
-  };
-
 
 
   // Determine if destination is Nepal
@@ -606,6 +595,45 @@ const OrderManagement = () => {
     } catch (error) {
       console.error('Error determining destination country:', error);
       return false;
+    }
+  };
+
+  // Get display title with variant awareness for invoices
+  const getVariantAwareTitle = (item) => {
+    try {
+      const baseTitle = item?.title || item?.name || 'N/A';
+
+      // Prefer explicit variant titles if present
+      const variantTitle =
+        item?.variantTitle ||
+        item?.variantInfo?.title ||
+        item?.selectedVariant?.title ||
+        item?.design ||
+        item?.selectedColor ||
+        item?.selectedVariant?.color ||
+        null;
+
+      if (!variantTitle) {
+        return baseTitle;
+      }
+
+      // Avoid duplication if base already contains variant text
+      const lowerBase = (baseTitle || '').toLowerCase();
+      const lowerVariant = (variantTitle || '').toLowerCase();
+      if (lowerBase.includes(lowerVariant)) {
+        return baseTitle;
+      }
+
+      // Use existing separator style, default to " - "
+      const separator = baseTitle.includes(' - ')
+        ? ' - '
+        : baseTitle.includes(':')
+        ? ': '
+        : ' - ';
+
+      return `${baseTitle}${separator}${variantTitle}`;
+    } catch (e) {
+      return item?.title || item?.name || 'N/A';
     }
   };
 
@@ -818,9 +846,9 @@ const OrderManagement = () => {
         }
         
         console.log('Processing item:', { item, originalPrice: item.price, convertedPrice: price, quantity, total, isNepal, exchangeRate });
-        
+
         tableData.push([
-          getProductDisplayTitle(item),
+          getVariantAwareTitle(item),
           item.productDetails?.productCode || item.productCode || 'N/A',
           item.selectedSize || 'N/A',
           quantity.toString(),
@@ -1221,7 +1249,7 @@ const OrderManagement = () => {
          }
          
          tableData.push([
-           getProductDisplayTitle(item),
+           getVariantAwareTitle(item),
            item.productDetails?.productCode || item.productCode || 'N/A',
            item.selectedSize || 'N/A',
            quantity.toString(),
@@ -1687,7 +1715,7 @@ const OrderManagement = () => {
                           <div className="mt-1 text-sm text-gray-600">
                             {payment.orderData.products.map((product, index) => (
                               <div key={index} className="mb-1">
-                                <div>Product: {getProductDisplayTitle(product)}</div>
+                                <div>Product: {product.title}</div>
                                 <div className="flex flex-wrap gap-2">
                                   <span>Size: {
                                     product.selectedSize || 
