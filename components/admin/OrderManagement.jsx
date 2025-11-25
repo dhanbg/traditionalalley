@@ -585,6 +585,17 @@ const OrderManagement = () => {
     return product.image || product.mainImage || '/images/placeholder.jpg';
   };
 
+  // Get display title preferring variant title when available
+  const getProductDisplayTitle = (product) => {
+    try {
+      if (product?.variantInfo?.title) return product.variantInfo.title;
+      if (product?.selectedVariant?.title) return product.selectedVariant.title;
+      return product?.title || 'N/A';
+    } catch (e) {
+      return product?.title || 'N/A';
+    }
+  };
+
 
 
   // Determine if destination is Nepal
@@ -809,7 +820,7 @@ const OrderManagement = () => {
         console.log('Processing item:', { item, originalPrice: item.price, convertedPrice: price, quantity, total, isNepal, exchangeRate });
         
         tableData.push([
-          item.title || 'N/A',
+          getProductDisplayTitle(item),
           item.productDetails?.productCode || item.productCode || 'N/A',
           item.selectedSize || 'N/A',
           quantity.toString(),
@@ -1210,7 +1221,7 @@ const OrderManagement = () => {
          }
          
          tableData.push([
-           item.title || item.name || 'N/A',
+           getProductDisplayTitle(item),
            item.productDetails?.productCode || item.productCode || 'N/A',
            item.selectedSize || 'N/A',
            quantity.toString(),
@@ -1676,7 +1687,7 @@ const OrderManagement = () => {
                           <div className="mt-1 text-sm text-gray-600">
                             {payment.orderData.products.map((product, index) => (
                               <div key={index} className="mb-1">
-                                <div>Product: {product.title}</div>
+                                <div>Product: {getProductDisplayTitle(product)}</div>
                                 <div className="flex flex-wrap gap-2">
                                   <span>Size: {
                                     product.selectedSize || 
