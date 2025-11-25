@@ -598,48 +598,47 @@ const OrderManagement = () => {
     }
   };
 
-  // Get display title with variant awareness for invoices
+  // Get display title with variant awareness for invoices and dashboard
   const getVariantAwareTitle = (item) => {
     try {
-      const baseTitle = item?.title || item?.name || 'N/A';
+      const baseTitle = (item?.title || item?.name || 'N/A').trim();
+      const baseRoot = (baseTitle.includes(':') ? baseTitle.split(':')[0] : baseTitle).trim();
 
-      // Collect potential sources for variant label
-      const candidates = [
+      const rawCandidates = [
         item?.variantTitle,
         item?.variantInfo?.title,
         item?.selectedVariant?.title,
-        item?.design,
         item?.selectedColor,
-        item?.selectedVariant?.color
+        item?.selectedVariant?.color,
+        item?.design
       ].filter(Boolean);
 
-      // Normalize and pick the first meaningful candidate (ignore placeholders like Default)
-      const normalized = candidates
-        .map(c => String(c).trim())
-        .find(c => {
-          const lc = c.toLowerCase();
-          return lc && lc !== 'default' && lc !== 'variant' && lc !== '(variant)';
-        });
+      const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+      const cleanCandidate = (c) => {
+        let s = String(c).trim();
+        let lc = s.toLowerCase();
+        if (!s || lc === 'default' || lc === 'variant' || lc === '(variant)') return '';
+        // If the candidate contains a colon/hyphen, prefer the part after the separator
+        if (s.includes(':')) s = s.split(':').pop().trim();
+        else if (/[\-–—]/.test(s)) s = s.split(/[\-–—]/).pop().trim();
+        // Strip leading baseRoot if it’s embedded again
+        const baseRe = new RegExp(`^${escapeRegExp(baseRoot)}\s*[:\-]?\s*`, 'i');
+        s = s.replace(baseRe, '').trim();
+        lc = s.toLowerCase();
+        if (!s || lc === 'default' || lc === baseRoot.toLowerCase()) return '';
+        return s;
+      };
+
+      const normalized = rawCandidates.map(cleanCandidate).find(Boolean);
 
       if (!normalized) {
-        return baseTitle;
+        // Fall back to base, but normalize separator to " : " for consistency
+        return baseTitle.replace(/\s*-\s*/g, ' : ');
       }
 
-      // If base already contains the normalized variant, keep as-is
-      if ((baseTitle || '').toLowerCase().includes(normalized.toLowerCase())) {
-        return baseTitle;
-      }
-
-      // If base contains a colon, replace the suffix after the last colon with the variant
-      const colonIdx = baseTitle.lastIndexOf(':');
-      if (colonIdx !== -1 && colonIdx < baseTitle.length - 1) {
-        const prefix = baseTitle.slice(0, colonIdx + 1).trim();
-        return `${prefix} ${normalized}`;
-      }
-
-      // Otherwise, append using existing separator style
-      const separator = baseTitle.includes(' - ') ? ' - ' : ' - ';
-      return `${baseTitle}${separator}${normalized}`;
+      // Compose final in the form "BASE : VARIANT"
+      return `${baseRoot} : ${normalized}`;
     } catch (e) {
       return item?.title || item?.name || 'N/A';
     }
