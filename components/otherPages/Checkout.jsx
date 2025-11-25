@@ -178,11 +178,20 @@ export default function Checkout() {
         const discount = oldPrice > unitPrice ? ((oldPrice - unitPrice) / oldPrice) * 100 : 0;
         const finalPrice = unitPrice * product.quantity;
 
-        // Get the actual selected size and color from the product
-        const availableSize = product.selectedSize || 
-          (product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M");
-        const availableColor = product.selectedColor || 
-          (product.colors && product.colors.length > 0 ? product.colors[0] : "Default");
+        // Derive selected size and color with variant awareness
+        const availableSize = product.selectedSize 
+          || product.selectedVariant?.size 
+          || (product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M");
+
+        const firstColor = (product.colors && product.colors.length > 0)
+          ? (typeof product.colors[0] === 'string' 
+              ? product.colors[0] 
+              : (product.colors[0].name || product.colors[0].color || 'Default'))
+          : 'Default';
+
+        const availableColor = (product.variantInfo && product.variantInfo.isVariant && product.variantInfo.title)
+          ? product.variantInfo.title
+          : (product.selectedVariant?.color || product.selectedColor || firstColor || 'Default');
 
         return {
           id: product.id,
@@ -198,6 +207,13 @@ export default function Checkout() {
           imgSrc: product.imgSrc,
           selectedSize: availableSize,
           selectedColor: availableColor,
+          // Persist minimal variant metadata to support admin invoice display
+          variantTitle: (product.variantInfo && product.variantInfo.title) ? product.variantInfo.title : undefined,
+          variantInfo: (product.variantInfo && product.variantInfo.isVariant) ? {
+            title: product.variantInfo.title,
+            documentId: product.variantInfo.documentId || product.variantInfo.variantId,
+            isVariant: true
+          } : undefined,
           productDetails: {
             productCode: fetchedProduct?.productCode || "NO-CODES",
             brand: fetchedProduct?.brand || "",
@@ -836,13 +852,16 @@ export default function Checkout() {
         const discount = oldPrice > unitPrice ? ((oldPrice - unitPrice) / oldPrice) * 100 : 0;
         const finalPrice = unitPrice * product.quantity;
 
-        // Get the actual selected size and color from the product
-        const availableSize = product.selectedSize || 
-                            (product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M");
-        const availableColor = product.selectedColor || 
-                             (product.colors && product.colors.length > 0 
-                               ? (typeof product.colors[0] === 'string' ? product.colors[0] : product.colors[0].name || "default")
-                               : "default");
+        // Get the actual selected size and color from the product (variant-aware)
+        const availableSize = product.selectedSize 
+                              || product.selectedVariant?.size 
+                              || (product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M");
+        const firstColor = (product.colors && product.colors.length > 0)
+                            ? (typeof product.colors[0] === 'string' ? product.colors[0] : (product.colors[0].name || product.colors[0].color || 'default'))
+                            : 'default';
+        const availableColor = (product.variantInfo && product.variantInfo.isVariant && product.variantInfo.title)
+                               ? product.variantInfo.title
+                               : (product.selectedVariant?.color || product.selectedColor || firstColor || 'default');
         
 
 
@@ -850,7 +869,7 @@ export default function Checkout() {
           // Basic Product Info
           productId: product.id,
           documentId: product.documentId,
-          variantId: product.variantInfo?.documentId || null, // Add variant ID for matching
+          variantId: product.variantInfo?.documentId || product.variantInfo?.variantId || null, // Add variant ID for matching
           title: product.title || product.name || "Product",
           description: product.description || fetchedProduct?.description || "",
           category: fetchedProduct?.category || product.category || "",
@@ -869,6 +888,13 @@ export default function Checkout() {
             color: availableColor,
             variantSku: `${fetchedProduct?.sku || product.sku || `SKU-${product.documentId}`}-${availableSize}-${availableColor}`
           },
+          // Persist minimal variant metadata to support admin invoice display
+          variantTitle: (product.variantInfo && product.variantInfo.title) ? product.variantInfo.title : undefined,
+          variantInfo: (product.variantInfo && product.variantInfo.isVariant) ? {
+            title: product.variantInfo.title,
+            documentId: product.variantInfo.documentId || product.variantInfo.variantId,
+            isVariant: true
+          } : undefined,
           
           // Pricing Details
           pricing: {

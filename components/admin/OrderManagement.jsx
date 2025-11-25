@@ -603,35 +603,43 @@ const OrderManagement = () => {
     try {
       const baseTitle = item?.title || item?.name || 'N/A';
 
-      // Prefer explicit variant titles if present
-      const variantTitle =
-        item?.variantTitle ||
-        item?.variantInfo?.title ||
-        item?.selectedVariant?.title ||
-        item?.design ||
-        item?.selectedColor ||
-        item?.selectedVariant?.color ||
-        null;
+      // Collect potential sources for variant label
+      const candidates = [
+        item?.variantTitle,
+        item?.variantInfo?.title,
+        item?.selectedVariant?.title,
+        item?.design,
+        item?.selectedColor,
+        item?.selectedVariant?.color
+      ].filter(Boolean);
 
-      if (!variantTitle) {
+      // Normalize and pick the first meaningful candidate (ignore placeholders like Default)
+      const normalized = candidates
+        .map(c => String(c).trim())
+        .find(c => {
+          const lc = c.toLowerCase();
+          return lc && lc !== 'default' && lc !== 'variant' && lc !== '(variant)';
+        });
+
+      if (!normalized) {
         return baseTitle;
       }
 
-      // Avoid duplication if base already contains variant text
-      const lowerBase = (baseTitle || '').toLowerCase();
-      const lowerVariant = (variantTitle || '').toLowerCase();
-      if (lowerBase.includes(lowerVariant)) {
+      // If base already contains the normalized variant, keep as-is
+      if ((baseTitle || '').toLowerCase().includes(normalized.toLowerCase())) {
         return baseTitle;
       }
 
-      // Use existing separator style, default to " - "
-      const separator = baseTitle.includes(' - ')
-        ? ' - '
-        : baseTitle.includes(':')
-        ? ': '
-        : ' - ';
+      // If base contains a colon, replace the suffix after the last colon with the variant
+      const colonIdx = baseTitle.lastIndexOf(':');
+      if (colonIdx !== -1 && colonIdx < baseTitle.length - 1) {
+        const prefix = baseTitle.slice(0, colonIdx + 1).trim();
+        return `${prefix} ${normalized}`;
+      }
 
-      return `${baseTitle}${separator}${variantTitle}`;
+      // Otherwise, append using existing separator style
+      const separator = baseTitle.includes(' - ') ? ' - ' : ' - ';
+      return `${baseTitle}${separator}${normalized}`;
     } catch (e) {
       return item?.title || item?.name || 'N/A';
     }
@@ -1715,7 +1723,7 @@ const OrderManagement = () => {
                           <div className="mt-1 text-sm text-gray-600">
                             {payment.orderData.products.map((product, index) => (
                               <div key={index} className="mb-1">
-                                <div>Product: {product.title}</div>
+        <div>Product: {getVariantAwareTitle(product)}</div>
                                 <div className="flex flex-wrap gap-2">
                                   <span>Size: {
                                     product.selectedSize || 
