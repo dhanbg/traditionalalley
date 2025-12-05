@@ -2,6 +2,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { getVariantAwareTitle } from "../../utils/titleUtils";
 
 export default function Breadcumb({ product }) {
   const pathname = usePathname();
@@ -23,7 +24,7 @@ export default function Breadcumb({ product }) {
               Collections
             </Link>
             <i className="icon icon-arrRight" />
-            <span className="text text-caption-1">{product.title}</span>
+            <span className="text text-caption-1">{getVariantAwareTitle(product)}</span>
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { getVariantAwareTitle } from "../../utils/titleUtils";
 import CountdownTimer from "../common/Countdown";
 import { useContextElement } from "@/context/Context";
 import { fetchDataFromApi } from "@/utils/api";
@@ -404,7 +405,7 @@ export default function ShopCart() {
                                 href={`/product-detail/${elm.documentId || elm.baseProductId}`}
                                 className="cart-title link"
                               >
-                                {elm.title || 'Product'}
+                                {getVariantAwareTitle(elm)}
                               </Link>
 
                               {elm.selectedSize && (

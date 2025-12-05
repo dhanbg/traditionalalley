@@ -14,6 +14,7 @@ import { useCartImagePreloader } from "@/hooks/useCartImagePreloader";
 import imagePreloader from "@/utils/imagePreloader";
 import FallbackImage from "@/components/common/FallbackImage";
 import TopPicksEmptyCart from "@/components/common/TopPicksEmptyCart";
+import { getVariantAwareTitle } from "@/utils/titleUtils";
 
 export default function CartModal() {
   const {
@@ -745,7 +746,7 @@ export default function CartModal() {
                               <Link href={`/product-detail/${elm.documentId || elm.baseProductId}`}>
                                 <FallbackImage
                                    src={elm.variantInfo?.imgSrc || elm.imgSrc}
-                                   alt={elm.title}
+                                   alt={getVariantAwareTitle(elm)}
                                    width={60}
                                    height={90}
                                    priority={i < 3}
@@ -779,7 +780,7 @@ export default function CartModal() {
                                 className="link text-line-clamp-2"
                                 href={`/product-detail/${elm.documentId || elm.baseProductId}`}
                                   >
-                                {elm.title || 'Product'}
+                                {getVariantAwareTitle(elm)}
                                   </Link>
                                 </div>
                             <div className="quantity-display-wrapper">
