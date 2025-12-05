@@ -131,6 +131,13 @@ export default function ShopCart() {
   
   // Add state to store products with updated oldPrice values
   const [productsWithOldPrice, setProductsWithOldPrice] = useState({});
+
+  // Build product detail URL with preferred variant when applicable
+  const buildProductDetailHref = (item) => {
+    const baseId = item.baseProductId || item.documentId;
+    const variantId = item?.variantInfo?.documentId || item?.variantInfo?.variantId || null;
+    return `/product-detail/${baseId}${variantId ? `?variant=${variantId}` : ''}`;
+  };
   
   // Fetch product details for each cart item to get accurate oldPrice
   useEffect(() => {
@@ -362,7 +369,7 @@ export default function ShopCart() {
                           </td>
                           <td className="tf-cart-item_product">
                             <Link
-                              href={`/product-detail/${elm.documentId || elm.baseProductId}`}
+                              href={buildProductDetailHref(elm)}
                               className="img-box"
                             >
                               {!isCartLoading && (elm.variantInfo?.imgSrc || elm.imgSrc) ? (
@@ -402,7 +409,7 @@ export default function ShopCart() {
                             </Link>
                             <div className="cart-info">
                               <Link
-                                href={`/product-detail/${elm.documentId || elm.baseProductId}`}
+                                href={buildProductDetailHref(elm)}
                                 className="cart-title link"
                               >
                                 {getVariantAwareTitle(elm)}

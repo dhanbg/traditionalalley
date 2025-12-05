@@ -41,6 +41,13 @@ export default function CartModal() {
   const [isViewCartLoading, setIsViewCartLoading] = useState(false);
   const [showTopPicks, setShowTopPicks] = useState(false);
   
+  // Build product detail URL with preferred variant when applicable
+  const buildProductDetailHref = (item) => {
+    const baseId = item.baseProductId || item.documentId;
+    const variantId = item?.variantInfo?.documentId || item?.variantInfo?.variantId || null;
+    return `/product-detail/${baseId}${variantId ? `?variant=${variantId}` : ''}`;
+  };
+  
   // Initialize image preloader for cart modal
   const modalImagePreloader = useCartImagePreloader(serverCartProducts, {
     autoPreload: true,
@@ -743,7 +750,7 @@ export default function CartModal() {
                         <div className="tf-mini-cart-item" key={i}>
                             <div className="tf-mini-cart-image-section">
                               <div className="tf-mini-cart-image">
-                              <Link href={`/product-detail/${elm.documentId || elm.baseProductId}`}>
+                              <Link href={buildProductDetailHref(elm)}>
                                 <FallbackImage
                                    src={elm.variantInfo?.imgSrc || elm.imgSrc}
                                    alt={getVariantAwareTitle(elm)}
@@ -778,7 +785,7 @@ export default function CartModal() {
                             <div className="name">
                                   <Link
                                 className="link text-line-clamp-2"
-                                href={`/product-detail/${elm.documentId || elm.baseProductId}`}
+                                href={buildProductDetailHref(elm)}
                                   >
                                 {getVariantAwareTitle(elm)}
                                   </Link>
