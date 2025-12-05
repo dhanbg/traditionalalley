@@ -13,7 +13,7 @@ const AutoplayVideo = ({ src, poster, style, className, type = 'video/mp4', ...p
   const videoRef = useRef(null);
   const playPromiseRef = useRef(null);
   const [isInView, setIsInView] = useState(false);
-  const isiOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+
 
   useEffect(() => {
     const video = videoRef.current;
@@ -26,23 +26,19 @@ const AutoplayVideo = ({ src, poster, style, className, type = 'video/mp4', ...p
       video.muted = true;
       // Preload metadata for faster start
       video.preload = 'metadata';
-    } catch (_) {}
+    } catch (_) { }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         setIsInView(entry.isIntersecting);
         if (entry.isIntersecting) {
           // Store the play promise to handle it properly
-          // iOS sometimes requires a load() before play()
-          if (isiOS) {
-            try { video.load(); } catch (_) {}
-          }
           playPromiseRef.current = video.play().catch(() => {
             // As a fallback, try setting autoplay attribute and retry
             try {
               video.setAttribute('autoplay', '');
-              video.play().catch(() => {});
-            } catch (_) {}
+              video.play().catch(() => { });
+            } catch (_) { }
           });
         } else {
           // Wait for play promise to resolve before pausing
@@ -74,7 +70,6 @@ const AutoplayVideo = ({ src, poster, style, className, type = 'video/mp4', ...p
       className={`${className} no-video-controls`}
       muted
       loop
-      autoPlay
       playsInline
       preload="metadata"
       controls={false}
@@ -126,7 +121,7 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
             Elevate your wardrobe with fresh finds today!
           </p>
         </div>
-        
+
         <Swiper
           dir="ltr"
           className="swiper tf-sw-shop-gallery"
@@ -149,7 +144,7 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
               <SwiperSlide key={i}>
                 <div className="gallery-item hover-overlay hover-img">
                   <div className="img-style">
-                    <div 
+                    <div
                       style={{
                         width: '100%',
                         height: '640px',
@@ -203,11 +198,11 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
               // ensure every video has a poster for mobile
               const posterSrc = item.media?.formats?.thumbnail?.url
                 ? (item.media.formats.thumbnail.url.startsWith('http')
-                    ? item.media.formats.thumbnail.url
-                    : `${process.env.NEXT_PUBLIC_API_URL || API_URL}${item.media.formats.thumbnail.url}`
-                  )
+                  ? item.media.formats.thumbnail.url
+                  : `${process.env.NEXT_PUBLIC_API_URL || API_URL}${item.media.formats.thumbnail.url}`
+                )
                 : '/images/placeholder.jpg';
-              
+
               return (
                 <SwiperSlide key={item.id || i}>
                   <div
@@ -230,31 +225,31 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
                     }}
                   >
                     <div className="img-style">
-                    {isVideo ? (
-                      <AutoplayVideo
-                        src={mediaUrl}
-                        poster={posterSrc}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover'
-                        }}
-                        muted
-                        loop
-                        playsInline
-                        preload="metadata"
-                        className="lazyload img-hover"
-                      />
-                    ) : (
-                      <Image
-                        className="lazyload img-hover"
-                        alt={item.media?.alternativeText || "Instagram post"}
-                        src={mediaUrl}
-                        width={640}
-                        height={640}
-                        style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-                      />
-                    )}
+                      {isVideo ? (
+                        <AutoplayVideo
+                          src={mediaUrl}
+                          poster={posterSrc}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                          muted
+                          loop
+                          playsInline
+                          preload="metadata"
+                          className="lazyload img-hover"
+                        />
+                      ) : (
+                        <Image
+                          className="lazyload img-hover"
+                          alt={item.media?.alternativeText || "Instagram post"}
+                          src={mediaUrl}
+                          width={640}
+                          height={640}
+                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                        />
+                      )}
                     </div>
                     <Link
                       href={item.link || '#'}
@@ -298,8 +293,8 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
           )}
         </Swiper>
         <div className="d-flex d-lg-none sw-pagination-collection sw-dots type-circle justify-content-center spd-instagram" />
-        
-        
+
+
 
       </div>
     </section>

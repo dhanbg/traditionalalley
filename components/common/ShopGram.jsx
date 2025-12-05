@@ -95,7 +95,7 @@ export default function ShopGram({ parentClass = "" }) {
     <section className={parentClass}>
       <div className="container">
 
-        
+
         <div className="heading-section text-center">
           <h3 className="heading wow fadeInUp">Explore Instagram</h3>
           <p className="subheading text-secondary wow fadeInUp">
@@ -123,7 +123,7 @@ export default function ShopGram({ parentClass = "" }) {
               <SwiperSlide key={i}>
                 <div className="gallery-item hover-overlay hover-img">
                   <div className="img-style">
-                    <div 
+                    <div
                       style={{
                         width: '100%',
                         height: '640px',
@@ -153,7 +153,7 @@ export default function ShopGram({ parentClass = "" }) {
                 }
               }
               const isVideo = item.media?.mime?.startsWith('video/');
-              
+
               return (
                 <SwiperSlide key={item.id || i}>
                   <div
@@ -172,19 +172,13 @@ export default function ShopGram({ parentClass = "" }) {
                           autoPlay
                           playsInline
                           preload="metadata"
-                          poster={item.media?.formats?.thumbnail?.url ? 
-                            (item.media.formats.thumbnail.url.startsWith('http') ? 
-                              item.media.formats.thumbnail.url : 
+                          poster={item.media?.formats?.thumbnail?.url ?
+                            (item.media.formats.thumbnail.url.startsWith('http') ?
+                              item.media.formats.thumbnail.url :
                               `${process.env.NEXT_PUBLIC_API_URL || API_URL}${item.media.formats.thumbnail.url}`
                             ) : undefined
                           }
-                          onLoadStart={(event) => {
-                            // iOS Safari video loading fix
-                            if (typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
-                              const video = event.target;
-                              video.load();
-                            }
-                          }}
+
                         >
                           <source src={mediaUrl} type={item.media?.mime || 'video/mp4'} />
                           {/* Fallback for iOS Safari */}
