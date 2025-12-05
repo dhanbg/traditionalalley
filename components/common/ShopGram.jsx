@@ -166,12 +166,13 @@ export default function ShopGram({ parentClass = "" }) {
                           className="lazyload img-hover"
                           width={640}
                           height={640}
-                          style={{ objectFit: 'cover' }}
+                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                           muted
                           loop
                           autoPlay
                           playsInline
-                          preload="metadata"
+                          webkit-playsinline="true"
+                          preload="auto"
                           poster={item.media?.formats?.thumbnail?.url ?
                             (item.media.formats.thumbnail.url.startsWith('http') ?
                               item.media.formats.thumbnail.url :

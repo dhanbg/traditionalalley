@@ -13,74 +13,110 @@ const AutoplayVideo = ({ src, poster, style, className, type = 'video/mp4', ...p
   const videoRef = useRef(null);
   const playPromiseRef = useRef(null);
   const [isInView, setIsInView] = useState(false);
-
+  const [videoError, setVideoError] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Ensure inline playback on iOS Safari
-    try {
-      video.setAttribute('playsinline', '');
-      video.setAttribute('webkit-playsinline', '');
-      video.muted = true;
-      // Preload metadata for faster start
-      video.preload = 'metadata';
-    } catch (_) { }
+    // iOS Safari specific setup
+    const setupVideo = () => {
+      try {
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('webkit-playsinline', 'true');
+        video.setAttribute('x-webkit-airplay', 'allow');
+        video.muted = true;
+        video.defaultMuted = true;
+        video.volume = 0;
+      } catch (error) {
+        console.error('Video setup error:', error);
+      }
+    };
+
+    // Handle video load
+    const handleLoadedData = () => {
+      setIsLoaded(true);
+      setVideoError(false);
+    };
+
+    const handleError = (e) => {
+      console.error('Video error:', e, src);
+      setVideoError(true);
+    };
+
+    setupVideo();
+    video.addEventListener('loadeddata', handleLoadedData);
+    video.addEventListener('error', handleError);
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         setIsInView(entry.isIntersecting);
-        if (entry.isIntersecting) {
-          // Store the play promise to handle it properly
-          playPromiseRef.current = video.play().catch(() => {
-            // As a fallback, try setting autoplay attribute and retry
-            try {
-              video.setAttribute('autoplay', '');
-              video.play().catch(() => { });
-            } catch (_) { }
-          });
-        } else {
+        if (entry.isIntersecting && isLoaded && !videoError) {
+          // iOS Safari requires a small delay before playing
+          setTimeout(() => {
+            playPromiseRef.current = video.play().catch((error) => {
+              console.warn('Autoplay failed:', error);
+              // On iOS, autoplay might fail even with muted+playsinline
+              // This is expected behavior and not an error
+            });
+          }, 100);
+        } else if (!entry.isIntersecting) {
           // Wait for play promise to resolve before pausing
           if (playPromiseRef.current) {
-            playPromiseRef.current.then(() => {
-              if (!video.paused) {
-                video.pause();
-              }
-            }).catch(() => {
-              // Play failed, no need to pause
-            });
-          } else {
+            playPromiseRef.current
+              .then(() => {
+                if (!video.paused) {
+                  video.pause();
+                }
+              })
+              .catch(() => {
+                // Play failed, no need to pause
+              });
+          } else if (!video.paused) {
             video.pause();
           }
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.5 }
     );
 
     observer.observe(video);
-    return () => observer.disconnect();
-  }, []);
+
+    return () => {
+      observer.disconnect();
+      video.removeEventListener('loadeddata', handleLoadedData);
+      video.removeEventListener('error', handleError);
+    };
+  }, [src, isLoaded, videoError]);
 
   return (
     <video
       ref={videoRef}
       poster={poster}
-      style={style}
-      className={`${className} no-video-controls`}
+      style={{
+        ...style,
+        backgroundColor: '#000',  // Black background for video
+        display: 'block',
+        minHeight: '300px'  // Ensure minimum height
+      }}
+      className={className}
+      width="640"
+      height="640"
       muted
       loop
       playsInline
-      preload="metadata"
+      webkit-playsinline="true"
+      x5-playsinline="true"
+      preload="auto"
       controls={false}
-      // Helpful to coax autoplay on some Android browsers
       disablePictureInPicture
       controlsList="nodownload noplaybackrate"
       {...props}
     >
       <source src={src} type={type} />
-      {/* Fallback for iOS Safari */}
       <source src={src} type="video/mp4" />
+      Your browser does not support the video tag.
     </video>
   );
 };
@@ -201,7 +237,17 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
                   ? item.media.formats.thumbnail.url
                   : `${process.env.NEXT_PUBLIC_API_URL || API_URL}${item.media.formats.thumbnail.url}`
                 )
-                : '/images/placeholder.jpg';
+                : mediaUrl; // Use video URL as poster fallback
+
+              // Debug logging for iOS
+              if (isVideo && typeof window !== 'undefined') {
+                console.log('Instagram Video Item:', {
+                  id: item.id,
+                  mediaUrl,
+                  posterSrc,
+                  mime: item.media?.mime
+                });
+              }
 
               return (
                 <SwiperSlide key={item.id || i}>

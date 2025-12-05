@@ -3,5 +3,6 @@
 }
 
 .no-video-controls {
-  pointer-events: none;
+  /* Allow touch events on iOS for autoplay to work */
+  pointer-events: auto;
 }
