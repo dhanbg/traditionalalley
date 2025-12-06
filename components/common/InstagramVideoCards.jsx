@@ -19,7 +19,7 @@ const videoManager = {
 };
 
 // Autoplay Video Player optimized for iOS
-const AutoplayVideoPlayer = ({ src, poster, alt }) => {
+const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
   const videoRef = useRef(null);
   const observerRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -66,6 +66,8 @@ const AutoplayVideoPlayer = ({ src, poster, alt }) => {
     observerRef.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          if (!video) return; // Safety check
+
           if (entry.isIntersecting) {
             // Video is in view - try to play
             if (canAutoplay) {
@@ -83,7 +85,7 @@ const AutoplayVideoPlayer = ({ src, poster, alt }) => {
                   })
                   .catch((error) => {
                     // Autoplay blocked - this is normal on iOS on first load
-                    console.log('Autoplay prevented (tap to play):', error.message);
+                    console.log('Autoplay prevented:', error.message);
                     setCanAutoplay(false);
                     setShowPoster(true);
                   });
@@ -106,15 +108,21 @@ const AutoplayVideoPlayer = ({ src, poster, alt }) => {
     observerRef.current.observe(video);
 
     return () => {
+      // Clean up
       if (observerRef.current) {
         observerRef.current.disconnect();
+        observerRef.current = null;
       }
-      video.removeEventListener('play', handlePlay);
-      video.removeEventListener('pause', handlePause);
-      video.removeEventListener('playing', handlePlaying);
-      video.removeEventListener('waiting', handleWaiting);
+      if (video) {
+        video.removeEventListener('play', handlePlay);
+        video.removeEventListener('pause', handlePause);
+        video.removeEventListener('playing', handlePlaying);
+        video.removeEventListener('waiting', handleWaiting);
+        video.pause();
+        video.src = ''; // Release video resources
+      }
     };
-  }, [canAutoplay, isMobile, isPlaying]);
+  }, [canAutoplay, isMobile, isPlaying, src]); // Re-run if src changes (important for loop)
 
   const handleClick = (e) => {
     e.preventDefault();
@@ -202,6 +210,7 @@ const AutoplayVideoPlayer = ({ src, poster, alt }) => {
       {/* Video Element */}
       <video
         ref={videoRef}
+        key={`video-${index}-${src}`} // Unique key for each video instance
         src={src}
         poster={poster}
         style={{
@@ -380,6 +389,7 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
                           src={mediaUrl}
                           poster={posterSrc}
                           alt={item.media?.alternativeText || "Instagram video"}
+                          index={i}
                         />
                       ) : (
                         <Image
