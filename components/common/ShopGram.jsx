@@ -166,20 +166,20 @@ export default function ShopGram({ parentClass = "" }) {
                           className="lazyload img-hover"
                           width={640}
                           height={640}
-                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                          style={{ objectFit: 'cover', width: '100%', height: '100%', backgroundColor: '#000' }}
                           muted
                           loop
                           autoPlay
                           playsInline
                           webkit-playsinline="true"
-                          preload="auto"
+                          x5-playsinline="true"
+                          preload="metadata"
                           poster={item.media?.formats?.thumbnail?.url ?
                             (item.media.formats.thumbnail.url.startsWith('http') ?
                               item.media.formats.thumbnail.url :
                               `${process.env.NEXT_PUBLIC_API_URL || API_URL}${item.media.formats.thumbnail.url}`
-                            ) : undefined
+                            ) : mediaUrl
                           }
-
                         >
                           <source src={mediaUrl} type={item.media?.mime || 'video/mp4'} />
                           {/* Fallback for iOS Safari */}
