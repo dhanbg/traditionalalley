@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import Image from "next/image";
 import Link from "next/link";
 import { Pagination } from "swiper/modules";
 import { fetchDataFromApi } from "@/utils/api";
@@ -145,26 +144,20 @@ const AutoplayVideoPlayer = ({ src, poster, alt }) => {
     >
       {/* Poster Image - visible until video plays */}
       {showPoster && poster && (
-        <div
+        <img
+          src={poster}
+          alt={alt || "Video thumbnail"}
           style={{
             position: 'absolute',
             top: 0,
             left: 0,
             width: '100%',
             height: '100%',
+            objectFit: 'cover',
             zIndex: 2,
             pointerEvents: 'none'
           }}
-        >
-          <Image
-            src={poster}
-            alt={alt || "Video thumbnail"}
-            fill
-            style={{ objectFit: 'cover' }}
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
-            unoptimized
-          />
-        </div>
+        />
       )}
 
       {/* Play Button - shows if autoplay failed */}
@@ -382,13 +375,15 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
                           alt={item.media?.alternativeText || "Instagram video"}
                         />
                       ) : (
-                        <Image
+                        <img
                           className="lazyload img-hover"
                           alt={item.media?.alternativeText || "Instagram post"}
                           src={mediaUrl}
-                          fill
-                          style={{ objectFit: 'cover' }}
-                          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
                         />
                       )}
                     </div>

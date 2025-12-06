@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import Image from "next/image";
 import Link from "next/link";
 import { Pagination } from "swiper/modules";
 import { fetchDataFromApi } from "@/utils/api";
@@ -220,13 +219,15 @@ export default function ShopGram({ parentClass = "" }) {
                           alt={item.media?.alternativeText || "Instagram video"}
                         />
                       ) : (
-                        <Image
+                        <img
                           className="lazyload img-hover"
                           alt={item.media?.alternativeText || "Instagram post"}
                           src={mediaUrl}
-                          width={640}
-                          height={640}
-                          style={{ objectFit: 'cover' }}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
                         />
                       )}
                     </div>
