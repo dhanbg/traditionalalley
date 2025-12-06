@@ -7,7 +7,7 @@ import { Pagination } from "swiper/modules";
 import { fetchDataFromApi } from "@/utils/api";
 import { API_URL } from "@/utils/urls";
 
-// Single video manager
+// Single video manager for mobile - only one video plays at a time
 const videoManager = {
   activeVideo: null,
   setActive(video) {
@@ -18,76 +18,117 @@ const videoManager = {
   }
 };
 
-// Autoplay Video Player - fixed to prevent crash after loop
-const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
+// Autoplay Video Player optimized for iOS
+const AutoplayVideoPlayer = ({ src, poster, alt }) => {
   const videoRef = useRef(null);
   const observerRef = useRef(null);
-  const mountedRef = useRef(true);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showPoster, setShowPoster] = useState(true);
   const [canAutoplay, setCanAutoplay] = useState(true);
   const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   useEffect(() => {
-    mountedRef.current = true;
     const video = videoRef.current;
     if (!video) return;
 
+    // iOS setup
     video.muted = true;
     video.playsInline = true;
+    video.defaultMuted = true;
 
-    const handlePlay = () => mountedRef.current && setIsPlaying(true);
-    const handlePause = () => mountedRef.current && setIsPlaying(false);
+    const handlePlay = () => {
+      setIsPlaying(true);
+      setShowPoster(false);
+    };
+
+    const handlePause = () => {
+      setIsPlaying(false);
+      setShowPoster(true);
+    };
+
+    const handlePlaying = () => {
+      setShowPoster(false);
+    };
+
+    const handleWaiting = () => {
+      // Keep poster visible while buffering
+      if (!isPlaying) {
+        setShowPoster(true);
+      }
+    };
 
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
+    video.addEventListener('playing', handlePlaying);
+    video.addEventListener('waiting', handleWaiting);
 
-    // Clean up any existing observer
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
-
+    // Intersection Observer for autoplay
     observerRef.current = new IntersectionObserver(
       (entries) => {
-        if (!mountedRef.current || !video) return;
-
         entries.forEach((entry) => {
-          if (entry.isIntersecting && canAutoplay) {
-            if (isMobile) videoManager.setActive(video);
-            video.play().catch(() => mountedRef.current && setCanAutoplay(false));
-          } else if (!entry.isIntersecting && !video.paused) {
-            video.pause();
+          if (entry.isIntersecting) {
+            // Video is in view - try to play
+            if (canAutoplay) {
+              // On mobile, ensure only one video plays
+              if (isMobile) {
+                videoManager.setActive(video);
+              }
+
+              const playPromise = video.play();
+              if (playPromise !== undefined) {
+                playPromise
+                  .then(() => {
+                    // Autoplay started successfully
+                    setIsPlaying(true);
+                  })
+                  .catch((error) => {
+                    // Autoplay blocked - this is normal on iOS on first load
+                    console.log('Autoplay prevented (tap to play):', error.message);
+                    setCanAutoplay(false);
+                    setShowPoster(true);
+                  });
+              }
+            }
+          } else {
+            // Video is out of view - pause it
+            if (!video.paused) {
+              video.pause();
+            }
           }
         });
       },
-      { threshold: isMobile ? 0.75 : 0.5 }
+      {
+        threshold: isMobile ? 0.75 : 0.5, // Need to be more in view on mobile
+        rootMargin: '0px'
+      }
     );
 
     observerRef.current.observe(video);
 
     return () => {
-      mountedRef.current = false;
-
       if (observerRef.current) {
         observerRef.current.disconnect();
-        observerRef.current = null;
       }
-
-      if (video) {
-        video.removeEventListener('play', handlePlay);
-        video.removeEventListener('pause', handlePause);
-        if (!video.paused) {
-          video.pause();
-        }
-      }
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('playing', handlePlaying);
+      video.removeEventListener('waiting', handleWaiting);
     };
-  }, [canAutoplay, isMobile, src]);
+  }, [canAutoplay, isMobile, isPlaying]);
 
   const handleClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
+
     const video = videoRef.current;
-    if (video && mountedRef.current) {
-      isPlaying ? video.pause() : video.play().then(() => setCanAutoplay(true)).catch(console.error);
+    if (!video) return;
+
+    if (isPlaying) {
+      video.pause();
+    } else {
+      video.play()
+        .then(() => setCanAutoplay(true))
+        .catch(err => console.error('Play failed:', err));
     }
   };
 
@@ -102,8 +143,8 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
       }}
       onClick={handleClick}
     >
-      {/* Poster */}
-      {!isPlaying && poster && (
+      {/* Poster Image - visible until video plays */}
+      {showPoster && poster && (
         <div
           style={{
             position: 'absolute',
@@ -112,13 +153,12 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
             width: '100%',
             height: '100%',
             zIndex: 2,
-            pointerEvents: 'none',
-            backgroundColor: '#000'
+            pointerEvents: 'none'
           }}
         >
           <Image
             src={poster}
-            alt={alt || "Video"}
+            alt={alt || "Video thumbnail"}
             fill
             style={{ objectFit: 'cover' }}
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
@@ -127,8 +167,8 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
         </div>
       )}
 
-      {/* Play Button */}
-      {!isPlaying && !canAutoplay && (
+      {/* Play Button - shows if autoplay failed */}
+      {showPoster && !canAutoplay && (
         <div
           style={{
             position: 'absolute',
@@ -143,25 +183,32 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            transition: 'all 0.3s ease',
             pointerEvents: 'none'
           }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ marginLeft: '3px' }}>
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            style={{ marginLeft: '3px' }}
+          >
             <path d="M8 5v14l11-7z" fill="currentColor" />
           </svg>
         </div>
       )}
 
-      {/* Video */}
+      {/* Video Element */}
       <video
         ref={videoRef}
+        src={src}
         poster={poster}
         style={{
           width: '100%',
           height: '100%',
           objectFit: 'cover',
-          display: 'block',
-          backgroundColor: '#000'
+          display: 'block'
         }}
         muted
         loop
@@ -169,9 +216,8 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
         webkit-playsinline="true"
         x5-playsinline="true"
         preload="metadata"
-      >
-        <source src={src} type="video/mp4" />
-      </video>
+        controls={false}
+      />
     </div>
   );
 };
@@ -232,8 +278,19 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
             Array.from({ length: 5 }).map((_, i) => (
               <SwiperSlide key={i}>
                 <div className="gallery-item hover-overlay hover-img">
-                  <div className="img-style" style={{ height: '640px', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    Loading...
+                  <div className="img-style">
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '640px',
+                        backgroundColor: '#f0f0f0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      Loading...
+                    </div>
                   </div>
                 </div>
               </SwiperSlide>
@@ -241,22 +298,40 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
           ) : instagramPosts.length === 0 ? (
             <SwiperSlide>
               <div className="gallery-item hover-overlay hover-img">
-                <div className="img-style" style={{ height: '640px', background: '#fff7e6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#b36b00', fontWeight: 500 }}>
-                  Instagram posts are not available right now.
+                <div className="img-style">
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '640px',
+                      backgroundColor: '#fff7e6',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#b36b00',
+                      fontWeight: 500
+                    }}
+                  >
+                    Instagram posts are not available right now.
+                  </div>
                 </div>
               </div>
             </SwiperSlide>
           ) : (
             instagramPosts.slice(0, 5).map((item, i) => {
+              // Build URLs
               let mediaUrl = '/images/placeholder.jpg';
               if (item.media?.url) {
-                mediaUrl = item.media.url.startsWith('http')
-                  ? item.media.url
-                  : `${process.env.NEXT_PUBLIC_API_URL || API_URL}${item.media.url}`;
+                if (item.media.url.startsWith('http')) {
+                  mediaUrl = item.media.url;
+                } else {
+                  const baseUrl = process.env.NEXT_PUBLIC_API_URL || API_URL;
+                  mediaUrl = `${baseUrl}${item.media.url}`;
+                }
               }
 
               const isVideo = item.media?.mime?.startsWith('video/');
 
+              // Get poster
               let posterSrc = mediaUrl;
               if (item.media?.formats?.thumbnail?.url) {
                 const thumbUrl = item.media.formats.thumbnail.url;
@@ -271,7 +346,7 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
               }
 
               return (
-                <SwiperSlide key={`slide-${item.id || i}`}>
+                <SwiperSlide key={item.id || i}>
                   <div
                     className="gallery-item hover-overlay hover-img wow fadeInUp"
                     data-wow-delay={`${(i + 1) * 0.1}s`}
@@ -286,16 +361,25 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
                     }}
                     onMouseLeave={(e) => {
                       const eyeIcon = e.currentTarget.querySelector('.box-icon');
-                      if (eyeIcon) eyeIcon.style.opacity = '0';
+                      if (eyeIcon) {
+                        eyeIcon.style.opacity = '0';
+                      }
                     }}
                   >
-                    <div className="img-style" style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', backgroundColor: '#000' }}>
+                    <div
+                      className="img-style"
+                      style={{
+                        position: 'relative',
+                        width: '100%',
+                        height: '100%',
+                        overflow: 'hidden'
+                      }}
+                    >
                       {isVideo ? (
                         <AutoplayVideoPlayer
                           src={mediaUrl}
                           poster={posterSrc}
                           alt={item.media?.alternativeText || "Instagram video"}
-                          index={i}
                         />
                       ) : (
                         <Image

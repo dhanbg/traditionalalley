@@ -19,9 +19,8 @@ const videoManager = {
 };
 
 // Autoplay Video Player
-const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
+const AutoplayVideoPlayer = ({ src, poster, alt }) => {
   const videoRef = useRef(null);
-  const observerRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showPoster, setShowPoster] = useState(true);
   const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -33,11 +32,9 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
     video.muted = true;
     video.playsInline = true;
 
-    observerRef.current = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (!video) return;
-
           if (entry.isIntersecting) {
             if (isMobile) videoManager.setActive(video);
             video.play().catch(() => { });
@@ -60,21 +57,14 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
 
     video.addEventListener('playing', handlePlay);
     video.addEventListener('pause', handlePause);
-    observerRef.current.observe(video);
+    observer.observe(video);
 
     return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-        observerRef.current = null;
-      }
-      if (video) {
-        video.removeEventListener('playing', handlePlay);
-        video.removeEventListener('pause', handlePause);
-        video.pause();
-        video.src = '';
-      }
+      observer.disconnect();
+      video.removeEventListener('playing', handlePlay);
+      video.removeEventListener('pause', handlePause);
     };
-  }, [isMobile, src]);
+  }, [isMobile]);
 
   const handleClick = (e) => {
     e.preventDefault();
@@ -115,7 +105,6 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
 
       <video
         ref={videoRef}
-        key={`video-${index}-${src}`}
         src={src}
         poster={poster}
         style={{
@@ -229,7 +218,6 @@ export default function ShopGram({ parentClass = "" }) {
                           src={mediaUrl}
                           poster={posterSrc}
                           alt={item.media?.alternativeText || "Instagram video"}
-                          index={i}
                         />
                       ) : (
                         <Image
