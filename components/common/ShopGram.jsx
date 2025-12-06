@@ -1,12 +1,126 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
 import Link from "next/link";
-
 import { Pagination } from "swiper/modules";
 import { fetchDataFromApi } from "@/utils/api";
 import { API_URL } from "@/utils/urls";
+
+// Single video manager
+const videoManager = {
+  activeVideo: null,
+  setActive(video) {
+    if (this.activeVideo && this.activeVideo !== video) {
+      this.activeVideo.pause();
+    }
+    this.activeVideo = video;
+  }
+};
+
+// Autoplay Video Player
+const AutoplayVideoPlayer = ({ src, poster, alt }) => {
+  const videoRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showPoster, setShowPoster] = useState(true);
+  const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = true;
+    video.playsInline = true;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            if (isMobile) videoManager.setActive(video);
+            video.play().catch(() => { });
+          } else {
+            video.pause();
+          }
+        });
+      },
+      { threshold: isMobile ? 0.75 : 0.5 }
+    );
+
+    const handlePlay = () => {
+      setIsPlaying(true);
+      setShowPoster(false);
+    };
+    const handlePause = () => {
+      setIsPlaying(false);
+      setShowPoster(true);
+    };
+
+    video.addEventListener('playing', handlePlay);
+    video.addEventListener('pause', handlePause);
+    observer.observe(video);
+
+    return () => {
+      observer.disconnect();
+      video.removeEventListener('playing', handlePlay);
+      video.removeEventListener('pause', handlePause);
+    };
+  }, [isMobile]);
+
+  const handleClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (video) {
+      isPlaying ? video.pause() : video.play();
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '640px',
+        cursor: 'pointer',
+        backgroundColor: '#000'
+      }}
+      onClick={handleClick}
+    >
+      {showPoster && poster && (
+        <img
+          src={poster}
+          alt={alt || "Video"}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            zIndex: 2,
+            pointerEvents: 'none'
+          }}
+        />
+      )}
+
+      <video
+        ref={videoRef}
+        src={src}
+        poster={poster}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover'
+        }}
+        muted
+        loop
+        playsInline
+        webkit-playsinline="true"
+        preload="metadata"
+      />
+    </div>
+  );
+};
 
 export default function ShopGram({ parentClass = "" }) {
   const [instagramPosts, setInstagramPosts] = useState([]);
@@ -20,7 +134,6 @@ export default function ShopGram({ parentClass = "" }) {
         setInstagramPosts(response.data || []);
       } catch (error) {
         console.error('Failed to fetch Instagram posts:', error);
-        // Use mock data for testing when API fails
         const mockData = [
           {
             id: 1,
@@ -28,58 +141,12 @@ export default function ShopGram({ parentClass = "" }) {
             media: {
               url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
               mime: 'video/mp4',
-              alternativeText: 'Sample Instagram Video 1 - Big Buck Bunny',
+              alternativeText: 'Sample Video 1',
               formats: {
                 thumbnail: {
                   url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images_480x270/BigBuckBunny.jpg'
                 }
               }
-            }
-          },
-          {
-            id: 2,
-            link: 'https://instagram.com/p/test2',
-            media: {
-              url: 'https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4',
-              mime: 'video/mp4',
-              alternativeText: 'Sample Instagram Video 2',
-              formats: {
-                thumbnail: {
-                  url: 'https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4'
-                }
-              }
-            }
-          },
-          {
-            id: 3,
-            link: 'https://instagram.com/p/test3',
-            media: {
-              url: '/images/sample-instagram-1.jpg',
-              mime: 'image/jpeg',
-              alternativeText: 'Sample Instagram Image 1'
-            }
-          },
-          {
-            id: 4,
-            link: 'https://instagram.com/p/test4',
-            media: {
-              url: '/videos/sample-video-3.mp4',
-              mime: 'video/mp4',
-              alternativeText: 'Sample Instagram Video 3',
-              formats: {
-                thumbnail: {
-                  url: '/images/sample-thumb-3.jpg'
-                }
-              }
-            }
-          },
-          {
-            id: 5,
-            link: 'https://instagram.com/p/test5',
-            media: {
-              url: '/images/sample-instagram-2.jpg',
-              mime: 'image/jpeg',
-              alternativeText: 'Sample Instagram Image 2'
             }
           }
         ];
@@ -91,11 +158,10 @@ export default function ShopGram({ parentClass = "" }) {
 
     fetchInstagramPosts();
   }, []);
+
   return (
     <section className={parentClass}>
       <div className="container">
-
-
         <div className="heading-section text-center">
           <h3 className="heading wow fadeInUp">Explore Instagram</h3>
           <p className="subheading text-secondary wow fadeInUp">
@@ -112,79 +178,47 @@ export default function ShopGram({ parentClass = "" }) {
             0: { slidesPerView: 2 },
           }}
           modules={[Pagination]}
-          pagination={{
-            clickable: true,
-            el: ".spb222",
-          }}
+          pagination={{ clickable: true, el: ".spb222" }}
         >
           {loading ? (
-            // Loading skeleton
             Array.from({ length: 5 }).map((_, i) => (
               <SwiperSlide key={i}>
                 <div className="gallery-item hover-overlay hover-img">
-                  <div className="img-style">
-                    <div
-                      style={{
-                        width: '100%',
-                        height: '640px',
-                        backgroundColor: '#f0f0f0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      Loading...
-                    </div>
+                  <div className="img-style" style={{ height: '640px', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    Loading...
                   </div>
                 </div>
               </SwiperSlide>
             ))
           ) : (
             instagramPosts.slice(0, 5).map((item, i) => {
-              // Improved image URL construction for production
               let mediaUrl = '/images/placeholder.jpg';
               if (item.media?.url) {
-                if (item.media.url.startsWith('http')) {
-                  mediaUrl = item.media.url;
-                } else {
-                  // Use the API_URL from environment or fallback
-                  const baseUrl = process.env.NEXT_PUBLIC_API_URL || API_URL;
-                  mediaUrl = `${baseUrl}${item.media.url}`;
-                }
+                mediaUrl = item.media.url.startsWith('http')
+                  ? item.media.url
+                  : `${process.env.NEXT_PUBLIC_API_URL || API_URL}${item.media.url}`;
               }
+
               const isVideo = item.media?.mime?.startsWith('video/');
+
+              let posterSrc = mediaUrl;
+              if (item.media?.formats?.thumbnail?.url) {
+                const thumbUrl = item.media.formats.thumbnail.url;
+                posterSrc = thumbUrl.startsWith('http')
+                  ? thumbUrl
+                  : `${process.env.NEXT_PUBLIC_API_URL || API_URL}${thumbUrl}`;
+              }
 
               return (
                 <SwiperSlide key={item.id || i}>
-                  <div
-                    className="gallery-item hover-overlay hover-img wow fadeInUp"
-                    data-wow-delay={`${(i + 1) * 0.1}s`}
-                  >
+                  <div className="gallery-item hover-overlay hover-img wow fadeInUp" data-wow-delay={`${(i + 1) * 0.1}s`}>
                     <div className="img-style">
                       {isVideo ? (
-                        <video
-                          className="lazyload img-hover"
-                          width={640}
-                          height={640}
-                          style={{ objectFit: 'cover', width: '100%', height: '100%', backgroundColor: '#000' }}
-                          muted
-                          loop
-                          autoPlay
-                          playsInline
-                          webkit-playsinline="true"
-                          x5-playsinline="true"
-                          preload="metadata"
-                          poster={item.media?.formats?.thumbnail?.url ?
-                            (item.media.formats.thumbnail.url.startsWith('http') ?
-                              item.media.formats.thumbnail.url :
-                              `${process.env.NEXT_PUBLIC_API_URL || API_URL}${item.media.formats.thumbnail.url}`
-                            ) : mediaUrl
-                          }
-                        >
-                          <source src={mediaUrl} type={item.media?.mime || 'video/mp4'} />
-                          {/* Fallback for iOS Safari */}
-                          <source src={mediaUrl} type="video/mp4" />
-                        </video>
+                        <AutoplayVideoPlayer
+                          src={mediaUrl}
+                          poster={posterSrc}
+                          alt={item.media?.alternativeText || "Instagram video"}
+                        />
                       ) : (
                         <Image
                           className="lazyload img-hover"

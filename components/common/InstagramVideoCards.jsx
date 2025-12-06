@@ -6,185 +6,218 @@ import Link from "next/link";
 import { Pagination } from "swiper/modules";
 import { fetchDataFromApi } from "@/utils/api";
 import { API_URL } from "@/utils/urls";
-import "../../styles/custom-video.css";
 
-// Single video manager to ensure only one video plays at a time on mobile
-const activeVideoManager = {
-  currentVideo: null,
-  pauseAll: function () {
-    if (this.currentVideo && !this.currentVideo.paused) {
-      this.currentVideo.pause();
+// Single video manager for mobile - only one video plays at a time
+const videoManager = {
+  activeVideo: null,
+  setActive(video) {
+    if (this.activeVideo && this.activeVideo !== video) {
+      this.activeVideo.pause();
     }
-  },
-  setActive: function (video) {
-    if (this.currentVideo !== video) {
-      this.pauseAll();
-      this.currentVideo = video;
-    }
+    this.activeVideo = video;
   }
 };
 
-// Custom AutoplayVideo component optimized for iOS
-const AutoplayVideo = ({ src, poster, style, className, type = 'video/mp4', ...props }) => {
+// Autoplay Video Player optimized for iOS
+const AutoplayVideoPlayer = ({ src, poster, alt }) => {
   const videoRef = useRef(null);
-  const playPromiseRef = useRef(null);
-  const [isInView, setIsInView] = useState(false);
-  const [videoError, setVideoError] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const observerRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [showPoster, setShowPoster] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    // Check if mobile
-    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
-  }, []);
+  const [canAutoplay, setCanAutoplay] = useState(true);
+  const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // iOS Safari specific setup
-    const setupVideo = () => {
-      try {
-        video.setAttribute('playsinline', 'true');
-        video.setAttribute('webkit-playsinline', 'true');
-        video.setAttribute('x-webkit-airplay', 'allow');
-        video.setAttribute('x5-playsinline', 'true');
-        video.muted = true;
-        video.defaultMuted = true;
-        video.volume = 0;
-      } catch (error) {
-        console.error('Video setup error:', error);
-      }
-    };
-
-    // Handle video load
-    const handleLoadedData = () => {
-      setIsLoaded(true);
-      setVideoError(false);
-    };
-
-    const handleCanPlay = () => {
-      // Only hide poster when video can actually play
-      if (!video.paused) {
-        setShowPoster(false);
-      }
-    };
-
-    const handleError = (e) => {
-      console.error('Video error:', e, src);
-      setVideoError(true);
-      setShowPoster(true);
-    };
+    // iOS setup
+    video.muted = true;
+    video.playsInline = true;
+    video.defaultMuted = true;
 
     const handlePlay = () => {
+      setIsPlaying(true);
       setShowPoster(false);
     };
 
     const handlePause = () => {
+      setIsPlaying(false);
       setShowPoster(true);
     };
 
-    setupVideo();
-    video.addEventListener('loadeddata', handleLoadedData);
-    video.addEventListener('canplay', handleCanPlay);
-    video.addEventListener('error', handleError);
+    const handlePlaying = () => {
+      setShowPoster(false);
+    };
+
+    const handleWaiting = () => {
+      // Keep poster visible while buffering
+      if (!isPlaying) {
+        setShowPoster(true);
+      }
+    };
+
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
+    video.addEventListener('playing', handlePlaying);
+    video.addEventListener('waiting', handleWaiting);
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsInView(entry.isIntersecting);
+    // Intersection Observer for autoplay
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // Video is in view - try to play
+            if (canAutoplay) {
+              // On mobile, ensure only one video plays
+              if (isMobile) {
+                videoManager.setActive(video);
+              }
 
-        if (entry.isIntersecting && isLoaded && !videoError) {
-          // On mobile, ensure only one video plays at a time
-          if (isMobile) {
-            activeVideoManager.setActive(video);
+              const playPromise = video.play();
+              if (playPromise !== undefined) {
+                playPromise
+                  .then(() => {
+                    // Autoplay started successfully
+                    setIsPlaying(true);
+                  })
+                  .catch((error) => {
+                    // Autoplay blocked - this is normal on iOS on first load
+                    console.log('Autoplay prevented (tap to play):', error.message);
+                    setCanAutoplay(false);
+                    setShowPoster(true);
+                  });
+              }
+            }
+          } else {
+            // Video is out of view - pause it
+            if (!video.paused) {
+              video.pause();
+            }
           }
-
-          // Delay for iOS - longer on mobile
-          setTimeout(() => {
-            playPromiseRef.current = video.play().catch((error) => {
-              console.warn('Autoplay blocked (normal on iOS):', error.message);
-              setShowPoster(true);
-            });
-          }, isMobile ? 300 : 100);
-        } else if (!entry.isIntersecting) {
-          // Pause when out of view
-          if (playPromiseRef.current) {
-            playPromiseRef.current
-              .then(() => {
-                if (!video.paused) {
-                  video.pause();
-                }
-              })
-              .catch(() => { });
-          } else if (!video.paused) {
-            video.pause();
-          }
-        }
+        });
       },
-      { threshold: isMobile ? 0.75 : 0.5 } // Higher threshold on mobile for better performance
+      {
+        threshold: isMobile ? 0.75 : 0.5, // Need to be more in view on mobile
+        rootMargin: '0px'
+      }
     );
 
-    observer.observe(video);
+    observerRef.current.observe(video);
 
     return () => {
-      observer.disconnect();
-      video.removeEventListener('loadeddata', handleLoadedData);
-      video.removeEventListener('canplay', handleCanPlay);
-      video.removeEventListener('error', handleError);
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
+      video.removeEventListener('playing', handlePlaying);
+      video.removeEventListener('waiting', handleWaiting);
     };
-  }, [src, isLoaded, videoError, isMobile]);
+  }, [canAutoplay, isMobile, isPlaying]);
+
+  const handleClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isPlaying) {
+      video.pause();
+    } else {
+      video.play()
+        .then(() => setCanAutoplay(true))
+        .catch(err => console.error('Play failed:', err));
+    }
+  };
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        cursor: 'pointer',
+        backgroundColor: '#000'
+      }}
+      onClick={handleClick}
+    >
+      {/* Poster Image - visible until video plays */}
       {showPoster && poster && (
-        <img
-          src={poster}
-          alt="Video thumbnail"
+        <div
           style={{
             position: 'absolute',
             top: 0,
             left: 0,
             width: '100%',
             height: '100%',
-            objectFit: 'cover',
-            zIndex: 1,
+            zIndex: 2,
             pointerEvents: 'none'
           }}
-        />
+        >
+          <Image
+            src={poster}
+            alt={alt || "Video thumbnail"}
+            fill
+            style={{ objectFit: 'cover' }}
+            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
+            unoptimized
+          />
+        </div>
       )}
+
+      {/* Play Button - shows if autoplay failed */}
+      {showPoster && !canAutoplay && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 3,
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease',
+            pointerEvents: 'none'
+          }}
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            style={{ marginLeft: '3px' }}
+          >
+            <path d="M8 5v14l11-7z" fill="currentColor" />
+          </svg>
+        </div>
+      )}
+
+      {/* Video Element */}
       <video
         ref={videoRef}
+        src={src}
         poster={poster}
         style={{
-          ...style,
-          backgroundColor: '#000',
-          display: 'block',
-          position: 'relative',
-          zIndex: 0
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          display: 'block'
         }}
-        className={className}
-        width="640"
-        height="640"
         muted
         loop
         playsInline
         webkit-playsinline="true"
         x5-playsinline="true"
-        x-webkit-airplay="allow"
-        preload={isMobile ? "metadata" : "auto"}
+        preload="metadata"
         controls={false}
-        disablePictureInPicture
-        controlsList="nodownload noplaybackrate"
-        {...props}
-      >
-        <source src={src} type={type} />
-        <source src={src} type="video/mp4" />
-      </video>
+      />
     </div>
   );
 };
@@ -201,13 +234,12 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
         setInstagramPosts(response.data || []);
       } catch (error) {
         console.error('Failed to fetch Instagram posts:', error);
-        // Do not use mock data; render nothing if API fails
         setInstagramPosts([]);
       } finally {
         setLoading(false);
       }
     };
-    // Only use initial posts if non-empty; otherwise fetch client-side
+
     if (initialPosts && Array.isArray(initialPosts) && initialPosts.length > 0) {
       setInstagramPosts(initialPosts);
       setLoading(false);
@@ -243,7 +275,6 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
           }}
         >
           {loading ? (
-            // Loading skeleton
             Array.from({ length: 5 }).map((_, i) => (
               <SwiperSlide key={i}>
                 <div className="gallery-item hover-overlay hover-img">
@@ -287,25 +318,32 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
             </SwiperSlide>
           ) : (
             instagramPosts.slice(0, 5).map((item, i) => {
-              // Improved image URL construction for production
+              // Build URLs
               let mediaUrl = '/images/placeholder.jpg';
               if (item.media?.url) {
                 if (item.media.url.startsWith('http')) {
                   mediaUrl = item.media.url;
                 } else {
-                  // Use the API_URL from environment or fallback
                   const baseUrl = process.env.NEXT_PUBLIC_API_URL || API_URL;
                   mediaUrl = `${baseUrl}${item.media.url}`;
                 }
               }
+
               const isVideo = item.media?.mime?.startsWith('video/');
-              // ensure every video has a poster for mobile
-              const posterSrc = item.media?.formats?.thumbnail?.url
-                ? (item.media.formats.thumbnail.url.startsWith('http')
-                  ? item.media.formats.thumbnail.url
-                  : `${process.env.NEXT_PUBLIC_API_URL || API_URL}${item.media.formats.thumbnail.url}`
-                )
-                : mediaUrl; // Use video URL as poster fallback
+
+              // Get poster
+              let posterSrc = mediaUrl;
+              if (item.media?.formats?.thumbnail?.url) {
+                const thumbUrl = item.media.formats.thumbnail.url;
+                posterSrc = thumbUrl.startsWith('http')
+                  ? thumbUrl
+                  : `${process.env.NEXT_PUBLIC_API_URL || API_URL}${thumbUrl}`;
+              } else if (item.media?.formats?.small?.url) {
+                const smallUrl = item.media.formats.small.url;
+                posterSrc = smallUrl.startsWith('http')
+                  ? smallUrl
+                  : `${process.env.NEXT_PUBLIC_API_URL || API_URL}${smallUrl}`;
+              }
 
               return (
                 <SwiperSlide key={item.id || i}>
@@ -328,29 +366,29 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
                       }
                     }}
                   >
-                    <div className="img-style">
+                    <div
+                      className="img-style"
+                      style={{
+                        position: 'relative',
+                        width: '100%',
+                        height: '100%',
+                        overflow: 'hidden'
+                      }}
+                    >
                       {isVideo ? (
-                        <AutoplayVideo
+                        <AutoplayVideoPlayer
                           src={mediaUrl}
                           poster={posterSrc}
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover'
-                          }}
-                          muted
-                          loop
-                          playsInline
-                          className="lazyload img-hover"
+                          alt={item.media?.alternativeText || "Instagram video"}
                         />
                       ) : (
                         <Image
                           className="lazyload img-hover"
                           alt={item.media?.alternativeText || "Instagram post"}
                           src={mediaUrl}
-                          width={640}
-                          height={640}
-                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                          fill
+                          style={{ objectFit: 'cover' }}
+                          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
                         />
                       )}
                     </div>
