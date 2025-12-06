@@ -7,7 +7,7 @@ import { Pagination } from "swiper/modules";
 import { fetchDataFromApi } from "@/utils/api";
 import { API_URL } from "@/utils/urls";
 
-// Single video manager for mobile
+// Single video manager
 const videoManager = {
   activeVideo: null,
   setActive(video) {
@@ -18,35 +18,42 @@ const videoManager = {
   }
 };
 
-// Simple Autoplay Video Player
+// Autoplay Video Player - fixed to prevent crash after loop
 const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
   const videoRef = useRef(null);
   const observerRef = useRef(null);
+  const mountedRef = useRef(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [canAutoplay, setCanAutoplay] = useState(true);
   const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   useEffect(() => {
+    mountedRef.current = true;
     const video = videoRef.current;
     if (!video) return;
 
     video.muted = true;
     video.playsInline = true;
 
-    const handlePlay = () => setIsPlaying(true);
-    const handlePause = () => setIsPlaying(false);
+    const handlePlay = () => mountedRef.current && setIsPlaying(true);
+    const handlePause = () => mountedRef.current && setIsPlaying(false);
 
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
 
+    // Clean up any existing observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
     observerRef.current = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (!video) return;
+        if (!mountedRef.current || !video) return;
 
+        entries.forEach((entry) => {
           if (entry.isIntersecting && canAutoplay) {
             if (isMobile) videoManager.setActive(video);
-            video.play().catch(() => setCanAutoplay(false));
+            video.play().catch(() => mountedRef.current && setCanAutoplay(false));
           } else if (!entry.isIntersecting && !video.paused) {
             video.pause();
           }
@@ -58,12 +65,19 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
     observerRef.current.observe(video);
 
     return () => {
+      mountedRef.current = false;
+
       if (observerRef.current) {
         observerRef.current.disconnect();
+        observerRef.current = null;
       }
+
       if (video) {
         video.removeEventListener('play', handlePlay);
         video.removeEventListener('pause', handlePause);
+        if (!video.paused) {
+          video.pause();
+        }
       }
     };
   }, [canAutoplay, isMobile, src]);
@@ -72,7 +86,7 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
     e.preventDefault();
     e.stopPropagation();
     const video = videoRef.current;
-    if (video) {
+    if (video && mountedRef.current) {
       isPlaying ? video.pause() : video.play().then(() => setCanAutoplay(true)).catch(console.error);
     }
   };
@@ -89,7 +103,7 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
       onClick={handleClick}
     >
       {/* Poster */}
-      {!isPlaying && (
+      {!isPlaying && poster && (
         <div
           style={{
             position: 'absolute',
@@ -98,7 +112,8 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
             width: '100%',
             height: '100%',
             zIndex: 2,
-            pointerEvents: 'none'
+            pointerEvents: 'none',
+            backgroundColor: '#000'
           }}
         >
           <Image
@@ -140,13 +155,13 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
       {/* Video */}
       <video
         ref={videoRef}
-        key={`video-${index}-${src}`}
         poster={poster}
         style={{
           width: '100%',
           height: '100%',
           objectFit: 'cover',
-          display: 'block'
+          display: 'block',
+          backgroundColor: '#000'
         }}
         muted
         loop
