@@ -7,7 +7,7 @@ import { Pagination } from "swiper/modules";
 import { fetchDataFromApi } from "@/utils/api";
 import { API_URL } from "@/utils/urls";
 
-// Single video manager for mobile - only one video plays at a time
+// Single video manager for mobile
 const videoManager = {
   activeVideo: null,
   setActive(video) {
@@ -18,12 +18,11 @@ const videoManager = {
   }
 };
 
-// Autoplay Video Player optimized for iOS
+// Autoplay Video Player - optimized to prevent disappearing videos
 const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
   const videoRef = useRef(null);
   const observerRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showPoster, setShowPoster] = useState(true);
   const [canAutoplay, setCanAutoplay] = useState(true);
   const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
@@ -36,63 +35,31 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
     video.playsInline = true;
     video.defaultMuted = true;
 
-    const handlePlay = () => {
-      setIsPlaying(true);
-      setShowPoster(false);
-    };
-
-    const handlePause = () => {
-      setIsPlaying(false);
-      setShowPoster(true);
-    };
-
-    const handlePlaying = () => {
-      setShowPoster(false);
-    };
-
-    const handleWaiting = () => {
-      // Keep poster visible while buffering
-      if (!isPlaying) {
-        setShowPoster(true);
-      }
-    };
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handlePlaying = () => setIsPlaying(true);
 
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
     video.addEventListener('playing', handlePlaying);
-    video.addEventListener('waiting', handleWaiting);
 
-    // Intersection Observer for autoplay
+    // Intersection Observer
     observerRef.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (!video) return; // Safety check
+          if (!video) return;
 
           if (entry.isIntersecting) {
-            // Video is in view - try to play
             if (canAutoplay) {
-              // On mobile, ensure only one video plays
               if (isMobile) {
                 videoManager.setActive(video);
               }
 
-              const playPromise = video.play();
-              if (playPromise !== undefined) {
-                playPromise
-                  .then(() => {
-                    // Autoplay started successfully
-                    setIsPlaying(true);
-                  })
-                  .catch((error) => {
-                    // Autoplay blocked - this is normal on iOS on first load
-                    console.log('Autoplay prevented:', error.message);
-                    setCanAutoplay(false);
-                    setShowPoster(true);
-                  });
-              }
+              video.play().catch(() => {
+                setCanAutoplay(false);
+              });
             }
           } else {
-            // Video is out of view - pause it
             if (!video.paused) {
               video.pause();
             }
@@ -100,7 +67,7 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
         });
       },
       {
-        threshold: isMobile ? 0.75 : 0.5, // Need to be more in view on mobile
+        threshold: isMobile ? 0.75 : 0.5,
         rootMargin: '0px'
       }
     );
@@ -108,7 +75,6 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
     observerRef.current.observe(video);
 
     return () => {
-      // Clean up
       if (observerRef.current) {
         observerRef.current.disconnect();
         observerRef.current = null;
@@ -117,12 +83,10 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
         video.removeEventListener('play', handlePlay);
         video.removeEventListener('pause', handlePause);
         video.removeEventListener('playing', handlePlaying);
-        video.removeEventListener('waiting', handleWaiting);
-        video.pause();
-        video.src = ''; // Release video resources
+        // DON'T clear src or pause here - causes videos to disappear
       }
     };
-  }, [canAutoplay, isMobile, isPlaying, src]); // Re-run if src changes (important for loop)
+  }, [canAutoplay, isMobile, src]);
 
   const handleClick = (e) => {
     e.preventDefault();
@@ -140,6 +104,7 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
     }
   };
 
+  // Always show poster when not playing, with smooth transition
   return (
     <div
       style={{
@@ -147,12 +112,13 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
         width: '100%',
         height: '100%',
         cursor: 'pointer',
-        backgroundColor: '#000'
+        backgroundColor: '#000',
+        minHeight: '300px'
       }}
       onClick={handleClick}
     >
-      {/* Poster Image - visible until video plays */}
-      {showPoster && poster && (
+      {/* Poster - Always rendered, controlled by opacity */}
+      {poster && (
         <div
           style={{
             position: 'absolute',
@@ -161,22 +127,26 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
             width: '100%',
             height: '100%',
             zIndex: 2,
-            pointerEvents: 'none'
+            opacity: isPlaying ? 0 : 1,
+            transition: 'opacity 0.3s ease',
+            pointerEvents: 'none',
+            backgroundColor: '#000'
           }}
         >
-          <Image
+          <img
             src={poster}
-            alt={alt || "Video thumbnail"}
-            fill
-            style={{ objectFit: 'cover' }}
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
-            unoptimized
+            alt={alt || "Video"}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
+            }}
           />
         </div>
       )}
 
-      {/* Play Button - shows if autoplay failed */}
-      {showPoster && !canAutoplay && (
+      {/* Play Button */}
+      {!isPlaying && !canAutoplay && (
         <div
           style={{
             position: 'absolute',
@@ -191,33 +161,26 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'all 0.3s ease',
             pointerEvents: 'none'
           }}
         >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            style={{ marginLeft: '3px' }}
-          >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ marginLeft: '3px' }}>
             <path d="M8 5v14l11-7z" fill="currentColor" />
           </svg>
         </div>
       )}
 
-      {/* Video Element */}
+      {/* Video Element - ALWAYS rendered */}
       <video
         ref={videoRef}
-        key={`video-${index}-${src}`} // Unique key for each video instance
-        src={src}
+        key={`video-${index}-${src}`}
         poster={poster}
         style={{
           width: '100%',
           height: '100%',
           objectFit: 'cover',
-          display: 'block'
+          display: 'block',
+          backgroundColor: '#000'
         }}
         muted
         loop
@@ -226,7 +189,9 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
         x5-playsinline="true"
         preload="metadata"
         controls={false}
-      />
+      >
+        <source src={src} type="video/mp4" />
+      </video>
     </div>
   );
 };
@@ -327,7 +292,6 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
             </SwiperSlide>
           ) : (
             instagramPosts.slice(0, 5).map((item, i) => {
-              // Build URLs
               let mediaUrl = '/images/placeholder.jpg';
               if (item.media?.url) {
                 if (item.media.url.startsWith('http')) {
@@ -340,7 +304,6 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
 
               const isVideo = item.media?.mime?.startsWith('video/');
 
-              // Get poster
               let posterSrc = mediaUrl;
               if (item.media?.formats?.thumbnail?.url) {
                 const thumbUrl = item.media.formats.thumbnail.url;
@@ -355,7 +318,7 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
               }
 
               return (
-                <SwiperSlide key={item.id || i}>
+                <SwiperSlide key={`slide-${item.id || i}`}>
                   <div
                     className="gallery-item hover-overlay hover-img wow fadeInUp"
                     data-wow-delay={`${(i + 1) * 0.1}s`}
@@ -381,7 +344,8 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
                         position: 'relative',
                         width: '100%',
                         height: '100%',
-                        overflow: 'hidden'
+                        overflow: 'hidden',
+                        backgroundColor: '#000'
                       }}
                     >
                       {isVideo ? (
