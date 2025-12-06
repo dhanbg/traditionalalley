@@ -18,7 +18,7 @@ const videoManager = {
   }
 };
 
-// Autoplay Video Player - optimized to prevent disappearing videos
+// Simple Autoplay Video Player
 const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
   const videoRef = useRef(null);
   const observerRef = useRef(null);
@@ -30,46 +30,29 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
     const video = videoRef.current;
     if (!video) return;
 
-    // iOS setup
     video.muted = true;
     video.playsInline = true;
-    video.defaultMuted = true;
 
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
-    const handlePlaying = () => setIsPlaying(true);
 
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
-    video.addEventListener('playing', handlePlaying);
 
-    // Intersection Observer
     observerRef.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (!video) return;
 
-          if (entry.isIntersecting) {
-            if (canAutoplay) {
-              if (isMobile) {
-                videoManager.setActive(video);
-              }
-
-              video.play().catch(() => {
-                setCanAutoplay(false);
-              });
-            }
-          } else {
-            if (!video.paused) {
-              video.pause();
-            }
+          if (entry.isIntersecting && canAutoplay) {
+            if (isMobile) videoManager.setActive(video);
+            video.play().catch(() => setCanAutoplay(false));
+          } else if (!entry.isIntersecting && !video.paused) {
+            video.pause();
           }
         });
       },
-      {
-        threshold: isMobile ? 0.75 : 0.5,
-        rootMargin: '0px'
-      }
+      { threshold: isMobile ? 0.75 : 0.5 }
     );
 
     observerRef.current.observe(video);
@@ -77,13 +60,10 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
     return () => {
       if (observerRef.current) {
         observerRef.current.disconnect();
-        observerRef.current = null;
       }
       if (video) {
         video.removeEventListener('play', handlePlay);
         video.removeEventListener('pause', handlePause);
-        video.removeEventListener('playing', handlePlaying);
-        // DON'T clear src or pause here - causes videos to disappear
       }
     };
   }, [canAutoplay, isMobile, src]);
@@ -91,20 +71,12 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
   const handleClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-
     const video = videoRef.current;
-    if (!video) return;
-
-    if (isPlaying) {
-      video.pause();
-    } else {
-      video.play()
-        .then(() => setCanAutoplay(true))
-        .catch(err => console.error('Play failed:', err));
+    if (video) {
+      isPlaying ? video.pause() : video.play().then(() => setCanAutoplay(true)).catch(console.error);
     }
   };
 
-  // Always show poster when not playing, with smooth transition
   return (
     <div
       style={{
@@ -112,13 +84,12 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
         width: '100%',
         height: '100%',
         cursor: 'pointer',
-        backgroundColor: '#000',
-        minHeight: '300px'
+        backgroundColor: '#000'
       }}
       onClick={handleClick}
     >
-      {/* Poster - Always rendered, controlled by opacity */}
-      {poster && (
+      {/* Poster */}
+      {!isPlaying && (
         <div
           style={{
             position: 'absolute',
@@ -127,20 +98,16 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
             width: '100%',
             height: '100%',
             zIndex: 2,
-            opacity: isPlaying ? 0 : 1,
-            transition: 'opacity 0.3s ease',
-            pointerEvents: 'none',
-            backgroundColor: '#000'
+            pointerEvents: 'none'
           }}
         >
-          <img
+          <Image
             src={poster}
             alt={alt || "Video"}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover'
-            }}
+            fill
+            style={{ objectFit: 'cover' }}
+            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
+            unoptimized
           />
         </div>
       )}
@@ -170,7 +137,7 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
         </div>
       )}
 
-      {/* Video Element - ALWAYS rendered */}
+      {/* Video */}
       <video
         ref={videoRef}
         key={`video-${index}-${src}`}
@@ -179,8 +146,7 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
           width: '100%',
           height: '100%',
           objectFit: 'cover',
-          display: 'block',
-          backgroundColor: '#000'
+          display: 'block'
         }}
         muted
         loop
@@ -188,7 +154,6 @@ const AutoplayVideoPlayer = ({ src, poster, alt, index }) => {
         webkit-playsinline="true"
         x5-playsinline="true"
         preload="metadata"
-        controls={false}
       >
         <source src={src} type="video/mp4" />
       </video>
@@ -252,19 +217,8 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
             Array.from({ length: 5 }).map((_, i) => (
               <SwiperSlide key={i}>
                 <div className="gallery-item hover-overlay hover-img">
-                  <div className="img-style">
-                    <div
-                      style={{
-                        width: '100%',
-                        height: '640px',
-                        backgroundColor: '#f0f0f0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      Loading...
-                    </div>
+                  <div className="img-style" style={{ height: '640px', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    Loading...
                   </div>
                 </div>
               </SwiperSlide>
@@ -272,21 +226,8 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
           ) : instagramPosts.length === 0 ? (
             <SwiperSlide>
               <div className="gallery-item hover-overlay hover-img">
-                <div className="img-style">
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '640px',
-                      backgroundColor: '#fff7e6',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#b36b00',
-                      fontWeight: 500
-                    }}
-                  >
-                    Instagram posts are not available right now.
-                  </div>
+                <div className="img-style" style={{ height: '640px', background: '#fff7e6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#b36b00', fontWeight: 500 }}>
+                  Instagram posts are not available right now.
                 </div>
               </div>
             </SwiperSlide>
@@ -294,12 +235,9 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
             instagramPosts.slice(0, 5).map((item, i) => {
               let mediaUrl = '/images/placeholder.jpg';
               if (item.media?.url) {
-                if (item.media.url.startsWith('http')) {
-                  mediaUrl = item.media.url;
-                } else {
-                  const baseUrl = process.env.NEXT_PUBLIC_API_URL || API_URL;
-                  mediaUrl = `${baseUrl}${item.media.url}`;
-                }
+                mediaUrl = item.media.url.startsWith('http')
+                  ? item.media.url
+                  : `${process.env.NEXT_PUBLIC_API_URL || API_URL}${item.media.url}`;
               }
 
               const isVideo = item.media?.mime?.startsWith('video/');
@@ -333,21 +271,10 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
                     }}
                     onMouseLeave={(e) => {
                       const eyeIcon = e.currentTarget.querySelector('.box-icon');
-                      if (eyeIcon) {
-                        eyeIcon.style.opacity = '0';
-                      }
+                      if (eyeIcon) eyeIcon.style.opacity = '0';
                     }}
                   >
-                    <div
-                      className="img-style"
-                      style={{
-                        position: 'relative',
-                        width: '100%',
-                        height: '100%',
-                        overflow: 'hidden',
-                        backgroundColor: '#000'
-                      }}
-                    >
+                    <div className="img-style" style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', backgroundColor: '#000' }}>
                       {isVideo ? (
                         <AutoplayVideoPlayer
                           src={mediaUrl}
