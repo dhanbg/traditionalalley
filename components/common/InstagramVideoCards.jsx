@@ -260,7 +260,7 @@ export default function InstagramVideoCards({ parentClass = "", initialPosts = n
             768: { slidesPerView: 3 },
             0: { slidesPerView: 2 },
           }}
-          loop={true}
+          loop={false}
           modules={[Pagination]}
           pagination={{
             clickable: true,
