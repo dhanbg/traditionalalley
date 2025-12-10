@@ -4,7 +4,8 @@ import { localHeroSlides } from '@/data/localHeroSlides';
 import { fetchDataFromApi } from '@/utils/api';
 import { fetchTopPicksItems } from '@/utils/productVariantUtils';
 
-export const revalidate = 0;
+// ✅ PERFORMANCE: Enable ISR - cache for 60 seconds
+export const revalidate = 60; // Revalidate every 60 seconds
 
 // Metadata for the home page
 export const metadata = {

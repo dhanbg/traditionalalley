@@ -10,13 +10,13 @@ export async function checkWelcomeCouponUsage(userId) {
   try {
     // Fetch all coupons with populated data
     const couponsResponse = await fetchDataFromApi('/api/coupons?populate=*');
-    
+
     if (!couponsResponse.data || couponsResponse.data.length === 0) {
       return { hasUsed: false, couponData: null };
     }
 
     // Find the WELCOMETOTA coupon (case-insensitive)
-    const welcomeCoupon = couponsResponse.data.find(coupon => 
+    const welcomeCoupon = couponsResponse.data.find(coupon =>
       coupon.code && coupon.code.toLowerCase() === 'welcometota'
     );
 
@@ -27,15 +27,15 @@ export async function checkWelcomeCouponUsage(userId) {
     // Debug: Log the usedByUserData to see what's there
     console.log('🔍 DEBUG: welcomeCoupon.usedByUserData:', welcomeCoupon.usedByUserData);
     console.log('🔍 DEBUG: Current userId:', userId);
-    
+
     // Check if the user has used this coupon
-    const hasUsedCoupon = welcomeCoupon.usedByUserData && 
+    const hasUsedCoupon = welcomeCoupon.usedByUserData &&
       welcomeCoupon.usedByUserData.some(userData => {
         console.log('🔍 DEBUG: Checking userData with ALL fields:', JSON.stringify(userData, null, 2));
         console.log('🔍 DEBUG: Object.keys(userData):', Object.keys(userData));
         console.log('🔍 DEBUG: userData.userId === userId?', userData.userId === userId);
         console.log('🔍 DEBUG: userData.userEmail === userId?', userData.userEmail === userId);
-        
+
         // Check all possible fields that might contain the user identifier
         console.log('🔍 DEBUG: Checking possible user identifier fields:');
         console.log('  - userData.id:', userData.id);
@@ -44,18 +44,18 @@ export async function checkWelcomeCouponUsage(userId) {
         console.log('  - userData.authId:', userData.authId);
         console.log('  - userData.googleId:', userData.googleId);
         console.log('  - userData.providerId:', userData.providerId);
-        
+
         // Fix: Check authUserId (contains Google auth ID) and email instead of non-existent userId/userEmail
         const matchesAuthId = userData.authUserId === userId;
         const matchesEmail = userData.email === userId;
-        
+
         console.log('🔍 DEBUG: Fixed field checks:');
         console.log('  - userData.authUserId === userId?', matchesAuthId);
         console.log('  - userData.email === userId?', matchesEmail);
-        
+
         return matchesAuthId || matchesEmail;
       });
-    
+
     console.log('🔍 DEBUG: Final hasUsedCoupon result:', hasUsedCoupon);
 
     return {
@@ -96,7 +96,7 @@ export async function getWelcomeCouponForAutoSelection(userId) {
   try {
     console.log('🔍 DEBUG: Checking welcome coupon for auto-selection, userId:', userId);
     const couponCheck = await checkWelcomeCouponUsage(userId);
-    
+
     console.log('🔍 DEBUG: Coupon check result:', {
       hasUsed: couponCheck.hasUsed,
       isValid: couponCheck.isValid,
@@ -104,7 +104,7 @@ export async function getWelcomeCouponForAutoSelection(userId) {
       hasCouponData: !!couponCheck.couponData,
       couponCode: couponCheck.couponData?.code
     });
-    
+
     // Return coupon data only if user hasn't used it and it's valid
     if (!couponCheck.hasUsed && couponCheck.isValid && couponCheck.couponData) {
       console.log('✅ DEBUG: Returning coupon data for auto-selection');
@@ -118,7 +118,7 @@ export async function getWelcomeCouponForAutoSelection(userId) {
         autoSelected: true // Flag to indicate this was auto-selected
       };
     }
-    
+
     console.log('❌ DEBUG: Not returning coupon data - conditions not met');
     return null;
   } catch (error) {
@@ -143,7 +143,7 @@ export async function fetchTopPicksItems() {
   try {
     // Fetch top picks data
     const response = await fetchDataFromApi('/api/top-picks?populate=*');
-    
+
     if (!response.data || response.data.length === 0) {
       return [];
     }
@@ -153,73 +153,95 @@ export async function fetchTopPicksItems() {
       return [];
     }
 
-    const allItems = [];
+    // ✅ PERFORMANCE FIX: Fetch all products in parallel instead of sequentially
+    const productFetches = [];
+    const variantFetches = [];
 
-    // Process main products from 'products' array
+    // Prepare all product fetch promises
     if (topPicksItem.products && topPicksItem.products.length > 0) {
       for (const product of topPicksItem.products) {
         if (product && product.documentId) {
-          try {
-            const apiEndpoint = `/api/products?filters[documentId][$eq]=${product.documentId}&populate=*`;
-            const productsResponse = await fetchDataFromApi(apiEndpoint);
-            
-            if (productsResponse.data && productsResponse.data.length > 0) {
-              const rawProduct = productsResponse.data[0];
-              const transformedProduct = transformProductForListing(rawProduct);
-              
-              if (transformedProduct.isActive !== false) {
-                allItems.push({
-                  ...transformedProduct,
-                  itemType: 'product',
-                  parentProductId: rawProduct.documentId,
-                  isMainProduct: true
-                });
-              }
-            }
-          } catch (error) {
-            console.error(`Error fetching main product ${product.documentId}:`, error);
-          }
+          const apiEndpoint = `/api/products?filters[documentId][$eq]=${product.documentId}&populate=*`;
+          productFetches.push(
+            fetchDataFromApi(apiEndpoint)
+              .then(productsResponse => {
+                if (productsResponse.data && productsResponse.data.length > 0) {
+                  const rawProduct = productsResponse.data[0];
+                  const transformedProduct = transformProductForListing(rawProduct);
+
+                  if (transformedProduct.isActive !== false) {
+                    return {
+                      ...transformedProduct,
+                      itemType: 'product',
+                      parentProductId: rawProduct.documentId,
+                      isMainProduct: true
+                    };
+                  }
+                }
+                return null;
+              })
+              .catch(error => {
+                console.error(`Error fetching main product ${product.documentId}:`, error);
+                return null;
+              })
+          );
         }
       }
     }
 
-    // Process specific variants from 'product_variants' array
+    // Prepare all variant fetch promises
     if (topPicksItem.product_variants && topPicksItem.product_variants.length > 0) {
       for (const variant of topPicksItem.product_variants) {
         if (variant && variant.documentId) {
-          try {
-            const variantEndpoint = `/api/product-variants?filters[documentId][$eq]=${variant.documentId}&populate=*`;
-            const variantResponse = await fetchDataFromApi(variantEndpoint);
-            
-            if (variantResponse.data && variantResponse.data.length > 0) {
-              const rawVariant = variantResponse.data[0];
-              
-              // Get the parent product for the variant
-              if (rawVariant.product && rawVariant.product.documentId) {
-                const parentProductEndpoint = `/api/products?filters[documentId][$eq]=${rawVariant.product.documentId}&populate=*`;
-                const parentProductResponse = await fetchDataFromApi(parentProductEndpoint);
-                
-                if (parentProductResponse.data && parentProductResponse.data.length > 0) {
-                  const parentProduct = parentProductResponse.data[0];
-                  const transformedVariant = transformVariantForListing(rawVariant, parentProduct);
-                  
-                  if (transformedVariant.isActive !== false) {
-                    allItems.push({
-                      ...transformedVariant,
-                      itemType: 'variant',
-                      parentProductId: parentProduct.documentId,
-                      isMainProduct: false
-                    });
+          const variantEndpoint = `/api/product-variants?filters[documentId][$eq]=${variant.documentId}&populate=*`;
+          variantFetches.push(
+            fetchDataFromApi(variantEndpoint)
+              .then(async variantResponse => {
+                if (variantResponse.data && variantResponse.data.length > 0) {
+                  const rawVariant = variantResponse.data[0];
+
+                  // Get the parent product for the variant
+                  if (rawVariant.product && rawVariant.product.documentId) {
+                    const parentProductEndpoint = `/api/products?filters[documentId][$eq]=${rawVariant.product.documentId}&populate=*`;
+                    const parentProductResponse = await fetchDataFromApi(parentProductEndpoint);
+
+                    if (parentProductResponse.data && parentProductResponse.data.length > 0) {
+                      const parentProduct = parentProductResponse.data[0];
+                      const transformedVariant = transformVariantForListing(rawVariant, parentProduct);
+
+                      if (transformedVariant.isActive !== false) {
+                        return {
+                          ...transformedVariant,
+                          itemType: 'variant',
+                          parentProductId: parentProduct.documentId,
+                          isMainProduct: false
+                        };
+                      }
+                    }
                   }
                 }
-              }
-            }
-          } catch (error) {
-            console.error(`Error fetching variant ${variant.documentId}:`, error);
-          }
+                return null;
+              })
+              .catch(error => {
+                console.error(`Error fetching variant ${variant.documentId}:`, error);
+                return null;
+              })
+          );
         }
       }
     }
+
+    // ✅ Execute all fetches in parallel
+    const [productResults, variantResults] = await Promise.all([
+      Promise.all(productFetches),
+      Promise.all(variantFetches)
+    ]);
+
+    // Filter out null results and combine
+    const allItems = [
+      ...productResults.filter(item => item !== null),
+      ...variantResults.filter(item => item !== null)
+    ];
 
     return allItems;
   } catch (error) {
@@ -237,7 +259,7 @@ export async function fetchMainProductsOnly(apiEndpoint) {
   try {
     // Fetch main products
     const productsResponse = await fetchDataFromApi(apiEndpoint);
-    
+
     if (!productsResponse.data || productsResponse.data.length === 0) {
       return [];
     }
@@ -250,7 +272,7 @@ export async function fetchMainProductsOnly(apiEndpoint) {
 
       // Transform main product
       const transformedProduct = transformProductForListing(rawProduct);
-      
+
       // Only include active products
       if (transformedProduct.isActive !== false) {
         allItems.push({
@@ -273,7 +295,7 @@ export async function fetchProductsWithVariants(apiEndpoint) {
   try {
     // Fetch main products
     const productsResponse = await fetchDataFromApi(apiEndpoint);
-    
+
     if (!productsResponse.data || productsResponse.data.length === 0) {
       return [];
     }
@@ -286,7 +308,7 @@ export async function fetchProductsWithVariants(apiEndpoint) {
 
       // Transform main product
       const transformedProduct = transformProductForListing(rawProduct);
-      
+
       // Only include active products
       if (transformedProduct.isActive !== false) {
         allItems.push({
@@ -307,7 +329,7 @@ export async function fetchProductsWithVariants(apiEndpoint) {
           // Transform each variant as a separate item
           for (const rawVariant of variantsResponse.data) {
             const transformedVariant = transformVariantForListing(rawVariant, rawProduct);
-            
+
             // Only include active variants
             if (transformedVariant.isActive !== false) {
               allItems.push({
@@ -344,18 +366,18 @@ function transformProductForListing(rawProduct) {
 
   // Get main image URL with fallback
   const imgSrc = getBestImageUrl(rawProduct.imgSrc, 'medium') || DEFAULT_IMAGE;
-  
+
   // Get hover image URL with fallback to main image
   const imgHover = getBestImageUrl(rawProduct.imgHover, 'medium') || imgSrc;
-  
+
   // Process gallery images if available
-  const gallery = Array.isArray(rawProduct.gallery) 
+  const gallery = Array.isArray(rawProduct.gallery)
     ? rawProduct.gallery
-        .filter(img => img != null)
-        .map(img => ({
-          id: img.id || img.documentId || 0,
-          url: getBestImageUrl(img, 'medium') || DEFAULT_IMAGE
-        }))
+      .filter(img => img != null)
+      .map(img => ({
+        id: img.id || img.documentId || 0,
+        url: getBestImageUrl(img, 'medium') || DEFAULT_IMAGE
+      }))
     : [];
 
   // Process colors
@@ -411,18 +433,18 @@ function transformVariantForListing(rawVariant, parentProduct) {
 
   // Get variant image URL with fallback
   const imgSrc = getBestImageUrl(rawVariant.imgSrc, 'medium') || DEFAULT_IMAGE;
-  
+
   // Get hover image URL with fallback to main image
   const imgHover = getBestImageUrl(rawVariant.imgHover, 'medium') || imgSrc;
-  
+
   // Process gallery images if available
-  const gallery = Array.isArray(rawVariant.gallery) 
+  const gallery = Array.isArray(rawVariant.gallery)
     ? rawVariant.gallery
-        .filter(img => img != null)
-        .map(img => ({
-          id: img.id || img.documentId || 0,
-          url: getBestImageUrl(img, 'medium') || DEFAULT_IMAGE
-        }))
+      .filter(img => img != null)
+      .map(img => ({
+        id: img.id || img.documentId || 0,
+        url: getBestImageUrl(img, 'medium') || DEFAULT_IMAGE
+      }))
     : [];
 
   // Handle variant color
@@ -436,7 +458,7 @@ function transformVariantForListing(rawVariant, parentProduct) {
   }
 
   // Use variant title if available, otherwise fall back to main product title
-  const variantTitle = rawVariant.title && rawVariant.title.trim() !== '' 
+  const variantTitle = rawVariant.title && rawVariant.title.trim() !== ''
     ? rawVariant.title
     : parentProduct.title || "Untitled Product";
 
@@ -501,7 +523,7 @@ export async function searchProductsWithVariants(searchQuery) {
     // Search through products
     const searchEndpoint = `/api/products?populate=*&filters[$or][0][title][$containsi]=${searchQuery}&filters[$or][1][description][$containsi]=${searchQuery}`;
     const allItems = await fetchProductsWithVariants(searchEndpoint);
-    
+
     // Filter results to only include active items
     return allItems.filter(item => item.isActive !== false);
   } catch (error) {
@@ -538,14 +560,14 @@ export async function fetchProductsWithVariantsByCollection(collectionSlug) {
   try {
     // First, get the collection data
     const collectionResponse = await fetchDataFromApi(`/api/collections?filters[slug][$eq]=${collectionSlug}&populate=products`);
-    
+
     if (!collectionResponse.data || collectionResponse.data.length === 0) {
       return [];
     }
 
     const collection = collectionResponse.data[0];
     const products = collection.products || [];
-    
+
     if (products.length === 0) {
       return [];
     }
@@ -559,14 +581,14 @@ export async function fetchProductsWithVariantsByCollection(collectionSlug) {
       try {
         // Fetch full product details
         const productResponse = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${product.documentId}&populate=*`);
-        
+
         if (!productResponse.data || productResponse.data.length === 0) continue;
-        
+
         const rawProduct = productResponse.data[0];
-        
+
         // Transform main product
         const transformedProduct = transformProductForListing(rawProduct);
-        
+
         // Only include active products
         if (transformedProduct.isActive !== false) {
           allItems.push({
@@ -587,7 +609,7 @@ export async function fetchProductsWithVariantsByCollection(collectionSlug) {
             // Transform each variant as a separate item
             for (const rawVariant of variantsResponse.data) {
               const transformedVariant = transformVariantForListing(rawVariant, rawProduct);
-              
+
               // Only include active variants
               if (transformedVariant.isActive !== false) {
                 allItems.push({
