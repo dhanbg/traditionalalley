@@ -40,30 +40,28 @@ export default async function Page() {
   const headerList = await headers();
   const ua = headerList.get('user-agent') || '';
   const isMobileInitial = /Android|iPhone|iPad|iPod|IEMobile|Opera Mini|Mobile|BlackBerry|webOS/i.test(ua);
-  // Fetch all homepage content from Strapi before rendering
-  // Gate rendering until all requests resolve
+
+  // ✅ PERFORMANCE FIX: Only fetch what we actually use!
+  // Removed hero-slides (using local) and instagrams (disabled)
   const results = await Promise.allSettled([
-    // Strapi collection: hero-slides (still fetched, but we will override with local slides)
-    fetchDataFromApi('/api/hero-slides?populate=*'),
     // Strapi collection: offers
     fetchDataFromApi('/api/offers?populate=*'),
     // Strapi single/collection: top-picks meta
     fetchDataFromApi('/api/top-picks?fields=heading,subheading,isActive'),
-    // Fetch Instagram posts through Next API route for robustness
-    fetchDataFromApi('/api/instagrams?populate=*'),
   ]);
-  const heroRes = results[0].status === 'fulfilled' ? results[0].value : null;
-  const offersRes = results[1].status === 'fulfilled' ? results[1].value : null;
-  const topPicksMetaRes = results[2].status === 'fulfilled' ? results[2].value : null;
-  const instagramRes = results[3].status === 'fulfilled' ? results[3].value : null;
 
-  // Override hero slides with local static slides using public videos
+  const offersRes = results[0].status === 'fulfilled' ? results[0].value : null;
+  const topPicksMetaRes = results[1].status === 'fulfilled' ? results[1].value : null;
+
+  // Use local hero slides (no API call needed)
   const initialHeroSlidesRaw = Array.isArray(localHeroSlides) ? localHeroSlides : [];
   const initialOfferData = Array.isArray(offersRes?.data) && offersRes.data.length > 0 ? offersRes.data[0] : null;
   const initialTopPicksMeta = Array.isArray(topPicksMetaRes?.data) && topPicksMetaRes.data.length > 0
     ? (topPicksMetaRes.data[0]?.isActive === false ? null : { heading: topPicksMetaRes.data[0]?.heading, subheading: topPicksMetaRes.data[0]?.subheading })
     : null;
-  const initialInstagramPosts = Array.isArray(instagramRes?.data) ? instagramRes.data : [];
+
+  // Instagram disabled - no need to fetch
+  const initialInstagramPosts = [];
 
   // Top picks items (products + variants) require transformation; fetch separately
   const initialTopPicks = await fetchTopPicksItems();
