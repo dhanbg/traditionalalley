@@ -23,36 +23,12 @@ export const localHeroSlides = [
       url: "/images/tafall.jpg",
     },
     alt: "hero-slide-1",
-    subheading: "New Collection",
-    heading: "Discover Traditional\nElegance",
+    subheading: "", // Empty - no subtitle
+    heading: "", // Empty - no title
     btnText: "Shop Now",
     videoName: null,
   },
-  {
-    id: "local-2",
-    documentId: "local-2",
-    // Using slider image
-    media: {
-      url: "/images/slider/slider-women2.jpg",
-      mime: "image/jpeg",
-      ext: ".jpg",
-      name: "slider-women2.jpg",
-    },
-    mobileMedia: {
-      url: "/images/slider/slider-women2.jpg",
-      mime: "image/jpeg",
-      ext: ".jpg",
-      name: "slider-women2.jpg",
-    },
-    poster: {
-      url: "/images/slider/slider-women2.jpg",
-    },
-    alt: "hero-slide-2",
-    subheading: "Premium Quality",
-    heading: "Authentic Nepali\nFashion",
-    btnText: "Explore",
-    videoName: null,
-  },
+  // Second slide removed for cleaner, faster homepage
 ];
 
 export default localHeroSlides;
