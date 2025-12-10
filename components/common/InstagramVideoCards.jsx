@@ -113,7 +113,7 @@ const AutoplayVideoPlayer = ({ src, poster, alt }) => {
       video.removeEventListener('playing', handlePlaying);
       video.removeEventListener('waiting', handleWaiting);
     };
-  }, [canAutoplay, isMobile, isPlaying]);
+  }, [canAutoplay, isMobile]);
 
   const handleClick = (e) => {
     e.preventDefault();
