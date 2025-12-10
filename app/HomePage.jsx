@@ -54,7 +54,7 @@ function PaymentMessageHandler() {
           });
           break;
       }
-      
+
       // Auto-hide message after 10 seconds
       const timer = setTimeout(() => {
         setPaymentMessage(null);
@@ -63,7 +63,7 @@ function PaymentMessageHandler() {
         url.searchParams.delete('payment');
         window.history.replaceState({}, '', url);
       }, 10000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [searchParams]);
@@ -75,12 +75,12 @@ function PaymentMessageHandler() {
         top: '20px',
         right: '20px',
         zIndex: 9999,
-        backgroundColor: paymentMessage.type === 'success' ? '#d4edda' : 
-                        paymentMessage.type === 'warning' ? '#fff3cd' : '#f8d7da',
-        color: paymentMessage.type === 'success' ? '#155724' : 
-               paymentMessage.type === 'warning' ? '#856404' : '#721c24',
-        border: `1px solid ${paymentMessage.type === 'success' ? '#c3e6cb' : 
-                             paymentMessage.type === 'warning' ? '#ffeaa7' : '#f5c6cb'}`,
+        backgroundColor: paymentMessage.type === 'success' ? '#d4edda' :
+          paymentMessage.type === 'warning' ? '#fff3cd' : '#f8d7da',
+        color: paymentMessage.type === 'success' ? '#155724' :
+          paymentMessage.type === 'warning' ? '#856404' : '#721c24',
+        border: `1px solid ${paymentMessage.type === 'success' ? '#c3e6cb' :
+          paymentMessage.type === 'warning' ? '#ffeaa7' : '#f5c6cb'}`,
         borderRadius: '8px',
         padding: '15px 20px',
         maxWidth: '400px',
@@ -129,12 +129,12 @@ export default function Home({
     <>
       {/* Customization Popup */}
 
-      
+
       {/* Payment Status Message */}
-      <Suspense fallback={<div style={{display: 'none'}}>Loading payment status...</div>}>
+      <Suspense fallback={<div style={{ display: 'none' }}>Loading payment status...</div>}>
         <PaymentMessageHandler />
       </Suspense>
-      
+
       {/* <Topbar /> */}
       <Header1 />
       <MarqueeSection />
@@ -145,11 +145,11 @@ export default function Home({
       <BannerCountdown initialOfferData={initialOfferData} />
       {/* <Testimonials3 /> */}
       <TopPicks initialProducts={initialTopPicks} initialMeta={initialTopPicksMeta} />
-      <InstagramVideoCards initialPosts={initialInstagramPosts} />
+      {/* <InstagramVideoCards initialPosts={initialInstagramPosts} /> */}
       {/* <Features /> */}
       {/* <Blogs /> */}
       <Footer1 hasPaddingBottom />
-      
+
       {/* CSS for animation */}
       <style jsx>{`
         @keyframes slideInRight {
