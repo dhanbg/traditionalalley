@@ -1,58 +1,57 @@
-// Local hero slides configuration using videos from public/images/video
-// Each slide provides desktop `media` and mobile `mobileMedia` sources.
+// ✅ PERFORMANCE: Using static images instead of heavy videos (6-9MB each)
+// Videos can be re-enabled after optimization (compress to <2MB)
 
 export const localHeroSlides = [
   {
     id: "local-1",
     documentId: "local-1",
-    // Desktop video
+    // ✅ Using static image instead of 6MB+ video
     media: {
-      url: "/images/video/tavideo1.mp4",
-      mime: "video/mp4",
-      ext: ".mp4",
-      name: "tavideo1.mp4",
+      url: "/images/tafall.jpg", // Desktop image
+      mime: "image/jpeg",
+      ext: ".jpg",
+      name: "tafall.jpg",
     },
-    // Mobile video
+    // Mobile image
     mobileMedia: {
-      url: "/images/video/tam1.mp4",
-      mime: "video/mp4",
-      ext: ".mp4",
-      name: "tam1.mp4",
+      url: "/images/tamfall.jpg",
+      mime: "image/jpeg",
+      ext: ".jpg",
+      name: "tamfall.jpg",
     },
-    // Optional poster fallback image (can be any local image)
     poster: {
-      url: "/images/slider/slider-women2.jpg",
+      url: "/images/tafall.jpg",
     },
-    alt: "hero-video-1",
-    subheading: "",
-    heading: "",
+    alt: "hero-slide-1",
+    subheading: "New Collection",
+    heading: "Discover Traditional\nElegance",
     btnText: "Shop Now",
-    // Use mobileMedia name as videoName per your schema
-    videoName: "tam1.mp4",
+    videoName: null,
   },
   {
     id: "local-2",
     documentId: "local-2",
+    // Using slider image
     media: {
-      url: "/images/video/tavideo2.mp4",
-      mime: "video/mp4",
-      ext: ".mp4",
-      name: "tavideo2.mp4",
+      url: "/images/slider/slider-women2.jpg",
+      mime: "image/jpeg",
+      ext: ".jpg",
+      name: "slider-women2.jpg",
     },
     mobileMedia: {
-      url: "/images/video/tam2.mp4",
-      mime: "video/mp4",
-      ext: ".mp4",
-      name: "tam2.mp4",
+      url: "/images/slider/slider-women2.jpg",
+      mime: "image/jpeg",
+      ext: ".jpg",
+      name: "slider-women2.jpg",
     },
     poster: {
-  url: "/images/slider/slider-women2.jpg",
+      url: "/images/slider/slider-women2.jpg",
     },
-    alt: "hero-video-2",
-    subheading: "",
-    heading: "",
-    btnText: "Shop Now",
-    videoName: "tam2.mp4",
+    alt: "hero-slide-2",
+    subheading: "Premium Quality",
+    heading: "Authentic Nepali\nFashion",
+    btnText: "Explore",
+    videoName: null,
   },
 ];
 
