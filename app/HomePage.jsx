@@ -12,6 +12,7 @@ import Hero from "@/components/homes/Hero";
 import Products from "@/components/common/Products3";
 import InstagramVideoCards from "@/components/common/InstagramVideoCards";
 import TopPicks from "@/components/common/TopPicks";
+import PromoHero from "@/components/common/PromoHero";
 
 import Testimonials3 from "@/components/common/Testimonials3";
 import MarqueeSection from "@/components/common/MarqueeSection";
@@ -138,7 +139,8 @@ export default function Home({
       {/* <Topbar /> */}
       <Header1 />
       <MarqueeSection />
-      <Hero initialSlidesRaw={initialHeroSlidesRaw} isMobileInitial={isMobileInitial} />
+      {/* <Hero initialSlidesRaw={initialHeroSlidesRaw} isMobileInitial={isMobileInitial} /> */}
+      <PromoHero />
       {/* <Collections /> */}
       {/* <Products /> */}
       {/* <BannerCollection /> */}

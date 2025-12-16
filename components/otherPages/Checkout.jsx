@@ -111,6 +111,13 @@ export default function Checkout() {
     return cartProducts.filter(product => selectedCartItems[product.id]);
   }, [cartProducts, selectedCartItems]);
 
+  // Build product detail URL with preferred variant when applicable
+  const buildProductDetailHref = (item) => {
+    const baseId = item.baseProductId || item.documentId;
+    const variantId = item?.variantInfo?.documentId || item?.variantInfo?.variantId || null;
+    return `/product-detail/${baseId}${variantId ? `?variant=${variantId}` : ''}`;
+  };
+
   // Add state to store products with updated oldPrice values
   const [productsWithOldPrice, setProductsWithOldPrice] = useState({});
 
@@ -2016,7 +2023,7 @@ export default function Checkout() {
                   {selectedProducts.map((elm, i) => (
                     <div key={i} className="item-product">
                       <Link
-                        href={`/product-detail/${elm.documentId}`}
+                        href={buildProductDetailHref(elm)}
                         className="img-product"
                       >
                         <Image
@@ -2032,7 +2039,7 @@ export default function Checkout() {
                       <div className="content-box">
                         <div className="info">
                           <Link
-                            href={`/product-detail/${elm.documentId}`}
+                            href={buildProductDetailHref(elm)}
                             className="name-product link text-title"
                           >
                             {elm.title}

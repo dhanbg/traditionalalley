@@ -19,14 +19,14 @@ export default function Products({ parentClass = "flat-spacing-3 pt-0" }) {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        
+
         // Use the new utility to fetch products with their variants as separate items
         const productsWithVariants = await fetchProductsWithVariantsForTabs("Women");
-        
+
         if (productsWithVariants && productsWithVariants.length > 0) {
           // Filter out inactive products and variants
           const activeItems = productsWithVariants.filter(item => item.isActive !== false);
-          
+
           setAllProducts(activeItems);
           setError(null);
         } else {
@@ -34,7 +34,7 @@ export default function Products({ parentClass = "flat-spacing-3 pt-0" }) {
           setError("No women's products found in API response");
           setAllProducts([]);
         }
-        
+
         setLoading(false);
       } catch (error) {
         setError(`Error fetching products with variants: ${error.message || "Unknown error"}`);
@@ -50,9 +50,9 @@ export default function Products({ parentClass = "flat-spacing-3 pt-0" }) {
     const newArrivalsElement = document.getElementById("newArrivals2");
     if (newArrivalsElement) {
       newArrivalsElement.classList.remove("filtered");
-      
+
       setTimeout(() => {
-        const filtered = allProducts.filter(product => 
+        const filtered = allProducts.filter(product =>
           product.tabFilterOptions && product.tabFilterOptions.includes(activeItem) &&
           product.isActive === true // Hide products that are inactive
         );
