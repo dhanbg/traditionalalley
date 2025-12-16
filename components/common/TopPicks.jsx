@@ -75,7 +75,7 @@ export default function TopPicks({ parentClass = "flat-spacing-3 pt-5 pb-2", ini
             </p>
           )}
         </div>
-        
+
         <div className="flat-animate-tab wow fadeInUp" data-wow-delay="0.2s" style={{ overflow: "visible" }}>
           <div className="tab-content">
             <div className="tab-pane active show" role="tabpanel">
@@ -91,8 +91,8 @@ export default function TopPicks({ parentClass = "flat-spacing-3 pt-5 pb-2", ini
                   <div className="error-state">
                     <div className="error-icon">⚠️</div>
                     <p className="error-message">{error}</p>
-                    <button 
-                      className="btn-retry" 
+                    <button
+                      className="btn-retry"
                       onClick={() => window.location.reload()}
                     >
                       Try Again
@@ -102,73 +102,73 @@ export default function TopPicks({ parentClass = "flat-spacing-3 pt-5 pb-2", ini
               ) : (
                 <>
                   <div className="flat-collection-circle wow fadeInUp" data-wow-delay="0.3s">
-                  <div dir="ltr" className="swiper tf-sw-collection">
-                    <Swiper
-                      slidesPerView={4} // For default screens (large screens)
-                      spaceBetween={15} // Default space between slides
-                      breakpoints={{
-                        1200: {
-                          slidesPerView: 4, // For large screens
-                          spaceBetween: 20, // Larger space on larger screens
-                        },
-                        992: {
-                          slidesPerView: 3, // For medium (tablet) screens
-                          spaceBetween: 20,
-                        },
-                        768: {
-                          slidesPerView: 2, // For mobile screens
-                          spaceBetween: 15,
-                        },
-                        0: {
-                          slidesPerView: 2, // For small mobile screens - show 2 cards per row
-                          spaceBetween: 10,
-                        },
-                      }}
-                      modules={[Pagination, Navigation]}
-                      pagination={{
-                        clickable: true,
-                        el: ".spd-toppicks",
-                      }}
-                      navigation={{
-                        prevEl: ".snbp-toppicks",
-                        nextEl: ".snbn-toppicks",
-                      }}
-                    >
-                      {products.length > 0 ? (
-                        products.map((product, i) => (
-                          <SwiperSlide key={i}>
-                            <div className="product-item-wrapper wow fadeInUp" data-wow-delay={`${0.1 * (i + 1)}s`}>
-                              <ProductCard1 product={product} />
+                    <div dir="ltr" className="swiper tf-sw-collection">
+                      <Swiper
+                        slidesPerView={4} // For default screens (large screens)
+                        spaceBetween={15} // Default space between slides
+                        breakpoints={{
+                          1200: {
+                            slidesPerView: 5, // For large screens - 5 products
+                            spaceBetween: 15,
+                          },
+                          992: {
+                            slidesPerView: 5, // For laptop screens - 5 products
+                            spaceBetween: 15,
+                          },
+                          768: {
+                            slidesPerView: 2, // For mobile screens
+                            spaceBetween: 15,
+                          },
+                          0: {
+                            slidesPerView: 2, // For small mobile screens - show 2 cards per row
+                            spaceBetween: 10,
+                          },
+                        }}
+                        modules={[Pagination, Navigation]}
+                        pagination={{
+                          clickable: true,
+                          el: ".spd-toppicks",
+                        }}
+                        navigation={{
+                          prevEl: ".snbp-toppicks",
+                          nextEl: ".snbn-toppicks",
+                        }}
+                      >
+                        {products.length > 0 ? (
+                          products.map((product, i) => (
+                            <SwiperSlide key={i}>
+                              <div className="product-item-wrapper wow fadeInUp" data-wow-delay={`${0.1 * (i + 1)}s`}>
+                                <ProductCard1 product={product} />
+                              </div>
+                            </SwiperSlide>
+                          ))
+                        ) : (
+                          <SwiperSlide>
+                            <div className="col-12 text-center py-5">
+                              <div className="empty-state">
+                                <div className="empty-icon">🛍️</div>
+                                <p className="empty-message">No top picks products found</p>
+                              </div>
                             </div>
                           </SwiperSlide>
-                        ))
-                      ) : (
-                        <SwiperSlide>
-                          <div className="col-12 text-center py-5">
-                            <div className="empty-state">
-                              <div className="empty-icon">🛍️</div>
-                              <p className="empty-message">No top picks products found</p>
-                            </div>
-                          </div>
-                        </SwiperSlide>
-                      )}
-                    </Swiper>
-                    <div className="d-flex d-lg-none sw-pagination-collection sw-dots type-circle justify-content-center spd-toppicks" />
+                        )}
+                      </Swiper>
+                      <div className="d-flex d-lg-none sw-pagination-collection sw-dots type-circle justify-content-center spd-toppicks" />
+                    </div>
+                    <div className="nav-prev-collection d-none d-lg-flex nav-sw style-line nav-sw-left snbp-toppicks">
+                      <i className="icon icon-arrLeft" />
+                    </div>
+                    <div className="nav-next-collection d-none d-lg-flex nav-sw style-line nav-sw-right snbn-toppicks">
+                      <i className="icon icon-arrRight" />
+                    </div>
                   </div>
-                  <div className="nav-prev-collection d-none d-lg-flex nav-sw style-line nav-sw-left snbp-toppicks">
-                    <i className="icon icon-arrLeft" />
-                  </div>
-                  <div className="nav-next-collection d-none d-lg-flex nav-sw style-line nav-sw-right snbn-toppicks">
-                    <i className="icon icon-arrRight" />
-                  </div>
-                </div>
                 </>
               )}
             </div>
           </div>
         </div>
       </div>
-      
+
       <style jsx>{`
         .product-item-wrapper {
           transition: transform 0.3s ease, box-shadow 0.3s ease;
