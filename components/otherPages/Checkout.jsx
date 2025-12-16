@@ -14,6 +14,7 @@ import { useSession } from "next-auth/react";
 import PriceDisplay from "@/components/common/PriceDisplay";
 import { convertUsdToNpr, getExchangeRate } from "@/utils/currency";
 import styles from './Checkout.module.css'; // Import CSS module for Checkout component
+import { getVariantAwareTitle } from "@/utils/titleUtils";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
 
@@ -74,6 +75,13 @@ const getThumbnailImageUrl = (imgSrc) => {
   return '/images/products/default-product.jpg';
 };
 
+// Build product detail URL with preferred variant when applicable
+const buildProductDetailHref = (item) => {
+  const baseId = item.baseProductId || item.documentId;
+  const variantId = item?.variantInfo?.documentId || item?.variantInfo?.variantId || null;
+  return `/product-detail/${baseId}${variantId ? `?variant=${variantId}` : ''}`;
+};
+
 // const discounts = [
 //   {
 //     discount: "10% OFF",
@@ -110,13 +118,6 @@ export default function Checkout() {
   const selectedProducts = useMemo(() => {
     return cartProducts.filter(product => selectedCartItems[product.id]);
   }, [cartProducts, selectedCartItems]);
-
-  // Build product detail URL with preferred variant when applicable
-  const buildProductDetailHref = (item) => {
-    const baseId = item.baseProductId || item.documentId;
-    const variantId = item?.variantInfo?.documentId || item?.variantInfo?.variantId || null;
-    return `/product-detail/${baseId}${variantId ? `?variant=${variantId}` : ''}`;
-  };
 
   // Add state to store products with updated oldPrice values
   const [productsWithOldPrice, setProductsWithOldPrice] = useState({});
@@ -2042,7 +2043,7 @@ export default function Checkout() {
                             href={buildProductDetailHref(elm)}
                             className="name-product link text-title"
                           >
-                            {elm.title}
+                            {getVariantAwareTitle(elm)}
                           </Link>
                           <div className="variant text-caption-1 text-secondary">
                             {elm.selectedSize && (
