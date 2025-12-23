@@ -760,29 +760,31 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
   };
 
   const isFormValid = () => {
-    const { destinationAddress, serviceType } = formData;
+    const { destinationAddress, serviceType, recipient } = formData;
 
-    // Check for country and city (required for all)
+    // Check destination address fields
     const countryValid = destinationAddress.countryCode && destinationAddress.countryCode.trim() !== '';
     const cityValid = destinationAddress.cityName && destinationAddress.cityName.trim() !== '';
-
-    // Check for street address (required for all)
-    const addressValid = destinationAddress.addressLine1 && destinationAddress.addressLine1.trim() !== '';
+    const streetValid = destinationAddress.addressLine1 && destinationAddress.addressLine1.trim() !== '';
 
     const actualCountryCode = getActualCountryCode(destinationAddress.countryCode);
 
-    // Check for postal code (required for non-Nepal countries)
+    // Postal code is required for non-Nepal destinations (input is hidden for NP)
     const postalCodeValid = actualCountryCode === 'NP' || (destinationAddress.postalCode && destinationAddress.postalCode.trim() !== '');
 
-    // Check for service type (required for non-Nepal countries)
+    // Check recipient details
+    const nameValid = recipient.fullName && recipient.fullName.trim() !== '';
+    const emailValid = recipient.email && recipient.email.trim() !== '';
+    const phoneValid = recipient.phone && recipient.phone.trim() !== '';
+
     const serviceTypeValid = actualCountryCode === 'NP' || (serviceType && serviceType.trim() !== '');
 
     // Require custom height inches input only when "Yes" is selected
     const heightValid = customHeightOption === 'Yes'
-      ? (formData.recipient.height && String(formData.recipient.height).trim() !== '')
+      ? (recipient.height && String(recipient.height).trim() !== '')
       : true;
 
-    return countryValid && cityValid && addressValid && postalCodeValid && serviceTypeValid && heightValid;
+    return countryValid && cityValid && streetValid && postalCodeValid && nameValid && emailValid && phoneValid && serviceTypeValid && heightValid;
   };
 
   const getRates = async () => {
