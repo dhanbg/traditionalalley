@@ -31,7 +31,7 @@ class ImagePreloader {
     // Create new loading promise
     const loadingPromise = new Promise((resolve, reject) => {
       const img = new Image();
-      
+
       // Set crossOrigin if needed
       if (options.crossOrigin) {
         img.crossOrigin = options.crossOrigin;
@@ -44,7 +44,7 @@ class ImagePreloader {
           error: null,
           timestamp: Date.now()
         };
-        
+
         this.cache.set(src, result);
         this.loadingPromises.delete(src);
         resolve(result);
@@ -57,10 +57,10 @@ class ImagePreloader {
           error: error.message || 'Failed to load image',
           timestamp: Date.now()
         };
-        
+
         this.cache.set(src, result);
         this.loadingPromises.delete(src);
-        
+
         if (options.rejectOnError) {
           reject(result);
         } else {
@@ -74,17 +74,17 @@ class ImagePreloader {
           if (!this.cache.has(src)) {
             img.onload = null;
             img.onerror = null;
-            
+
             const result = {
               src,
               loaded: false,
               error: 'Timeout',
               timestamp: Date.now()
             };
-            
+
             this.cache.set(src, result);
             this.loadingPromises.delete(src);
-            
+
             if (options.rejectOnError) {
               reject(result);
             } else {
@@ -113,12 +113,12 @@ class ImagePreloader {
     }
 
     const validUrls = urls.filter(url => url && typeof url === 'string');
-    
+
     if (validUrls.length === 0) {
       return Promise.resolve([]);
     }
 
-    const promises = validUrls.map(url => 
+    const promises = validUrls.map(url =>
       this.preloadImage(url, options).catch(error => {
         console.warn('Image preload failed:', url, error);
         return { src: url, loaded: false, error: error.message || 'Unknown error' };
@@ -162,7 +162,7 @@ class ImagePreloader {
     }
 
     keysToDelete.forEach(key => this.cache.delete(key));
-    
+
     if (keysToDelete.length > 0) {
       console.log(`Cleared ${keysToDelete.length} old cached images`);
     }
@@ -205,10 +205,25 @@ class ImagePreloader {
 // Create singleton instance
 const imagePreloader = new ImagePreloader();
 
-// Auto-cleanup old cache every 30 minutes
-setInterval(() => {
-  imagePreloader.clearOldCache();
-}, 30 * 60 * 1000);
+// Auto-cleanup old cache every 30 minutes - ONLY in browser
+let cleanupInterval = null;
+
+if (typeof window !== 'undefined') {
+  cleanupInterval = setInterval(() => {
+    imagePreloader.clearOldCache();
+  }, 30 * 60 * 1000);
+
+  // Cleanup interval on page unload
+  if (typeof window.addEventListener !== 'undefined') {
+    window.addEventListener('beforeunload', () => {
+      if (cleanupInterval) {
+        clearInterval(cleanupInterval);
+        cleanupInterval = null;
+      }
+    });
+  }
+}
+
 
 export default imagePreloader;
 
@@ -228,18 +243,18 @@ export const preloadCartImages = async (cartProducts, options = {}) => {
 
   // Extract image URLs from cart products
   const imageUrls = [];
-  
+
   cartProducts.forEach(product => {
     // Add main product image
     if (product.imgSrc) {
       imageUrls.push(product.imgSrc);
     }
-    
+
     // Add hover image if available
     if (product.imgHover) {
       imageUrls.push(product.imgHover);
     }
-    
+
     // Add variant image if available
     if (product.variantInfo && product.variantInfo.imgSrc) {
       imageUrls.push(product.variantInfo.imgSrc);
@@ -248,14 +263,14 @@ export const preloadCartImages = async (cartProducts, options = {}) => {
 
   // Remove duplicates
   const uniqueUrls = [...new Set(imageUrls)];
-  
+
   try {
     const results = await imagePreloader.preloadImages(uniqueUrls, {
       timeout: 10000, // 10 second timeout
       crossOrigin: 'anonymous',
       ...options
     });
-    
+
     return results;
   } catch (error) {
     return [];

@@ -24,6 +24,13 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
+# Install wget for healthchecks and dumb-init to handle zombie processes
+RUN apk add --no-cache wget dumb-init
+
+# Create a non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
 # Copy only what's needed for production
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
@@ -36,8 +43,17 @@ COPY --from=builder /app/auth.config.ts ./auth.config.ts
 COPY --from=builder /app/auth.ts ./auth.ts
 COPY --from=builder /app/middleware.ts ./middleware.ts
 
+# Set ownership to nextjs user
+RUN chown -R nextjs:nodejs /app
+
 # Install only production dependencies
 RUN npm install --omit=dev --legacy-peer-deps
+
+# Limit Node.js memory to prevent excessive CPU usage
+ENV NODE_OPTIONS="--max-old-space-size=768"
+
+# Switch to non-root user
+USER nextjs
 
 # Expose the port the app runs on
 EXPOSE 3000
@@ -54,4 +70,5 @@ EXPOSE 3000
 # ENV KHALTI_RETURN_URL=...
 # ENV KHALTI_WEBSITE_URL=...
 
-CMD ["npm", "start"]
+# Use dumb-init to handle zombie processes and signals properly
+CMD ["dumb-init", "node_modules/.bin/next", "start"]

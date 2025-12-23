@@ -83,7 +83,7 @@ export const componentCleanup = (componentName = 'Unknown') => {
   return () => {
     try {
       clearBrowserCache();
-      
+
       // Component-specific cleanup
       if (componentName === 'NPSCallback') {
         sessionStorage.removeItem('nps_callback_processed');
@@ -102,7 +102,14 @@ export const componentCleanup = (componentName = 'Unknown') => {
 
 // Periodic memory monitoring (for development)
 export const startMemoryMonitoring = (intervalMs = 30000) => {
-  if (typeof window === 'undefined' || process.env.NODE_ENV === 'production') {
+  // Only run in browser and development mode
+  if (typeof window === 'undefined') {
+    console.log('Memory monitoring skipped: not in browser environment');
+    return null;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    console.log('Memory monitoring skipped: production mode');
     return null;
   }
 
@@ -110,7 +117,7 @@ export const startMemoryMonitoring = (intervalMs = 30000) => {
     const usage = getMemoryUsage();
     if (usage) {
       console.log(`Memory Usage: ${usage.used}MB / ${usage.total}MB (${usage.percentage}%)`);
-      
+
       // Warning if memory usage is high
       if (usage.percentage > 80) {
         console.warn('High memory usage detected! Consider clearing cache.');
