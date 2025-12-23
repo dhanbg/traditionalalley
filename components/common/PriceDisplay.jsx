@@ -3,21 +3,21 @@ import React from 'react';
 import { useContextElement } from '@/context/Context';
 import { getDualPriceDisplay, formatPrice } from '@/utils/currency';
 
-export default function PriceDisplay({ 
-  price, 
-  oldPrice = null, 
+export default function PriceDisplay({
+  price,
+  oldPrice = null,
   className = "",
   showConversion = false,
   size = "normal", // normal, small, large
   isNPR = false // indicates if price is already in NPR (e.g., DHL shipping costs)
 }) {
   const { userCurrency, exchangeRate } = useContextElement();
-  
+
   if (!price && price !== 0) return null;
 
   // Get price display information
   let priceInfo, oldPriceInfo;
-  
+
   if (isNPR) {
     // Price is already in NPR, so format accordingly
     if (userCurrency === 'NPR') {
@@ -31,7 +31,7 @@ export default function PriceDisplay({
         primary: { formatted: formatPrice(usdPrice, 'USD') }
       };
     }
-    oldPriceInfo = oldPrice ? (userCurrency === 'NPR' 
+    oldPriceInfo = oldPrice ? (userCurrency === 'NPR'
       ? { primary: { formatted: formatPrice(oldPrice, 'NPR') } }
       : { primary: { formatted: formatPrice(oldPrice / (exchangeRate || 1), 'USD') } }
     ) : null;
@@ -40,15 +40,15 @@ export default function PriceDisplay({
     priceInfo = getDualPriceDisplay(price, userCurrency, exchangeRate);
     oldPriceInfo = oldPrice ? getDualPriceDisplay(oldPrice, userCurrency, exchangeRate) : null;
   }
-  
+
   // Calculate discount percentage
-  const discountPercentage = oldPrice && price 
-    ? ((oldPrice - price) / oldPrice * 100).toFixed(0) 
+  const discountPercentage = oldPrice && price
+    ? ((oldPrice - price) / oldPrice * 100).toFixed(0)
     : null;
 
   const sizeClasses = {
     small: 'price-display-small',
-    normal: 'price-display-normal', 
+    normal: 'price-display-normal',
     large: 'price-display-large'
   };
 
@@ -61,12 +61,12 @@ export default function PriceDisplay({
             {oldPriceInfo.primary.formatted}
           </span>
         )}
-        
+
         {/* Current Price */}
         <span className="current-price">
           {priceInfo.primary.formatted}
         </span>
-        
+
         {/* Discount Badge */}
         {discountPercentage && (
           <span className="discount-badge">
@@ -74,7 +74,7 @@ export default function PriceDisplay({
           </span>
         )}
       </div>
-      
+
 
 
       <style jsx>{`
@@ -173,6 +173,11 @@ export default function PriceDisplay({
 
           .price-main {
             gap: 6px;
+          }
+          
+          /* Hide discount badge on mobile - it's already shown in top corner */
+          .discount-badge {
+            display: none;
           }
         }
       `}</style>

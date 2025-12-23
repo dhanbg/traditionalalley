@@ -243,6 +243,13 @@ export async function fetchTopPicksItems() {
       ...variantResults.filter(item => item !== null)
     ];
 
+    // Sort by updatedAt descending (latest updated first)
+    allItems.sort((a, b) => {
+      const dateA = new Date(a.updatedAt || 0);
+      const dateB = new Date(b.updatedAt || 0);
+      return dateB - dateA;
+    });
+
     return allItems;
   } catch (error) {
     console.error('Error fetching top picks items:', error);
@@ -418,7 +425,10 @@ function transformProductForListing(rawProduct) {
     isOnSale: !!rawProduct.oldPrice,
     salePercentage: rawProduct.salePercentage || "25%",
     category: rawProduct.collection?.category?.title || null,
-    collection: rawProduct.collection?.title || null
+    collection: rawProduct.collection?.title || null,
+    hotSale: rawProduct.hotSale || false,
+    countdown: rawProduct.countdown || null,
+    updatedAt: rawProduct.updatedAt // Include updatedAt for sorting
   };
 }
 
@@ -482,10 +492,13 @@ function transformVariantForListing(rawVariant, parentProduct) {
     collection: parentProduct.collection?.title || null,
     design: rawVariant.design,
     variantId: rawVariant.documentId,
+    hotSale: parentProduct.hotSale || false,
+    countdown: parentProduct.countdown || null,
     // Add main product reference so getMainProductId can find it
     product: {
       documentId: parentProduct.documentId
-    }
+    },
+    updatedAt: rawVariant.updatedAt // Include updatedAt for sorting
   };
 }
 

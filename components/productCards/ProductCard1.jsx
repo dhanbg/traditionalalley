@@ -14,45 +14,45 @@ const DEFAULT_IMAGE = '/logo.png';
 
 function getStrapiSmallImage(imageObj) {
   if (!imageObj) return DEFAULT_IMAGE;
-  
+
   // Handle string URLs directly
   if (typeof imageObj === 'string') {
     return imageObj.startsWith('http') ? imageObj : (getImageUrl(imageObj) || DEFAULT_IMAGE);
   }
-  
+
   // Handle Strapi image objects with formats
   if (imageObj.formats && imageObj.formats.small && imageObj.formats.small.url) {
     const smallUrl = imageObj.formats.small.url;
     return smallUrl.startsWith('http') ? smallUrl : getImageUrl(smallUrl);
   }
-  
+
   // Handle objects with direct url property
   if (imageObj.url) {
     return imageObj.url.startsWith('http') ? imageObj.url : getImageUrl(imageObj.url);
   }
-  
+
   // Handle Strapi data structure with data.attributes
   if (imageObj.data && imageObj.data.attributes && imageObj.data.attributes.url) {
     const attrUrl = imageObj.data.attributes.url;
     return attrUrl.startsWith('http') ? attrUrl : getImageUrl(attrUrl);
   }
-  
+
   return DEFAULT_IMAGE;
 }
 
 export default function ProductCard1({ product, gridClass = "", index = 0, onRemoveFromWishlist = null }) {
-  
+
   // Ensure product has valid image properties
   const safeProduct = {
     ...product,
     imgSrc: getStrapiSmallImage(product.imgSrc) || DEFAULT_IMAGE,
     imgHover: getStrapiSmallImage(product.imgHover) || getStrapiSmallImage(product.imgSrc) || DEFAULT_IMAGE
   };
-  
+
   // Parse size_stocks data for size selection
   const parseSizeStocks = (sizeStocks) => {
     if (!sizeStocks) return [];
-    
+
     try {
       let parsedData;
       if (typeof sizeStocks === 'string') {
@@ -60,7 +60,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
       } else {
         parsedData = sizeStocks;
       }
-      
+
       if (typeof parsedData === 'object' && !Array.isArray(parsedData)) {
         // Format: {"S": 10, "M": 5, "L": 0, ...}
         return Object.entries(parsedData).map(([size, quantity]) => ({
@@ -73,33 +73,33 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
     } catch (error) {
       console.error('Error parsing size_stocks:', error);
     }
-    
+
     return [];
   };
 
   const availableSizes = parseSizeStocks(safeProduct.size_stocks);
   const hasAvailableSizes = availableSizes.length > 0;
-  
+
   // Calculate if product is in stock based on size_stocks
   const isInStock = calculateInStock(safeProduct);
-  
+
   // Double-check that imgSrc and imgHover are valid strings and not empty
   if (!safeProduct.imgSrc || safeProduct.imgSrc === "") {
     safeProduct.imgSrc = DEFAULT_IMAGE;
   }
-  
+
   if (!safeProduct.imgHover || safeProduct.imgHover === "") {
     safeProduct.imgHover = safeProduct.imgSrc || DEFAULT_IMAGE;
   }
-  
+
   // Calculate discount percentage
-  const discountPercentage = safeProduct.price && safeProduct.oldPrice 
-    ? ((safeProduct.oldPrice - safeProduct.price) / safeProduct.oldPrice * 100).toFixed(2) 
+  const discountPercentage = safeProduct.price && safeProduct.oldPrice
+    ? ((safeProduct.oldPrice - safeProduct.price) / safeProduct.oldPrice * 100).toFixed(2)
     : "25";
-  
+
   // Check if colors are just string values and convert them
-  if (safeProduct.colors && Array.isArray(safeProduct.colors) && 
-      safeProduct.colors.length > 0 && typeof safeProduct.colors[0] === 'string') {
+  if (safeProduct.colors && Array.isArray(safeProduct.colors) &&
+    safeProduct.colors.length > 0 && typeof safeProduct.colors[0] === 'string') {
     // Convert string colors to objects with the necessary properties
     safeProduct.colors = safeProduct.colors.map(color => ({
       name: color,
@@ -107,7 +107,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
       imgSrc: safeProduct.imgSrc // Use the main product image
     }));
   }
-  
+
   const [currentImage, setCurrentImage] = useState(safeProduct.imgSrc);
   const [inView, setInView] = useState(false);
   const [showSizeSelection, setShowSizeSelection] = useState(false);
@@ -173,25 +173,25 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
   // Helper function to get main product ID from variant product
   const getMainProductId = (product) => {
     if (!product) return null;
-    
+
     // First, check if this product has a main product reference (for variants)
     // Variant products should have a 'product' field that references the main product
     if (product.product && (product.product.documentId || product.product.id)) {
       return product.product.documentId || product.product.id;
     }
-    
+
     // Check if this product has a main_product field (alternative structure)
     if (product.main_product && (product.main_product.documentId || product.main_product.id)) {
       return product.main_product.documentId || product.main_product.id;
     }
-    
+
     // Fallback: check if this is a variant product by looking for variant patterns in ID
     const productId = product.documentId || product.id;
     if (!productId) return null;
-    
+
     // Ensure productId is a string before calling .includes()
     const productIdStr = String(productId);
-    
+
     if (productIdStr.includes('-variant-') || productIdStr.includes('variant')) {
       // Try to extract main product ID from variant ID patterns
       const parts = productIdStr.split('-variant-');
@@ -199,7 +199,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
         return parts[0]; // Return the part before '-variant-'
       }
     }
-    
+
     // Check if this is a variant by checking the title contains '(Variant)'
     if (product.title && product.title.includes('(Variant)')) {
       console.log('🔍 Found variant by title, but no main product reference:', {
@@ -209,7 +209,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
       // This is a variant but we can't determine main product ID
       // Return the current ID as fallback
     }
-    
+
     // If no variant pattern found, this is likely the main product
     return productId;
   };
@@ -222,16 +222,16 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
       const currentProductId = safeProduct.documentId || safeProduct.id;
       const mainProductId = getMainProductId(safeProduct);
       const isVariant = mainProductId !== currentProductId;
-      
+
       // Create unique cart ID using consistent pattern like Details1
       let uniqueCartId;
       let variantInfo = null;
-      
+
       if (isVariant) {
         // For variants: use main product ID + variant ID pattern
         const baseVariantId = `${mainProductId}-variant-${currentProductId}`;
         uniqueCartId = hasAvailableSizes && selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
-        
+
         // Create variant info matching Details1 structure
         variantInfo = {
           id: currentProductId, // Use variant's documentId as the variant identifier
@@ -243,24 +243,24 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
           isVariant: true, // Add this flag so cart modal can identify variants
           product_code: safeProduct.product_code // Include variant's product code
         };
-        
-        console.log('🛒 Adding variant to cart:', { 
-          uniqueCartId, 
-          isVariant, 
+
+        console.log('🛒 Adding variant to cart:', {
+          uniqueCartId,
+          isVariant,
           variantInfo,
-          selectedSize 
+          selectedSize
         });
       } else {
         // For main products: use documentId for consistency
         uniqueCartId = hasAvailableSizes && selectedSize ? `${currentProductId}-size-${selectedSize}` : currentProductId;
-        
-        console.log('🛒 Adding main product to cart:', { 
-          uniqueCartId, 
-          isVariant: false, 
-          selectedSize 
+
+        console.log('🛒 Adding main product to cart:', {
+          uniqueCartId,
+          isVariant: false,
+          selectedSize
         });
       }
-      
+
       addProductToCart(uniqueCartId, 1, true, variantInfo, selectedSize);
     }
   };
@@ -308,8 +308,8 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
       }}
     >
       <div className="card-product-wrapper">
-        <Link 
-          href={`/product-detail/${getMainProductId(safeProduct) || safeProduct.id}${(getMainProductId(safeProduct) !== (safeProduct.documentId || safeProduct.id)) ? `?variant=${safeProduct.documentId || safeProduct.id}` : ''}`} 
+        <Link
+          href={`/product-detail/${getMainProductId(safeProduct) || safeProduct.id}${(getMainProductId(safeProduct) !== (safeProduct.documentId || safeProduct.id)) ? `?variant=${safeProduct.documentId || safeProduct.id}` : ''}`}
           className="product-img"
           style={{
             WebkitTapHighlightColor: 'transparent',
@@ -332,9 +332,9 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
 
           <Image
             className="lazyload img-hover"
-            src={(safeProduct.imgHover && safeProduct.imgHover !== "") ? 
-                 safeProduct.imgHover : 
-                 (currentImage && currentImage !== "" ? currentImage : DEFAULT_IMAGE)}
+            src={(safeProduct.imgHover && safeProduct.imgHover !== "") ?
+              safeProduct.imgHover :
+              (currentImage && currentImage !== "" ? currentImage : DEFAULT_IMAGE)}
             alt={safeProduct.title || "Product"}
             width={600}
             height={800}
@@ -432,9 +432,12 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
             </div>
           </div>
         )}
-        {safeProduct.isOnSale && (
+        {/* Discount badge - only show on mobile when NO hotSale marquee is active */}
+        {(safeProduct.isOnSale || safeProduct.oldPrice) && isMobile && !safeProduct.hotSale && (
           <div className="on-sale-wrap">
-            <span className="on-sale-item">-{safeProduct.price && safeProduct.oldPrice ? discountPercentage : safeProduct.salePercentage}%</span>
+            <span className="on-sale-item">
+              -{safeProduct.price && safeProduct.oldPrice ? discountPercentage : safeProduct.salePercentage}%
+            </span>
           </div>
         )}
 
@@ -450,13 +453,6 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
               </div>
             </div>
           </div>
-        )}
-        {safeProduct.oldPrice ? (
-          <div className="on-sale-wrap">
-            <span className="on-sale-item">-{discountPercentage}%</span>
-          </div>
-        ) : (
-          ""
         )}
         {!isInStock && (
           <div className="out-of-stock-notice" style={{
@@ -508,11 +504,9 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
               {availableSizes.map((size) => (
                 <button
                   key={size.id}
-                  className={`size-btn-clean ${
-                    size.disabled ? 'disabled' : ''
-                  } ${
-                    selectedSize === size.value ? 'selected' : ''
-                  }`}
+                  className={`size-btn-clean ${size.disabled ? 'disabled' : ''
+                    } ${selectedSize === size.value ? 'selected' : ''
+                    }`}
                   onClick={() => !size.disabled && setSelectedSize(size.value)}
                   disabled={size.disabled}
                   style={{
@@ -546,22 +540,21 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
         {isInStock && !isMobile && (
           <div className="list-btn-main">
             <a
-              className={`btn-main-product ${
-                (hasAvailableSizes && !selectedSize)
-                  ? 'disabled' 
-                  : ''
-              }`}
+              className={`btn-main-product ${(hasAvailableSizes && !selectedSize)
+                ? 'disabled'
+                : ''
+                }`}
               onClick={() => {
                 // Get variant info for cart checking
                 const currentProductId = safeProduct.documentId || safeProduct.id;
                 const mainProductId = getMainProductId(safeProduct);
                 const isVariant = mainProductId !== currentProductId;
-                
+
                 // Check if already added to cart with proper variant logic
                 if (user) {
                   // Create the same unique cart ID that would be used when adding to cart
                   let uniqueCartIdToCheck;
-                  
+
                   if (isVariant) {
                     // For variants: use main product ID + variant ID pattern
                     const baseVariantId = `${mainProductId}-variant-${currentProductId}`;
@@ -570,24 +563,24 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
                     // For main products: use documentId for consistency
                     uniqueCartIdToCheck = hasAvailableSizes && selectedSize ? `${currentProductId}-size-${selectedSize}` : currentProductId;
                   }
-                  
+
                   // Check if this exact cart ID is already in cart
                   if (isAddedToCartProducts(uniqueCartIdToCheck)) {
                     return; // Already in cart, do nothing
                   }
                 }
-                
+
                 // For products with sizes, require size selection
                 if (hasAvailableSizes && !selectedSize) {
                   return;
                 }
-                
+
                 // Add to cart
                 handleCartClick();
               }}
               style={{
                 cursor: (hasAvailableSizes && !selectedSize) && !isAddedToCartProducts(safeProduct.id)
-                  ? 'not-allowed' 
+                  ? 'not-allowed'
                   : 'pointer'
               }}
             >
@@ -596,12 +589,12 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
                 const currentProductId = safeProduct.documentId || safeProduct.id;
                 const mainProductId = getMainProductId(safeProduct);
                 const isVariant = mainProductId !== currentProductId;
-                
+
                 // Check if already added to cart using the same logic as onClick
                 if (user) {
                   // Create the same unique cart ID that would be used when adding to cart
                   let uniqueCartIdToCheck;
-                  
+
                   if (isVariant) {
                     // For variants: use main product ID + variant ID pattern
                     const baseVariantId = `${mainProductId}-variant-${currentProductId}`;
@@ -610,33 +603,33 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
                     // For main products: use documentId for consistency
                     uniqueCartIdToCheck = hasAvailableSizes && selectedSize ? `${currentProductId}-size-${selectedSize}` : currentProductId;
                   }
-                  
+
                   // Check if this exact cart ID is already in cart
                   if (isAddedToCartProducts(uniqueCartIdToCheck)) {
                     return "Already Added";
                   }
-                  
+
                   // Return appropriate text based on size selection
                   if (hasAvailableSizes && selectedSize) {
                     return `Add ${selectedSize} to cart`;
                   }
                 }
-                
+
                 // Check if need to select size
                 if (hasAvailableSizes && !selectedSize) {
                   return "Choose Size First";
                 }
-                
+
                 // Default case
                 return "Add to cart";
-              })()} 
+              })()}
             </a>
           </div>
         )}
       </div>
       <div className="card-product-info">
-        <Link 
-          href={`/product-detail/${getMainProductId(safeProduct) || safeProduct.id}${(getMainProductId(safeProduct) !== (safeProduct.documentId || safeProduct.id)) ? `?variant=${safeProduct.documentId || safeProduct.id}` : ''}`} 
+        <Link
+          href={`/product-detail/${getMainProductId(safeProduct) || safeProduct.id}${(getMainProductId(safeProduct) !== (safeProduct.documentId || safeProduct.id)) ? `?variant=${safeProduct.documentId || safeProduct.id}` : ''}`}
           className="title link"
           style={{
             WebkitTapHighlightColor: 'transparent',
@@ -651,7 +644,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
           {safeProduct.title || 'Product'}
         </Link>
         {!isMobile && (
-          <PriceDisplay 
+          <PriceDisplay
             price={safeProduct.price}
             oldPrice={safeProduct.oldPrice}
             className="product-card-price"
@@ -661,21 +654,21 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
         )}
         {/* Color swatches removed as requested */}
       </div>
-      
+
       {/* Remove from Wishlist Button */}
       {onRemoveFromWishlist && (
         <div className="remove-from-wishlist-wrapper mt-3">
-          <button 
+          <button
             className="btn btn-outline-danger btn-sm w-100 d-flex align-items-center justify-content-center gap-2"
             onClick={(e) => {
               console.log('🔴 Remove button clicked!');
               console.log('🔴 Product:', safeProduct.title);
               console.log('🔴 Product wishlistId:', safeProduct.wishlistId);
               console.log('🔴 onRemoveFromWishlist function:', typeof onRemoveFromWishlist);
-              
+
               e.preventDefault();
               e.stopPropagation();
-              
+
               if (typeof onRemoveFromWishlist === 'function') {
                 console.log('🔴 Calling onRemoveFromWishlist...');
                 onRemoveFromWishlist();
@@ -706,6 +699,13 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
           }
           .card-product .product-card-price .old-price {
             font-size: 12px !important;
+          }
+
+          /* Position hotSale marquee at TOP on mobile */
+          .card-product .marquee-product {
+            top: 0;
+            bottom: auto;
+            z-index: 10;
           }
         }
       `}</style>

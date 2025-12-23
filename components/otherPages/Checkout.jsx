@@ -32,33 +32,33 @@ const getThumbnailImageUrl = (imgSrc) => {
     }
     return imgSrc;
   }
-  
+
   // If it's an object with formats, prioritize small format
   if (imgSrc && typeof imgSrc === 'object') {
     // Prioritize small format for better performance in cart
     if (imgSrc.formats && imgSrc.formats.small && imgSrc.formats.small.url) {
-      return imgSrc.formats.small.url.startsWith('http') 
-        ? imgSrc.formats.small.url 
+      return imgSrc.formats.small.url.startsWith('http')
+        ? imgSrc.formats.small.url
         : `${API_URL}${imgSrc.formats.small.url}`;
     }
     // Fallback to thumbnail if small not available
     else if (imgSrc.formats && imgSrc.formats.thumbnail && imgSrc.formats.thumbnail.url) {
-      return imgSrc.formats.thumbnail.url.startsWith('http') 
-        ? imgSrc.formats.thumbnail.url 
+      return imgSrc.formats.thumbnail.url.startsWith('http')
+        ? imgSrc.formats.thumbnail.url
         : `${API_URL}${imgSrc.formats.thumbnail.url}`;
     }
     // Fallback to medium if neither small nor thumbnail available
     else if (imgSrc.formats && imgSrc.formats.medium && imgSrc.formats.medium.url) {
-      return imgSrc.formats.medium.url.startsWith('http') 
-        ? imgSrc.formats.medium.url 
+      return imgSrc.formats.medium.url.startsWith('http')
+        ? imgSrc.formats.medium.url
         : `${API_URL}${imgSrc.formats.medium.url}`;
     }
     // Fallback to original URL with small_ prefix added
     else if (imgSrc.url) {
-      let originalUrl = imgSrc.url.startsWith('http') 
-        ? imgSrc.url 
+      let originalUrl = imgSrc.url.startsWith('http')
+        ? imgSrc.url
         : `${API_URL}${imgSrc.url}`;
-      
+
       // Try to convert original URL to small format
       if (originalUrl.includes('/medium_') || originalUrl.includes('/large_')) {
         return originalUrl.replace(/\/(medium|large)_/, '/small_');
@@ -70,7 +70,7 @@ const getThumbnailImageUrl = (imgSrc) => {
       return originalUrl;
     }
   }
-  
+
   // Return fallback image if nothing works
   return '/images/products/default-product.jpg';
 };
@@ -101,19 +101,19 @@ const buildProductDetailHref = (item) => {
 // ];
 export default function Checkout() {
   const [activeDiscountIndex, setActiveDiscountIndex] = useState(1);
-  const { 
-    cartProducts, 
-    totalPrice, 
-    getSelectedCartItems, 
+  const {
+    cartProducts,
+    totalPrice,
+    getSelectedCartItems,
     getSelectedItemsTotal,
     selectedCartItems,
     clearPurchasedItemsFromCart,
     userCurrency
   } = useContextElement();
-  
+
   const { data: session } = useSession();
   const user = session?.user;
-  
+
   // Memoize selected products to prevent infinite re-renders
   const selectedProducts = useMemo(() => {
     return cartProducts.filter(product => selectedCartItems[product.id]);
@@ -157,7 +157,7 @@ export default function Checkout() {
     console.log('🔍 [COUPON DEBUG] appliedCoupon:', appliedCoupon);
     console.log('🔍 [COUPON DEBUG] couponCode:', appliedCoupon?.code);
     console.log('🔍 [COUPON DEBUG] couponDiscount:', couponDiscount);
-    
+
     return {
       // Order Summary
       orderSummary: {
@@ -176,7 +176,7 @@ export default function Checkout() {
         orderDate: new Date().toISOString(),
         orderTimezone: "Asia/Kathmandu"
       },
-       
+
       // Complete Product Details for Admin
       products: selectedProducts.map(product => {
         const fetchedProduct = productsWithOldPrice[product.id];
@@ -187,14 +187,14 @@ export default function Checkout() {
         const finalPrice = unitPrice * product.quantity;
 
         // Derive selected size and color with variant awareness
-        const availableSize = product.selectedSize 
-          || product.selectedVariant?.size 
+        const availableSize = product.selectedSize
+          || product.selectedVariant?.size
           || (product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M");
 
         const firstColor = (product.colors && product.colors.length > 0)
-          ? (typeof product.colors[0] === 'string' 
-              ? product.colors[0] 
-              : (product.colors[0].name || product.colors[0].color || 'Default'))
+          ? (typeof product.colors[0] === 'string'
+            ? product.colors[0]
+            : (product.colors[0].name || product.colors[0].color || 'Default'))
           : 'Default';
 
         const availableColor = (product.variantInfo && product.variantInfo.isVariant && product.variantInfo.title)
@@ -272,19 +272,19 @@ export default function Checkout() {
 
     // Calculate total quantity to be decreased
     const totalQuantity = selectedProducts.reduce((sum, product) => sum + (product.quantity || 1), 0);
-    
+
     setIsProcessingUpdateAndDelete(true);
 
     try {
       console.log('🔄 Starting combined update stock and delete operation for:', selectedProducts.length, 'products');
-      
+
       // Step 1: Update stock first
       console.log('📦 Step 1: Updating stock...');
-      
+
       // Separate products and variants for different processing
       const mainProducts = [];
       const variantProducts = [];
-      
+
       selectedProducts.forEach(product => {
         // Check if product is a variant by looking for variantInfo with documentId or isVariant flag
         if (product.variantInfo && (product.variantInfo.documentId || product.variantInfo.isVariant)) {
@@ -301,18 +301,18 @@ export default function Checkout() {
           mainProducts.push(product);
         }
       });
-      
+
       console.log('📦 Separated products:', {
         mainProducts: mainProducts.length,
         variantProducts: variantProducts.length
       });
-      
+
       const allUpdateResults = [];
-      
+
       // Process main products
       if (mainProducts.length > 0) {
         console.log('📦 Processing main products...');
-        
+
         // Group main products by documentId
         const productGroups = mainProducts.reduce((groups, product) => {
           const documentId = product.documentId;
@@ -385,7 +385,7 @@ export default function Checkout() {
 
             for (const product of products) {
               const selectedSize = product.selectedSize;
-              
+
               if (!updatedSizeStocks.hasOwnProperty(selectedSize)) {
                 console.warn('📦 Size not found in main product stock:', selectedSize);
                 updateResults.push({
@@ -430,7 +430,7 @@ export default function Checkout() {
 
             console.log('📦 Main product stock update response:', updateResponse);
             return updateResults;
-            
+
           } catch (error) {
             console.error('📦 Error updating main product stock:', documentId, error);
             return products.map(product => ({
@@ -442,20 +442,20 @@ export default function Checkout() {
             }));
           }
         });
-        
+
         const mainProductResults = await Promise.all(mainProductPromises);
         allUpdateResults.push(...mainProductResults.flat());
       }
-      
+
       // Process variant products
       if (variantProducts.length > 0) {
         console.log('📦 Processing variant products...');
-        
+
         // Group variants by documentId (use documentId as the unique identifier)
         const variantGroups = variantProducts.reduce((groups, product) => {
           // Use documentId from variantInfo as the unique identifier for the variant
           const variantDocumentId = product.variantInfo.documentId;
-          
+
           console.log('📦 Processing variant with ID:', {
             documentId: product.variantInfo.documentId,
             finalId: variantDocumentId,
@@ -480,10 +480,10 @@ export default function Checkout() {
               variantDocumentId,
               products: products.map(p => ({ id: p.id, size: p.selectedSize, quantity: p.quantity, title: p.title }))
             });
-            
+
             // Fetch current variant data
             console.log('📦 Fetching variant data for:', variantDocumentId);
-            
+
             // If variantDocumentId is numeric, we need to fetch by ID first to get documentId
             let variantResponse;
             if (!isNaN(parseInt(variantDocumentId))) {
@@ -551,7 +551,7 @@ export default function Checkout() {
 
             for (const product of products) {
               const selectedSize = product.selectedSize;
-              
+
               if (!updatedVariantSizeStocks.hasOwnProperty(selectedSize)) {
                 console.warn('📦 Size not found in variant stock:', selectedSize);
                 updateResults.push({
@@ -597,7 +597,7 @@ export default function Checkout() {
 
             console.log('📦 Variant stock update response:', updateResponse);
             return updateResults;
-            
+
           } catch (error) {
             console.error('📦 Error updating variant stock:', variantDocumentId, error);
             return products.map(product => ({
@@ -609,16 +609,16 @@ export default function Checkout() {
             }));
           }
         });
-        
+
         const variantResults = await Promise.all(variantPromises);
         allUpdateResults.push(...variantResults.flat());
       }
-      
+
       console.log('📦 All stock updates completed. Results:', allUpdateResults);
-      
+
       const successfulStockUpdates = allUpdateResults.filter(result => result.success);
       const failedStockUpdates = allUpdateResults.filter(result => !result.success);
-      
+
       console.log('📦 Stock update summary:', {
         total: allUpdateResults.length,
         successful: successfulStockUpdates.length,
@@ -629,10 +629,10 @@ export default function Checkout() {
 
       // Step 2: Delete cart items
       console.log('🗑️ Step 2: Deleting cart items...');
-      
+
       // Get user bag documentId
       const userBagDocumentId = await getUserBagDocumentId();
-      
+
       if (!userBagDocumentId) {
         throw new Error('User bag not found');
       }
@@ -643,27 +643,27 @@ export default function Checkout() {
       const currentUserData = await fetchDataFromApi(
         `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag.carts`
       );
-      
+
       if (!currentUserData?.data || currentUserData.data.length === 0) {
         throw new Error('User data not found');
       }
 
       const userData = currentUserData.data[0];
       const cartItems = userData.user_bag?.carts || [];
-      
+
       console.log('🗑️ Current cart items from backend:', cartItems.length);
-      
+
       // Find cart items to delete
       const itemsToDelete = [];
-      
+
       for (const selectedProduct of selectedProducts) {
         const frontendCartProduct = cartProducts.find(cp => cp.id === selectedProduct.id);
-        
+
         if (!frontendCartProduct) {
           console.warn('⚠️ No frontend cart product found for selected product:', selectedProduct.id);
           continue;
         }
-        
+
         // Find the backend cart item that matches this frontend product
         const matchingCartItem = cartItems.find(cartItem => {
           const sizeMatch = cartItem.size === frontendCartProduct.selectedSize;
@@ -721,7 +721,7 @@ export default function Checkout() {
 
       // Step 3: Clear purchased items from cart context
       console.log('🔄 Step 3: Clearing items from cart context...');
-      
+
       const purchasedProducts = selectedProducts.map(product => ({
         documentId: product.documentId,
         variantId: product.variantInfo?.documentId,
@@ -729,9 +729,9 @@ export default function Checkout() {
         quantity: product.quantity,
         title: product.title
       }));
-      
+
       await clearPurchasedItemsFromCart(purchasedProducts);
-      
+
       // Apply coupon if one was used
       if (appliedCoupon && appliedCoupon.id) {
         try {
@@ -742,7 +742,7 @@ export default function Checkout() {
             },
             body: JSON.stringify({ couponId: appliedCoupon.id, userId: user?.id }),
           });
-          
+
           if (response.ok) {
             console.log('✅ Coupon applied successfully');
           } else {
@@ -752,11 +752,11 @@ export default function Checkout() {
           console.error('❌ Error applying coupon:', error);
         }
       }
-      
+
       // Show success message
       const stockSuccessCount = successfulStockUpdates.length;
       const stockFailCount = failedStockUpdates.length;
-      
+
       let message = `Operation completed!\n`;
       message += `✅ Stock updated for ${stockSuccessCount} item(s)\n`;
       if (stockFailCount > 0) {
@@ -766,11 +766,11 @@ export default function Checkout() {
       if (appliedCoupon) {
         message += `\n✅ Coupon "${appliedCoupon.code}" applied`;
       }
-      
+
       alert(message);
-      
+
       console.log('🔄 Combined operation completed successfully');
-      
+
     } catch (error) {
       console.error('🔄 Error in combined update and delete operation:', error);
       alert(`Error: ${error.message}`);
@@ -798,7 +798,7 @@ export default function Checkout() {
   // Function to get user's bag documentId
   const getUserBagDocumentId = async () => {
     if (!user?.id) return null;
-    
+
     try {
       const currentUserData = await fetchDataFromApi(
         `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag`
@@ -846,7 +846,7 @@ export default function Checkout() {
 
     try {
       const userBagDocumentId = await getUserBagDocumentId();
-      
+
       if (!userBagDocumentId) {
         throw new Error('User bag not found');
       }
@@ -861,16 +861,16 @@ export default function Checkout() {
         const finalPrice = unitPrice * product.quantity;
 
         // Get the actual selected size and color from the product (variant-aware)
-        const availableSize = product.selectedSize 
-                              || product.selectedVariant?.size 
-                              || (product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M");
+        const availableSize = product.selectedSize
+          || product.selectedVariant?.size
+          || (product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M");
         const firstColor = (product.colors && product.colors.length > 0)
-                            ? (typeof product.colors[0] === 'string' ? product.colors[0] : (product.colors[0].name || product.colors[0].color || 'default'))
-                            : 'default';
+          ? (typeof product.colors[0] === 'string' ? product.colors[0] : (product.colors[0].name || product.colors[0].color || 'default'))
+          : 'default';
         const availableColor = (product.variantInfo && product.variantInfo.isVariant && product.variantInfo.title)
-                               ? product.variantInfo.title
-                               : (product.selectedVariant?.color || product.selectedColor || firstColor || 'default');
-        
+          ? product.variantInfo.title
+          : (product.selectedVariant?.color || product.selectedColor || firstColor || 'default');
+
 
 
         return {
@@ -885,11 +885,11 @@ export default function Checkout() {
           brand: fetchedProduct?.brand || "Traditional Alley",
           sku: fetchedProduct?.sku || product.sku || `SKU-${product.documentId}`,
           productCode: fetchedProduct?.productCode || "NO-CODES",
-          
+
           // Size and variant info for cart matching
           selectedSize: availableSize,
           selectedColor: availableColor,
-          
+
           // Variant Details
           selectedVariant: {
             size: availableSize,
@@ -903,7 +903,7 @@ export default function Checkout() {
             documentId: product.variantInfo.documentId || product.variantInfo.variantId,
             isVariant: true
           } : undefined,
-          
+
           // Pricing Details
           pricing: {
             originalPrice: oldPrice,
@@ -914,7 +914,7 @@ export default function Checkout() {
             subtotal: subtotal,
             finalPrice: finalPrice
           },
-          
+
           // Shipping & Package Details
           packageInfo: {
             weight: fetchedProduct?.weight || 1, // kg (now using parsed value from Strapi)
@@ -931,7 +931,7 @@ export default function Checkout() {
             isFragile: fetchedProduct?.isFragile || false,
             requiresSpecialHandling: fetchedProduct?.requiresSpecialHandling || false
           },
-          
+
           // Admin Reference
           adminNotes: {
             stockLocation: fetchedProduct?.stockLocation || "Main Warehouse",
@@ -960,10 +960,10 @@ export default function Checkout() {
           orderDate: new Date().toISOString(),
           orderTimezone: "Asia/Kathmandu"
         },
-        
+
         // Complete Product Details for Admin
         products: products,
-        
+
         // Comprehensive Shipping Details for Admin
         shipping: {
           // Shipping Method & Cost
@@ -978,7 +978,7 @@ export default function Checkout() {
             insuranceIncluded: false, // COD payment on delivery
             signatureRequired: true // Always required for COD
           },
-          
+
           // Package Details for Shipping Label
           package: {
             totalWeight: selectedProducts.reduce((total, product) => {
@@ -1000,7 +1000,7 @@ export default function Checkout() {
             dangerousGoods: false,
             customsDeclaration: receiverDetails?.address?.country !== "Nepal" && receiverDetails?.address?.countryCode !== "NP"
           },
-          
+
           // Admin Processing Info
           processing: {
             warehouseLocation: "Kathmandu Main Warehouse",
@@ -1015,7 +1015,7 @@ export default function Checkout() {
             codAmount: nprAmount // Amount to collect
           }
         },
-        
+
         // Legacy fields for backward compatibility
         shippingPrice: shippingCost,
         receiver_details: receiverDetails
@@ -1032,9 +1032,9 @@ export default function Checkout() {
 
       // Save COD order to user bag cod field
       await updateUserBagWithCOD(userBagDocumentId, codPaymentData);
-      
+
       // Create individual order record in Strapi user_orders collection for COD
-      
+
       try {
         const orderRecord = await createOrderRecord(codPaymentData, user?.id);
         if (orderRecord) {
@@ -1045,25 +1045,25 @@ export default function Checkout() {
       } catch (orderRecordError) {
         // Don't fail the entire process if order record creation fails
       }
-      
+
       // COD orders don't require automatic stock updates, cart clearing, or email sending
       // These will be handled manually when the order is confirmed
-      
+
       setOrderSuccess(true);
-      
+
       // Redirect to Thank You page with order details
       const thankYouUrl = new URL('/thank-you', window.location.origin);
       thankYouUrl.searchParams.set('orderId', codPaymentData.merchantTxnId);
       thankYouUrl.searchParams.set('amount', nprAmount.toString());
       thankYouUrl.searchParams.set('paymentMethod', 'cod');
-      
+
       // Show success message briefly before redirect
       // alert('Order placed successfully! Redirecting to confirmation page...');
-      
+
       setTimeout(() => {
         window.location.href = thankYouUrl.toString();
       }, 1500);
-      
+
     } catch (error) {
       alert('Failed to place order. Please try again.');
     } finally {
@@ -1080,9 +1080,9 @@ export default function Checkout() {
 
   // Function to handle NPS payment error
   const handleNPSPaymentError = (error) => {
-    
+
     let errorMessage = 'Payment failed. Please try again.';
-    
+
     if (error.message) {
       if (error.message.includes('sign in')) {
         errorMessage = 'Please sign in to continue with payment.';
@@ -1092,23 +1092,23 @@ export default function Checkout() {
         errorMessage = error.message;
       }
     }
-    
+
     alert(errorMessage);
   };
 
   // Fetch product details when selectedProducts change
   useEffect(() => {
     if (selectedProducts.length === 0 || isLoadingProductDetails) return;
-    
+
     setIsLoadingProductDetails(true);
-    
+
     async function fetchProductDetails() {
       try {
         const updatedProducts = {};
-        
+
         const promises = selectedProducts.map(async (product) => {
           if (!product.documentId) return null;
-          
+
           try {
             const productEndpoint = `/api/products?filters[documentId][$eq]=${product.documentId}&populate=*`;
             console.log('Fetching product details from:', productEndpoint);
@@ -1123,7 +1123,7 @@ export default function Checkout() {
                 const weightMatch = productData.weight.toString().match(/([0-9.]+)/);
                 parsedWeight = weightMatch ? parseFloat(weightMatch[1]) : 1; // Default to 1kg if can't parse
               }
-              
+
               // Parse dimensions from string to object (e.g., "30x20x10 cm" -> {length: 30, width: 20, height: 10})
               let parsedDimensions = null;
               if (productData.dimensions) {
@@ -1148,7 +1148,7 @@ export default function Checkout() {
 
               // Determine the correct product code to use
               let productCode = productData.product_code || "NO-CODES";
-              
+
               // If this cart item has variant information, try to use the variant's product code
               if (product.variantInfo && product.variantInfo.variantId) {
                 // Find the matching variant in the product data
@@ -1183,10 +1183,10 @@ export default function Checkout() {
             return null;
           }
         });
-        
+
         const results = await Promise.all(promises);
         console.log('All product fetch results:', results);
-        
+
         // Process results without isMounted check
         console.log('Processing results...');
         results.forEach((result, index) => {
@@ -1198,35 +1198,35 @@ export default function Checkout() {
             console.log(`Result ${index} is null/undefined`);
           }
         });
-        
+
         console.log('Updated products to set:', updatedProducts);
         console.log('Object.keys(updatedProducts):', Object.keys(updatedProducts));
-        
+
         setProductsWithOldPrice(prev => {
           // Only update if there are actual changes
           const hasChanges = Object.keys(updatedProducts).some(
-            id => !prev[id] || 
-                 prev[id].oldPrice !== updatedProducts[id].oldPrice ||
-                 prev[id].weight !== updatedProducts[id].weight ||
-                 prev[id].dimensions !== updatedProducts[id].dimensions ||
-                 prev[id].hsCode !== updatedProducts[id].hsCode ||
-                 prev[id].productCode !== updatedProducts[id].productCode
+            id => !prev[id] ||
+              prev[id].oldPrice !== updatedProducts[id].oldPrice ||
+              prev[id].weight !== updatedProducts[id].weight ||
+              prev[id].dimensions !== updatedProducts[id].dimensions ||
+              prev[id].hsCode !== updatedProducts[id].hsCode ||
+              prev[id].productCode !== updatedProducts[id].productCode
           );
-          
+
           console.log('Has changes:', hasChanges);
           console.log('Previous state:', prev);
           console.log('New state will be:', hasChanges ? { ...prev, ...updatedProducts } : prev);
-          
+
           return hasChanges ? { ...prev, ...updatedProducts } : prev;
         });
-        
+
       } catch (error) {
         console.error("Error fetching product details:", error);
       } finally {
         setIsLoadingProductDetails(false);
       }
     }
-    
+
     fetchProductDetails();
   }, [selectedProducts.length, selectedProducts.map(p => p.documentId).join(',')]); // Simpler, more stable dependency
 
@@ -1257,13 +1257,13 @@ export default function Checkout() {
 
       try {
         const welcomeCouponData = await getWelcomeCouponForAutoSelection(user.id);
-        
+
         if (welcomeCouponData) {
           console.log('🎫 Auto-applying WELCOMETOTA coupon for user:', user.id);
-          
+
           // Auto-apply the coupon (don't set input field to keep it clean)
           // setCouponCode(welcomeCouponData.code); // Commented out to keep input clean
-          
+
           // Validate the coupon to get the discount amount
           try {
             const response = await fetch(`${API_URL}/api/coupons/validate`, {
@@ -1330,7 +1330,7 @@ export default function Checkout() {
     if (nprExchangeRate) {
       // Product total needs conversion from USD to NPR (using finalTotal to include coupon discount)
       const productTotalNPR = convertUsdToNpr(finalTotal, nprExchangeRate);
-      
+
       // Always use the original NPR shipping cost for NPR amount calculation
       // This prevents currency switching issues
       return productTotalNPR + shippingCostNPR;
@@ -1349,24 +1349,24 @@ export default function Checkout() {
         setNprExchangeRate(134.5); // Fallback rate
       }
     };
-    
+
     if (!nprExchangeRate) {
       fetchRate();
     }
   }, []);
 
   // Effect to update display shipping cost when currency changes
-   React.useEffect(() => {
-     if (shippingRatesObtained && shippingCostNPR > 0 && nprExchangeRate) {
-       if (userCurrency === 'USD') {
-         // Convert NPR to USD for display
-         setShippingCost(shippingCostNPR / nprExchangeRate);
-       } else {
-         // Show original NPR amount
-         setShippingCost(shippingCostNPR);
-       }
-     }
-   }, [userCurrency, shippingCostNPR, nprExchangeRate, shippingRatesObtained]);
+  React.useEffect(() => {
+    if (shippingRatesObtained && shippingCostNPR > 0 && nprExchangeRate) {
+      if (userCurrency === 'USD') {
+        // Convert NPR to USD for display
+        setShippingCost(shippingCostNPR / nprExchangeRate);
+      } else {
+        // Show original NPR amount
+        setShippingCost(shippingCostNPR);
+      }
+    }
+  }, [userCurrency, shippingCostNPR, nprExchangeRate, shippingRatesObtained]);
 
   // Calculate total discounts: subtotal - actualTotal (if positive)
   const totalDiscounts = subtotal > actualTotal ? Math.round((subtotal - actualTotal) * 100) / 100 : 0;
@@ -1476,17 +1476,17 @@ export default function Checkout() {
                 </form> */}
               </div>
               <div className="wrap">
-                <DHLShippingForm 
+                <DHLShippingForm
                   isCheckoutMode={true}
                   initialPackages={selectedProducts.reduce((acc, product) => {
                     const fetchedProduct = productsWithOldPrice[product.id];
-                    
+
                     // Get weight and dimensions from either fetched data or original product data
                     const productData = fetchedProduct || product;
                     const weight = productData.weight || (productData.product && productData.product.weight);
                     const dimensions = productData.dimensions || (productData.product && productData.product.dimensions);
                     const hsCode = productData.hsCode || (productData.product && productData.product.hsCode);
-                    
+
                     // Parse dimensions - handle both parsed object and string formats
                     let length = 10, width = 10, height = 10;
                     if (dimensions) {
@@ -1506,7 +1506,7 @@ export default function Checkout() {
                         }
                       }
                     }
-                    
+
                     // Parse weight - handle both parsed numeric and string formats
                     let parsedWeight = 1;
                     if (weight) {
@@ -1544,30 +1544,30 @@ export default function Checkout() {
                       };
                       acc.push(packageData);
                     }
-                    
+
                     return acc;
                   }, [])}
                   onRateCalculated={(rateInfo) => {
                     console.log('Rate calculated:', rateInfo);
                     // Use actual shipping rate from DHL/NCM calculation
                     const originalShippingCostNPR = parseFloat(rateInfo.price) || 0;
-                    
+
                     // Store original NPR amount for NPR payment calculations
                     setShippingCostNPR(originalShippingCostNPR);
-                    
+
                     // Store delivery type from rate info
-                    const serviceType = rateInfo.rateDetails?.service_type || 
-                                      (rateInfo.productName?.includes('Express') ? 'Express' : 
-                                       rateInfo.productName?.includes('Economy') ? 'Economy' : 'Standard');
+                    const serviceType = rateInfo.rateDetails?.service_type ||
+                      (rateInfo.productName?.includes('Express') ? 'Express' :
+                        rateInfo.productName?.includes('Economy') ? 'Economy' : 'Standard');
                     setDeliveryType(serviceType);
-                    
+
                     // Convert shipping cost based on user currency preference for display
                     // DHL rates come in NPR, so convert to USD if user is in USD mode
                     let displayShippingCost = originalShippingCostNPR;
                     if (userCurrency === 'USD' && nprExchangeRate) {
                       displayShippingCost = originalShippingCostNPR / nprExchangeRate;
                     }
-                    
+
                     setShippingCost(displayShippingCost);
                     setShippingRatesObtained(true);
                   }}
@@ -1576,10 +1576,10 @@ export default function Checkout() {
               </div>
               <div className="wrap">
                 {/* Discount Coupons Section */}
-                <div className="discount-section" style={{ 
-                  marginTop: '40px', 
-                  marginBottom: '30px', 
-                  borderTop: '2px solid #f0f0f0', 
+                <div className="discount-section" style={{
+                  marginTop: '40px',
+                  marginBottom: '30px',
+                  borderTop: '2px solid #f0f0f0',
                   paddingTop: '30px',
                   background: 'linear-gradient(135deg, #fafbfc 0%, #f8f9fa 100%)',
                   borderRadius: '12px',
@@ -1592,18 +1592,18 @@ export default function Checkout() {
                       Discount Coupons
                     </h5>
                   </div>
-                  <p style={{ 
-                    margin: 0, 
-                    color: '#5a6c7d', 
-                    fontSize: '14px', 
+                  <p style={{
+                    margin: 0,
+                    color: '#5a6c7d',
+                    fontSize: '14px',
                     marginBottom: '20px',
                     lineHeight: '1.5'
                   }}>
-                    Have a promotional code? Apply it below to get instant savings on your order. 
+                    Have a promotional code? Apply it below to get instant savings on your order.
                     <span style={{ fontWeight: '600', color: '#495057' }}> Only one coupon per order.</span>
                   </p>
-                <div className="sec-discount">
-                  {/* <Swiper
+                  <div className="sec-discount">
+                    {/* <Swiper
                     dir="ltr"
                     className="swiper tf-sw-categories"
                     slidesPerView={2.25} // data-preview="2.25"
@@ -1656,17 +1656,17 @@ export default function Checkout() {
                   </Swiper> */}
                     <div className="coupon-card" style={{ marginTop: '0px', marginBottom: '12px', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '16px', backgroundColor: '#fff' }}>
                       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           placeholder="Enter coupon code"
                           aria-label="Coupon code"
                           value={couponCode}
                           onChange={(e) => setCouponCode(e.target.value)}
                           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (!appliedCoupon && !couponLoading && couponCode.trim()) validateCoupon(); } }}
                           disabled={appliedCoupon || couponLoading}
-                          style={{ 
+                          style={{
                             flex: 1,
-                            borderRadius: '8px', 
+                            borderRadius: '8px',
                             border: `1px solid ${couponError ? '#dc3545' : '#d1d5db'}`,
                             padding: '12px 14px',
                             fontWeight: 700,
@@ -1674,11 +1674,11 @@ export default function Checkout() {
                             letterSpacing: '0.06em',
                             fontSize: '14px',
                             backgroundColor: appliedCoupon ? '#f8f9fa' : 'white'
-                          }} 
+                          }}
                         />
                         {!appliedCoupon ? (
-                          <button 
-                            className="tf-btn" 
+                          <button
+                            className="tf-btn"
                             onClick={validateCoupon}
                             disabled={couponLoading || !couponCode.trim()}
                             style={{ minWidth: '120px' }}
@@ -1688,8 +1688,8 @@ export default function Checkout() {
                             </span>
                           </button>
                         ) : (
-                          <button 
-                            className="tf-btn" 
+                          <button
+                            className="tf-btn"
                             onClick={removeCoupon}
                             style={{ minWidth: '120px', backgroundColor: '#e03131' }}
                           >
@@ -1701,12 +1701,12 @@ export default function Checkout() {
                         💡 Tip: Coupon codes are not case sensitive.
                       </div>
                     </div>
-                    
+
                     {/* Coupon Error Message */}
                     {couponError && (
-                      <div style={{ 
-                        color: '#b02a37', 
-                        fontSize: '13px', 
+                      <div style={{
+                        color: '#b02a37',
+                        fontSize: '13px',
                         marginTop: '0px',
                         marginBottom: '10px',
                         padding: '12px 14px',
@@ -1721,11 +1721,11 @@ export default function Checkout() {
                         <span>{couponError}</span>
                       </div>
                     )}
-                    
+
                     {/* Applied Coupon Success Message */}
                     {appliedCoupon && (
-                      <div style={{ 
-                        fontSize: '13px', 
+                      <div style={{
+                        fontSize: '13px',
                         marginTop: '0px',
                         marginBottom: '12px',
                         padding: '14px 16px',
@@ -1740,17 +1740,17 @@ export default function Checkout() {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                           <span style={{
-                            background: '#111', 
-                            color: '#fff', 
-                            padding: '4px 10px', 
-                            borderRadius: '20px', 
-                            fontSize: '12px', 
+                            background: '#111',
+                            color: '#fff',
+                            padding: '4px 10px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
                             fontWeight: '600',
                             letterSpacing: '0.05em'
                           }}>{appliedCoupon.code}</span>
                           <span>—</span>
                           <span style={{ fontWeight: '600' }}>
-                            {appliedCoupon.discountType === 'percentage' 
+                            {appliedCoupon.discountType === 'percentage'
                               ? `${appliedCoupon.discountValue}% off`
                               : `$${appliedCoupon.discountValue} off`}
                           </span>
@@ -1769,22 +1769,22 @@ export default function Checkout() {
                         )}
                       </div>
                     )}
-                    
+
                     <p style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
                       ℹ️ Some coupons require a minimum order value or may be limited to certain products.
                     </p>
-                </div>
-                  
+                  </div>
+
                   {/* Order Summary */}
                   <div className="order-summary-section" style={{ marginTop: '30px', marginBottom: '20px', borderTop: '1px solid #eaeaea', paddingTop: '20px' }}>
                     <h5 className="title" style={{ marginBottom: '15px' }}>Order Summary</h5>
-                <div className="sec-total-price">
-                  <div className="top">
+                    <div className="sec-total-price">
+                      <div className="top">
                         <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
                           <span>Subtotal</span>
                           <span>
-                            <PriceDisplay 
-                              price={actualTotal}
+                            <PriceDisplay
+                              price={subtotal}
                               className="text-button"
                               size="normal"
                             />
@@ -1794,7 +1794,7 @@ export default function Checkout() {
                           <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
                             <span>Product Discounts</span>
                             <span style={{ color: '#28a745' }}>
-                              <PriceDisplay 
+                              <PriceDisplay
                                 price={-totalDiscounts}
                                 className="text-button"
                                 size="normal"
@@ -1806,7 +1806,7 @@ export default function Checkout() {
                           <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
                             <span>Coupon Discount ({appliedCoupon?.code})</span>
                             <span style={{ color: '#28a745' }}>
-                              <PriceDisplay 
+                              <PriceDisplay
                                 price={-couponDiscount}
                                 className="text-button"
                                 size="normal"
@@ -1817,7 +1817,7 @@ export default function Checkout() {
                         <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
                           <span>Total (Without Shipping Charges)</span>
                           <span>
-                            <PriceDisplay 
+                            <PriceDisplay
                               price={finalTotal}
                               className="text-button"
                               size="normal"
@@ -1825,42 +1825,42 @@ export default function Checkout() {
                           </span>
                         </div>
                         <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
-                      <span>Shipping</span>
-                      <span>
-                        {shippingCost > 0 ? (
-                          <PriceDisplay 
-                            price={shippingCost}
-                            className="text-button"
-                            size="normal"
-                            isNPR={userCurrency === 'NPR'}
-                          />
-                        ) : (
-                          'Get Shipping Rates'
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="bottom">
-                    <h5 className="d-flex justify-content-between">
+                          <span>Shipping</span>
+                          <span>
+                            {shippingCost > 0 ? (
+                              <PriceDisplay
+                                price={shippingCost}
+                                className="text-button"
+                                size="normal"
+                                isNPR={userCurrency === 'NPR'}
+                              />
+                            ) : (
+                              'Get Shipping Rates'
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="bottom">
+                        <h5 className="d-flex justify-content-between">
                           <span>Grand Total</span>
-                      <span className="total-price-checkout">
-                        {userCurrency === 'NPR' ? (
-                          <PriceDisplay 
-                            price={nprAmount}
-                            className="text-button"
-                            size="large"
-                            isNPR={true}
-                          />
-                        ) : (
-                          <PriceDisplay 
-                              price={finalTotal + shippingCost}
-                              className="text-button"
-                              size="normal"
-                            />
-                        )}
-                      </span>
-                    </h5>
-                  </div>
+                          <span className="total-price-checkout">
+                            {userCurrency === 'NPR' ? (
+                              <PriceDisplay
+                                price={nprAmount}
+                                className="text-button"
+                                size="large"
+                                isNPR={true}
+                              />
+                            ) : (
+                              <PriceDisplay
+                                price={finalTotal + shippingCost}
+                                className="text-button"
+                                size="normal"
+                              />
+                            )}
+                          </span>
+                        </h5>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1879,14 +1879,14 @@ export default function Checkout() {
                     <span style={{ fontSize: '20px' }}>💳</span>
                     Payment Method
                   </h5>
-                  
+
                   <div className={styles.paymentMethods}>
                     {/* NPS Online Payment */}
                     <div className={`${styles.paymentMethodCard} ${selectedPaymentMethod === 'nps' ? styles.selected : ''}`}>
-                      <input 
-                        type="radio" 
-                        id="nps-payment" 
-                        name="paymentMethod" 
+                      <input
+                        type="radio"
+                        id="nps-payment"
+                        name="paymentMethod"
                         value="nps"
                         checked={selectedPaymentMethod === 'nps'}
                         onChange={(e) => setSelectedPaymentMethod(e.target.value)}
@@ -1901,10 +1901,10 @@ export default function Checkout() {
 
                     {/* Cash on Delivery */}
                     <div className={`${styles.paymentMethodCard} ${selectedPaymentMethod === 'cod' ? styles.selected : ''}`}>
-                      <input 
-                        type="radio" 
-                        id="cod-payment" 
-                        name="paymentMethod" 
+                      <input
+                        type="radio"
+                        id="cod-payment"
+                        name="paymentMethod"
                         value="cod"
                         checked={selectedPaymentMethod === 'cod'}
                         onChange={(e) => setSelectedPaymentMethod(e.target.value)}
@@ -1942,8 +1942,8 @@ export default function Checkout() {
                         <span style={{ fontSize: '20px' }}>💵</span>
                         Cash on Delivery
                       </h5>
-                      
-                      <button 
+
+                      <button
                         className="tf-btn btn-fill animate-hover-btn radius-3 w-100 justify-content-center"
                         onClick={handleCashPaymentOrder}
                         disabled={isProcessingOrder || !shippingRatesObtained || selectedProducts.length === 0}
@@ -1963,11 +1963,11 @@ export default function Checkout() {
                       </button>
 
                       {!shippingRatesObtained && (
-                        <div style={{ 
-                          marginTop: '12px', 
-                          padding: '12px', 
-                          background: '#f8d7da', 
-                          color: '#721c24', 
+                        <div style={{
+                          marginTop: '12px',
+                          padding: '12px',
+                          background: '#f8d7da',
+                          color: '#721c24',
                           borderRadius: '6px',
                           fontSize: '14px',
                           textAlign: 'center'
@@ -1988,7 +1988,7 @@ export default function Checkout() {
             <div className="flat-spacing flat-sidebar-checkout">
               <div className="sidebar-checkout-content">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-                  <h5 className="title" style={{ 
+                  <h5 className="title" style={{
                     position: 'relative',
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -2011,7 +2011,7 @@ export default function Checkout() {
                     </svg>
                     Shopping Cart
                   </h5>
-                  
+
 
                 </div>
                 <div className="checkout-summary-vertical" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
@@ -2060,7 +2060,7 @@ export default function Checkout() {
                         <div className="total-price text-button">
                           <span className="count">{elm.quantity}</span>X
                           <span className="price">
-                            <PriceDisplay 
+                            <PriceDisplay
                               price={elm.price}
                               className="text-button"
                               size="small"

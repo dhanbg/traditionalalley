@@ -109,7 +109,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
   const [countriesError, setCountriesError] = useState('');
   const [availableServiceTypes, setAvailableServiceTypes] = useState(['Economy', 'Express']);
   const [loadingServiceTypes, setLoadingServiceTypes] = useState(false);
-  
+
   // Branch search functionality
   const [branchSearchTerm, setBranchSearchTerm] = useState('');
   const [showBranchDropdown, setShowBranchDropdown] = useState(false);
@@ -133,9 +133,9 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
     const autoDate = getAutomaticShippingDate();
     const invoiceDate = new Date().toISOString().split('T')[0];
     const invoiceNumber = `INV-${Date.now()}`;
-    
-    setFormData(prev => ({ 
-      ...prev, 
+
+    setFormData(prev => ({
+      ...prev,
       plannedShippingDate: autoDate.date,
       exportDeclaration: {
         ...prev.exportDeclaration,
@@ -144,7 +144,8 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
           date: invoiceDate,
         }
       }
-    }));  }, []);
+    }));
+  }, []);
 
   useEffect(() => {
     if (isCheckoutMode && typeof onReceiverChange === 'function') {
@@ -190,7 +191,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
   // Filter branches based on search term
   useEffect(() => {
     if (branches.length > 0) {
-      const filtered = branches.filter(branch => 
+      const filtered = branches.filter(branch =>
         branch.name.toLowerCase().includes(branchSearchTerm.toLowerCase()) ||
         branch.district.toLowerCase().includes(branchSearchTerm.toLowerCase()) ||
         (branch.region && branch.region.toLowerCase().includes(branchSearchTerm.toLowerCase()))
@@ -227,7 +228,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
       console.error('Failed to load branches:', error);
       // Set empty branches array as fallback
       setBranches([]);
-      
+
       // Don't show error to user for branch loading failures
       // as this is not critical for the main functionality
     } finally {
@@ -254,7 +255,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
     try {
       setLoadingCountries(true);
       setCountriesError('');
-      
+
       // First, get the total count to determine number of pages
       const initialResponse = await fetch(`${API_BASE_URL}/api/shipping-rates?populate=*&pagination[pageSize]=25`, {
         headers: {
@@ -262,17 +263,17 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (!initialResponse.ok) {
         throw new Error(`HTTP error! status: ${initialResponse.status}`);
       }
-      
+
       const initialData = await initialResponse.json();
       const totalPages = initialData.meta.pagination.pageCount;
-      
+
       // Fetch all pages
       const allCountries = new Set();
-      
+
       for (let page = 1; page <= totalPages; page++) {
         const response = await fetch(`${API_BASE_URL}/api/shipping-rates?populate=*&pagination[page]=${page}&pagination[pageSize]=25`, {
           headers: {
@@ -280,13 +281,13 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
             'Content-Type': 'application/json'
           }
         });
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
-        
+
         // Extract unique countries with unique identifiers
         data.data.forEach(item => {
           if (item.country_name && item.country_code) {
@@ -298,12 +299,12 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
           }
         });
       }
-      
+
       // Convert back to array and sort
       const countriesArray = Array.from(allCountries)
         .map(item => JSON.parse(item))
         .sort((a, b) => a.name.localeCompare(b.name));
-      
+
       // Add Nepal as a hardcoded option if not already present
       const nepalExists = countriesArray.some(country => country.code === 'NP');
       if (!nepalExists) {
@@ -315,7 +316,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         // Re-sort after adding Nepal
         countriesArray.sort((a, b) => a.name.localeCompare(b.name));
       }
-      
+
       setCountries(countriesArray);
     } catch (error) {
       console.error('Failed to load countries:', error);
@@ -333,20 +334,20 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
 
     try {
       setLoadingServiceTypes(true);
-      
+
       const response = await fetch(`${API_BASE_URL}/api/shipping-rates?filters[country_code][$eq]=${countryCode}&populate=*`, {
         headers: {
           'Authorization': `Bearer ${API_TOKEN}`,
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
+
       // Extract unique service types for this country
       const serviceTypes = new Set();
       data.data.forEach(item => {
@@ -354,12 +355,12 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
           serviceTypes.add(item.service_type);
         }
       });
-      
+
       let availableTypes = Array.from(serviceTypes);
-      
+
       // Special handling for Canary Islands - only Express service available
       if (uniqueId && uniqueId.includes('canary-island')) {
-        availableTypes = availableTypes.filter(type => 
+        availableTypes = availableTypes.filter(type =>
           type.toLowerCase().includes('express')
         );
         // Ensure at least Express is available for Canary Islands
@@ -367,9 +368,9 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
           availableTypes = ['Express'];
         }
       }
-      
+
       setAvailableServiceTypes(availableTypes);
-      
+
       // Auto-select service type if only one is available
       if (availableTypes.length === 1) {
         handleInputChange('', 'serviceType', availableTypes[0]);
@@ -377,7 +378,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         // Reset to first available if current selection is not available
         handleInputChange('', 'serviceType', availableTypes[0]);
       }
-      
+
     } catch (error) {
       console.error('Failed to load service types:', error);
       // Fallback to both options if API fails
@@ -391,18 +392,18 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
     // For NCM, we need pickup branch (origin) and destination branch
     const pickupBranch = 'SATDOBATO'; // Default pickup branch - you may want to make this configurable
     const destinationBranch = formData.destinationAddress.cityName; // This contains the selected branch name
-    
+
     try {
       setDhlLoading(true);
       setDhlError('');
-      
+
       // Validate required data
       if (!destinationBranch) {
         throw new Error('Please select a destination branch');
       }
-      
+
       console.log('NCM Rate Request:', { from: pickupBranch, to: destinationBranch });
-      
+
       const response = await axios.get('/api/ncm/shipping-rate', {
         params: {
           from: pickupBranch,
@@ -411,7 +412,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         },
         timeout: 30000 // 30 second timeout
       });
-      
+
       if (response.data.success) {
         // Format NCM response to match DHL structure for consistency
         const ncmRate = {
@@ -431,14 +432,14 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
           },
           isNCM: true // Flag to identify NCM rates
         };
-        
+
         setRates(ncmRate);
-        
+
         // Calculate total weight for display
         const totalWeight = formData.packages.reduce((total, pkg) => {
           return total + (parseFloat(pkg.weight) || 0) * (parseInt(pkg.quantity) || 1);
         }, 0);
-        
+
         // Format NCM rate for shipping rates display (to show in "Available Shipping Rates" section)
         const ncmShippingRate = {
           service_type: `${pickupBranch} ${destinationBranch}`,
@@ -450,9 +451,9 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
           weight_threshold: totalWeight,
           isNCM: true
         };
-        
+
         setShippingRates([ncmShippingRate]);
-        
+
         // Set selected rate for pricing display
         setSelectedRate({
           price: response.data.charge,
@@ -461,7 +462,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
           deliveryDate: ncmRate.data.products[0].deliveryCapabilities.estimatedDeliveryDateAndTime,
           transitDays: '2-3'
         });
-        
+
         // Notify parent component if callback exists
         if (onRateCalculated) {
           onRateCalculated({
@@ -485,7 +486,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         hasResponse: !!error.response,
         errorKeys: Object.keys(error || {})
       });
-      
+
       // Handle different error structures
       let errorMessage = 'Failed to get NCM rates';
       if (error.response?.data?.error) {
@@ -506,16 +507,16 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
     try {
       setLoadingShippingRates(true);
       setShippingRatesError('');
-      
+
       console.log('Fetching shipping rates:', { countryCode, serviceType, totalWeight });
-      
+
       // Use the Next.js API route which handles both local and production environments
       const response = await axios.get('/api/shipping-rates', {
         params: {
           populate: '*'
         }
       });
-      
+
       console.log('Raw API response:', {
         status: response.status,
         dataExists: !!response.data,
@@ -523,7 +524,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         dataLength: response.data?.data?.length || 0,
         firstItem: response.data?.data?.[0] || null
       });
-      
+
       if (response.data && response.data.data) {
         console.log('All shipping rates before filtering:', response.data.data.map(rate => ({
           id: rate.id,
@@ -532,14 +533,14 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
           weight_limit: rate.weight_limit,
           country_name: rate.country_name
         })));
-        
+
         // Filter rates based on country code and service type
         const filteredRates = response.data.data.filter(rate => {
           const matchesCountry = rate.country_code === countryCode;
           const matchesService = rate.service_type.toLowerCase() === serviceType.toLowerCase();
           // Handle null weight_limit (means no weight restriction)
           const withinWeightLimit = rate.weight_limit === null || totalWeight <= rate.weight_limit;
-          
+
           console.log(`Rate ${rate.id} filtering:`, {
             rate_country: rate.country_code,
             target_country: countryCode,
@@ -552,18 +553,18 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
             withinWeightLimit,
             finalMatch: matchesCountry && matchesService && withinWeightLimit
           });
-          
+
           return matchesCountry && matchesService && withinWeightLimit;
         });
-        
+
         console.log('Filtered shipping rates:', filteredRates);
         setShippingRates(filteredRates);
-        
+
         // Calculate shipping cost based on weight
         if (filteredRates.length > 0) {
           const rate = filteredRates[0]; // Use first matching rate
           const shippingCost = calculateShippingCost(rate, totalWeight);
-          
+
           // Notify parent component with calculated rate
           if (onRateCalculated) {
             onRateCalculated({
@@ -606,18 +607,18 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
     // Handle NCM rates - they have an incremental rate structure
     if (rate.isNCM) {
       const baseRate = rate.base_rate || 0;
-      
+
       // For weights up to 2kg, use base rate
       if (weight <= 2) {
         return baseRate;
       }
-      
+
       // For weights 3kg and above, add base rate for each additional kg
       // Example: 3kg = 2 * baseRate, 4kg = 3 * baseRate, etc.
       const additionalKg = Math.ceil(weight) - 2; // Round up to next kg for additional weight
       return baseRate + (additionalKg * baseRate);
     }
-    
+
     // Weight ranges mapping for regular DHL rates
     const weightRanges = [
       { min: 0, max: 0.5, field: 'from_0_to_0_5' },
@@ -641,7 +642,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
       { min: 9, max: 9.5, field: 'from_9_to_9_5' },
       { min: 9.5, max: 10, field: 'from_9_5_to_10' }
     ];
-    
+
     // Find the appropriate weight range
     for (const range of weightRanges) {
       if (weight > range.min && weight < range.max) {
@@ -660,12 +661,12 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         return rate[range.field] || 0;
       }
     }
-    
+
     // Handle weight of exactly 0 (use first range)
     if (weight === 0) {
       return rate['from_0_to_0_5'] || 0;
     }
-    
+
     // Handle weights above 10kg
     if (weight === 10) {
       return rate.from_10_to_20 || 0;
@@ -684,7 +685,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
     } else if (weight > 50 && weight <= 100) {
       return rate.from_50_to_100 || 0;
     }
-    
+
     return 0; // Default fallback
   };
 
@@ -696,10 +697,10 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         if (field === 'manufacturingCountryCode') {
           newPackages[index] = { ...newPackages[index], [field]: 'NP' };
         } else {
-        newPackages[index] = { ...newPackages[index], [field]: value };
+          newPackages[index] = { ...newPackages[index], [field]: value };
         }
         const totalDeclaredValue = newPackages.reduce((total, pkg) => total + (parseFloat(pkg.declaredValue) || 0), 0);
-        
+
         const lineItems = newPackages.map((pkg, i) => ({
           number: i + 1,
           description: pkg.description,
@@ -717,9 +718,9 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
           }
         }));
 
-        return { 
-          ...prev, 
-          packages: newPackages, 
+        return {
+          ...prev,
+          packages: newPackages,
           declaredValue: totalDeclaredValue,
           exportDeclaration: {
             ...prev.exportDeclaration,
@@ -760,18 +761,28 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
 
   const isFormValid = () => {
     const { destinationAddress, serviceType } = formData;
-    
-    // Only check for country, city, and service type (except for Nepal)
+
+    // Check for country and city (required for all)
     const countryValid = destinationAddress.countryCode && destinationAddress.countryCode.trim() !== '';
     const cityValid = destinationAddress.cityName && destinationAddress.cityName.trim() !== '';
+
+    // Check for street address (required for all)
+    const addressValid = destinationAddress.addressLine1 && destinationAddress.addressLine1.trim() !== '';
+
     const actualCountryCode = getActualCountryCode(destinationAddress.countryCode);
+
+    // Check for postal code (required for non-Nepal countries)
+    const postalCodeValid = actualCountryCode === 'NP' || (destinationAddress.postalCode && destinationAddress.postalCode.trim() !== '');
+
+    // Check for service type (required for non-Nepal countries)
     const serviceTypeValid = actualCountryCode === 'NP' || (serviceType && serviceType.trim() !== '');
+
     // Require custom height inches input only when "Yes" is selected
     const heightValid = customHeightOption === 'Yes'
       ? (formData.recipient.height && String(formData.recipient.height).trim() !== '')
       : true;
 
-    return countryValid && cityValid && serviceTypeValid && heightValid;
+    return countryValid && cityValid && addressValid && postalCodeValid && serviceTypeValid && heightValid;
   };
 
   const getRates = async () => {
@@ -779,18 +790,18 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
       // Get country code and service type from form
       const actualCountryCode = getActualCountryCode(formData.destinationAddress.countryCode);
       const selectedServiceType = formData.serviceType || 'Economy';
-      
+
       // Calculate total weight from packages
       const totalWeight = formData.packages.reduce((total, pkg) => {
         return total + (parseFloat(pkg.weight) || 0) * (parseInt(pkg.quantity) || 1);
       }, 0);
-      
+
       console.log('Getting rates for:', {
         countryCode: actualCountryCode,
         serviceType: selectedServiceType,
         totalWeight: totalWeight
       });
-      
+
       // Check if destination is Nepal - use NCM rates
       if (actualCountryCode === 'NP') {
         console.log('Using NCM rates for Nepal delivery');
@@ -799,7 +810,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         // Use the shipping rates API for international destinations
         await fetchShippingRates(actualCountryCode, selectedServiceType, totalWeight);
       }
-      
+
     } catch (error) {
       console.error('Error in getRates:', error);
       setDhlError('Failed to get shipping rates');
@@ -865,406 +876,133 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         position: 'relative',
         overflow: 'hidden'
       }}>
-      {/* Background decorations */}
-      <div style={{
-        position: 'absolute',
-        top: '-4rem',
-        right: '-4rem',
-        width: '8rem',
-        height: '8rem',
-        background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1))',
-        borderRadius: '50%',
-        zIndex: 1
-      }}></div>
-      <div style={{
-        position: 'absolute',
-        bottom: '-3rem',
-        left: '-3rem',
-        width: '6rem',
-        height: '6rem',
-        background: 'linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1))',
-        borderRadius: '50%',
-        zIndex: 1
-      }}></div>
-      
-      <div style={{ position: 'relative', zIndex: 10 }}>
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '4rem',
-            height: '4rem',
-            background: 'linear-gradient(45deg, #fbbf24, #f59e0b)',
-            borderRadius: '50%',
-            marginBottom: '1rem',
-            boxShadow: '0 10px 25px rgba(251, 191, 36, 0.3)',
-            fontSize: '1.5rem'
-          }}>
-            🚚
-          </div>
-          <h2 style={{
-            fontSize: '1.875rem',
-            fontWeight: 700,
-            color: '#1f2937',
-            margin: '0 0 0.5rem 0'
-          }}>Shipping</h2>
-          <p style={{ color: '#6b7280', margin: 0 }}>Fast, reliable worldwide delivery</p>
-        </div>
+        {/* Background decorations */}
+        <div style={{
+          position: 'absolute',
+          top: '-4rem',
+          right: '-4rem',
+          width: '8rem',
+          height: '8rem',
+          background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1))',
+          borderRadius: '50%',
+          zIndex: 1
+        }}></div>
+        <div style={{
+          position: 'absolute',
+          bottom: '-3rem',
+          left: '-3rem',
+          width: '6rem',
+          height: '6rem',
+          background: 'linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1))',
+          borderRadius: '50%',
+          zIndex: 1
+        }}></div>
 
-        <div>
-        {dhlError && (
+        <div style={{ position: 'relative', zIndex: 10 }}>
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <div style={{
-              marginBottom: '1.5rem',
-              padding: '1rem',
-              background: 'linear-gradient(45deg, #fef2f2, #fee2e2)',
-              border: '1px solid #fecaca',
-              borderRadius: '0.75rem',
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.75rem'
+              justifyContent: 'center',
+              width: '4rem',
+              height: '4rem',
+              background: 'linear-gradient(45deg, #fbbf24, #f59e0b)',
+              borderRadius: '50%',
+              marginBottom: '1rem',
+              boxShadow: '0 10px 25px rgba(251, 191, 36, 0.3)',
+              fontSize: '1.5rem'
             }}>
+              🚚
+            </div>
+            <h2 style={{
+              fontSize: '1.875rem',
+              fontWeight: 700,
+              color: '#1f2937',
+              margin: '0 0 0.5rem 0'
+            }}>Shipping</h2>
+            <p style={{ color: '#6b7280', margin: 0 }}>Fast, reliable worldwide delivery</p>
+          </div>
+
+          <div>
+            {dhlError && (
               <div style={{
-                flexShrink: 0,
-                width: '2rem',
-                height: '2rem',
-                background: '#ef4444',
-                borderRadius: '50%',
+                marginBottom: '1.5rem',
+                padding: '1rem',
+                background: 'linear-gradient(45deg, #fef2f2, #fee2e2)',
+                border: '1px solid #fecaca',
+                borderRadius: '0.75rem',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontSize: '0.875rem'
+                gap: '0.75rem'
               }}>
-                ❌
-              </div>
-              <div>
-                <strong style={{ fontWeight: 600, color: '#991b1b' }}>Error:</strong>
-                <span style={{ color: '#b91c1c', marginLeft: '0.5rem' }}>{dhlError}</span>
-            </div>
-          </div>
-        )}
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: isMobile ? '1fr' : (window.innerWidth >= 1024 ? '1fr 1fr' : '1fr'),
-              gap: isMobile ? '1rem' : '2rem',
-              width: '100%'
-            }}
-          >
-          {/* Destination Address */}
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: isMobile ? '1rem' : '1.5rem',
-                width: '100%'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
                 <div style={{
+                  flexShrink: 0,
+                  width: '2rem',
+                  height: '2rem',
+                  background: '#ef4444',
+                  borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: '2.5rem',
-                  height: '2.5rem',
-                  background: 'linear-gradient(45deg, #3b82f6, #2563eb)',
-                  borderRadius: '50%',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  fontSize: '1.125rem',
-                  color: 'white'
+                  color: 'white',
+                  fontSize: '0.875rem'
                 }}>
-                  🌍
+                  ❌
                 </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1f2937', margin: 0 }}>
-                  Destination Address
-                </h3>
+                <div>
+                  <strong style={{ fontWeight: 600, color: '#991b1b' }}>Error:</strong>
+                  <span style={{ color: '#b91c1c', marginLeft: '0.5rem' }}>{dhlError}</span>
+                </div>
               </div>
-              
+            )}
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? '1fr' : (window.innerWidth >= 1024 ? '1fr 1fr' : '1fr'),
+                gap: isMobile ? '1rem' : '2rem',
+                width: '100%'
+              }}
+            >
+              {/* Destination Address */}
               <div
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: isMobile ? '0.75rem' : '1rem',
+                  gap: isMobile ? '1rem' : '1.5rem',
                   width: '100%'
                 }}
               >
-            <div>
-                  <label style={{
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                  <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    color: '#374151',
-                    marginBottom: '0.5rem'
+                    justifyContent: 'center',
+                    width: '2.5rem',
+                    height: '2.5rem',
+                    background: 'linear-gradient(45deg, #3b82f6, #2563eb)',
+                    borderRadius: '50%',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    fontSize: '1.125rem',
+                    color: 'white'
                   }}>
-                    <span style={{ marginRight: '0.5rem' }}>🏳️</span>
-                    Country *
-                  </label>
-              <select
-                value={formData.destinationAddress.countryCode}
-                onChange={(e) => {
-                  const selectedUniqueId = e.target.value;
-                  const selectedCountry = countries.find(country => country.uniqueId === selectedUniqueId);
-                  const actualCountryCode = selectedCountry ? selectedCountry.code : selectedUniqueId;
-                  
-                  handleInputChange('destinationAddress', 'countryCode', selectedUniqueId);
-                  handleInputChange('destinationAddress', 'cityName', '');
-                  handleInputChange('destinationAddress', 'postalCode', '');
-                  const callingCode = countryCallingCodes[actualCountryCode] || '';
-                  handleInputChange('recipient', 'countryCode', callingCode);
-                  loadServiceTypes(actualCountryCode, selectedUniqueId);
-                }}
-                    style={{
-                      width: '100%',
-                      padding: '1rem',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '0.75rem',
-                      fontSize: '1rem',
-                      background: 'white',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                      transition: 'all 0.2s'
-                    }}
-                required
-                    onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                    onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-              >
-                <option value="">Select Country</option>
-                {loadingCountries ? (
-                  <option disabled>Loading countries...</option>
-                ) : (
-                  countries.map((country, index) => (
-                    <option key={`${country.uniqueId}-${index}`} value={country.uniqueId}>
-                      {country.name}
-                    </option>
-                  ))
-                )}
-              </select>
-              {countriesError && (
-                <div style={{
-                  color: '#dc2626',
-                  fontSize: '0.875rem',
-                  marginTop: '0.5rem'
-                }}>
-                  {countriesError}
+                    🌍
+                  </div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1f2937', margin: 0 }}>
+                    Destination Address
+                  </h3>
                 </div>
-              )}
-            </div>
 
-            {getActualCountryCode(formData.destinationAddress.countryCode) !== 'NP' && (
-              <div>
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
-                  color: '#374151',
-                  marginBottom: '0.5rem'
-                }}>
-                  <span style={{ marginRight: '0.5rem' }}>📦</span>
-                  Service Type *
-                </label>
-                <select
-                  value={formData.serviceType}
-                  onChange={(e) => handleInputChange('', 'serviceType', e.target.value)}
+                <div
                   style={{
-                    width: '100%',
-                    padding: '1rem',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '0.75rem',
-                    fontSize: '1rem',
-                    background: 'white',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                    transition: 'all 0.2s'
-                  }}
-                  required
-                  disabled={loadingServiceTypes || availableServiceTypes.length === 1}
-                  onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                >
-                  {loadingServiceTypes ? (
-                    <option value="">Loading service types...</option>
-                  ) : availableServiceTypes.length === 1 ? (
-                    availableServiceTypes[0] === 'Economy' ? (
-                      <option value="Economy">Economy (Express Not Available) - Auto Selected</option>
-                    ) : (
-                      <option value="Express">Express (Economy Not Available) - Auto Selected</option>
-                    )
-                  ) : (
-                    availableServiceTypes.map((serviceType) => (
-                      <option key={serviceType} value={serviceType}>
-                        {serviceType}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
-            )}
-
-            {getActualCountryCode(formData.destinationAddress.countryCode) === 'NP' ? (
-              <div style={{ position: 'relative' }}>
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
-                  color: '#374151',
-                  marginBottom: '0.5rem'
-                }}>
-                  <span style={{ marginRight: '0.5rem' }}>🏢</span>
-                  Destination Branch *
-                </label>
-                <input
-                  type="text"
-                  placeholder={loadingBranches ? 'Loading branches...' : 'Type to search branches...'}
-                  value={branchSearchTerm}
-                  onChange={(e) => handleBranchSearchChange(e.target.value)}
-                  onFocus={handleBranchInputFocus}
-                  onBlur={handleBranchInputBlur}
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '0.75rem',
-                    fontSize: '1rem',
-                    background: 'white',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                    transition: 'all 0.2s'
-                  }}
-                  required
-                  disabled={loadingBranches}
-                />
-                {/* Dropdown for filtered branches */}
-                {showBranchDropdown && filteredBranches.length > 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    background: 'white',
-                    border: '2px solid #e5e7eb',
-                    borderTop: 'none',
-                    borderRadius: '0 0 0.75rem 0.75rem',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                    maxHeight: '200px',
-                    overflowY: 'auto',
-                    zIndex: 1000
-                  }}>
-                    {filteredBranches.map((branch, index) => (
-                      <div
-                        key={index}
-                        onClick={() => handleBranchSelect(branch)}
-                        style={{
-                          padding: '0.75rem 1rem',
-                          cursor: 'pointer',
-                          borderBottom: index < filteredBranches.length - 1 ? '1px solid #f3f4f6' : 'none',
-                          transition: 'background-color 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f9fafb'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
-                      >
-                        <div style={{ fontWeight: 600, color: '#1f2937' }}>{branch.name}</div>
-                        <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                          {branch.district}, {branch.region.split(' - ')[1] || branch.region}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {/* Show message when no branches match search */}
-                {showBranchDropdown && branchSearchTerm && filteredBranches.length === 0 && branches.length > 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    background: 'white',
-                    border: '2px solid #e5e7eb',
-                    borderTop: 'none',
-                    borderRadius: '0 0 0.75rem 0.75rem',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                    padding: '1rem',
-                    textAlign: 'center',
-                    color: '#6b7280',
-                    fontSize: '0.875rem',
-                    zIndex: 1000
-                  }}>
-                    No branches found matching "{branchSearchTerm}"
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div>
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
-                  color: '#374151',
-                  marginBottom: '0.5rem'
-                }}>
-                  <span style={{ marginRight: '0.5rem' }}>🏙️</span>
-                  City *
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter city name"
-                  value={formData.destinationAddress.cityName}
-                  onChange={(e) => handleInputChange('destinationAddress', 'cityName', e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '0.75rem',
-                    fontSize: '1rem',
-                    background: 'white',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                    transition: 'all 0.2s'
-                  }}
-                  required
-                  onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                />
-              </div>
-            )}
-
-            <div>
-                  <label style={{
                     display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    color: '#374151',
-                    marginBottom: '0.5rem'
-                  }}>
-                    <span style={{ marginRight: '0.5rem' }}>🏠</span>
-                    Street Address *
-                  </label>
-              <input
-                type="text"
-                placeholder="Street address, house no..."
-                value={formData.destinationAddress.addressLine1}
-                onChange={(e) => handleInputChange('destinationAddress', 'addressLine1', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '1rem',
-                  border: '2px solid #e5e7eb',
-                  borderRadius: '0.75rem',
-                  fontSize: '1rem',
-                  background: 'white',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                  transition: 'all 0.2s'
-                }}
-                required
-                onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-              />
-            </div>
-
-            {formData.destinationAddress.countryCode !== 'NP' && (
-              <div>
+                    flexDirection: 'column',
+                    gap: isMobile ? '0.75rem' : '1rem',
+                    width: '100%'
+                  }}
+                >
+                  <div>
                     <label style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -1273,509 +1011,562 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                       color: '#374151',
                       marginBottom: '0.5rem'
                     }}>
-                      <span style={{ marginRight: '0.5rem' }}>📮</span>
-                      Postal Code *
+                      <span style={{ marginRight: '0.5rem' }}>🏳️</span>
+                      Country *
                     </label>
-                <input
-                  type="text"
-                  placeholder="Postal/ZIP code"
-                  value={formData.destinationAddress.postalCode}
-                  onChange={(e) => handleInputChange('destinationAddress', 'postalCode', e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '0.75rem',
-                    fontSize: '1rem',
-                    background: 'white',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                    transition: 'all 0.2s'
-                  }}
-                  required
-                  onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                />
-                  </div>
-            )}
-            </div>
-          </div>
+                    <select
+                      value={formData.destinationAddress.countryCode}
+                      onChange={(e) => {
+                        const selectedUniqueId = e.target.value;
+                        const selectedCountry = countries.find(country => country.uniqueId === selectedUniqueId);
+                        const actualCountryCode = selectedCountry ? selectedCountry.code : selectedUniqueId;
 
-          {/* Recipient Details */}
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: isMobile ? '1rem' : '1.5rem',
-                width: '100%'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '2.5rem',
-                  height: '2.5rem',
-                  background: 'linear-gradient(45deg, #10b981, #059669)',
-                  borderRadius: '50%',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  fontSize: '1.125rem',
-                  color: 'white'
-                }}>
-                  👤
+                        handleInputChange('destinationAddress', 'countryCode', selectedUniqueId);
+                        handleInputChange('destinationAddress', 'cityName', '');
+                        handleInputChange('destinationAddress', 'postalCode', '');
+                        const callingCode = countryCallingCodes[actualCountryCode] || '';
+                        handleInputChange('recipient', 'countryCode', callingCode);
+                        loadServiceTypes(actualCountryCode, selectedUniqueId);
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '1rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '0.75rem',
+                        fontSize: '1rem',
+                        background: 'white',
+                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                        transition: 'all 0.2s'
+                      }}
+                      required
+                      onFocus={(e) => e.target.style.borderColor = '#eab308'}
+                      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                    >
+                      <option value="">Select Country</option>
+                      {loadingCountries ? (
+                        <option disabled>Loading countries...</option>
+                      ) : (
+                        countries.map((country, index) => (
+                          <option key={`${country.uniqueId}-${index}`} value={country.uniqueId}>
+                            {country.name}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                    {countriesError && (
+                      <div style={{
+                        color: '#dc2626',
+                        fontSize: '0.875rem',
+                        marginTop: '0.5rem'
+                      }}>
+                        {countriesError}
+                      </div>
+                    )}
+                  </div>
+
+                  {getActualCountryCode(formData.destinationAddress.countryCode) !== 'NP' && (
+                    <div>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        marginBottom: '0.5rem'
+                      }}>
+                        <span style={{ marginRight: '0.5rem' }}>📦</span>
+                        Service Type *
+                      </label>
+                      <select
+                        value={formData.serviceType}
+                        onChange={(e) => handleInputChange('', 'serviceType', e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '1rem',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '0.75rem',
+                          fontSize: '1rem',
+                          background: 'white',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                          transition: 'all 0.2s'
+                        }}
+                        required
+                        disabled={loadingServiceTypes || availableServiceTypes.length === 1}
+                        onFocus={(e) => e.target.style.borderColor = '#eab308'}
+                        onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                      >
+                        {loadingServiceTypes ? (
+                          <option value="">Loading service types...</option>
+                        ) : availableServiceTypes.length === 1 ? (
+                          availableServiceTypes[0] === 'Economy' ? (
+                            <option value="Economy">Economy (Express Not Available) - Auto Selected</option>
+                          ) : (
+                            <option value="Express">Express (Economy Not Available) - Auto Selected</option>
+                          )
+                        ) : (
+                          availableServiceTypes.map((serviceType) => (
+                            <option key={serviceType} value={serviceType}>
+                              {serviceType}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+                  )}
+
+                  {getActualCountryCode(formData.destinationAddress.countryCode) === 'NP' ? (
+                    <div style={{ position: 'relative' }}>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        marginBottom: '0.5rem'
+                      }}>
+                        <span style={{ marginRight: '0.5rem' }}>🏢</span>
+                        Destination Branch *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={loadingBranches ? 'Loading branches...' : 'Type to search branches...'}
+                        value={branchSearchTerm}
+                        onChange={(e) => handleBranchSearchChange(e.target.value)}
+                        onFocus={handleBranchInputFocus}
+                        onBlur={handleBranchInputBlur}
+                        style={{
+                          width: '100%',
+                          padding: '1rem',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '0.75rem',
+                          fontSize: '1rem',
+                          background: 'white',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                          transition: 'all 0.2s'
+                        }}
+                        required
+                        disabled={loadingBranches}
+                      />
+                      {/* Dropdown for filtered branches */}
+                      {showBranchDropdown && filteredBranches.length > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          background: 'white',
+                          border: '2px solid #e5e7eb',
+                          borderTop: 'none',
+                          borderRadius: '0 0 0.75rem 0.75rem',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                          maxHeight: '200px',
+                          overflowY: 'auto',
+                          zIndex: 1000
+                        }}>
+                          {filteredBranches.map((branch, index) => (
+                            <div
+                              key={index}
+                              onClick={() => handleBranchSelect(branch)}
+                              style={{
+                                padding: '0.75rem 1rem',
+                                cursor: 'pointer',
+                                borderBottom: index < filteredBranches.length - 1 ? '1px solid #f3f4f6' : 'none',
+                                transition: 'background-color 0.2s'
+                              }}
+                              onMouseEnter={(e) => e.target.style.backgroundColor = '#f9fafb'}
+                              onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
+                            >
+                              <div style={{ fontWeight: 600, color: '#1f2937' }}>{branch.name}</div>
+                              <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                                {branch.district}, {branch.region.split(' - ')[1] || branch.region}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {/* Show message when no branches match search */}
+                      {showBranchDropdown && branchSearchTerm && filteredBranches.length === 0 && branches.length > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          background: 'white',
+                          border: '2px solid #e5e7eb',
+                          borderTop: 'none',
+                          borderRadius: '0 0 0.75rem 0.75rem',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                          padding: '1rem',
+                          textAlign: 'center',
+                          color: '#6b7280',
+                          fontSize: '0.875rem',
+                          zIndex: 1000
+                        }}>
+                          No branches found matching "{branchSearchTerm}"
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        marginBottom: '0.5rem'
+                      }}>
+                        <span style={{ marginRight: '0.5rem' }}>🏙️</span>
+                        City *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Enter city name"
+                        value={formData.destinationAddress.cityName}
+                        onChange={(e) => handleInputChange('destinationAddress', 'cityName', e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '1rem',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '0.75rem',
+                          fontSize: '1rem',
+                          background: 'white',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                          transition: 'all 0.2s'
+                        }}
+                        required
+                        onFocus={(e) => e.target.style.borderColor = '#eab308'}
+                        onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '0.875rem',
+                      fontWeight: 600,
+                      color: '#374151',
+                      marginBottom: '0.5rem'
+                    }}>
+                      <span style={{ marginRight: '0.5rem' }}>🏠</span>
+                      Street Address *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Street address, house no..."
+                      value={formData.destinationAddress.addressLine1}
+                      onChange={(e) => handleInputChange('destinationAddress', 'addressLine1', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '1rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '0.75rem',
+                        fontSize: '1rem',
+                        background: 'white',
+                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                        transition: 'all 0.2s'
+                      }}
+                      required
+                      onFocus={(e) => e.target.style.borderColor = '#eab308'}
+                      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                    />
+                  </div>
+
+                  {formData.destinationAddress.countryCode !== 'NP' && (
+                    <div>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        marginBottom: '0.5rem'
+                      }}>
+                        <span style={{ marginRight: '0.5rem' }}>📮</span>
+                        Postal Code *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Postal/ZIP code"
+                        value={formData.destinationAddress.postalCode}
+                        onChange={(e) => handleInputChange('destinationAddress', 'postalCode', e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '1rem',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '0.75rem',
+                          fontSize: '1rem',
+                          background: 'white',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                          transition: 'all 0.2s'
+                        }}
+                        required
+                        onFocus={(e) => e.target.style.borderColor = '#eab308'}
+                        onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                      />
+                    </div>
+                  )}
                 </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1f2937', margin: 0 }}>
-                  Recipient Details
-                </h3>
               </div>
-              
+
+              {/* Recipient Details */}
               <div
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: isMobile ? '0.75rem' : '1rem',
+                  gap: isMobile ? '1rem' : '1.5rem',
                   width: '100%'
                 }}
               >
-            <div>
-                  <label style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    color: '#374151',
-                    marginBottom: '0.5rem'
-                  }}>
-                    <span style={{ marginRight: '0.5rem' }}>👨‍💼</span>
-                    Full Name *
-                  </label>
-              <input
-                type="text"
-                placeholder="Recipient's full name"
-                value={formData.recipient.fullName}
-                onChange={(e) => handleInputChange('recipient', 'fullName', e.target.value)}
-                style={{
-                  width: '100%',
-                  fontSize: isMobile ? '1rem' : '1rem',
-                  minWidth: 0,
-                  padding: '0.5rem 0.75rem',
-                  border: '2px solid #e5e7eb',
-                  borderRadius: '0.75rem',
-                  fontSize: '1rem',
-                  background: 'white',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                  transition: 'all 0.2s',
-                  lineHeight: '38px'
-                }}
-                required
-                onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-              />
-            </div>
-
-            <div>
-                  <label style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    color: '#374151',
-                    marginBottom: '0.5rem'
-                  }}>
-                    <span style={{ marginRight: '0.5rem' }}>📧</span>
-                    Email *
-                  </label>
-              <input
-                type="email"
-                placeholder="recipient@example.com"
-                value={formData.recipient.email}
-                onChange={(e) => handleInputChange('recipient', 'email', e.target.value)}
-                style={{
-                  width: '100%',
-                  fontSize: isMobile ? '1rem' : '1rem',
-                  minWidth: 0,
-                  padding: '0.5rem 0.75rem',
-                  border: '2px solid #e5e7eb',
-                  borderRadius: '0.75rem',
-                  fontSize: '1rem',
-                  background: 'white',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                  transition: 'all 0.2s',
-                  lineHeight: '38px'
-                }}
-                required
-                onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-              />
-            </div>
-
-            <div>
-                  <label style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    color: '#374151',
-                    marginBottom: '0.5rem'
-                  }}>
-                    <span style={{ marginRight: '0.5rem' }}>📱</span>
-                    Phone *
-                  </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
                   <div style={{
                     display: 'flex',
-                    borderRadius: '0.75rem',
-                    overflow: 'hidden',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                    border: '2px solid #e5e7eb',
-                    transition: 'all 0.2s'
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '2.5rem',
+                    height: '2.5rem',
+                    background: 'linear-gradient(45deg, #10b981, #059669)',
+                    borderRadius: '50%',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    fontSize: '1.125rem',
+                    color: 'white'
                   }}>
-                    <div style={{
+                    👤
+                  </div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1f2937', margin: 0 }}>
+                    Recipient Details
+                  </h3>
+                </div>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: isMobile ? '0.75rem' : '1rem',
+                    width: '100%'
+                  }}
+                >
+                  <div>
+                    <label style={{
                       display: 'flex',
                       alignItems: 'center',
-                      padding: '1rem',
-                      background: 'linear-gradient(45deg, #f9fafb, #f3f4f6)',
-                      borderRight: '1px solid #e5e7eb',
                       fontSize: '0.875rem',
                       fontWeight: 600,
-                      color: '#374151'
-                    }}>
-                  {formData.recipient.countryCode || '+--'}
-                </div>
-                <input
-                  type="tel"
-                  placeholder="Phone number"
-                  value={formData.recipient.phone}
-                  onChange={(e) => handleInputChange('recipient', 'phone', e.target.value)}
-                  style={{
-                    flex: 1,
-                    padding: '0.5rem 0.75rem',
-                    border: 'none',
-                    outline: 'none',
-                    background: 'white',
-                    lineHeight: '37px'
-                  }}
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label style={{
-                display: 'flex',
-                alignItems: 'center',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                color: '#374151',
-                marginBottom: '0.5rem'
-              }}>
-                <span style={{ marginRight: '0.5rem' }}>📏</span>
-                Want custom height?
-              </label>
-              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.5rem', alignItems: 'center' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    name="customHeightOption"
-                    value="Yes"
-                    checked={customHeightOption === 'Yes'}
-                    onChange={() => { setCustomHeightOption('Yes'); handleInputChange('recipient', 'height', ''); }}
-                  />
-                  <span>Yes</span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    name="customHeightOption"
-                    value="No"
-                    checked={customHeightOption === 'No'}
-                    onChange={() => { setCustomHeightOption('No'); handleInputChange('recipient', 'height', 'No'); }}
-                  />
-                  <span>No</span>
-                </label>
-              </div>
-              {customHeightOption === 'Yes' ? (
-                <input
-                  type="text"
-                  placeholder="Enter height in inches"
-                  value={formData.recipient.height === 'No' ? '' : formData.recipient.height}
-                  onChange={(e) => handleInputChange('recipient', 'height', e.target.value)}
-                  style={{
-                    width: '100%',
-                    fontSize: isMobile ? '1rem' : '1rem',
-                    minWidth: 0,
-                    padding: '0.5rem 0.75rem',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '0.75rem',
-                    fontSize: '1rem',
-                    background: 'white',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                    transition: 'all 0.2s',
-                    lineHeight: '42px',
-                    minHeight: '42px'
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                  required
-                />
-              ) : null}
-            </div>
-                </div>
-                </div>
-                </div>
-
-          {/* Actions */}
-          <div style={{
-            marginTop: '2rem',
-            paddingTop: '1.5rem',
-            borderTop: '1px solid #e5e7eb'
-          }}>
-            {!isFormValid() && (
-              <div style={{
-                marginBottom: '1rem',
-                padding: '1rem',
-                background: 'linear-gradient(45deg, #fffbeb, #fef3c7)',
-                border: '1px solid #fcd34d',
-                borderRadius: '0.75rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}>
-                <span style={{ color: '#d97706', fontSize: '1.125rem' }}>⚠️</span>
-                <span style={{ color: '#92400e', fontWeight: 500 }}>
-                  Please fill in all required fields to proceed
-                </span>
-                </div>
-            )}
-            
-            <div style={{
-              display: 'flex',
-              flexDirection: isMobile ? 'column' : (window.innerWidth >= 640 ? 'row' : 'column'),
-              gap: isMobile ? '0.75rem' : '1rem',
-              width: '100%'
-            }}>
-          <button
-                onClick={getRates}
-                disabled={!isFormValid() || dhlLoading}
-                style={{
-                  flex: 1,
-                  width: isMobile ? '100%' : undefined,
-                  minWidth: 0,
-                  position: 'relative',
-                  overflow: 'hidden',
-                  padding: '1rem 2rem',
-                  borderRadius: '1rem',
-                  fontWeight: 600,
-                  fontSize: '1.125rem',
-                  transition: 'all 0.3s',
-                  border: 'none',
-                  cursor: !isFormValid() || dhlLoading ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.75rem',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  background: !isFormValid() || dhlLoading ? '#d1d5db' : 'linear-gradient(45deg, #3b82f6, #2563eb)',
-                  color: !isFormValid() || dhlLoading ? '#9ca3af' : 'white'
-                }}
-                onMouseOver={(e) => {
-                  if (!(!isFormValid() || dhlLoading)) {
-                    e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 10px 25px -3px rgba(0, 0, 0, 0.1)';
-                    e.target.style.background = 'linear-gradient(45deg, #2563eb, #1d4ed8)';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (!(!isFormValid() || dhlLoading)) {
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-                    e.target.style.background = 'linear-gradient(45deg, #3b82f6, #2563eb)';
-                  }
-                }}
-              >
-                <span style={{ fontSize: '1.5rem' }}>📦</span>
-                {dhlLoading ? 'Getting Rates...' : 'Get Shipping Rates'}
-          </button>
-          </div>
-
-          {/* Display Shipping Rates */}
-          {shippingRates && shippingRates.length > 0 && (
-            <div style={{
-              marginTop: '2rem',
-              padding: '1.5rem',
-              background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-              borderRadius: '1rem',
-              border: '1px solid #0ea5e9',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                marginBottom: '1rem'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '2.5rem',
-                  height: '2.5rem',
-                  background: 'linear-gradient(45deg, #0ea5e9, #0284c7)',
-                  borderRadius: '50%',
-                  fontSize: '1.125rem',
-                  color: 'white'
-                }}>
-                  💰
-                </div>
-                <h3 style={{
-                  fontSize: '1.25rem',
-                  fontWeight: 700,
-                  color: '#0c4a6e',
-                  margin: 0
-                }}>
-                  Available Shipping Rates
-                </h3>
-              </div>
-              
-              {shippingRates.map((rate, index) => {
-                const totalWeight = formData.packages.reduce((total, pkg) => {
-                  return total + (parseFloat(pkg.weight) || 0) * (parseInt(pkg.quantity) || 1);
-                }, 0);
-                const shippingCost = calculateShippingCost(rate, totalWeight);
-                
-                return (
-                  <div key={index} style={{
-                    padding: '1rem',
-                    background: 'white',
-                    borderRadius: '0.75rem',
-                    border: '1px solid #e0f2fe',
-                    marginBottom: index < shippingRates.length - 1 ? '1rem' : '0',
-                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
+                      color: '#374151',
                       marginBottom: '0.5rem'
                     }}>
-                      <div>
-                        <h4 style={{
-                          fontSize: '1.125rem',
-                          fontWeight: 600,
-                          color: '#0c4a6e',
-                          margin: '0 0 0.25rem 0'
-                        }}>
-                          {rate.service_type}
-                        </h4>
-                        <p style={{
-                          fontSize: '0.875rem',
-                          color: '#64748b',
-                          margin: 0
-                        }}>
-                          Weight: {totalWeight}kg • Country: {rate.country_code}
-                        </p>
-                      </div>
-                      <div style={{
-                        textAlign: 'right'
-                      }}>
-                        <div style={{
-                          fontSize: '1.5rem',
-                          fontWeight: 700,
-                          color: '#0ea5e9'
-                        }}>
-                          {(() => {
-                            const costInfo = formatShippingCost(shippingCost);
-                            return costInfo.formatted;
-                          })()} 
-                        </div>
+                      <span style={{ marginRight: '0.5rem' }}>👨‍💼</span>
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Recipient's full name"
+                      value={formData.recipient.fullName}
+                      onChange={(e) => handleInputChange('recipient', 'fullName', e.target.value)}
+                      style={{
+                        width: '100%',
+                        fontSize: isMobile ? '1rem' : '1rem',
+                        minWidth: 0,
+                        padding: '0.5rem 0.75rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '0.75rem',
+                        fontSize: '1rem',
+                        background: 'white',
+                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                        transition: 'all 0.2s',
+                        lineHeight: '38px'
+                      }}
+                      required
+                      onFocus={(e) => e.target.style.borderColor = '#eab308'}
+                      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                    />
+                  </div>
 
-                        <div style={{
-                          fontSize: '0.75rem',
-                          color: '#64748b'
-                        }}>
-                          Weight limit: {rate.weight_limit}kg
-                        </div>
+                  <div>
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '0.875rem',
+                      fontWeight: 600,
+                      color: '#374151',
+                      marginBottom: '0.5rem'
+                    }}>
+                      <span style={{ marginRight: '0.5rem' }}>📧</span>
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="recipient@example.com"
+                      value={formData.recipient.email}
+                      onChange={(e) => handleInputChange('recipient', 'email', e.target.value)}
+                      style={{
+                        width: '100%',
+                        fontSize: isMobile ? '1rem' : '1rem',
+                        minWidth: 0,
+                        padding: '0.5rem 0.75rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '0.75rem',
+                        fontSize: '1rem',
+                        background: 'white',
+                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                        transition: 'all 0.2s',
+                        lineHeight: '38px'
+                      }}
+                      required
+                      onFocus={(e) => e.target.style.borderColor = '#eab308'}
+                      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '0.875rem',
+                      fontWeight: 600,
+                      color: '#374151',
+                      marginBottom: '0.5rem'
+                    }}>
+                      <span style={{ marginRight: '0.5rem' }}>📱</span>
+                      Phone *
+                    </label>
+                    <div style={{
+                      display: 'flex',
+                      borderRadius: '0.75rem',
+                      overflow: 'hidden',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                      border: '2px solid #e5e7eb',
+                      transition: 'all 0.2s'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '1rem',
+                        background: 'linear-gradient(45deg, #f9fafb, #f3f4f6)',
+                        borderRight: '1px solid #e5e7eb',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#374151'
+                      }}>
+                        {formData.recipient.countryCode || '+--'}
                       </div>
+                      <input
+                        type="tel"
+                        placeholder="Phone number"
+                        value={formData.recipient.phone}
+                        onChange={(e) => handleInputChange('recipient', 'phone', e.target.value)}
+                        style={{
+                          flex: 1,
+                          padding: '0.5rem 0.75rem',
+                          border: 'none',
+                          outline: 'none',
+                          background: 'white',
+                          lineHeight: '37px'
+                        }}
+                        required
+                      />
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
 
-          {/* Loading state for shipping rates */}
-          {loadingShippingRates && (
+                  <div>
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '0.875rem',
+                      fontWeight: 600,
+                      color: '#374151',
+                      marginBottom: '0.5rem'
+                    }}>
+                      <span style={{ marginRight: '0.5rem' }}>📏</span>
+                      Want custom height?
+                    </label>
+                    <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.5rem', alignItems: 'center' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          name="customHeightOption"
+                          value="Yes"
+                          checked={customHeightOption === 'Yes'}
+                          onChange={() => { setCustomHeightOption('Yes'); handleInputChange('recipient', 'height', ''); }}
+                        />
+                        <span>Yes</span>
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          name="customHeightOption"
+                          value="No"
+                          checked={customHeightOption === 'No'}
+                          onChange={() => { setCustomHeightOption('No'); handleInputChange('recipient', 'height', 'No'); }}
+                        />
+                        <span>No</span>
+                      </label>
+                    </div>
+                    {customHeightOption === 'Yes' ? (
+                      <input
+                        type="text"
+                        placeholder="Enter height in inches"
+                        value={formData.recipient.height === 'No' ? '' : formData.recipient.height}
+                        onChange={(e) => handleInputChange('recipient', 'height', e.target.value)}
+                        style={{
+                          width: '100%',
+                          fontSize: isMobile ? '1rem' : '1rem',
+                          minWidth: 0,
+                          padding: '0.5rem 0.75rem',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '0.75rem',
+                          fontSize: '1rem',
+                          background: 'white',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                          transition: 'all 0.2s',
+                          lineHeight: '42px',
+                          minHeight: '42px'
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = '#eab308'}
+                        onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                        required
+                      />
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
             <div style={{
               marginTop: '2rem',
-              padding: '2rem',
-              textAlign: 'center',
-              background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-              borderRadius: '1rem',
-              border: '1px solid #e2e8f0'
+              paddingTop: '1.5rem',
+              borderTop: '1px solid #e5e7eb'
             }}>
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                fontSize: '1.125rem',
-                fontWeight: 600,
-                color: '#475569'
-              }}>
+              {!isFormValid() && (
                 <div style={{
-                  width: '1.5rem',
-                  height: '1.5rem',
-                  border: '2px solid #e2e8f0',
-                  borderTop: '2px solid #3b82f6',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite'
-                }}></div>
-                Fetching shipping rates...
-              </div>
-            </div>
-          )}
+                  marginBottom: '1rem',
+                  padding: '1rem',
+                  background: 'linear-gradient(45deg, #fffbeb, #fef3c7)',
+                  border: '1px solid #fcd34d',
+                  borderRadius: '0.75rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <span style={{ color: '#d97706', fontSize: '1.125rem' }}>⚠️</span>
+                  <span style={{ color: '#92400e', fontWeight: 500 }}>
+                    Please fill in all required fields to proceed
+                  </span>
+                </div>
+              )}
 
-          {/* Error state for shipping rates */}
-          {shippingRatesError && (
-            <div style={{
-              marginTop: '2rem',
-              padding: '1rem',
-              background: 'linear-gradient(45deg, #fef2f2, #fee2e2)',
-              border: '1px solid #fecaca',
-              borderRadius: '0.75rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem'
-            }}>
               <div style={{
-                flexShrink: 0,
-                width: '2rem',
-                height: '2rem',
-                background: '#ef4444',
-                borderRadius: '50%',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontSize: '0.875rem'
+                flexDirection: isMobile ? 'column' : (window.innerWidth >= 640 ? 'row' : 'column'),
+                gap: isMobile ? '0.75rem' : '1rem',
+                width: '100%'
               }}>
-                ❌
-              </div>
-              <div>
-                <strong style={{ fontWeight: 600, color: '#991b1b' }}>Shipping Rates Error:</strong>
-                <span style={{ color: '#b91c1c', marginLeft: '0.5rem' }}>{shippingRatesError}</span>
-              </div>
-            </div>
-          )}
-
-          <div style={{
-            display: 'flex',
-            flexDirection: isMobile ? 'column' : (window.innerWidth >= 640 ? 'row' : 'column'),
-            gap: isMobile ? '0.75rem' : '1rem',
-            width: '100%',
-            marginTop: '2rem'
-          }}>
-              {rates && rates.length > 0 && (
-              <button
-                onClick={createShipment}
+                <button
+                  onClick={getRates}
+                  disabled={!isFormValid() || dhlLoading}
                   style={{
                     flex: 1,
                     width: isMobile ? '100%' : undefined,
@@ -1788,35 +1579,255 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                     fontSize: '1.125rem',
                     transition: 'all 0.3s',
                     border: 'none',
-                    cursor: 'pointer',
+                    cursor: !isFormValid() || dhlLoading ? 'not-allowed' : 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '0.75rem',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                    background: 'linear-gradient(45deg, #10b981, #059669)',
-                    color: 'white'
+                    background: !isFormValid() || dhlLoading ? '#d1d5db' : 'linear-gradient(45deg, #3b82f6, #2563eb)',
+                    color: !isFormValid() || dhlLoading ? '#9ca3af' : 'white'
                   }}
                   onMouseOver={(e) => {
-                    e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 10px 25px -3px rgba(0, 0, 0, 0.1)';
-                    e.target.style.background = 'linear-gradient(45deg, #059669, #047857)';
+                    if (!(!isFormValid() || dhlLoading)) {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 10px 25px -3px rgba(0, 0, 0, 0.1)';
+                      e.target.style.background = 'linear-gradient(45deg, #2563eb, #1d4ed8)';
+                    }
                   }}
                   onMouseOut={(e) => {
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-                    e.target.style.background = 'linear-gradient(45deg, #10b981, #059669)';
+                    if (!(!isFormValid() || dhlLoading)) {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                      e.target.style.background = 'linear-gradient(45deg, #3b82f6, #2563eb)';
+                    }
                   }}
                 >
-                  <span style={{ fontSize: '1.5rem' }}>🚀</span>
-                  Create Shipment
-              </button>
-            )}
-          </div>
+                  <span style={{ fontSize: '1.5rem' }}>📦</span>
+                  {dhlLoading ? 'Getting Rates...' : 'Get Shipping Rates'}
+                </button>
+              </div>
+
+              {/* Display Shipping Rates */}
+              {shippingRates && shippingRates.length > 0 && (
+                <div style={{
+                  marginTop: '2rem',
+                  padding: '1.5rem',
+                  background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                  borderRadius: '1rem',
+                  border: '1px solid #0ea5e9',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    marginBottom: '1rem'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '2.5rem',
+                      height: '2.5rem',
+                      background: 'linear-gradient(45deg, #0ea5e9, #0284c7)',
+                      borderRadius: '50%',
+                      fontSize: '1.125rem',
+                      color: 'white'
+                    }}>
+                      💰
+                    </div>
+                    <h3 style={{
+                      fontSize: '1.25rem',
+                      fontWeight: 700,
+                      color: '#0c4a6e',
+                      margin: 0
+                    }}>
+                      Available Shipping Rates
+                    </h3>
+                  </div>
+
+                  {shippingRates.map((rate, index) => {
+                    const totalWeight = formData.packages.reduce((total, pkg) => {
+                      return total + (parseFloat(pkg.weight) || 0) * (parseInt(pkg.quantity) || 1);
+                    }, 0);
+                    const shippingCost = calculateShippingCost(rate, totalWeight);
+
+                    return (
+                      <div key={index} style={{
+                        padding: '1rem',
+                        background: 'white',
+                        borderRadius: '0.75rem',
+                        border: '1px solid #e0f2fe',
+                        marginBottom: index < shippingRates.length - 1 ? '1rem' : '0',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: '0.5rem'
+                        }}>
+                          <div>
+                            <h4 style={{
+                              fontSize: '1.125rem',
+                              fontWeight: 600,
+                              color: '#0c4a6e',
+                              margin: '0 0 0.25rem 0'
+                            }}>
+                              {rate.service_type}
+                            </h4>
+                            <p style={{
+                              fontSize: '0.875rem',
+                              color: '#64748b',
+                              margin: 0
+                            }}>
+                              Weight: {totalWeight}kg • Country: {rate.country_code}
+                            </p>
+                          </div>
+                          <div style={{
+                            textAlign: 'right'
+                          }}>
+                            <div style={{
+                              fontSize: '1.5rem',
+                              fontWeight: 700,
+                              color: '#0ea5e9'
+                            }}>
+                              {(() => {
+                                const costInfo = formatShippingCost(shippingCost);
+                                return costInfo.formatted;
+                              })()}
+                            </div>
+
+                            <div style={{
+                              fontSize: '0.75rem',
+                              color: '#64748b'
+                            }}>
+                              Weight limit: {rate.weight_limit}kg
+                            </div>
+                          </div>
                         </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Loading state for shipping rates */}
+              {loadingShippingRates && (
+                <div style={{
+                  marginTop: '2rem',
+                  padding: '2rem',
+                  textAlign: 'center',
+                  background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                  borderRadius: '1rem',
+                  border: '1px solid #e2e8f0'
+                }}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    fontSize: '1.125rem',
+                    fontWeight: 600,
+                    color: '#475569'
+                  }}>
+                    <div style={{
+                      width: '1.5rem',
+                      height: '1.5rem',
+                      border: '2px solid #e2e8f0',
+                      borderTop: '2px solid #3b82f6',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}></div>
+                    Fetching shipping rates...
+                  </div>
+                </div>
+              )}
+
+              {/* Error state for shipping rates */}
+              {shippingRatesError && (
+                <div style={{
+                  marginTop: '2rem',
+                  padding: '1rem',
+                  background: 'linear-gradient(45deg, #fef2f2, #fee2e2)',
+                  border: '1px solid #fecaca',
+                  borderRadius: '0.75rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem'
+                }}>
+                  <div style={{
+                    flexShrink: 0,
+                    width: '2rem',
+                    height: '2rem',
+                    background: '#ef4444',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '0.875rem'
+                  }}>
+                    ❌
+                  </div>
+                  <div>
+                    <strong style={{ fontWeight: 600, color: '#991b1b' }}>Shipping Rates Error:</strong>
+                    <span style={{ color: '#b91c1c', marginLeft: '0.5rem' }}>{shippingRatesError}</span>
+                  </div>
+                </div>
+              )}
+
+              <div style={{
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : (window.innerWidth >= 640 ? 'row' : 'column'),
+                gap: isMobile ? '0.75rem' : '1rem',
+                width: '100%',
+                marginTop: '2rem'
+              }}>
+                {rates && rates.length > 0 && (
+                  <button
+                    onClick={createShipment}
+                    style={{
+                      flex: 1,
+                      width: isMobile ? '100%' : undefined,
+                      minWidth: 0,
+                      position: 'relative',
+                      overflow: 'hidden',
+                      padding: '1rem 2rem',
+                      borderRadius: '1rem',
+                      fontWeight: 600,
+                      fontSize: '1.125rem',
+                      transition: 'all 0.3s',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.75rem',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                      background: 'linear-gradient(45deg, #10b981, #059669)',
+                      color: 'white'
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 10px 25px -3px rgba(0, 0, 0, 0.1)';
+                      e.target.style.background = 'linear-gradient(45deg, #059669, #047857)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                      e.target.style.background = 'linear-gradient(45deg, #10b981, #059669)';
+                    }}
+                  >
+                    <span style={{ fontSize: '1.5rem' }}>🚀</span>
+                    Create Shipment
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 };

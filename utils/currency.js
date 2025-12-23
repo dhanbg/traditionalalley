@@ -54,7 +54,7 @@ export const detectUserCountry = async () => {
  */
 export const getExchangeRate = async () => {
   const now = Date.now();
-  
+
   // Return cached rate if still valid
   if (exchangeRateCache.timestamp + exchangeRateCache.ttl > now) {
     return exchangeRateCache.rate;
@@ -65,7 +65,7 @@ export const getExchangeRate = async () => {
       timeout: 10000
     });
     const data = await response.json();
-    
+
     if (data.rates && data.rates.NPR) {
       exchangeRateCache = {
         rate: data.rates.NPR,
@@ -103,6 +103,9 @@ export const convertUsdToNpr = (usdPrice, exchangeRate) => {
 export const formatPrice = (price, currency = 'USD', showSymbol = true) => {
   if (!price && price !== 0) return '';
 
+  const isNegative = price < 0;
+  const absPrice = Math.abs(price);
+
   const formatters = {
     USD: new Intl.NumberFormat('en-US', {
       style: showSymbol ? 'currency' : 'decimal',
@@ -119,14 +122,17 @@ export const formatPrice = (price, currency = 'USD', showSymbol = true) => {
   };
 
   const formatter = formatters[currency] || formatters.USD;
-  
+
+  let formatted;
   if (showSymbol) {
-    return formatter.format(price);
+    formatted = formatter.format(absPrice);
   } else {
     // For NPR without symbol, add "Rs." prefix
-    const formatted = formatter.format(price);
-    return currency === 'NPR' ? `Rs. ${formatted}` : `$${formatted}`;
+    const val = formatter.format(absPrice);
+    formatted = currency === 'NPR' ? `Rs. ${val}` : `$${val}`;
   }
+
+  return isNegative ? `-${formatted}` : formatted;
 };
 
 /**
@@ -164,7 +170,7 @@ export const calculatePrice = (basePrice, targetCurrency = 'USD', exchangeRate =
   if (!basePrice) return { price: 0, currency: targetCurrency, formatted: formatPrice(0, targetCurrency) };
 
   let finalPrice = basePrice;
-  
+
   if (targetCurrency === 'NPR' && exchangeRate) {
     finalPrice = convertUsdToNpr(basePrice, exchangeRate);
   }
