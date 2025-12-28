@@ -5,10 +5,10 @@ export default function PromoHero() {
     return (
         <section className={styles.promoHero}>
             <picture>
-                <source media="(max-width: 768px)" srcSet="/christmas-M.png" />
+                <source media="(max-width: 768px)" srcSet="/New%20Year-M.png" />
                 <img
-                    src="/christmas-L.png"
-                    alt="Christmas Sale"
+                    src="/New%20Year-L.png"
+                    alt="New Year Sale"
                     className={styles.heroImage}
                 />
             </picture>
