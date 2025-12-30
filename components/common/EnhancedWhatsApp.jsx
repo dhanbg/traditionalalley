@@ -21,7 +21,7 @@ const EnhancedWhatsApp = () => {
 
     // Show temporary message when page loads
     const timer = setTimeout(() => {
-      setShowTempMessage(true);
+      // setShowTempMessage(true);
       // Only play notification sound if user has interacted
       if (userInteracted) {
         playNotificationSound();
@@ -72,10 +72,10 @@ const EnhancedWhatsApp = () => {
     const whatsappNumber = "9844594187";
     const message = "Hi! I would like to customize a design. Can you help me?";
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-    
+
     // Open WhatsApp in a new tab
     window.open(whatsappUrl, '_blank');
-    
+
     setShowTempMessage(false);
   };
 
@@ -130,17 +130,17 @@ const EnhancedWhatsApp = () => {
               style={{ width: '24px', height: '24px', marginTop: '2px', borderRadius: '50%', objectFit: 'cover' }}
             />
             <div>
-              <p style={{ 
-                margin: '0 0 8px 0', 
-                fontSize: '14px', 
+              <p style={{
+                margin: '0 0 8px 0',
+                fontSize: '14px',
                 fontWeight: '600',
                 color: '#333'
               }}>
                 Need Customization?
               </p>
-              <p style={{ 
-                margin: 0, 
-                fontSize: '13px', 
+              <p style={{
+                margin: 0,
+                fontSize: '13px',
                 color: '#666',
                 lineHeight: '1.4'
               }}>
@@ -184,15 +184,15 @@ const EnhancedWhatsApp = () => {
         aria-label="Chat with us on WhatsApp"
       >
         <img
-           src="/whatsapp.svg"
-           alt="WhatsApp"
-           style={{
-             width: '44px',
-             height: '44px',
-             objectFit: 'contain'
-           }}
-         />
-       </div>
+          src="/whatsapp.svg"
+          alt="WhatsApp"
+          style={{
+            width: '44px',
+            height: '44px',
+            objectFit: 'contain'
+          }}
+        />
+      </div>
 
       {/* CSS Animations */}
       <style jsx>{`

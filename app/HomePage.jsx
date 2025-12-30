@@ -16,6 +16,7 @@ import PromoHero from "@/components/common/PromoHero";
 
 import Testimonials3 from "@/components/common/Testimonials3";
 import MarqueeSection from "@/components/common/MarqueeSection";
+import CouponPopup from "@/components/common/CouponPopup";
 
 
 function PaymentMessageHandler() {
@@ -129,6 +130,7 @@ export default function Home({
   return (
     <>
       {/* Customization Popup */}
+      <CouponPopup />
 
 
       {/* Payment Status Message */}
