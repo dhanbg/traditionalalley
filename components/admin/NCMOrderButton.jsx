@@ -21,13 +21,13 @@ const NCMOrderButton = ({ payment, bag, onOrderCreated }) => {
   useEffect(() => {
     if (branches.length > 0 && payment?.orderData?.receiver_details?.address?.cityName && !formData.branch) {
       const cityName = payment.orderData.receiver_details.address.cityName.toLowerCase();
-      
+
       // Find matching branch by cityName
-      const matchingBranch = branches.find(branch => 
-        branch.name.toLowerCase().includes(cityName) || 
+      const matchingBranch = branches.find(branch =>
+        branch.name.toLowerCase().includes(cityName) ||
         branch.district.toLowerCase().includes(cityName)
       );
-      
+
       if (matchingBranch) {
         setFormData(prev => ({
           ...prev,
@@ -100,7 +100,7 @@ const NCMOrderButton = ({ payment, bag, onOrderCreated }) => {
       setError('');
 
       const orderData = {
-        name: payment.orderData.receiver_details.fullName,
+        name: payment.orderData.receiver_details.name || payment.orderData.receiver_details.fullName,
         phone: payment.orderData.receiver_details.phone,
         phone2: '', // Add phone2 field as required by NCM API
         cod_charge: String(calculateCODCharge() || 0), // Convert to string format
@@ -118,7 +118,7 @@ const NCMOrderButton = ({ payment, bag, onOrderCreated }) => {
 
       const response = await axios.post('/api/ncm/create-order', orderData);
       console.log('NCM API response:', response.data);
-      
+
       if (response.data.success) {
         // Save NCM order info to user bag
         if (bag && bag.documentId) {
@@ -164,7 +164,7 @@ const NCMOrderButton = ({ payment, bag, onOrderCreated }) => {
       console.error('Error response status:', err.response?.status);
       console.error('Error response data:', err.response?.data);
       console.error('Error response headers:', err.response?.headers);
-      
+
       try {
         let errorMessage = 'Error creating NCM order';
         if (err && typeof err === 'object') {
@@ -190,8 +190,8 @@ const NCMOrderButton = ({ payment, bag, onOrderCreated }) => {
   };
 
   // Check if NCM order already exists for this payment by looking for gatewayReferenceNo in trackingInfo
-  const ncmOrderEntry = bag.trackingInfo?.find(entry => 
-    entry.type === 'ncm_order' && 
+  const ncmOrderEntry = bag.trackingInfo?.find(entry =>
+    entry.type === 'ncm_order' &&
     entry.gatewayReferenceNo === payment.gatewayReferenceNo
   );
 
@@ -241,7 +241,7 @@ const NCMOrderButton = ({ payment, bag, onOrderCreated }) => {
 
           <div className="space-y-3">
             <div className="bg-gray-50 p-2 rounded text-xs">
-              <div><strong>Customer:</strong> {payment.orderData.receiver_details.fullName}</div>
+              <div><strong>Customer:</strong> {payment.orderData.receiver_details.name || payment.orderData.receiver_details.fullName}</div>
               <div><strong>Phone:</strong> {payment.orderData.receiver_details.phone}</div>
               <div><strong>COD Amount:</strong> NPR {calculateCODCharge()}</div>
               <div><strong>From:</strong> Tinkune</div>

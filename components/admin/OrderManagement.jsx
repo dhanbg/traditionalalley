@@ -33,32 +33,32 @@ const OrderManagement = () => {
     // This means they must have either:
     // 1. DHL tracking info with successful shipment creation (stored in userBag.trackingInfo)
     // 2. NCM order ID (indicating NCM order was created)
-    
+
     // Find shipment info for this payment from userBag.trackingInfo
     let shipmentInfo = null;
     let ncmOrderInfo = null;
-    
+
     if (userBag.trackingInfo) {
       if (Array.isArray(userBag.trackingInfo)) {
         // Find DHL shipment info by merchantTxnId
-        shipmentInfo = userBag.trackingInfo.find(info => 
+        shipmentInfo = userBag.trackingInfo.find(info =>
           info.merchantTxnId === payment.merchantTxnId && info.type !== 'ncm_order'
         );
         // Find NCM order info by gatewayReferenceNo
-        ncmOrderInfo = userBag.trackingInfo.find(info => 
-          info.type === 'ncm_order' && 
+        ncmOrderInfo = userBag.trackingInfo.find(info =>
+          info.type === 'ncm_order' &&
           info.gatewayReferenceNo === payment.gatewayReferenceNo
         );
       } else if (userBag.trackingInfo.merchantTxnId === payment.merchantTxnId) {
         shipmentInfo = userBag.trackingInfo;
       }
     }
-    
+
     const hasActualShipmentCreated = shipmentInfo && (shipmentInfo.status === 'Created' || shipmentInfo.success);
-    const hasActualNCMOrderCreated = 
+    const hasActualNCMOrderCreated =
       (payment.ncmOrderId && payment.ncmOrderId.trim() !== '') || // Legacy check
       (ncmOrderInfo && ncmOrderInfo.ncmOrderId); // New check in trackingInfo
-    
+
     // Debug logging to see what's happening
     console.log(`Payment ${payment.merchantTxnId} (Gateway: ${payment.gatewayReferenceNo}):`, {
       hasActualShipmentCreated,
@@ -68,12 +68,12 @@ const OrderManagement = () => {
       userBagTrackingInfo: userBag.trackingInfo,
       paymentStatus: payment.status
     });
-    
+
     // ONLY return 'shipped' if there's actual proof of INDIVIDUAL payment shipment/NCM order creation
     if (hasActualShipmentCreated || hasActualNCMOrderCreated) {
       return 'shipped';
     }
-    
+
     // Return the payment status (success, failed, pending)
     const status = payment.status?.toLowerCase();
     if (status === 'success') return 'success';
@@ -91,7 +91,7 @@ const OrderManagement = () => {
   // Get all payments with their status
   const getAllPayments = () => {
     const allPayments = [];
-    
+
     sortedUserBags.forEach(userBag => {
       // Support both direct fields and Strapi v4 attributes shape
       const userOrders = userBag?.user_orders || userBag?.attributes?.user_orders;
@@ -123,16 +123,16 @@ const OrderManagement = () => {
         });
       }
     });
-    
+
     // Debug: Log timestamp fields for sorting
     console.log('\n=== PAYMENT TIMESTAMPS FOR SORTING ===');
     allPayments.forEach((payment, index) => {
-      console.log(`Payment ${index + 1} (${payment.orderData?.receiver_details?.fullName}):`);
+      console.log(`Payment ${index + 1} (${payment.orderData?.receiver_details?.name || payment.orderData?.receiver_details?.fullName}):`);
       console.log('  timestamp:', payment.timestamp);
       console.log('  createdAt:', payment.createdAt);
       console.log('  userBag.createdAt:', payment.userBag.attributes?.createdAt);
     });
-    
+
     // Sort payments by their individual timestamps (latest first)
     allPayments.sort((a, b) => {
       const dateA = new Date(
@@ -141,18 +141,18 @@ const OrderManagement = () => {
       const dateB = new Date(
         b.timestamp || b.createdAt || b.userBag.attributes?.createdAt || b.userBag.createdAt || 0
       );
-      console.log(`Comparing ${a.orderData?.receiver_details?.fullName} (${dateA.toISOString()}) vs ${b.orderData?.receiver_details?.fullName} (${dateB.toISOString()})`);
+      console.log(`Comparing ${a.orderData?.receiver_details?.name || a.orderData?.receiver_details?.fullName} (${dateA.toISOString()}) vs ${b.orderData?.receiver_details?.name || b.orderData?.receiver_details?.fullName} (${dateB.toISOString()})`);
       return dateB - dateA;
     });
-    
+
     console.log('\n=== FINAL SORTED ORDER ===');
     allPayments.forEach((payment, index) => {
       const sortDate = new Date(
         payment.timestamp || payment.createdAt || payment.userBag.attributes?.createdAt || payment.userBag.createdAt || 0
       );
-      console.log(`${index + 1}. ${payment.orderData?.receiver_details?.fullName} - ${sortDate.toISOString()}`);
+      console.log(`${index + 1}. ${payment.orderData?.receiver_details?.name || payment.orderData?.receiver_details?.fullName} - ${sortDate.toISOString()}`);
     });
-    
+
     return allPayments;
   };
 
@@ -163,11 +163,11 @@ const OrderManagement = () => {
   // Separate pending and non-pending payments for performance optimization
   const pendingPayments = allPayments.filter(payment => payment.computedStatus === 'pending');
   const nonPendingPayments = allPayments.filter(payment => payment.computedStatus !== 'pending');
-  
+
   // Limit pending payments to latest 1000 for performance
   const limitedPendingPayments = pendingPayments.slice(0, 1000);
   const totalPendingCount = pendingPayments.length;
-  
+
   console.log(`📊 Pending payments: ${totalPendingCount} total, showing latest ${Math.min(totalPendingCount, 1000)}`);
 
   // Filter payments based on active tab and visibility states
@@ -175,14 +175,14 @@ const OrderManagement = () => {
     if (activeTab === 'pending') {
       return limitedPendingPayments;
     }
-    
+
     const basePayments = nonPendingPayments.filter(payment => {
       if (activeTab === 'success') {
         return payment.computedStatus === 'success';
       }
       return payment.computedStatus === activeTab;
     });
-    
+
     if (activeTab === 'success') {
       // Add pending/failed if their buttons are clicked
       const additionalPayments = [];
@@ -190,27 +190,27 @@ const OrderManagement = () => {
       if (showFailed) additionalPayments.push(...nonPendingPayments.filter(p => p.computedStatus === 'failed'));
       return [...basePayments, ...additionalPayments];
     }
-    
+
     return basePayments;
   })();
 
   // Get counts for each tab
   const getTabCounts = () => {
     const counts = { pending: 0, success: 0, failed: 0, shipped: 0 };
-    
+
     // Count non-pending payments normally
     nonPendingPayments.forEach(payment => {
       counts[payment.computedStatus]++;
     });
-    
+
     // For pending, show the total count (not limited)
     counts.pending = totalPendingCount;
-    
+
     console.log('\n=== PAYMENT COUNTS ===');
     console.log('Total payments found:', allPayments.length);
     console.log('Tab counts:', counts);
     console.log(`Pending: ${totalPendingCount} total, displaying latest ${Math.min(totalPendingCount, 1000)}`);
-    
+
     return counts;
   };
 
@@ -222,7 +222,7 @@ const OrderManagement = () => {
       // Fetch latest 100 user-bags sorted by updatedAt (most recently updated first)
       const response = await axios.get('/api/user-bags?pagination[pageSize]=100&populate=*&sort=updatedAt:desc');
       if (response.data && response.data.data) {
-        setUserBags(response.data.data); 
+        setUserBags(response.data.data);
       }
     } catch (error) {
       console.error('Error fetching user bags:', error);
@@ -246,7 +246,7 @@ const OrderManagement = () => {
       plannedShippingDate: new Date().toISOString().split('T')[0],
       productCode: 'P',
       isCustomsDeclarable: true,
-      declaredValue: 0, 
+      declaredValue: 0,
       declaredValueCurrency: 'USD',
       incoterm: 'DAP',
       exportDeclaration: {
@@ -276,8 +276,8 @@ const OrderManagement = () => {
         description: product.title,
         declaredValue: packageInfo.declaredValue || 0,
         commodityCode: packageInfo.commodityCode,
-        quantity: 1, 
-        manufacturingCountryCode: 'NP', 
+        quantity: 1,
+        manufacturingCountryCode: 'NP',
       }],
       shipper: {
         companyName: 'Traditional Alley',
@@ -287,11 +287,11 @@ const OrderManagement = () => {
         countryCode: '+977',
       },
       recipient: {
-        fullName: receiver_details.fullName,
+        fullName: receiver_details.name || receiver_details.fullName,
         email: receiver_details.email,
         phone: receiver_details.phone,
         company: receiver_details.companyName || '',
-        countryCode: '', 
+        countryCode: '',
       },
     };
 
@@ -305,7 +305,7 @@ const OrderManagement = () => {
         try {
           const existingBagResponse = await axios.get(`/api/user-bags/${userBagId}?populate=*`);
           const existingBag = existingBagResponse.data.data;
-          
+
           const newTrackingInfo = {
             status: 'Created',
             success: true,
@@ -320,7 +320,7 @@ const OrderManagement = () => {
             documents: shipmentData.documents || [],
             timestamp: new Date().toISOString()
           };
-          
+
           let updatedTrackingInfo;
           if (existingBag.trackingInfo) {
             if (Array.isArray(existingBag.trackingInfo)) {
@@ -331,16 +331,16 @@ const OrderManagement = () => {
           } else {
             updatedTrackingInfo = newTrackingInfo;
           }
-          
+
           const updatePayload = {
             data: {
               trackingInfo: updatedTrackingInfo
             }
           };
-          
+
           const updateResponse = await axios.put(`/api/user-bags/${userBagId}`, updatePayload);
           console.log('User bag updated successfully with appended tracking info:', updateResponse.data);
-          
+
           await fetchUserBags();
         } catch (error) {
           console.error('Error updating user bag. Status:', error.response?.status, 'Data:', error.response?.data);
@@ -357,7 +357,7 @@ const OrderManagement = () => {
 
   const getShipmentInfo = (bag, merchantTxnId) => {
     if (!bag.trackingInfo) return null;
-    
+
     if (Array.isArray(bag.trackingInfo)) {
       return bag.trackingInfo.find(info => info.merchantTxnId === merchantTxnId);
     } else if (bag.trackingInfo.merchantTxnId === merchantTxnId) {
@@ -370,39 +370,39 @@ const OrderManagement = () => {
     if (!shipmentInfo || !shipmentInfo.documents) {
       return { label: null, invoice: null };
     }
-    
+
     const documents = shipmentInfo.documents;
-    
-    let label = documents.find(doc => 
-      doc.typeCode === 'label' || 
-      doc.typeCode === 'LABEL' || 
+
+    let label = documents.find(doc =>
+      doc.typeCode === 'label' ||
+      doc.typeCode === 'LABEL' ||
       doc.typeCode === 'shipmentLabel' ||
       doc.type === 'label' ||
       doc.documentType === 'label'
     );
-    
-    let invoice = documents.find(doc => 
-      doc.typeCode === 'invoice' || 
-      doc.typeCode === 'INVOICE' || 
+
+    let invoice = documents.find(doc =>
+      doc.typeCode === 'invoice' ||
+      doc.typeCode === 'INVOICE' ||
       doc.typeCode === 'commercialInvoice' ||
       doc.type === 'invoice' ||
       doc.documentType === 'invoice'
     );
-    
+
     return { label, invoice };
   };
 
   const downloadPdf = (base64Content, fileName) => {
     try {
       base64Content = base64Content.replace(/\s/g, '');
-      
+
       const cleanBase64 = base64Content
         .replace(/\-/g, '+')
         .replace(/\_/g, '/');
-      
+
       const padding = '='.repeat((4 - cleanBase64.length % 4) % 4);
       const base64Data = cleanBase64 + padding;
-      
+
       const binaryString = atob(base64Data);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -425,7 +425,7 @@ const OrderManagement = () => {
 
   const downloadLabel = (shipmentInfo) => {
     const { label } = getDocuments(shipmentInfo);
-    
+
     if (label && label.content) {
       const fileName = `label_${shipmentInfo.merchantTxnId}_${shipmentInfo.shipmentTrackingNumber}.pdf`;
       downloadPdf(label.content, fileName);
@@ -436,7 +436,7 @@ const OrderManagement = () => {
 
   const downloadInvoice = (shipmentInfo) => {
     const { invoice } = getDocuments(shipmentInfo);
-    
+
     if (invoice && invoice.content) {
       const fileName = `invoice_${shipmentInfo.merchantTxnId}_${shipmentInfo.shipmentTrackingNumber}.pdf`;
       downloadPdf(invoice.content, fileName);
@@ -447,36 +447,36 @@ const OrderManagement = () => {
 
   const formatTimeAgo = (dateString) => {
     if (!dateString) return 'Unknown time';
-    
+
     try {
       const date = new Date(dateString);
       const now = new Date();
-      
+
       // Debug logging
       console.log('formatTimeAgo called with:', dateString);
       console.log('Parsed date:', date.toISOString());
       console.log('Current time:', now.toISOString());
-      
+
       // Check if date is valid
       if (isNaN(date.getTime())) {
         console.log('Invalid date detected');
         return 'Invalid date';
       }
-      
+
       // Calculate difference in milliseconds - always use absolute value
       const rawDiffInMs = now.getTime() - date.getTime();
       const diffInMs = Math.abs(rawDiffInMs);
       const totalSeconds = Math.floor(diffInMs / 1000);
-      
+
       console.log('Raw time difference (ms):', rawDiffInMs);
       console.log('Absolute time difference (ms):', diffInMs);
       console.log('Total seconds:', totalSeconds);
-      
+
       // Triple safety: ensure we never have negative values
       const seconds = Math.max(0, Math.abs(totalSeconds));
-      
+
       console.log('Final seconds value:', seconds);
-      
+
       // Years (365.25 days * 24 hours * 60 minutes * 60 seconds)
       if (seconds >= 31557600) {
         const years = Math.floor(seconds / 31557600);
@@ -484,7 +484,7 @@ const OrderManagement = () => {
         console.log('Returning years:', result);
         return result;
       }
-      
+
       // Months (30.44 days average * 24 hours * 60 minutes * 60 seconds)
       if (seconds >= 2629800) {
         const months = Math.floor(seconds / 2629800);
@@ -492,7 +492,7 @@ const OrderManagement = () => {
         console.log('Returning months:', result);
         return result;
       }
-      
+
       // Days
       if (seconds >= 86400) {
         const days = Math.floor(seconds / 86400);
@@ -500,7 +500,7 @@ const OrderManagement = () => {
         console.log('Returning days:', result);
         return result;
       }
-      
+
       // Hours
       if (seconds >= 3600) {
         const hours = Math.floor(seconds / 3600);
@@ -508,7 +508,7 @@ const OrderManagement = () => {
         console.log('Returning hours:', result);
         return result;
       }
-      
+
       // Minutes
       if (seconds >= 60) {
         const minutes = Math.floor(seconds / 60);
@@ -516,17 +516,17 @@ const OrderManagement = () => {
         console.log('Returning minutes:', result);
         return result;
       }
-      
+
       // Seconds
       if (seconds === 0) {
         console.log('Returning: Just now');
         return 'Just now';
       }
-      
+
       const result = seconds === 1 ? '1 second ago' : `${seconds} seconds ago`;
       console.log('Returning seconds:', result);
       return result;
-      
+
     } catch (error) {
       console.error('Error formatting time:', error, 'for dateString:', dateString);
       return 'Time error';
@@ -573,8 +573,8 @@ const OrderManagement = () => {
     }
     // If product has variant images and a selected variant, find matching variant image
     if (product.variantImages && product.selectedVariant) {
-      const variantImage = product.variantImages.find(img => 
-        img.variant === product.selectedVariant.size || 
+      const variantImage = product.variantImages.find(img =>
+        img.variant === product.selectedVariant.size ||
         img.variant === product.selectedVariant.color
       );
       if (variantImage) {
@@ -649,31 +649,31 @@ const OrderManagement = () => {
     try {
       console.log('🔥 GENERATE BILL ONLY FUNCTION CALLED');
       console.log('📋 Payment data received:', JSON.stringify(payment, null, 2));
-      
+
       // Validate payment data
       if (!payment) {
         console.error('❌ Payment data is missing');
         alert('Error: Payment data is missing');
         throw new Error('Payment data is missing');
       }
-      
+
       // Extract orderData from payment
       const orderData = payment.orderData || {};
       console.log('📦 Order data extracted:', JSON.stringify(orderData, null, 2));
-      
+
       // Check if receiver details exist
       const receiverDetails = orderData.receiver_details || {};
       console.log('👤 Receiver details:', JSON.stringify(receiverDetails, null, 2));
-      
+
       // Detect if delivery is to Nepal
       const isNepal = isNepalDestination(payment);
       const currency = isNepal ? 'Rs.' : '$';
       const currencyName = isNepal ? 'NPR' : 'USD';
-      
+
       console.log('Bill generation - Nepal destination:', isNepal, 'Currency:', currency);
-      
+
       const doc = new jsPDF();
-      
+
       // Add Traditional Alley logo (prefer JPEG for smaller filesize, fallback to PNG)
       let logoLoaded = false;
       try {
@@ -717,10 +717,10 @@ const OrderManagement = () => {
         console.warn('Logo loading failed:', error);
         logoLoaded = false;
       }
-      
+
       // Header
       let headerY = 35;
-      
+
       // Only show title if logo is not loaded
       if (!logoLoaded) {
         doc.setFontSize(20);
@@ -735,24 +735,24 @@ const OrderManagement = () => {
       doc.setFontSize(16);
       doc.setTextColor(0, 0, 0);
       doc.text('INVOICE', doc.internal.pageSize.getWidth() / 2, headerY + 10, { align: 'center' });
-      
+
       // Order Information and Customer Information in same row
       let yPosition = 60;
       const pageWidth = doc.internal.pageSize.getWidth();
       const leftColumnX = 20;
       const rightColumnX = pageWidth / 2 + 30;
-      
+
       // Order Information (Left Column)
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
       doc.text('Order Information', leftColumnX, yPosition);
-      
+
       let leftYPosition = yPosition + 10;
       doc.setFont(undefined, 'normal');
       doc.setFontSize(10);
-      
+
       const orderSummary = orderData.orderSummary || {};
-      
+
       const orderInfo = [
         `Order ID: ${payment.merchantTxnId || 'N/A'}`,
         `Gateway Reference: ${payment.gatewayReferenceNo || 'N/A'}`,
@@ -762,7 +762,7 @@ const OrderManagement = () => {
         `Payment Method: ${payment.instrument || 'N/A'}`,
         `Institution: ${payment.institution || 'N/A'}`
       ];
-      
+
       orderInfo.forEach(info => {
         doc.text(info, leftColumnX, leftYPosition);
         leftYPosition += 6;
@@ -772,7 +772,7 @@ const OrderManagement = () => {
       const shippingInfo = orderData.shipping || {};
       const shippingCostRaw = orderSummary.shippingCost || 0;
       // Use same currency symbol as invoice
-      const shippingCostText = shippingCostRaw > 0 
+      const shippingCostText = shippingCostRaw > 0
         ? `${currency} ${Number(shippingCostRaw).toFixed(2)}`
         : 'Not set';
 
@@ -794,24 +794,24 @@ const OrderManagement = () => {
         doc.text(info, leftColumnX, leftYPosition);
         leftYPosition += 6;
       });
-      
+
       // Customer Information (Right Column)
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
       doc.text('Customer Information', rightColumnX, yPosition);
-      
+
       let rightYPosition = yPosition + 10;
       doc.setFont(undefined, 'normal');
       doc.setFontSize(10);
-      
+
       // Extract data from the correct structure
       const customerDetails = orderData.receiver_details || {};
       const address = customerDetails.address || {};
-      
+
       console.log('Customer data sources:', { orderData, customerDetails, address });
-      
+
       const customerInfo = [
-        `Name: ${customerDetails.fullName || 'N/A'}`,
+        `Name: ${customerDetails.name || customerDetails.fullName || 'N/A'}`,
         `Email: ${customerDetails.email || 'N/A'}`,
         `Phone: ${customerDetails.countryCode || ''}${customerDetails.phone || 'N/A'}`.replace(/^\+?/, '+'),
         `Height: ${customerDetails.height || 'N/A'}`,
@@ -820,38 +820,38 @@ const OrderManagement = () => {
         `Postal Code: ${address.postalCode || 'N/A'}`,
         `Country: ${address.countryCode || 'N/A'}`
       ];
-      
+
       customerInfo.forEach(info => {
         doc.text(info, rightColumnX, rightYPosition);
         rightYPosition += 6;
       });
-      
+
       // Set yPosition to the maximum of both columns for next section with more gap
-       yPosition = Math.max(leftYPosition, rightYPosition) + 25;
-      
+      yPosition = Math.max(leftYPosition, rightYPosition) + 25;
+
       // Products Table
       yPosition += 15;
-      
+
       const tableData = [];
       const products = orderData.products || [];
-      
+
       console.log('Product data sources:', { orderData, products });
-      
+
       // Convert product prices for Nepal orders
       const { getExchangeRate } = await import('../../utils/currency');
       const exchangeRate = isNepal ? await getExchangeRate() : 1;
-      
+
       products.forEach(item => {
         let price = item.price || 0;
         const quantity = item.quantity || 1;
         let total = item.subtotal || (price * quantity);
-        
+
         // Convert USD prices to NPR for Nepal orders
         if (isNepal) {
           price = price * exchangeRate;
           total = total * exchangeRate;
         }
-        
+
         console.log('Processing item:', { item, originalPrice: item.price, convertedPrice: price, quantity, total, isNepal, exchangeRate });
 
         tableData.push([
@@ -863,11 +863,11 @@ const OrderManagement = () => {
           `${currency} ${total.toFixed(2)}`
         ]);
       });
-      
+
       if (tableData.length === 0) {
         tableData.push(['No items found', '', '', '', '', '']);
       }
-      
+
       autoTable(doc, {
         head: [['Product', 'Product Code', 'Size', 'Quantity', 'Price', 'Total']],
         body: tableData,
@@ -877,42 +877,42 @@ const OrderManagement = () => {
         styles: { fontSize: 9 },
         margin: { left: 20, right: 20 }
       });
-      
+
       // Calculation Breakdown
       let breakdownY = doc.lastAutoTable.finalY + 15;
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
       doc.text('Order Summary', 20, breakdownY);
-      
+
       breakdownY += 10;
       doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
-      
+
       // Calculate values for breakdown
       const originalSubtotal = products.reduce((sum, item) => {
         const price = item.price || 0;
         const quantity = item.quantity || 1;
         return sum + (price * quantity);
       }, 0);
-      
+
       const productDiscounts = orderSummary.productDiscounts || 0;
       const couponDiscount = orderSummary.couponDiscount || 0;
       const shippingCost = orderSummary.shippingCost || 0;
       const finalSubtotal = orderSummary.finalSubtotal || 0;
-      
+
       // Convert values for Nepal orders
       let displayOriginalSubtotal = originalSubtotal;
       let displayProductDiscounts = productDiscounts;
       let displayCouponDiscount = couponDiscount;
       let displayShippingCost = shippingCost;
-      
+
       if (isNepal) {
         displayOriginalSubtotal = originalSubtotal * exchangeRate;
         if (productDiscounts > 0) displayProductDiscounts = productDiscounts * exchangeRate;
         if (couponDiscount > 0) displayCouponDiscount = couponDiscount * exchangeRate;
         // Shipping cost is already in NPR for Nepal orders
       }
-      
+
       // Display breakdown
       const breakdownItems = [
         { label: 'Subtotal:', value: displayOriginalSubtotal },
@@ -920,39 +920,39 @@ const OrderManagement = () => {
         ...(displayCouponDiscount > 0 ? [{ label: `Coupon Discount (${orderSummary.couponCode || 'N/A'}):`, value: -displayCouponDiscount, isDiscount: true }] : []),
         ...(displayShippingCost > 0 ? [{ label: 'Shipping Cost:', value: displayShippingCost }] : [])
       ];
-      
+
       breakdownItems.forEach(item => {
         doc.text(item.label, 20, breakdownY);
         const valueText = `${currency} ${Math.abs(item.value).toFixed(2)}`;
         const displayValue = item.isDiscount ? `- ${valueText}` : valueText;
-        
+
         // Set color for discounts (green for savings)
         if (item.isDiscount) {
           doc.setTextColor(0, 128, 0); // Green color for discounts
         }
-        
+
         doc.text(displayValue, doc.internal.pageSize.getWidth() - 20, breakdownY, { align: 'right' });
-        
+
         // Reset color to black
         doc.setTextColor(0, 0, 0);
-        
+
         breakdownY += 7; // Slightly more spacing
       });
-      
+
       // Add separator line
       breakdownY += 5;
       doc.setLineWidth(0.5);
       doc.line(20, breakdownY, doc.internal.pageSize.getWidth() - 20, breakdownY);
       breakdownY += 10;
-      
+
       // Total Amount
       const finalY = breakdownY;
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      
+
       // Use payment amount as primary source, fallback to order summary total amount
       let amount = payment.amount || orderSummary.totalAmount || 0;
-      
+
       // For Nepal orders, keep NPR amounts as-is; for international orders, convert NPR to USD
       if (!isNepal) {
         // Convert NPR amounts to USD for international readability
@@ -973,27 +973,27 @@ const OrderManagement = () => {
           amount = payment.amount_npr;
         }
       }
-      
+
       const formattedAmount = typeof amount === 'number' ? amount.toFixed(2) : amount;
-      
-      console.log('Amount data:', { 
-        orderSummaryAmount: orderSummary.totalAmount, 
-        paymentAmount: payment.amount, 
+
+      console.log('Amount data:', {
+        orderSummaryAmount: orderSummary.totalAmount,
+        paymentAmount: payment.amount,
         paymentAmountNPR: payment.amount_npr,
-        finalAmount: amount, 
-        isNepal, 
-        currency 
+        finalAmount: amount,
+        isNepal,
+        currency
       });
-      
-      doc.text(`Total Amount: ${currency} ${formattedAmount}`, 
+
+      doc.text(`Total Amount: ${currency} ${formattedAmount}`,
         doc.internal.pageSize.getWidth() - 20, finalY, { align: 'right' });
-      
+
       // Add currency note with live exchange rate
       let noteY = finalY + 10;
       doc.setFontSize(8);
       doc.setFont(undefined, 'italic');
       doc.setTextColor(102, 102, 102);
-      
+
       let noteText;
       if (isNepal) {
         const { getExchangeRate } = await import('../../utils/currency');
@@ -1007,10 +1007,10 @@ const OrderManagement = () => {
           noteText = `Note: All amounts in USD (converted from NPR at rate 1 USD = ${currentRate.toFixed(2)} NPR)`;
         }
       }
-      
-      doc.text(noteText, 
+
+      doc.text(noteText,
         doc.internal.pageSize.getWidth() - 20, noteY, { align: 'right' });
-      
+
       // Footer
       const footerY = noteY + 15;
       doc.setFontSize(10);
@@ -1019,15 +1019,15 @@ const OrderManagement = () => {
       const footerText = 'Thank you for shopping with Traditional Alley! For any queries, please contact us at contact@traditionalalley.com';
       const footerLines = doc.splitTextToSize(footerText, doc.internal.pageSize.getWidth() - 40);
       doc.text(footerLines, doc.internal.pageSize.getWidth() / 2, footerY, { align: 'center' });
-      
+
       // Save the PDF
       const txnId = payment.merchantTxnId || payment.attributes?.merchantTxnId || 'receipt';
       const fileName = `Traditional_Alley_Bill_${txnId}.pdf`;
       doc.save(fileName);
-      
+
       console.log('✅ PDF generated and downloaded successfully for transaction:', txnId);
       alert('Bill downloaded successfully!');
-      
+
     } catch (error) {
       console.error('Error generating PDF:', error);
       console.error('Payment data structure:', payment);
@@ -1040,38 +1040,38 @@ const OrderManagement = () => {
     try {
       console.log('📧 SEND EMAIL ONLY FUNCTION CALLED');
       console.log('📋 Payment data received:', JSON.stringify(payment, null, 2));
-      
+
       // Validate payment data
       if (!payment) {
         console.error('❌ Payment data is missing');
         alert('Error: Payment data is missing');
         throw new Error('Payment data is missing');
       }
-      
+
       // Extract orderData from payment
       const orderData = payment.orderData || {};
       console.log('📦 Order data extracted:', JSON.stringify(orderData, null, 2));
-      
+
       // Check if receiver details exist
       const receiverDetails = orderData.receiver_details || {};
       console.log('👤 Receiver details:', JSON.stringify(receiverDetails, null, 2));
       console.log('📧 Customer email found:', receiverDetails.email || 'NO EMAIL FOUND');
-      
+
       const customerEmail = receiverDetails.email;
-      
+
       if (!customerEmail) {
         alert('No customer email found. Cannot send invoice email.');
         return;
       }
-      
+
       // Detect if delivery is to Nepal for currency formatting
       const isNepal = isNepalDestination(payment);
       const currency = isNepal ? 'Rs.' : '$';
-      
+
       // Calculate amount for display
       const orderSummary = orderData.orderSummary || {};
       let amount = payment.amount || orderSummary.totalAmount || 0;
-      
+
       // For Nepal orders, keep NPR amounts as-is; for international orders, convert NPR to USD
       if (!isNepal) {
         if (payment.amount_npr) {
@@ -1088,17 +1088,17 @@ const OrderManagement = () => {
           amount = payment.amount_npr;
         }
       }
-      
+
       const formattedAmount = typeof amount === 'number' ? amount.toFixed(2) : amount;
       const txnId = payment.merchantTxnId || payment.attributes?.merchantTxnId || 'receipt';
       const fileName = `Traditional_Alley_Bill_${txnId}.pdf`;
-      
+
       console.log('📧 STARTING EMAIL SENDING PROCESS');
       console.log('✅ Customer email found, proceeding to send invoice email to:', customerEmail);
-      
+
       // Generate PDF for email (same logic as generateBillOnly but for email purposes)
       const doc = new jsPDF();
-      
+
       // Add Traditional Alley logo
       let logoLoaded = false;
       try {
@@ -1125,272 +1125,272 @@ const OrderManagement = () => {
         console.warn('Logo loading failed:', error);
         logoLoaded = false;
       }
-      
+
       // Generate the same PDF content as generateBillOnly
-       // Header
-       let headerY = 35;
-       
-       if (!logoLoaded) {
-         doc.setFontSize(20);
-         doc.setTextColor(139, 69, 19);
-         doc.text('Traditional Alley', doc.internal.pageSize.getWidth() / 2, headerY, { align: 'center' });
-         headerY += 10;
-       } else {
-         headerY = 30;
-       }
+      // Header
+      let headerY = 35;
 
-       doc.setFontSize(16);
-       doc.setTextColor(0, 0, 0);
-       doc.text('INVOICE', doc.internal.pageSize.getWidth() / 2, headerY + 10, { align: 'center' });
-       
-       // Order Information and Customer Information in same row (same as generateBillOnly)
-       let yPosition = 60;
-       const pageWidth = doc.internal.pageSize.getWidth();
-       const leftColumnX = 20;
-       const rightColumnX = pageWidth / 2 + 30;
-       
-       // Order Information (Left Column)
-       doc.setFontSize(14);
-       doc.setFont(undefined, 'bold');
-       doc.setTextColor(0, 0, 0);
-       doc.text('Order Information', leftColumnX, yPosition);
-       
-       let leftYPosition = yPosition + 10;
-       doc.setFont(undefined, 'normal');
-       doc.setFontSize(10);
-       
-       const orderInfo = [
-         `Order ID: ${payment.merchantTxnId || 'N/A'}`,
-         `Gateway Reference: ${payment.gatewayReferenceNo || 'N/A'}`,
-         `Process ID: ${payment.processId || 'N/A'}`,
-         `Date: ${payment.timestamp ? new Date(payment.timestamp).toLocaleDateString() : new Date().toLocaleDateString()}`,
-         `Payment Status: ${payment.status || 'N/A'}`,
-         `Payment Method: ${payment.instrument || 'N/A'}`,
-         `Institution: ${payment.institution || 'N/A'}`,
-         `Delivery Type: ${orderData.shipping?.deliveryType || orderData.shipping?.method?.deliveryType || 'Standard'}`
-       ];
-       
-       orderInfo.forEach(info => {
-         doc.text(info, leftColumnX, leftYPosition);
-         leftYPosition += 6;
-       });
+      if (!logoLoaded) {
+        doc.setFontSize(20);
+        doc.setTextColor(139, 69, 19);
+        doc.text('Traditional Alley', doc.internal.pageSize.getWidth() / 2, headerY, { align: 'center' });
+        headerY += 10;
+      } else {
+        headerY = 30;
+      }
 
-       // Shipping Information (Left Column under Order Info)
-       const shippingInfo = orderData.shipping || {};
-       const shippingCostRaw = (orderData.orderSummary?.shippingCost) || 0;
-       const shippingCostText = shippingCostRaw > 0 
-         ? `${currency} ${Number(shippingCostRaw).toFixed(2)}`
-         : 'Not set';
+      doc.setFontSize(16);
+      doc.setTextColor(0, 0, 0);
+      doc.text('INVOICE', doc.internal.pageSize.getWidth() / 2, headerY + 10, { align: 'center' });
 
-       doc.setFontSize(12);
-       doc.setFont(undefined, 'bold');
-       doc.text('Shipping Information', leftColumnX, leftYPosition + 4);
-       leftYPosition += 10;
-       doc.setFont(undefined, 'normal');
-       doc.setFontSize(10);
+      // Order Information and Customer Information in same row (same as generateBillOnly)
+      let yPosition = 60;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const leftColumnX = 20;
+      const rightColumnX = pageWidth / 2 + 30;
 
-       const shippingInfoLines = [
-         `Method: ${shippingInfo.method || 'N/A'}`,
-         `Delivery Type: ${shippingInfo.deliveryType || 'Standard'}`,
-         `Cost: ${shippingCostText}`,
-         `Estimated Delivery: ${shippingInfo.estimatedDelivery || 'N/A'}`
-       ];
+      // Order Information (Left Column)
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Order Information', leftColumnX, yPosition);
 
-       shippingInfoLines.forEach(info => {
-         doc.text(info, leftColumnX, leftYPosition);
-         leftYPosition += 6;
-       });
-       
-       // Customer Information (Right Column)
-       doc.setFontSize(14);
-       doc.setFont(undefined, 'bold');
-       doc.text('Customer Information', rightColumnX, yPosition);
-       
-       let rightYPosition = yPosition + 10;
-       doc.setFont(undefined, 'normal');
-       doc.setFontSize(10);
-       
-       // Extract data from the correct structure
-       const customerDetails = orderData.receiver_details || {};
-       const address = customerDetails.address || {};
-       
-       const customerInfo = [
-         `Name: ${customerDetails.fullName || 'N/A'}`,
-         `Email: ${customerDetails.email || 'N/A'}`,
-         `Phone: ${customerDetails.countryCode || ''}${customerDetails.phone || 'N/A'}`.replace(/^\+?/, '+'),
-         `Height: ${customerDetails.height || 'N/A'}`,
-         `Address: ${address.addressLine1 || 'N/A'}`,
-         `City: ${address.cityName || 'N/A'}`,
-         `Postal Code: ${address.postalCode || 'N/A'}`,
-         `Country: ${address.countryCode || 'N/A'}`
-       ];
-       
-       customerInfo.forEach(info => {
-         doc.text(info, rightColumnX, rightYPosition);
-         rightYPosition += 6;
-       });
-       
-       // Set yPosition to the maximum of both columns for next section with more gap
-       yPosition = Math.max(leftYPosition, rightYPosition) + 25;
-       
-       // Products Table section starts here
-       yPosition += 15;
-       
-       // Products table using autoTable (same as generateBillOnly)
-       const products = orderData.products || [];
-       const tableData = [];
-       
-       // Convert product prices for Nepal orders (same logic as generateBillOnly)
-       const { getExchangeRate } = await import('../../utils/currency');
-       const exchangeRate = isNepal ? await getExchangeRate() : 1;
-       
-       products.forEach((item) => {
-         let price = item.price || 0;
-         const quantity = item.quantity || 1;
-         let total = item.subtotal || (price * quantity);
-         
-         // Convert USD prices to NPR for Nepal orders
-         if (isNepal) {
-           price = price * exchangeRate;
-           total = total * exchangeRate;
-         }
-         
-         tableData.push([
-           getVariantAwareTitle(item),
-           item.productDetails?.productCode || item.productCode || 'N/A',
-           item.selectedSize || 'N/A',
-           quantity.toString(),
-           `${currency} ${price.toFixed(2)}`,
-           `${currency} ${total.toFixed(2)}`
-         ]);
-       });
-       
-       if (tableData.length === 0) {
-         tableData.push(['No items found', '', '', '', '', '']);
-       }
-       
-       autoTable(doc, {
-         head: [['Product', 'Product Code', 'Size', 'Quantity', 'Price', 'Total']],
-         body: tableData,
-         startY: yPosition,
-         theme: 'striped',
-         headStyles: { fillColor: [255, 229, 212], textColor: [0, 0, 0] },
-         styles: { fontSize: 9 },
-         margin: { left: 20, right: 20 }
-       });
-       
-       yPosition = doc.lastAutoTable.finalY + 15;
-       
-       // Order Summary (same detailed breakdown as generateBillOnly)
-       doc.setFontSize(12);
-       doc.setFont(undefined, 'bold');
-       doc.setTextColor(0, 0, 0);
-       doc.text('Order Summary', 20, yPosition);
-       
-       yPosition += 10;
-       doc.setFontSize(10);
-       doc.setFont(undefined, 'normal');
-       
-       // Calculate values for breakdown
-       const originalSubtotal = products.reduce((sum, item) => {
-         const price = item.price || 0;
-         const quantity = item.quantity || 1;
-         return sum + (price * quantity);
-       }, 0);
-       
-       const productDiscounts = orderSummary.productDiscounts || 0;
-       const couponDiscount = orderSummary.couponDiscount || 0;
-       const shippingCost = orderSummary.shippingCost || 0;
-       
-       // Convert values for Nepal orders (same logic as generateBillOnly)
-       let displayOriginalSubtotal = originalSubtotal;
-       let displayProductDiscounts = productDiscounts;
-       let displayCouponDiscount = couponDiscount;
-       let displayShippingCost = shippingCost;
-       
-       if (isNepal) {
-         displayOriginalSubtotal = originalSubtotal * exchangeRate;
-         if (productDiscounts > 0) displayProductDiscounts = productDiscounts * exchangeRate;
-         if (couponDiscount > 0) displayCouponDiscount = couponDiscount * exchangeRate;
-         // Shipping cost is already in NPR for Nepal orders
-       }
-       
-       // Display breakdown
-       const breakdownItems = [
-         { label: 'Subtotal:', value: displayOriginalSubtotal },
-         ...(displayProductDiscounts > 0 ? [{ label: 'Product Discounts:', value: -displayProductDiscounts, isDiscount: true }] : []),
-         ...(displayCouponDiscount > 0 ? [{ label: `Coupon Discount (${orderSummary.couponCode || 'N/A'}):`, value: -displayCouponDiscount, isDiscount: true }] : []),
-         ...(displayShippingCost > 0 ? [{ label: 'Shipping Cost:', value: displayShippingCost }] : [])
-       ];
-       
-       breakdownItems.forEach(item => {
-         doc.text(item.label, 20, yPosition);
-         const valueText = `${currency} ${Math.abs(item.value).toFixed(2)}`;
-         const displayValue = item.isDiscount ? `- ${valueText}` : valueText;
-         
-         // Set color for discounts (green for savings)
-         if (item.isDiscount) {
-           doc.setTextColor(0, 128, 0); // Green color for discounts
-         }
-         
-         doc.text(displayValue, doc.internal.pageSize.getWidth() - 20, yPosition, { align: 'right' });
-         
-         // Reset color to black
-         doc.setTextColor(0, 0, 0);
-         
-         yPosition += 7;
-       });
-       
-       // Add separator line
-       yPosition += 5;
-       doc.setLineWidth(0.5);
-       doc.line(20, yPosition, doc.internal.pageSize.getWidth() - 20, yPosition);
-       yPosition += 10;
-       
-       // Total Amount
-       doc.setFontSize(14);
-       doc.setFont(undefined, 'bold');
-       doc.setTextColor(139, 69, 19);
-       
-       const finalTotal = parseFloat(formattedAmount);
-       doc.text(`Total Amount: ${currency} ${finalTotal}`, 
-         doc.internal.pageSize.getWidth() - 20, yPosition, { align: 'right' });
-       
-       // Add currency note with live exchange rate (same as generateBillOnly)
-       yPosition += 10;
-       doc.setFontSize(8);
-       doc.setFont(undefined, 'italic');
-       doc.setTextColor(102, 102, 102);
-       
-       let noteText;
-       if (isNepal) {
-         noteText = `Note: All amounts in NPR. Product prices converted from USD at rate 1 USD = ${exchangeRate.toFixed(2)} NPR`;
-       } else {
-         noteText = 'Note: All amounts in USD';
-         if (payment.amount_npr || amount !== (payment.amount || orderSummary.totalAmount || 0)) {
-           noteText += `. Converted from NPR at rate 1 USD = ${exchangeRate.toFixed(2)} NPR`;
-         }
-       }
-       
-       const noteLines = doc.splitTextToSize(noteText, doc.internal.pageSize.getWidth() - 40);
-       doc.text(noteLines, 20, yPosition);
-       yPosition += noteLines.length * 6;
-       
-       // Footer
-       yPosition += 20;
-       doc.setFontSize(10);
-       doc.setTextColor(100, 100, 100);
-       const footerText = 'Thank you for shopping with Traditional Alley! For any queries, please contact us at contact@traditionalalley.com';
-       const footerLines = doc.splitTextToSize(footerText, doc.internal.pageSize.getWidth() - 40);
-       doc.text(footerLines, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-      
+      let leftYPosition = yPosition + 10;
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(10);
+
+      const orderInfo = [
+        `Order ID: ${payment.merchantTxnId || 'N/A'}`,
+        `Gateway Reference: ${payment.gatewayReferenceNo || 'N/A'}`,
+        `Process ID: ${payment.processId || 'N/A'}`,
+        `Date: ${payment.timestamp ? new Date(payment.timestamp).toLocaleDateString() : new Date().toLocaleDateString()}`,
+        `Payment Status: ${payment.status || 'N/A'}`,
+        `Payment Method: ${payment.instrument || 'N/A'}`,
+        `Institution: ${payment.institution || 'N/A'}`,
+        `Delivery Type: ${orderData.shipping?.deliveryType || orderData.shipping?.method?.deliveryType || 'Standard'}`
+      ];
+
+      orderInfo.forEach(info => {
+        doc.text(info, leftColumnX, leftYPosition);
+        leftYPosition += 6;
+      });
+
+      // Shipping Information (Left Column under Order Info)
+      const shippingInfo = orderData.shipping || {};
+      const shippingCostRaw = (orderData.orderSummary?.shippingCost) || 0;
+      const shippingCostText = shippingCostRaw > 0
+        ? `${currency} ${Number(shippingCostRaw).toFixed(2)}`
+        : 'Not set';
+
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('Shipping Information', leftColumnX, leftYPosition + 4);
+      leftYPosition += 10;
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(10);
+
+      const shippingInfoLines = [
+        `Method: ${shippingInfo.method || 'N/A'}`,
+        `Delivery Type: ${shippingInfo.deliveryType || 'Standard'}`,
+        `Cost: ${shippingCostText}`,
+        `Estimated Delivery: ${shippingInfo.estimatedDelivery || 'N/A'}`
+      ];
+
+      shippingInfoLines.forEach(info => {
+        doc.text(info, leftColumnX, leftYPosition);
+        leftYPosition += 6;
+      });
+
+      // Customer Information (Right Column)
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('Customer Information', rightColumnX, yPosition);
+
+      let rightYPosition = yPosition + 10;
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(10);
+
+      // Extract data from the correct structure
+      const customerDetails = orderData.receiver_details || {};
+      const address = customerDetails.address || {};
+
+      const customerInfo = [
+        `Name: ${customerDetails.name || customerDetails.fullName || 'N/A'}`,
+        `Email: ${customerDetails.email || 'N/A'}`,
+        `Phone: ${customerDetails.countryCode || ''}${customerDetails.phone || 'N/A'}`.replace(/^\+?/, '+'),
+        `Height: ${customerDetails.height || 'N/A'}`,
+        `Address: ${address.addressLine1 || 'N/A'}`,
+        `City: ${address.cityName || 'N/A'}`,
+        `Postal Code: ${address.postalCode || 'N/A'}`,
+        `Country: ${address.countryCode || 'N/A'}`
+      ];
+
+      customerInfo.forEach(info => {
+        doc.text(info, rightColumnX, rightYPosition);
+        rightYPosition += 6;
+      });
+
+      // Set yPosition to the maximum of both columns for next section with more gap
+      yPosition = Math.max(leftYPosition, rightYPosition) + 25;
+
+      // Products Table section starts here
+      yPosition += 15;
+
+      // Products table using autoTable (same as generateBillOnly)
+      const products = orderData.products || [];
+      const tableData = [];
+
+      // Convert product prices for Nepal orders (same logic as generateBillOnly)
+      const { getExchangeRate } = await import('../../utils/currency');
+      const exchangeRate = isNepal ? await getExchangeRate() : 1;
+
+      products.forEach((item) => {
+        let price = item.price || 0;
+        const quantity = item.quantity || 1;
+        let total = item.subtotal || (price * quantity);
+
+        // Convert USD prices to NPR for Nepal orders
+        if (isNepal) {
+          price = price * exchangeRate;
+          total = total * exchangeRate;
+        }
+
+        tableData.push([
+          getVariantAwareTitle(item),
+          item.productDetails?.productCode || item.productCode || 'N/A',
+          item.selectedSize || 'N/A',
+          quantity.toString(),
+          `${currency} ${price.toFixed(2)}`,
+          `${currency} ${total.toFixed(2)}`
+        ]);
+      });
+
+      if (tableData.length === 0) {
+        tableData.push(['No items found', '', '', '', '', '']);
+      }
+
+      autoTable(doc, {
+        head: [['Product', 'Product Code', 'Size', 'Quantity', 'Price', 'Total']],
+        body: tableData,
+        startY: yPosition,
+        theme: 'striped',
+        headStyles: { fillColor: [255, 229, 212], textColor: [0, 0, 0] },
+        styles: { fontSize: 9 },
+        margin: { left: 20, right: 20 }
+      });
+
+      yPosition = doc.lastAutoTable.finalY + 15;
+
+      // Order Summary (same detailed breakdown as generateBillOnly)
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Order Summary', 20, yPosition);
+
+      yPosition += 10;
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+
+      // Calculate values for breakdown
+      const originalSubtotal = products.reduce((sum, item) => {
+        const price = item.price || 0;
+        const quantity = item.quantity || 1;
+        return sum + (price * quantity);
+      }, 0);
+
+      const productDiscounts = orderSummary.productDiscounts || 0;
+      const couponDiscount = orderSummary.couponDiscount || 0;
+      const shippingCost = orderSummary.shippingCost || 0;
+
+      // Convert values for Nepal orders (same logic as generateBillOnly)
+      let displayOriginalSubtotal = originalSubtotal;
+      let displayProductDiscounts = productDiscounts;
+      let displayCouponDiscount = couponDiscount;
+      let displayShippingCost = shippingCost;
+
+      if (isNepal) {
+        displayOriginalSubtotal = originalSubtotal * exchangeRate;
+        if (productDiscounts > 0) displayProductDiscounts = productDiscounts * exchangeRate;
+        if (couponDiscount > 0) displayCouponDiscount = couponDiscount * exchangeRate;
+        // Shipping cost is already in NPR for Nepal orders
+      }
+
+      // Display breakdown
+      const breakdownItems = [
+        { label: 'Subtotal:', value: displayOriginalSubtotal },
+        ...(displayProductDiscounts > 0 ? [{ label: 'Product Discounts:', value: -displayProductDiscounts, isDiscount: true }] : []),
+        ...(displayCouponDiscount > 0 ? [{ label: `Coupon Discount (${orderSummary.couponCode || 'N/A'}):`, value: -displayCouponDiscount, isDiscount: true }] : []),
+        ...(displayShippingCost > 0 ? [{ label: 'Shipping Cost:', value: displayShippingCost }] : [])
+      ];
+
+      breakdownItems.forEach(item => {
+        doc.text(item.label, 20, yPosition);
+        const valueText = `${currency} ${Math.abs(item.value).toFixed(2)}`;
+        const displayValue = item.isDiscount ? `- ${valueText}` : valueText;
+
+        // Set color for discounts (green for savings)
+        if (item.isDiscount) {
+          doc.setTextColor(0, 128, 0); // Green color for discounts
+        }
+
+        doc.text(displayValue, doc.internal.pageSize.getWidth() - 20, yPosition, { align: 'right' });
+
+        // Reset color to black
+        doc.setTextColor(0, 0, 0);
+
+        yPosition += 7;
+      });
+
+      // Add separator line
+      yPosition += 5;
+      doc.setLineWidth(0.5);
+      doc.line(20, yPosition, doc.internal.pageSize.getWidth() - 20, yPosition);
+      yPosition += 10;
+
+      // Total Amount
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(139, 69, 19);
+
+      const finalTotal = parseFloat(formattedAmount);
+      doc.text(`Total Amount: ${currency} ${finalTotal}`,
+        doc.internal.pageSize.getWidth() - 20, yPosition, { align: 'right' });
+
+      // Add currency note with live exchange rate (same as generateBillOnly)
+      yPosition += 10;
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'italic');
+      doc.setTextColor(102, 102, 102);
+
+      let noteText;
+      if (isNepal) {
+        noteText = `Note: All amounts in NPR. Product prices converted from USD at rate 1 USD = ${exchangeRate.toFixed(2)} NPR`;
+      } else {
+        noteText = 'Note: All amounts in USD';
+        if (payment.amount_npr || amount !== (payment.amount || orderSummary.totalAmount || 0)) {
+          noteText += `. Converted from NPR at rate 1 USD = ${exchangeRate.toFixed(2)} NPR`;
+        }
+      }
+
+      const noteLines = doc.splitTextToSize(noteText, doc.internal.pageSize.getWidth() - 40);
+      doc.text(noteLines, 20, yPosition);
+      yPosition += noteLines.length * 6;
+
+      // Footer
+      yPosition += 20;
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      const footerText = 'Thank you for shopping with Traditional Alley! For any queries, please contact us at contact@traditionalalley.com';
+      const footerLines = doc.splitTextToSize(footerText, doc.internal.pageSize.getWidth() - 40);
+      doc.text(footerLines, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+
       // Generate PDF as base64 for saving to server
       let pdfBase64 = doc.output('datauristring').split(',')[1];
       const originalSize = pdfBase64 ? pdfBase64.length : 0;
-      
+
       console.log('📦 Original PDF Base64 size:', originalSize, 'characters');
       console.log('📦 Original estimated PDF size:', Math.round(originalSize * 0.75 / 1024), 'KB');
-      
+
       // Compress PDF if it's too large (over 10MB base64 = ~7.5MB actual)
       const maxSize = 10 * 1024 * 1024; // 10MB in characters
       if (originalSize > maxSize) {
@@ -1400,23 +1400,23 @@ const OrderManagement = () => {
           compress: true,
           precision: 2
         });
-        
+
         // Re-generate with same content but compressed settings
         // Note: This is a simplified approach - in production you might want more sophisticated compression
         pdfBase64 = doc.output('datauristring', { compress: true }).split(',')[1];
         const compressedSize = pdfBase64.length;
         console.log('📦 Compressed PDF Base64 size:', compressedSize, 'characters');
-        console.log('📦 Compression ratio:', Math.round((1 - compressedSize/originalSize) * 100) + '%');
+        console.log('📦 Compression ratio:', Math.round((1 - compressedSize / originalSize) * 100) + '%');
       }
-      
+
       // Determine if we should send PDF as attachment or download link
       const finalSize = pdfBase64.length;
       const shouldSendAsAttachment = finalSize < (8 * 1024 * 1024); // 8MB threshold for attachment
-      
+
       console.log('📊 Final PDF size check:');
       console.log('  Size:', Math.round(finalSize * 0.75 / 1024), 'KB');
       console.log('  Send as attachment:', shouldSendAsAttachment);
-      
+
       // First, save the PDF to the server
       console.log('💾 Saving PDF to server...');
       const saveResponse = await fetch('/api/save-pdf', {
@@ -1429,27 +1429,27 @@ const OrderManagement = () => {
           pdfBase64,
         }),
       });
-      
+
       if (!saveResponse.ok) {
         const errorText = await saveResponse.text();
         throw new Error(`Failed to save PDF: ${saveResponse.status} - ${errorText}`);
       }
-      
+
       const saveResult = await saveResponse.json();
       console.log('✅ PDF saved successfully:', saveResult);
-      
+
       // Now send email with either attachment or download link
       console.log('📤 Making API call to /api/send-invoice-email...');
-      
+
       const emailPayload = {
         customerEmail,
-        customerName: receiverDetails.fullName || 'Valued Customer',
+        customerName: receiverDetails.name || receiverDetails.fullName || 'Valued Customer',
         orderId: txnId,
         amount: `${currency} ${formattedAmount}`,
         fileName,
         downloadUrl: saveResult.downloadUrl
       };
-      
+
       // Only include PDF attachment if file is small enough
       if (shouldSendAsAttachment) {
         emailPayload.pdfBase64 = pdfBase64;
@@ -1457,12 +1457,12 @@ const OrderManagement = () => {
       } else {
         console.log('🔗 Sending download link only (file too large for attachment)');
       }
-      
+
       console.log('📋 Request payload:', {
         ...emailPayload,
         pdfBase64: emailPayload.pdfBase64 ? '[PDF_DATA_INCLUDED]' : '[NO_ATTACHMENT]'
       });
-      
+
       const response = await fetch('/api/send-invoice-email', {
         method: 'POST',
         headers: {
@@ -1470,18 +1470,18 @@ const OrderManagement = () => {
         },
         body: JSON.stringify(emailPayload),
       });
-      
+
       console.log('📥 API Response status:', response.status, response.statusText);
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('❌ API Error Response:', errorText);
         throw new Error(`HTTP error! status: ${response.status}, response: ${errorText}`);
       }
-      
+
       const emailResult = await response.json();
       console.log('📧 Email API Result:', emailResult);
-      
+
       if (emailResult.success) {
         console.log('✅ Invoice email sent successfully!');
         alert('Invoice email sent successfully!');
@@ -1489,10 +1489,10 @@ const OrderManagement = () => {
         console.warn('❌ Email API returned failure:', emailResult.error);
         alert('Failed to send email: ' + (emailResult.error || 'Unknown error'));
       }
-      
+
     } catch (error) {
       console.error('Error sending invoice email:', error);
-      
+
       let errorMessage = 'Unknown error occurred';
       if (error.message.includes('Failed to save PDF')) {
         errorMessage = 'Failed to save PDF to server. Please try again or contact support.';
@@ -1503,7 +1503,7 @@ const OrderManagement = () => {
       } else {
         errorMessage = error.message;
       }
-      
+
       alert('Failed to send email: ' + errorMessage);
     }
   };
@@ -1571,7 +1571,7 @@ const OrderManagement = () => {
 
         {showNCMForm && (
           <div className="mt-6">
-            <NCMOrderForm 
+            <NCMOrderForm
               onOrderCreated={handleNCMOrderCreated}
               onCancel={handleNCMFormCancel}
             />
@@ -1620,30 +1620,28 @@ const OrderManagement = () => {
                 {/* Success Tab - Always Active */}
                 <button
                   onClick={() => handleTabChange('success')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'success'
-                      ? 'border-green-500 text-green-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'success'
+                    ? 'border-green-500 text-green-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
                 >
                   Success ({tabCounts.success})
                 </button>
-                
+
                 {/* Shipped Tab */}
                 <button
                   onClick={() => handleTabChange('shipped')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'shipped'
-                      ? 'border-purple-500 text-purple-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'shipped'
+                    ? 'border-purple-500 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
                 >
                   Shipped ({tabCounts.shipped})
                 </button>
-                
+
                 {/* Divider */}
                 <div className="h-6 w-px bg-gray-300 mx-4"></div>
-                
+
                 {/* Pending & Failed Tabs */}
                 <div className="-mb-px flex space-x-8 items-center">
                   <button
@@ -1653,11 +1651,10 @@ const OrderManagement = () => {
                       setShowFailed(false);
                       setCurrentPage(0);
                     }}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'pending'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'pending'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
                   >
                     Pending ({tabCounts.pending})
                   </button>
@@ -1668,11 +1665,10 @@ const OrderManagement = () => {
                       setShowFailed(false);
                       setCurrentPage(0);
                     }}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'failed'
-                        ? 'border-red-500 text-red-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'failed'
+                      ? 'border-red-500 text-red-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
                   >
                     Failed ({tabCounts.failed})
                   </button>
@@ -1700,20 +1696,19 @@ const OrderManagement = () => {
               </div>
             ) : (
               filteredPayments.slice(currentPage * ordersPerPage, (currentPage + 1) * ordersPerPage).map((payment, globalIndex) => (
-                <div 
+                <div
                   key={`${payment.userBag.id}-${payment.paymentIndex}-${payment.merchantTxnId}`}
                   className="border p-2 mb-2 rounded">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
-                      <h3 className="font-bold text-gray-900">{payment.orderData.receiver_details.fullName}</h3>
+                      <h3 className="font-bold text-gray-900">{payment.orderData.receiver_details.name || payment.orderData.receiver_details.fullName}</h3>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-gray-600">
                         <span>Order Time: {formatTimeAgo(payment.timestamp)}</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          payment.computedStatus === 'success' ? 'bg-green-100 text-green-800' :
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${payment.computedStatus === 'success' ? 'bg-green-100 text-green-800' :
                           payment.computedStatus === 'failed' ? 'bg-red-100 text-red-800' :
-                          payment.computedStatus === 'shipped' ? 'bg-purple-100 text-purple-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
+                            payment.computedStatus === 'shipped' ? 'bg-purple-100 text-purple-800' :
+                              'bg-yellow-100 text-yellow-800'
+                          }`}>
                           {payment.computedStatus.toUpperCase()}
                         </span>
                       </div>
@@ -1722,18 +1717,18 @@ const OrderManagement = () => {
                           <div className="mt-1 text-sm text-gray-600">
                             {payment.orderData.products.map((product, index) => (
                               <div key={index} className="mb-1">
-        <div>Product: {getVariantAwareTitle(product)}</div>
+                                <div>Product: {getVariantAwareTitle(product)}</div>
                                 <div className="flex flex-wrap gap-2">
                                   <span>Size: {
-                                    product.selectedSize || 
-                                    (product.selectedVariant && product.selectedVariant.size) || 
+                                    product.selectedSize ||
+                                    (product.selectedVariant && product.selectedVariant.size) ||
                                     'N/A'
                                   }</span>
                                   <span>| Height: {payment?.orderData?.receiver_details?.height ?? 'N/A'}</span>
                                 </div>
                                 <div>Product Code: {
-                                  product.productDetails?.productCode || 
-                                  product.productCode || 
+                                  product.productDetails?.productCode ||
+                                  product.productCode ||
                                   'N/A'
                                 }</div>
                               </div>
@@ -1742,7 +1737,7 @@ const OrderManagement = () => {
                         )
                       }
                     </div>
-                      
+
                     <div className="flex flex-wrap gap-2">
                       {/* Download Bill Button */}
                       <button
@@ -1758,7 +1753,7 @@ const OrderManagement = () => {
                         </svg>
                         <span>Download Bill</span>
                       </button>
-                      
+
                       {/* Send Email Button */}
                       <button
                         onClick={() => {
@@ -1773,12 +1768,12 @@ const OrderManagement = () => {
                         </svg>
                         <span>Send Email</span>
                       </button>
-                      
+
                       {(() => {
                         const shipmentInfo = getShipmentInfo(payment.userBag, payment.merchantTxnId);
                         const { label, invoice } = getDocuments(shipmentInfo);
                         const isNepal = isNepalDestination(payment);
-                        
+
                         if (shipmentInfo) {
                           return (
                             <div key={`shipment-${payment.userBag.id}-${payment.merchantTxnId}`} className="mt-2 p-2 bg-gray-50 rounded">
@@ -1789,7 +1784,7 @@ const OrderManagement = () => {
                                 Shipment Created
                               </div>
                               <div className="flex gap-2">
-                                <button 
+                                <button
                                   onClick={() => downloadLabel(shipmentInfo)}
                                   disabled={!label || !label.content}
                                   className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
@@ -1799,7 +1794,7 @@ const OrderManagement = () => {
                                   </svg>
                                   Download Label
                                 </button>
-                                <button 
+                                <button
                                   onClick={() => downloadInvoice(shipmentInfo)}
                                   disabled={!invoice || !invoice.content}
                                   className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
@@ -1815,9 +1810,9 @@ const OrderManagement = () => {
                               </div>
                               {/* Show NCM button only for Nepal orders */}
                               {isNepal && (
-                                <NCMOrderButton 
-                                  payment={payment} 
-                                  bag={payment.userBag} 
+                                <NCMOrderButton
+                                  payment={payment}
+                                  bag={payment.userBag}
                                   onOrderCreated={(orderData, paymentId) => {
                                     console.log('NCM Order created for payment:', paymentId, orderData);
                                     fetchUserBags();
@@ -1831,7 +1826,7 @@ const OrderManagement = () => {
                             <div className="flex flex-col gap-2">
                               {/* Show DHL button only for international orders */}
                               {!isNepal && (
-                                <button 
+                                <button
                                   onClick={() => {
                                     console.log(`Creating DHL shipment for ${payment.userBag.id}`);
                                     createShipment(payment, payment.userBag.documentId);
@@ -1844,12 +1839,12 @@ const OrderManagement = () => {
                                   Create DHL Shipment
                                 </button>
                               )}
-                              
+
                               {/* Show NCM button only for Nepal orders */}
                               {isNepal && (
-                                <NCMOrderButton 
-                                  payment={payment} 
-                                  bag={payment.userBag} 
+                                <NCMOrderButton
+                                  payment={payment}
+                                  bag={payment.userBag}
                                   onOrderCreated={(orderData, paymentId) => {
                                     console.log('NCM Order created for payment:', paymentId, orderData);
                                     fetchUserBags();
@@ -1866,57 +1861,55 @@ const OrderManagement = () => {
               ))
             )}
           </div>
-          
+
           {/* Pagination Controls */}
           {filteredPayments.length > ordersPerPage && (
             <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
               <button
-                 onClick={goToPreviousPage}
-                 disabled={currentPage === 0 || isLoadingPagination}
-                 className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${
-                   currentPage === 0 || isLoadingPagination
-                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                     : 'bg-blue-500 text-white hover:bg-blue-600'
-                 }`}
-               >
-                 {isLoadingPagination && currentPage > 0 ? (
-                   <>
-                     <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                       <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                     </svg>
-                     Loading...
-                   </>
-                 ) : (
-                   'Previous'
-                 )}
-               </button>
-              
+                onClick={goToPreviousPage}
+                disabled={currentPage === 0 || isLoadingPagination}
+                className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${currentPage === 0 || isLoadingPagination
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
+                  }`}
+              >
+                {isLoadingPagination && currentPage > 0 ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Loading...
+                  </>
+                ) : (
+                  'Previous'
+                )}
+              </button>
+
               <span className="text-sm text-gray-600">
                 Page {currentPage + 1} of {Math.ceil(filteredPayments.length / ordersPerPage)}
               </span>
-              
+
               <button
-                 onClick={goToNextPage}
-                 disabled={(currentPage + 1) * ordersPerPage >= filteredPayments.length || isLoadingPagination}
-                 className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${
-                   (currentPage + 1) * ordersPerPage >= filteredPayments.length || isLoadingPagination
-                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                     : 'bg-blue-500 text-white hover:bg-blue-600'
-                 }`}
-               >
-                 {isLoadingPagination && (currentPage + 1) * ordersPerPage < filteredPayments.length ? (
-                   <>
-                     <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                       <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                     </svg>
-                     Loading...
-                   </>
-                 ) : (
-                   'Next'
-                 )}
-               </button>
+                onClick={goToNextPage}
+                disabled={(currentPage + 1) * ordersPerPage >= filteredPayments.length || isLoadingPagination}
+                className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${(currentPage + 1) * ordersPerPage >= filteredPayments.length || isLoadingPagination
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
+                  }`}
+              >
+                {isLoadingPagination && (currentPage + 1) * ordersPerPage < filteredPayments.length ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Loading...
+                  </>
+                ) : (
+                  'Next'
+                )}
+              </button>
             </div>
           )}
         </div>

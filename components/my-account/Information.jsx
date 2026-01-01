@@ -6,7 +6,7 @@ export default function Information() {
   const [passwordType, setPasswordType] = useState("password");
   const [confirmPasswordType, setConfirmPasswordType] = useState("password");
   const [newPasswordType, setNewPasswordType] = useState("password");
-  
+
   const { data: session, status } = useSession();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,11 +30,11 @@ export default function Information() {
               'Content-Type': 'application/json',
             },
           });
-          
+
           if (response.ok) {
             const result = await response.json();
             setUserData(result.user);
-            
+
             // Update form data with user information
             setFormData({
               firstName: result.user?.firstName || session.user?.name?.split(' ')[0] || '',
@@ -304,15 +304,13 @@ export default function Information() {
                 required
               />
               <span
-                className={`toggle-password ${
-                  !(passwordType === "text") ? "unshow" : ""
-                }`}
+                className={`toggle-password ${!(passwordType === "text") ? "unshow" : ""
+                  }`}
                 onClick={togglePassword}
               >
                 <i
-                  className={`icon-eye-${
-                    !(passwordType === "text") ? "hide" : "show"
-                  }-line`}
+                  className={`icon-eye-${!(passwordType === "text") ? "hide" : "show"
+                    }-line`}
                 />
               </span>
             </fieldset>
@@ -328,15 +326,13 @@ export default function Information() {
                 required
               />
               <span
-                className={`toggle-password ${
-                  !(newPasswordType === "text") ? "unshow" : ""
-                }`}
+                className={`toggle-password ${!(newPasswordType === "text") ? "unshow" : ""
+                  }`}
                 onClick={toggleNewPassword}
               >
                 <i
-                  className={`icon-eye-${
-                    !(newPasswordType === "text") ? "hide" : "show"
-                  }-line`}
+                  className={`icon-eye-${!(newPasswordType === "text") ? "hide" : "show"
+                    }-line`}
                 />
               </span>
             </fieldset>
@@ -352,15 +348,13 @@ export default function Information() {
                 required
               />
               <span
-                className={`toggle-password ${
-                  !(confirmPasswordType === "text") ? "unshow" : ""
-                }`}
+                className={`toggle-password ${!(confirmPasswordType === "text") ? "unshow" : ""
+                  }`}
                 onClick={toggleConfirmPassword}
               >
                 <i
-                  className={`icon-eye-${
-                    !(confirmPasswordType === "text") ? "hide" : "show"
-                  }-line`}
+                  className={`icon-eye-${!(confirmPasswordType === "text") ? "hide" : "show"
+                    }-line`}
                 />
               </span>
             </fieldset>
