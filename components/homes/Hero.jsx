@@ -9,7 +9,7 @@ import "swiper/css/autoplay";
 import Image from "next/image";
 import Link from "next/link";
 import { getImageUrl } from "@/utils/imageUtils";
- 
+
 
 export default function Hero({ initialSlidesRaw = null, isMobileInitial = false }) {
   const [slides, setSlides] = useState([]);
@@ -90,21 +90,21 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
 
             fallbackImageUrl = item.poster?.url || item.poster?.formats?.large?.url || mediaUrl;
 
-          return {
-            id: item.id,
-            documentId: item.documentId,
-            imgSrc: getImageUrl(mediaType === 'image' ? mediaUrl : fallbackImageUrl),
-            videoSrc: mediaType === 'video' ? getImageUrl(mediaUrl) : null,
-            audioSrc: mediaType === 'audio' ? getImageUrl(mediaUrl) : null,
-            mediaType,
-            alt: item.alt || "fashion-slideshow",
-            subheading: item.subheading || "",
-            heading: item.heading?.replace("<br/>", "\n") || "",
-            btnText: item.btnText || "Shop Now",
-            poster: item.poster ? getImageUrl(item.poster?.url || item.poster?.formats?.large?.url) : getImageUrl(fallbackImageUrl),
-            // Carry forward videoName for product filtering (prefer mobileMedia name)
-            videoName: item.videoName || item?.mobileMedia?.name || null,
-          };
+            return {
+              id: item.id,
+              documentId: item.documentId,
+              imgSrc: getImageUrl(mediaType === 'image' ? mediaUrl : fallbackImageUrl),
+              videoSrc: mediaType === 'video' ? getImageUrl(mediaUrl) : null,
+              audioSrc: mediaType === 'audio' ? getImageUrl(mediaUrl) : null,
+              mediaType,
+              alt: item.alt || "fashion-slideshow",
+              subheading: item.subheading || "",
+              heading: item.heading?.replace("<br/>", "\n") || "",
+              btnText: item.btnText || "Shop Now",
+              poster: item.poster ? getImageUrl(item.poster?.url || item.poster?.formats?.large?.url) : getImageUrl(fallbackImageUrl),
+              // Carry forward videoName for product filtering (prefer mobileMedia name)
+              videoName: item.videoName || item?.mobileMedia?.name || null,
+            };
           });
           setSlides(transformedSlides);
         } else if (typeof window !== "undefined") {
@@ -156,7 +156,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
     };
 
     fetchSlides();
-    
+
     // Cleanup timeout on unmount
     return () => {
       if (slideTimeoutRef.current) {
@@ -181,13 +181,13 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
     swiperRef.current = swiper;
     const currentIndex = swiper.activeIndex;
     setActiveSlideIndex(currentIndex);
-    
+
     // Clear any existing timeout
     if (slideTimeoutRef.current) {
       clearTimeout(slideTimeoutRef.current);
       slideTimeoutRef.current = null;
     }
-    
+
     // Pause all videos and audio safely
     videoRefs.current.forEach((media, index) => {
       if (media && !media.paused) {
@@ -205,14 +205,14 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
         }
       }
     });
-    
+
     const currentSlide = slides[currentIndex];
-    
+
     // Load and play current video
     if (currentSlide && currentSlide.mediaType === 'video' && currentSlide.videoSrc) {
       // Mark video as should be loaded
       setLoadedVideos(prev => new Set([...prev, currentIndex]));
-      
+
       const currentMedia = videoRefs.current[currentIndex];
       if (currentMedia && currentMedia.tagName === 'VIDEO') {
         // For video slides: wait for video to end
@@ -224,11 +224,11 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
           handleVideoEnd();
         }, 7000);
       }
-      
+
       // Preload next and previous videos
       const nextIndex = (currentIndex + 1) % slides.length;
       const prevIndex = currentIndex === 0 ? slides.length - 1 : currentIndex - 1;
-      
+
       [nextIndex, prevIndex].forEach(index => {
         const slide = slides[index];
         if (slide && slide.mediaType === 'video' && slide.videoSrc && !loadedVideos.has(index)) {
@@ -250,7 +250,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
     if (swiperRef.current) {
       const currentIndex = swiperRef.current.activeIndex;
       const totalSlides = slides.length;
-      
+
       // Check if we're at the last slide
       if (currentIndex === totalSlides - 1) {
         // Go back to first slide to restart the loop
@@ -319,170 +319,209 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
         
         /* Video loading overlay styles - REMOVED */
       `}</style>
-      
+
       <section className="tf-slideshow slider-default slider-position slider-effect-fade" style={heroWrapperStyle}>
-      {/* Intro overlay image shown instantly before videos are ready */}
-      {showIntroImage && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            zIndex: 5
-          }}
-        >
-          <Image
-            alt={"hero-intro"}
-            src={isMobile ? '/images/tamfall.jpg' : '/images/tafall.jpg'}
-            width={1920}
-            height={803}
-            priority
+        {/* Intro overlay image shown instantly before videos are ready */}
+        {showIntroImage && (
+          <div
             style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
               width: '100%',
               height: '100%',
-              objectFit: 'cover',
-              objectPosition: isMobile ? 'center bottom' : 'center center'
+              zIndex: 5
             }}
-            onLoad={() => {
-              setImageLoaded(true);
-            }}
-                  />
-        </div>
-      )}
-      <Swiper
-        effect="fade"
-        spaceBetween={0}
-        slidesPerView={1}
-        loop={slides.length > 1} // Enable loop only if there are enough slides
-        modules={[EffectFade, Autoplay]}
-        autoplay={false}
-        style={{ height: '100%' }} // Ensure Swiper fills the parent container
+          >
+            <Image
+              alt={"hero-intro"}
+              src={isMobile ? '/images/tamfall.jpg' : '/images/tafall.jpg'}
+              width={1920}
+              height={803}
+              priority
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: isMobile ? 'center bottom' : 'center center'
+              }}
+              onLoad={() => {
+                setImageLoaded(true);
+              }}
+            />
+          </div>
+        )}
+        <Swiper
+          effect="fade"
+          spaceBetween={0}
+          slidesPerView={1}
+          loop={slides.length > 1} // Enable loop only if there are enough slides
+          modules={[EffectFade, Autoplay]}
+          autoplay={false}
+          style={{ height: '100%' }} // Ensure Swiper fills the parent container
 
-        onSlideChange={handleSlideChange}
-        onSwiper={(swiper) => {
-              // Store swiper reference
-              swiperRef.current = swiper;
-              
-              // Initialize first slide by calling handleSlideChange
-              setTimeout(() => {
-                handleSlideChange(swiper);
-              }, 100);
-            }}
-      >
-        {slides.map((slide, index) => {
+          onSlideChange={handleSlideChange}
+          onSwiper={(swiper) => {
+            // Store swiper reference
+            swiperRef.current = swiper;
+
+            // Initialize first slide by calling handleSlideChange
+            setTimeout(() => {
+              handleSlideChange(swiper);
+            }, 100);
+          }}
+        >
+          {slides.map((slide, index) => {
             return (
               <SwiperSlide key={index}>
-              <div className="wrap-slider" style={{...blurStyle, height: '100%', position: 'relative'}}>
-                {/* Loading skeleton for videos - REMOVED */}
-                {slide.mediaType === 'video' && slide.videoSrc ? (
-                  <>
-                    <video
-                      ref={(el) => (videoRefs.current[index] = el)}
-                      width={1920}
-                      height={803}
-                      autoPlay={index === activeSlideIndex}
-                      muted
-                      playsInline
-                      disableRemotePlayback
-                      webkit-playsinline="true"
-                      preload={loadedVideos.has(index) || index === activeSlideIndex ? "auto" : "none"}
-                      poster={index === 0 ? (isMobile ? '/images/tamfall.jpg' : '/images/tafall.jpg') : (slide.poster || slide.imgSrc)}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        objectPosition: isMobile ? 'center bottom' : 'center center',
-                        backgroundColor: 'transparent',
-                      }}
-                      onLoadedData={() => {
-                        setImageLoaded(true);
-                      }}
-                      onLoadStart={async () => {
-                        // Show loading state for current slide
-                        setVideoLoadingStates(prev => new Map(prev.set(index, 'loading')));
-                        if (index === activeSlideIndex) {
-                          setImageLoaded(false);
-                        }
-                        
-                        // Validate video source
-                        if (slide.videoSrc) {
-                          const isValid = await validateVideoSource(slide.videoSrc);
-                          if (!isValid) {
-                            console.warn(`Video source validation failed for slide ${index}:`, slide.videoSrc);
-                            setVideoLoadingStates(prev => new Map(prev.set(index, 'error')));
-                            if (index === activeSlideIndex) {
-                              setImageLoaded(true);
+                <div className="wrap-slider" style={{ ...blurStyle, height: '100%', position: 'relative' }}>
+                  {/* Loading skeleton for videos - REMOVED */}
+                  {slide.mediaType === 'video' && slide.videoSrc ? (
+                    <>
+                      <video
+                        ref={(el) => (videoRefs.current[index] = el)}
+                        width={1920}
+                        height={803}
+                        autoPlay={index === activeSlideIndex}
+                        muted
+                        playsInline
+                        disableRemotePlayback
+                        webkitPlaysinline="true"
+                        x5PlaysinLine="true"
+                        preload={loadedVideos.has(index) || index === activeSlideIndex ? "auto" : "none"}
+                        poster={index === 0 ? (isMobile ? '/images/tamfall.jpg' : '/images/tafall.jpg') : (slide.poster || slide.imgSrc)}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          objectPosition: isMobile ? 'center bottom' : 'center center',
+                          backgroundColor: 'transparent',
+                        }}
+                        onLoadedData={() => {
+                          setImageLoaded(true);
+                        }}
+                        onLoadStart={async () => {
+                          // Show loading state for current slide
+                          setVideoLoadingStates(prev => new Map(prev.set(index, 'loading')));
+                          if (index === activeSlideIndex) {
+                            setImageLoaded(false);
+                          }
+
+                          // Validate video source
+                          if (slide.videoSrc) {
+                            const isValid = await validateVideoSource(slide.videoSrc);
+                            if (!isValid) {
+                              console.warn(`Video source validation failed for slide ${index}:`, slide.videoSrc);
+                              setVideoLoadingStates(prev => new Map(prev.set(index, 'error')));
+                              if (index === activeSlideIndex) {
+                                setImageLoaded(true);
+                              }
                             }
                           }
-                        }
-                      }}
-                      onCanPlay={() => {
-                        // Video is ready to play
-                        setVideoLoadingStates(prev => new Map(prev.set(index, 'ready')));
-                        if (index === activeSlideIndex) {
-                          setImageLoaded(true);
-                          // Auto-play if this is the active slide and video is ready
-                          const video = videoRefs.current[index];
-                          if (video && video.paused) {
-                            playPromisesRef.current[index] = video.play().then(() => {
-                              // Mark first video as truly playing; hide overlay now
-                              if (index === 0) {
-                                setFirstVideoReady(true);
-                                setFirstMediaReady(true);
-                              }
-                            }).catch(() => {
-                              // Autoplay might be blocked; keep overlay until user interaction
-                            });
+                        }}
+                        onCanPlay={() => {
+                          // Video is ready to play
+                          setVideoLoadingStates(prev => new Map(prev.set(index, 'ready')));
+                          if (index === activeSlideIndex) {
+                            setImageLoaded(true);
+                            // Auto-play if this is the active slide and video is ready
+                            const video = videoRefs.current[index];
+                            if (video && video.paused) {
+                              playPromisesRef.current[index] = video.play().then(() => {
+                                // Mark first video as truly playing; hide overlay now
+                                if (index === 0) {
+                                  setFirstVideoReady(true);
+                                  setFirstMediaReady(true);
+                                }
+                              }).catch(() => {
+                                // Autoplay might be blocked; keep overlay until user interaction
+                              });
+                            }
                           }
-                        }
-                      }}
-                      onPlay={() => {
-                        // Fallback in case play() promise didn't resolve (Safari quirks)
-                        if (index === 0 && index === activeSlideIndex) {
-                          setFirstVideoReady(true);
-                          setFirstMediaReady(true);
-                        }
-                      }}
-                      onError={(e) => {
-                        // Handle video loading errors - fallback to image
-                        console.warn(`Video failed to load for slide ${index}, falling back to image. Error:`, e.target.error);
-                        setVideoLoadingStates(prev => new Map(prev.set(index, 'error')));
-                        if (index === activeSlideIndex) {
-                          setImageLoaded(true); // Show fallback image
-                          // Treat as image slide and advance after 5 seconds
-                          slideTimeoutRef.current = setTimeout(() => {
-                            handleVideoEnd();
-                          }, 5000);
-                        }
-                      }}
-                      onEnded={onVideoEnded}
-                    >
-                      {(loadedVideos.has(index) || index === activeSlideIndex) && slide.videoSrc && (
-                        <>
-                          <source src={slide.videoSrc} type="video/mp4" />
-                          {/* Only add webm source if it's actually a webm file */}
-                          {slide.videoSrc.includes('.webm') && (
-                            <source src={slide.videoSrc} type="video/webm" />
-                          )}
-                        </>
-                      )}
-                    </video>
-                  </>
-                ) : slide.mediaType === 'audio' && slide.audioSrc ? (
-                  <div style={{
-                    width: '100%',
-                    height: '100%',
-                    position: 'relative',
-                    backgroundColor: '#1f2937',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
+                        }}
+                        onPlay={() => {
+                          // Fallback in case play() promise didn't resolve (Safari quirks)
+                          if (index === 0 && index === activeSlideIndex) {
+                            setFirstVideoReady(true);
+                            setFirstMediaReady(true);
+                          }
+                        }}
+                        onError={(e) => {
+                          // Handle video loading errors - fallback to image
+                          console.warn(`Video failed to load for slide ${index}, falling back to image. Error:`, e.target.error);
+                          setVideoLoadingStates(prev => new Map(prev.set(index, 'error')));
+                          if (index === activeSlideIndex) {
+                            setImageLoaded(true); // Show fallback image
+                            // Treat as image slide and advance after 5 seconds
+                            slideTimeoutRef.current = setTimeout(() => {
+                              handleVideoEnd();
+                            }, 5000);
+                          }
+                        }}
+                        onEnded={onVideoEnded}
+                      >
+                        {(loadedVideos.has(index) || index === activeSlideIndex) && slide.videoSrc && (
+                          <>
+                            <source src={slide.videoSrc} type="video/mp4" />
+                            {/* Only add webm source if it's actually a webm file */}
+                            {slide.videoSrc.includes('.webm') && (
+                              <source src={slide.videoSrc} type="video/webm" />
+                            )}
+                          </>
+                        )}
+                      </video>
+                    </>
+                  ) : slide.mediaType === 'audio' && slide.audioSrc ? (
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      position: 'relative',
+                      backgroundColor: '#1f2937',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <Image
+                        alt={slide.alt}
+                        src={slide.poster || slide.imgSrc}
+                        width={1920}
+                        height={803}
+                        quality={100}
+                        priority={index === 0}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          opacity: 0.5
+                        }}
+                        onLoad={() => setImageLoaded(true)}
+                      />
+                      <div style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: '320px',
+                        maxWidth: '100%'
+                      }}>
+                        <audio
+                          ref={(el) => (videoRefs.current[index] = el)}
+                          controls
+                          preload="metadata"
+                          style={{
+                            width: '100%'
+                          }}
+                        >
+                          <source src={slide.audioSrc} type="audio/mpeg" />
+                          <source src={slide.audioSrc.replace('.mp3', '.ogg')} type="audio/ogg" />
+                          Your browser does not support the audio element.
+                        </audio>
+                      </div>
+                    </div>
+                  ) : (
                     <Image
                       alt={slide.alt}
-                      src={slide.poster || slide.imgSrc}
+                      src={slide.imgSrc}
                       width={1920}
                       height={803}
                       quality={100}
@@ -491,83 +530,45 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover',
-                        opacity: 0.5
+                        objectPosition: isMobile ? 'center bottom' : 'center center'
                       }}
-                      onLoad={() => setImageLoaded(true)}
+                      onLoad={() => {
+                        setImageLoaded(true);
+                        if (index === 0) setFirstMediaReady(true);
+                      }}
                     />
-                    <div style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      width: '320px',
-                      maxWidth: '100%'
-                    }}>
-                      <audio
-                        ref={(el) => (videoRefs.current[index] = el)}
-                        controls
-                        preload="metadata"
-                        style={{
-                          width: '100%'
-                        }}
-                      >
-                        <source src={slide.audioSrc} type="audio/mpeg" />
-                        <source src={slide.audioSrc.replace('.mp3', '.ogg')} type="audio/ogg" />
-                        Your browser does not support the audio element.
-                      </audio>
-                    </div>
-                  </div>
-                ) : (
-                  <Image
-                    alt={slide.alt}
-                    src={slide.imgSrc}
-                    width={1920}
-                    height={803}
-                    quality={100}
-                    priority={index === 0}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      objectPosition: isMobile ? 'center bottom' : 'center center'
-                    }}
-                    onLoad={() => {
-                      setImageLoaded(true);
-                      if (index === 0) setFirstMediaReady(true);
-                    }}
-                  />
-                )}
-                <div className="box-content" style={contentStyle}>
-                  <div className="content-slider">
-                    <div className="box-title-slider">
-                      <p className="fade-item fade-item-1 subheading text-btn-uppercase text-white">
-                        {slide.subheading}
-                      </p>
-                      <div className="fade-item fade-item-2 heading text-white title-display">
-                        {slide.heading.split("\n").map((line, idx) => (
-                          <span key={idx}>
-                            {line}
-                            <br />
-                          </span>
-                        ))}
+                  )}
+                  <div className="box-content" style={contentStyle}>
+                    <div className="content-slider">
+                      <div className="box-title-slider">
+                        <p className="fade-item fade-item-1 subheading text-btn-uppercase text-white">
+                          {slide.subheading}
+                        </p>
+                        <div className="fade-item fade-item-2 heading text-white title-display">
+                          {slide.heading.split("\n").map((line, idx) => (
+                            <span key={idx}>
+                              {line}
+                              <br />
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                    <div className="fade-item fade-item-3 box-btn-slider">
-                      <Link
-                        href={`/hero-products?slideId=${slide.documentId || slide.id}&btnText=${encodeURIComponent(slide.btnText)}${slide.videoName ? `&videoName=${encodeURIComponent(slide.videoName)}` : ''}`}
-                        className="tf-btn btn-fill btn-white"
-                      >
-                        <span className="text">{slide.btnText}</span>
-                        <i className="icon icon-arrowUpRight" />
-                      </Link>
+                      <div className="fade-item fade-item-3 box-btn-slider">
+                        <Link
+                          href={`/hero-products?slideId=${slide.documentId || slide.id}&btnText=${encodeURIComponent(slide.btnText)}${slide.videoName ? `&videoName=${encodeURIComponent(slide.videoName)}` : ''}`}
+                          className="tf-btn btn-fill btn-white"
+                        >
+                          <span className="text">{slide.btnText}</span>
+                          <i className="icon icon-arrowUpRight" />
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </SwiperSlide>
-          )
-        })}
-      </Swiper>
+              </SwiperSlide>
+            )
+          })}
+        </Swiper>
       </section>
     </>
   );
