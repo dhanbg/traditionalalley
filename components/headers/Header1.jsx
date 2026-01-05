@@ -56,8 +56,8 @@ export default function Header1({ fullWidth = false }) {
     >
       <div className={fullWidth ? "" : "container"}>
         <div className="row wrapper-header align-items-center" style={{
-          minHeight: '70px',
-          padding: isMobile ? '20px 15px' : '0 15px'
+          minHeight: isMobile ? '60px' : '70px',
+          padding: isMobile ? '8px 10px' : '0 15px'
         }}>
           <div className="col-md-4 col-3 d-xl-none">
             <div className="d-flex align-items-center">

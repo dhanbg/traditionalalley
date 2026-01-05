@@ -129,8 +129,8 @@ export default function Home({
 }) {
     return (
         <>
-            {/* Customization Popup */}
-            <CouponPopup />
+            {/* Customization Popup - Disabled (New Year is over) */}
+            {/* <CouponPopup /> */}
 
 
             {/* Payment Status Message */}

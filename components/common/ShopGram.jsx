@@ -114,8 +114,7 @@ const AutoplayVideoPlayer = ({ src, poster, alt }) => {
         muted
         loop
         playsInline
-        webkitPlaysinline="true"
-        x5PlaysinLine="true"
+        webkit-playsinline="true"
         preload="metadata"
       />
     </div>

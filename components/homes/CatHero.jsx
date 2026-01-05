@@ -9,10 +9,7 @@ export default function Hero() {
             src="/images/video/ta.mp4"
             autoPlay
             muted
-            defaultMuted
             playsInline
-            webkitPlaysinline="true"
-            x5PlaysinLine="true"
             loop
             suppressHydrationWarning={true}
           />

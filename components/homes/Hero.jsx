@@ -386,8 +386,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                         muted
                         playsInline
                         disableRemotePlayback
-                        webkitPlaysinline="true"
-                        x5PlaysinLine="true"
+                        webkit-playsinline="true"
                         preload={loadedVideos.has(index) || index === activeSlideIndex ? "auto" : "none"}
                         poster={index === 0 ? (isMobile ? '/images/tamfall.jpg' : '/images/tafall.jpg') : (slide.poster || slide.imgSrc)}
                         style={{
