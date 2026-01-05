@@ -19,17 +19,22 @@ export default function PromoHero() {
   ];
 
   useEffect(() => {
-    // Ensure videos play on iOS
-    if (desktopVideoRef.current) {
-      desktopVideoRef.current.play().catch(err => {
-        console.log("Desktop video autoplay failed:", err);
-      });
-    }
-    if (mobileVideoRef.current) {
-      mobileVideoRef.current.play().catch(err => {
-        console.log("Mobile video autoplay failed:", err);
-      });
-    }
+    // Ensure videos play on iOS by setting properties directly
+    const playVideo = (videoRef) => {
+      if (videoRef.current) {
+        const video = videoRef.current;
+        video.muted = true;
+        video.defaultMuted = true;
+        video.playsInline = true;
+
+        video.play().catch(err => {
+          console.log("Video autoplay failed:", err);
+        });
+      }
+    };
+
+    playVideo(desktopVideoRef);
+    playVideo(mobileVideoRef);
   }, [desktopVideoIndex, mobileVideoIndex]);
 
   const handleDesktopVideoEnd = () => {
@@ -43,14 +48,21 @@ export default function PromoHero() {
   };
 
   return (
-    <section className={styles.promoHero}>
+    <section className={styles.promoHero} onClick={() => {
+      // Fallback: tap to play if autoplay failed
+      if (desktopVideoRef.current && desktopVideoRef.current.paused) desktopVideoRef.current.play();
+      if (mobileVideoRef.current && mobileVideoRef.current.paused) mobileVideoRef.current.play();
+    }}>
       {/* Desktop Video */}
       <video
         ref={desktopVideoRef}
         className={`${styles.heroVideo} ${styles.heroVideoDesktop}`}
         autoPlay
         muted
+        loop={false}
         playsInline
+        webkit-playsinline="true"
+        x5-playsinline="true"
         preload="metadata"
         onEnded={handleDesktopVideoEnd}
         poster={desktopVideoIndex === 0 ? "https://3d7fptzn6w.ucarecd.net/53d24748-46d1-4f2e-af56-386f2b514de8/tafall.jpg" : undefined}
@@ -67,7 +79,10 @@ export default function PromoHero() {
           }`}
         autoPlay
         muted
+        loop={false}
         playsInline
+        webkit-playsinline="true"
+        x5-playsinline="true"
         preload="metadata"
         onEnded={handleMobileVideoEnd}
         poster={mobileVideoIndex === 0 ? "https://3d7fptzn6w.ucarecd.net/27c5b77e-f005-4442-8feb-998c176af48d/tamfall.jpg" : undefined}
@@ -79,6 +94,3 @@ export default function PromoHero() {
     </section>
   );
 }
-
-
-
