@@ -25,13 +25,18 @@ export const detectUserCountry = async () => {
 
     // Method 2: Try to get from IP geolocation (free service)
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
       const response = await fetch('https://ipapi.co/json/', {
-        timeout: 5000
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
       const data = await response.json();
       return data.country_code || 'US';
     } catch (ipError) {
-      console.log('IP geolocation failed, using timezone fallback');
+      // Silently handle IP geolocation errors
     }
 
     // Method 3: Check browser language
@@ -43,7 +48,7 @@ export const detectUserCountry = async () => {
     // Default to US for global users
     return 'US';
   } catch (error) {
-    console.warn('Country detection failed, defaulting to US:', error.message);
+    console.error('Country detection failed:', error);
     return 'US'; // Default fallback
   }
 };
@@ -61,9 +66,15 @@ export const getExchangeRate = async () => {
   }
 
   try {
+    // Create AbortController for timeout (browser-compatible)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     const response = await fetch(EXCHANGE_API_URL, {
-      timeout: 10000
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
     const data = await response.json();
 
     if (data.rates && data.rates.NPR) {
@@ -75,7 +86,11 @@ export const getExchangeRate = async () => {
       return data.rates.NPR;
     }
   } catch (error) {
-    console.warn('Failed to fetch exchange rate, using fallback:', error.message);
+    // Silently handle errors and use fallback rate
+    // This is expected behavior when API is unreachable or times out
+    if (error.name !== 'AbortError') {
+      console.warn('Exchange rate API unavailable, using fallback rate');
+    }
   }
 
   // Return cached rate or fallback

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import ProductCard1 from "@/components/productCards/ProductCard1";
 import { fetchTopPicksItems } from "@/utils/productVariantUtils";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Pagination, Autoplay } from "swiper/modules";
+import { Navigation, Pagination, Autoplay } from "swiper/modules";
 
 export default function TopPicks({ initialProducts = [], initialMeta = null }) {
   const [products, setProducts] = useState(initialProducts);
@@ -44,7 +44,7 @@ export default function TopPicks({ initialProducts = [], initialMeta = null }) {
 
         <div className="products-carousel wow fadeInUp" data-wow-delay="0.2s">
           <Swiper
-            modules={[Pagination, Autoplay]}
+            modules={[Navigation, Pagination, Autoplay]}
             spaceBetween={20}
             slidesPerView={1.2}
             centeredSlides={false}
@@ -53,6 +53,10 @@ export default function TopPicks({ initialProducts = [], initialMeta = null }) {
               delay: 4000,
               disableOnInteraction: false,
               pauseOnMouseEnter: true,
+            }}
+            navigation={{
+              prevEl: ".tp-prev",
+              nextEl: ".tp-next",
             }}
             pagination={{
               clickable: true,
@@ -87,6 +91,18 @@ export default function TopPicks({ initialProducts = [], initialMeta = null }) {
               </SwiperSlide>
             ))}
           </Swiper>
+
+          {/* Custom Navigation Arrows */}
+          <button className="tp-nav-btn tp-prev" aria-label="Previous slide">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <button className="tp-nav-btn tp-next" aria-label="Next slide">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
 
           <div className="tp-pagination"></div>
         </div>
@@ -154,6 +170,42 @@ export default function TopPicks({ initialProducts = [], initialMeta = null }) {
           transform: translateY(-8px);
         }
 
+        /* Custom Navigation Buttons */
+        .tp-nav-btn {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.9);
+          border: 1px solid rgba(0, 0, 0, 0.1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          z-index: 10;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+          color: #1a1a1a;
+        }
+
+        .tp-nav-btn:hover {
+          background: #000;
+          color: #fff;
+          border-color: #000;
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+          transform: translateY(-50%) scale(1.1);
+        }
+
+        .tp-prev {
+          left: 0;
+        }
+
+        .tp-next {
+          right: 0;
+        }
+
         .tp-pagination {
           margin-top: 40px;
           display: flex;
@@ -173,6 +225,12 @@ export default function TopPicks({ initialProducts = [], initialMeta = null }) {
 
           .section-subtitle {
             font-size: 0.95rem;
+          }
+
+          .tp-nav-btn {
+            width: 40px;
+            height: 40px;
+            display: none; /* Hide arrows on mobile for cleaner look */
           }
           
           .products-carousel {
