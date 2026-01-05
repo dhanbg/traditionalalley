@@ -12,6 +12,8 @@
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
     "@popperjs/core": "^2.11.8",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "@types/bcryptjs": "^3.0.0",
     "@types/nodemailer": "^6.4.17",
     "@wethegit/react-autoplay-video": "^1.0.4",
@@ -37,7 +39,8 @@
     "react-range-slider-input": "^3.0.7",
     "sass": "^1.82.0",
     "svix": "^1.60.1",
-    "swiper": "^11.1.15"
+    "swiper": "^11.1.15",
+    "three": "^0.182.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

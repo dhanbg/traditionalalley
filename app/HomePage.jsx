@@ -20,142 +20,142 @@ import CouponPopup from "@/components/common/CouponPopup";
 
 
 function PaymentMessageHandler() {
-  const searchParams = useSearchParams();
-  const [paymentMessage, setPaymentMessage] = useState(null);
+    const searchParams = useSearchParams();
+    const [paymentMessage, setPaymentMessage] = useState(null);
 
-  useEffect(() => {
-    const payment = searchParams.get('payment');
-    if (payment) {
-      switch (payment) {
-        case 'success':
-          setPaymentMessage({
-            type: 'success',
-            title: '🎉 Payment Successful!',
-            message: 'Your order has been processed successfully. Thank you for shopping with Traditional Alley!'
-          });
-          break;
-        case 'failed':
-          setPaymentMessage({
-            type: 'error',
-            title: '❌ Payment Failed',
-            message: 'Your payment could not be processed. Please try again or contact support.'
-          });
-          break;
-        case 'pending':
-          setPaymentMessage({
-            type: 'warning',
-            title: '⏳ Payment Pending',
-            message: 'Your payment is being processed. We will notify you once it is confirmed.'
-          });
-          break;
-        case 'error':
-          setPaymentMessage({
-            type: 'error',
-            title: '⚠️ Payment Error',
-            message: 'An error occurred while processing your payment. Please try again.'
-          });
-          break;
-      }
+    useEffect(() => {
+        const payment = searchParams.get('payment');
+        if (payment) {
+            switch (payment) {
+                case 'success':
+                    setPaymentMessage({
+                        type: 'success',
+                        title: '🎉 Payment Successful!',
+                        message: 'Your order has been processed successfully. Thank you for shopping with Traditional Alley!'
+                    });
+                    break;
+                case 'failed':
+                    setPaymentMessage({
+                        type: 'error',
+                        title: '❌ Payment Failed',
+                        message: 'Your payment could not be processed. Please try again or contact support.'
+                    });
+                    break;
+                case 'pending':
+                    setPaymentMessage({
+                        type: 'warning',
+                        title: '⏳ Payment Pending',
+                        message: 'Your payment is being processed. We will notify you once it is confirmed.'
+                    });
+                    break;
+                case 'error':
+                    setPaymentMessage({
+                        type: 'error',
+                        title: '⚠️ Payment Error',
+                        message: 'An error occurred while processing your payment. Please try again.'
+                    });
+                    break;
+            }
 
-      // Auto-hide message after 10 seconds
-      const timer = setTimeout(() => {
-        setPaymentMessage(null);
-        // Remove payment parameter from URL
-        const url = new URL(window.location);
-        url.searchParams.delete('payment');
-        window.history.replaceState({}, '', url);
-      }, 10000);
+            // Auto-hide message after 10 seconds
+            const timer = setTimeout(() => {
+                setPaymentMessage(null);
+                // Remove payment parameter from URL
+                const url = new URL(window.location);
+                url.searchParams.delete('payment');
+                window.history.replaceState({}, '', url);
+            }, 10000);
 
-      return () => clearTimeout(timer);
-    }
-  }, [searchParams]);
+            return () => clearTimeout(timer);
+        }
+    }, [searchParams]);
 
-  return (
-    paymentMessage && (
-      <div style={{
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        zIndex: 9999,
-        backgroundColor: paymentMessage.type === 'success' ? '#d4edda' :
-          paymentMessage.type === 'warning' ? '#fff3cd' : '#f8d7da',
-        color: paymentMessage.type === 'success' ? '#155724' :
-          paymentMessage.type === 'warning' ? '#856404' : '#721c24',
-        border: `1px solid ${paymentMessage.type === 'success' ? '#c3e6cb' :
-          paymentMessage.type === 'warning' ? '#ffeaa7' : '#f5c6cb'}`,
-        borderRadius: '8px',
-        padding: '15px 20px',
-        maxWidth: '400px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        animation: 'slideInRight 0.5s ease-out'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 'bold' }}>
-              {paymentMessage.title}
-            </h4>
-            <p style={{ margin: '0', fontSize: '14px', lineHeight: '1.4' }}>
-              {paymentMessage.message}
-            </p>
-          </div>
-          <button
-            onClick={() => setPaymentMessage(null)}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '18px',
-              cursor: 'pointer',
-              padding: '0',
-              marginLeft: '15px',
-              color: 'inherit',
-              opacity: 0.7
-            }}
-          >
-            ×
-          </button>
-        </div>
-      </div>
-    )
-  );
+    return (
+        paymentMessage && (
+            <div style={{
+                position: 'fixed',
+                top: '20px',
+                right: '20px',
+                zIndex: 9999,
+                backgroundColor: paymentMessage.type === 'success' ? '#d4edda' :
+                    paymentMessage.type === 'warning' ? '#fff3cd' : '#f8d7da',
+                color: paymentMessage.type === 'success' ? '#155724' :
+                    paymentMessage.type === 'warning' ? '#856404' : '#721c24',
+                border: `1px solid ${paymentMessage.type === 'success' ? '#c3e6cb' :
+                    paymentMessage.type === 'warning' ? '#ffeaa7' : '#f5c6cb'}`,
+                borderRadius: '8px',
+                padding: '15px 20px',
+                maxWidth: '400px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                animation: 'slideInRight 0.5s ease-out'
+            }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                        <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 'bold' }}>
+                            {paymentMessage.title}
+                        </h4>
+                        <p style={{ margin: '0', fontSize: '14px', lineHeight: '1.4' }}>
+                            {paymentMessage.message}
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => setPaymentMessage(null)}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            fontSize: '18px',
+                            cursor: 'pointer',
+                            padding: '0',
+                            marginLeft: '15px',
+                            color: 'inherit',
+                            opacity: 0.7
+                        }}
+                    >
+                        ×
+                    </button>
+                </div>
+            </div>
+        )
+    );
 }
 
 export default function Home({
-  initialHeroSlidesRaw = [],
-  initialOfferData = null,
-  initialTopPicks = [],
-  initialTopPicksMeta = null,
-  initialInstagramPosts = [],
-  isMobileInitial = false
+    initialHeroSlidesRaw = [],
+    initialOfferData = null,
+    initialTopPicks = [],
+    initialTopPicksMeta = null,
+    initialInstagramPosts = [],
+    isMobileInitial = false
 }) {
-  return (
-    <>
-      {/* Customization Popup */}
-      <CouponPopup />
+    return (
+        <>
+            {/* Customization Popup - Disabled (New Year is over) */}
+            {/* <CouponPopup /> */}
 
 
-      {/* Payment Status Message */}
-      <Suspense fallback={<div style={{ display: 'none' }}>Loading payment status...</div>}>
-        <PaymentMessageHandler />
-      </Suspense>
+            {/* Payment Status Message */}
+            <Suspense fallback={<div style={{ display: 'none' }}>Loading payment status...</div>}>
+                <PaymentMessageHandler />
+            </Suspense>
 
-      {/* <Topbar /> */}
-      <Header1 />
-      <MarqueeSection />
-      {/* <Hero initialSlidesRaw={initialHeroSlidesRaw} isMobileInitial={isMobileInitial} /> */}
-      <PromoHero />
-      {/* <Collections /> */}
-      {/* <Products /> */}
-      {/* <BannerCollection /> */}
-      <BannerCountdown initialOfferData={initialOfferData} />
-      {/* <Testimonials3 /> */}
-      <TopPicks initialProducts={initialTopPicks} initialMeta={initialTopPicksMeta} />
-      {/* <InstagramVideoCards initialPosts={initialInstagramPosts} /> */}
-      {/* <Features /> */}
-      {/* <Blogs /> */}
-      <Footer1 hasPaddingBottom />
+            {/* <Topbar /> */}
+            <Header1 />
+            <MarqueeSection />
+            {/* <Hero initialSlidesRaw={initialHeroSlidesRaw} isMobileInitial={isMobileInitial} /> */}
+            <PromoHero />
+            {/* <Collections /> */}
+            {/* <Products /> */}
+            {/* <BannerCollection /> */}
+            <BannerCountdown initialOfferData={initialOfferData} />
+            {/* <Testimonials3 /> */}
+            <TopPicks initialProducts={initialTopPicks} initialMeta={initialTopPicksMeta} />
+            {/* <InstagramVideoCards initialPosts={initialInstagramPosts} /> */}
+            {/* <Features /> */}
+            {/* <Blogs /> */}
+            <Footer1 hasPaddingBottom />
 
-      {/* CSS for animation */}
-      <style jsx>{`
+            {/* CSS for animation */}
+            <style jsx>{`
         @keyframes slideInRight {
           from {
             transform: translateX(100%);
@@ -167,6 +167,6 @@ export default function Home({
           }
         }
       `}</style>
-    </>
-  );
+        </>
+    );
 }

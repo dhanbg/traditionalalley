@@ -1,14 +1,35 @@
 .promoHero {
-  width: 100%;
-  position: relative;
-  display: block;
-  line-height: 0;
-  /* Removes bottom space for inline-block images */
+    width: 100%;
+    position: relative;
+    display: block;
+    line-height: 0;
+    overflow: hidden;
+    background: #000;
 }
 
-.heroImage {
-  width: 100%;
-  height: auto;
-  display: block;
-  object-fit: cover;
+.heroVideo {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+}
+
+/* Show desktop video by default, hide mobile */
+.heroVideoDesktop {
+    display: block !important;
+}
+
+.heroVideoMobile {
+    display: none !important;
+}
+
+/* On mobile screens, hide desktop and show mobile */
+@media (max-width: 768px) {
+    .heroVideoDesktop {
+        display: none !important;
+    }
+
+    .heroVideoMobile {
+        display: block !important;
+    }
 }

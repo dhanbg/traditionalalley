@@ -21,7 +21,7 @@ const EnhancedWhatsApp = () => {
 
     // Show temporary message when page loads
     const timer = setTimeout(() => {
-      // setShowTempMessage(true);
+      setShowTempMessage(true);
       // Only play notification sound if user has interacted
       if (userInteracted) {
         playNotificationSound();

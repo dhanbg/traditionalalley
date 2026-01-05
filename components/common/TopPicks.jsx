@@ -1,263 +1,182 @@
 "use client";
-import ProductCard1 from "@/components/productCards/ProductCard1";
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
-import { fetchDataFromApi } from "@/utils/api";
+import ProductCard1 from "@/components/productCards/ProductCard1";
 import { fetchTopPicksItems } from "@/utils/productVariantUtils";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination } from "swiper/modules";
+import { Pagination, Autoplay } from "swiper/modules";
 
-const DEFAULT_IMAGE = '/logo.png';
+export default function TopPicks({ initialProducts = [], initialMeta = null }) {
+  const [products, setProducts] = useState(initialProducts);
+  const [loading, setLoading] = useState(!initialProducts.length);
+  const [meta, setMeta] = useState(initialMeta);
 
-export default function TopPicks({ parentClass = "flat-spacing-3 pt-5 pb-2", initialProducts = null, initialMeta = null }) {
-  const [topPicksData, setTopPicksData] = useState(null);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // We're now using fetchProductsWithVariants which handles all the transformation
-
-  // Fetch top picks data from the backend
   useEffect(() => {
-    const fetchTopPicks = async () => {
-      try {
-        setLoading(true);
-        const topPicksItems = await fetchTopPicksItems();
-        if (topPicksItems && topPicksItems.length > 0) {
-          setProducts(topPicksItems);
-          setError(null);
-        } else {
-          setError("No active top picks found");
-          setProducts([]);
-        }
+    if (!initialProducts.length) {
+      const loadData = async () => {
         try {
-          const metaResponse = await fetchDataFromApi('/api/top-picks?fields=heading,subheading,isActive');
-          if (metaResponse?.data && metaResponse.data.length > 0) {
-            const meta = metaResponse.data[0];
-            if (meta?.isActive !== false) {
-              setTopPicksData({ heading: meta.heading, subheading: meta.subheading });
-            } else {
-              setTopPicksData(null);
-            }
-          }
-        } catch (metaErr) {
-          console.warn('Top Picks heading fetch failed:', metaErr);
+          setLoading(true);
+          const items = await fetchTopPicksItems();
+          setProducts(items || []);
+        } catch (err) {
+          console.error("Failed to load top picks", err);
+        } finally {
+          setLoading(false);
         }
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching top picks:', error);
-        setError(`Error fetching top picks: ${error.message || "Unknown error"}`);
-        setProducts([]);
-        setLoading(false);
-      }
-    };
-
-    if (initialProducts && Array.isArray(initialProducts)) {
-      setProducts(initialProducts);
-      setTopPicksData(initialMeta || null);
-      setError(null);
-      setLoading(false);
-      return;
+      };
+      loadData();
     }
-    fetchTopPicks();
-  }, [initialProducts, initialMeta]);
+  }, [initialProducts]);
+
+  if (!loading && products.length === 0) return null;
 
   return (
-    <section className={`flat-spacing ${parentClass}`}>
+    <section className="top-picks-section">
       <div className="container">
-        <div className="heading-section text-center wow fadeInUp" data-wow-delay="0s">
-          <h3 className="heading">
-            {topPicksData?.heading || "Top Picks"}
-          </h3>
-          {topPicksData?.subheading && (
-            <p className="sub-title wow fadeInUp" data-wow-delay="0.1s">
-              {topPicksData.subheading}
-            </p>
-          )}
+        <div className="section-header text-center wow fadeInUp">
+          <h2 className="section-title">
+            {meta?.heading || "CURATED FOR YOU"}
+          </h2>
+          <p className="section-subtitle">
+            {meta?.subheading || "Discover our most loved styles this season"}
+          </p>
+          <div className="title-underline"></div>
         </div>
 
-        <div className="flat-animate-tab wow fadeInUp" data-wow-delay="0.2s" style={{ overflow: "visible" }}>
-          <div className="tab-content">
-            <div className="tab-pane active show" role="tabpanel">
-              {loading ? (
-                <div className="text-center py-5">
-                  <div className="tf-loading-spinner">
-                    <div className="spinner"></div>
-                    <p className="loading-text">Loading top picks...</p>
-                  </div>
+        <div className="products-carousel wow fadeInUp" data-wow-delay="0.2s">
+          <Swiper
+            modules={[Pagination, Autoplay]}
+            spaceBetween={20}
+            slidesPerView={1.2}
+            centeredSlides={false}
+            loop={products.length > 4}
+            autoplay={{
+              delay: 4000,
+              disableOnInteraction: false,
+              pauseOnMouseEnter: true,
+            }}
+            pagination={{
+              clickable: true,
+              el: ".tp-pagination",
+              dynamicBullets: true,
+            }}
+            breakpoints={{
+              576: {
+                slidesPerView: 2,
+                spaceBetween: 20,
+              },
+              768: {
+                slidesPerView: 3,
+                spaceBetween: 25,
+              },
+              1024: {
+                slidesPerView: 4,
+                spaceBetween: 30,
+              },
+              1280: {
+                slidesPerView: 4,
+                spaceBetween: 30,
+              }
+            }}
+            className="top-picks-swiper"
+          >
+            {products.map((product, i) => (
+              <SwiperSlide key={product.id || i}>
+                <div className="product-card-wrapper">
+                  <ProductCard1 product={product} />
                 </div>
-              ) : error ? (
-                <div className="text-center py-5">
-                  <div className="error-state">
-                    <div className="error-icon">⚠️</div>
-                    <p className="error-message">{error}</p>
-                    <button
-                      className="btn-retry"
-                      onClick={() => window.location.reload()}
-                    >
-                      Try Again
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="flat-collection-circle wow fadeInUp" data-wow-delay="0.3s">
-                    <div dir="ltr" className="swiper tf-sw-collection">
-                      <Swiper
-                        slidesPerView={4} // For default screens (large screens)
-                        spaceBetween={15} // Default space between slides
-                        breakpoints={{
-                          1200: {
-                            slidesPerView: 5, // For large screens - 5 products
-                            spaceBetween: 15,
-                          },
-                          992: {
-                            slidesPerView: 5, // For laptop screens - 5 products
-                            spaceBetween: 15,
-                          },
-                          768: {
-                            slidesPerView: 2, // For mobile screens
-                            spaceBetween: 15,
-                          },
-                          0: {
-                            slidesPerView: 2, // For small mobile screens - show 2 cards per row
-                            spaceBetween: 10,
-                          },
-                        }}
-                        modules={[Pagination, Navigation]}
-                        pagination={{
-                          clickable: true,
-                          el: ".spd-toppicks",
-                        }}
-                        navigation={{
-                          prevEl: ".snbp-toppicks",
-                          nextEl: ".snbn-toppicks",
-                        }}
-                      >
-                        {products.length > 0 ? (
-                          products.map((product, i) => (
-                            <SwiperSlide key={i}>
-                              <div className="product-item-wrapper wow fadeInUp" data-wow-delay={`${0.1 * (i + 1)}s`}>
-                                <ProductCard1 product={product} />
-                              </div>
-                            </SwiperSlide>
-                          ))
-                        ) : (
-                          <SwiperSlide>
-                            <div className="col-12 text-center py-5">
-                              <div className="empty-state">
-                                <div className="empty-icon">🛍️</div>
-                                <p className="empty-message">No top picks products found</p>
-                              </div>
-                            </div>
-                          </SwiperSlide>
-                        )}
-                      </Swiper>
-                      <div className="d-flex d-lg-none sw-pagination-collection sw-dots type-circle justify-content-center spd-toppicks" />
-                    </div>
-                    <div className="nav-prev-collection d-none d-lg-flex nav-sw style-line nav-sw-left snbp-toppicks">
-                      <i className="icon icon-arrLeft" />
-                    </div>
-                    <div className="nav-next-collection d-none d-lg-flex nav-sw style-line nav-sw-right snbn-toppicks">
-                      <i className="icon icon-arrRight" />
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+
+          <div className="tp-pagination"></div>
         </div>
       </div>
 
       <style jsx>{`
-        .product-item-wrapper {
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        .top-picks-section {
+          padding: 80px 0;
+          background: linear-gradient(to bottom, #ffffff, #fcfcfc);
+          position: relative;
+          overflow: hidden;
         }
-        .product-item-wrapper:hover {
-          transform: translateY(-5px);
+
+        .section-header {
+          margin-bottom: 50px;
+          position: relative;
         }
-        .heading-section .heading {
+
+        .section-title {
           font-size: 2.5rem;
-          font-weight: 600;
-          color: #333;
+          font-weight: 700;
+          color: #1a1a1a;
           margin-bottom: 10px;
+          letter-spacing: -0.02em;
+          text-transform: uppercase;
         }
-        .heading-section .sub-title {
+
+        .section-subtitle {
           font-size: 1.1rem;
           color: #666;
-          margin-bottom: 0;
-          max-width: 600px;
-          margin-left: auto;
-          margin-right: auto;
+          font-weight: 400;
+          margin-bottom: 20px;
         }
-        .tf-loading-spinner {
+
+        .title-underline {
+          width: 60px;
+          height: 3px;
+          background: #000;
+          margin: 0 auto;
+          position: relative;
+        }
+        
+        .title-underline::after {
+          content: '';
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          background: #000;
+          opacity: 0.3;
+          top: 4px;
+          left: 4px;
+        }
+
+        .products-carousel {
+          position: relative;
+          padding: 0 20px;
+        }
+
+        .product-card-wrapper {
+          transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+          height: 100%;
+        }
+
+        .product-card-wrapper:hover {
+          transform: translateY(-8px);
+        }
+
+        .tp-pagination {
+          margin-top: 40px;
           display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 15px;
-          padding: 40px 20px;
+          justify-content: center;
+          gap: 6px;
         }
-        .spinner {
-          width: 50px;
-          height: 50px;
-          border: 3px solid #f3f3f3;
-          border-top: 3px solid #e43131;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-        .loading-text {
-          color: #666;
-          font-size: 14px;
-          margin: 0;
-        }
-        .error-state {
-          padding: 40px 20px;
-        }
-        .error-icon {
-          font-size: 48px;
-          margin-bottom: 15px;
-        }
-        .error-message {
-          color: #dc3545;
-          font-size: 16px;
-          margin-bottom: 20px;
-        }
-        .btn-retry {
-          background: #e43131;
-          color: white;
-          border: none;
-          padding: 10px 20px;
-          border-radius: 5px;
-          cursor: pointer;
-          font-size: 14px;
-          transition: background-color 0.3s ease;
-        }
-        .btn-retry:hover {
-          background: #c82828;
-        }
-        .empty-state {
-          padding: 60px 20px;
-        }
-        .empty-icon {
-          font-size: 64px;
-          margin-bottom: 20px;
-          opacity: 0.5;
-        }
-        .empty-message {
-          color: #666;
-          font-size: 18px;
-          margin: 0;
-        }
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
+
+        /* Responsive Adjustments */
         @media (max-width: 768px) {
-          .heading-section .heading {
-            font-size: 2rem;
+          .top-picks-section {
+            padding: 50px 0;
           }
-          .heading-section .sub-title {
-            font-size: 1rem;
+
+          .section-title {
+            font-size: 1.8rem;
+          }
+
+          .section-subtitle {
+            font-size: 0.95rem;
+          }
+          
+          .products-carousel {
+            padding: 0;
           }
         }
       `}</style>

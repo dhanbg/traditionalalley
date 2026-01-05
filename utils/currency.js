@@ -43,7 +43,7 @@ export const detectUserCountry = async () => {
     // Default to US for global users
     return 'US';
   } catch (error) {
-    console.error('Country detection failed:', error);
+    console.warn('Country detection failed, defaulting to US:', error.message);
     return 'US'; // Default fallback
   }
 };
@@ -75,7 +75,7 @@ export const getExchangeRate = async () => {
       return data.rates.NPR;
     }
   } catch (error) {
-    console.error('Failed to fetch exchange rate:', error);
+    console.warn('Failed to fetch exchange rate, using fallback:', error.message);
   }
 
   // Return cached rate or fallback

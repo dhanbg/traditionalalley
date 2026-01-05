@@ -783,11 +783,21 @@ const OrderManagement = () => {
       doc.setFont(undefined, 'normal');
       doc.setFontSize(10);
 
+      // Determine estimated delivery based on delivery type
+      let estimatedDelivery = shippingInfo.estimatedDelivery || 'N/A';
+      const deliveryType = shippingInfo.deliveryType || '';
+
+      if (deliveryType.toLowerCase().includes('express')) {
+        estimatedDelivery = '9-11 days';
+      } else if (deliveryType.toLowerCase().includes('economy')) {
+        estimatedDelivery = '16-21 days';
+      }
+
       const shippingInfoLines = [
         `Method: ${shippingInfo.method || 'N/A'}`,
         `Delivery Type: ${shippingInfo.deliveryType || 'Standard'}`,
         `Cost: ${shippingCostText}`,
-        `Estimated Delivery: ${shippingInfo.estimatedDelivery || 'N/A'}`
+        `Estimated Delivery: ${estimatedDelivery}`
       ];
 
       shippingInfoLines.forEach(info => {
@@ -1189,11 +1199,21 @@ const OrderManagement = () => {
       doc.setFont(undefined, 'normal');
       doc.setFontSize(10);
 
+      // Determine estimated delivery based on delivery type
+      let estimatedDelivery = shippingInfo.estimatedDelivery || 'N/A';
+      const deliveryType = shippingInfo.deliveryType || '';
+
+      if (deliveryType.toLowerCase().includes('express')) {
+        estimatedDelivery = '9-11 days';
+      } else if (deliveryType.toLowerCase().includes('economy')) {
+        estimatedDelivery = '16-21 days';
+      }
+
       const shippingInfoLines = [
         `Method: ${shippingInfo.method || 'N/A'}`,
         `Delivery Type: ${shippingInfo.deliveryType || 'Standard'}`,
         `Cost: ${shippingCostText}`,
-        `Estimated Delivery: ${shippingInfo.estimatedDelivery || 'N/A'}`
+        `Estimated Delivery: ${estimatedDelivery}`
       ];
 
       shippingInfoLines.forEach(info => {

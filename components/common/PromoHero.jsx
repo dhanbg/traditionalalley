@@ -1,17 +1,83 @@
-import React from 'react';
-import styles from './PromoHero.module.css';
+"use client";
+import { useEffect, useRef, useState } from "react";
+import styles from "./PromoHero.module.css";
 
 export default function PromoHero() {
-    return (
-        <section className={styles.promoHero}>
-            <picture>
-                <source media="(max-width: 768px)" srcSet="https://raw.githubusercontent.com/dhanbg/traditionalalley/refs/heads/main/public/New%20Year-M.png" />
-                <img
-                    src="https://raw.githubusercontent.com/dhanbg/traditionalalley/refs/heads/main/public/New%20Year-L.png"
-                    alt="New Year Sale"
-                    className={styles.heroImage}
-                />
-            </picture>
-        </section>
-    );
+  const desktopVideoRef = useRef(null);
+  const mobileVideoRef = useRef(null);
+  const [desktopVideoIndex, setDesktopVideoIndex] = useState(0);
+  const [mobileVideoIndex, setMobileVideoIndex] = useState(0);
+
+  const desktopVideos = [
+    "https://3d7fptzn6w.ucarecd.net/fec66701-9757-4c0f-87b2-14ef65ac2778/tavideo1.mp4",
+    "https://3d7fptzn6w.ucarecd.net/b7a9891c-d831-4ba5-9419-2b15c1aee684/tavideo2.mp4"
+  ];
+
+  const mobileVideos = [
+    "https://3d7fptzn6w.ucarecd.net/e28011d0-0fee-4b06-9146-a6ffd5cfe153/tam1.mp4",
+    "https://3d7fptzn6w.ucarecd.net/445a76f8-1193-42e5-8710-b807de05937a/tam2.mp4"
+  ];
+
+  useEffect(() => {
+    // Ensure videos play on iOS
+    if (desktopVideoRef.current) {
+      desktopVideoRef.current.play().catch(err => {
+        console.log("Desktop video autoplay failed:", err);
+      });
+    }
+    if (mobileVideoRef.current) {
+      mobileVideoRef.current.play().catch(err => {
+        console.log("Mobile video autoplay failed:", err);
+      });
+    }
+  }, [desktopVideoIndex, mobileVideoIndex]);
+
+  const handleDesktopVideoEnd = () => {
+    // Switch to next video, loop back to first if at the end
+    setDesktopVideoIndex((prevIndex) => (prevIndex + 1) % desktopVideos.length);
+  };
+
+  const handleMobileVideoEnd = () => {
+    // Switch to next video, loop back to first if at the end
+    setMobileVideoIndex((prevIndex) => (prevIndex + 1) % mobileVideos.length);
+  };
+
+  return (
+    <section className={styles.promoHero}>
+      {/* Desktop Video */}
+      <video
+        ref={desktopVideoRef}
+        className={`${styles.heroVideo} ${styles.heroVideoDesktop}`}
+        autoPlay
+        muted
+        playsInline
+        preload="metadata"
+        onEnded={handleDesktopVideoEnd}
+        poster={desktopVideoIndex === 0 ? "https://3d7fptzn6w.ucarecd.net/53d24748-46d1-4f2e-af56-386f2b514de8/tafall.jpg" : undefined}
+        key={`desktop-${desktopVideoIndex}`}
+      >
+        <source src={desktopVideos[desktopVideoIndex]} type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+
+      {/* Mobile Video */}
+      <video
+        ref={mobileVideoRef}
+        className={`${styles.heroVideo} ${styles.heroVideoMobile}`}
+        autoPlay
+        muted
+        playsInline
+        preload="metadata"
+        onEnded={handleMobileVideoEnd}
+        poster={mobileVideoIndex === 0 ? "https://3d7fptzn6w.ucarecd.net/27c5b77e-f005-4442-8feb-998c176af48d/tamfall.jpg" : undefined}
+        key={`mobile-${mobileVideoIndex}`}
+      >
+        <source src={mobileVideos[mobileVideoIndex]} type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    </section>
+  );
 }
+
+
+
