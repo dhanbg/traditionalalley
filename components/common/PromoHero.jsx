@@ -63,7 +63,8 @@ export default function PromoHero() {
       {/* Mobile Video */}
       <video
         ref={mobileVideoRef}
-        className={`${styles.heroVideo} ${styles.heroVideoMobile}`}
+        className={`${styles.heroVideo} ${styles.heroVideoMobile} ${mobileVideoIndex === 0 ? styles.cropTop : styles.cropBottom
+          }`}
         autoPlay
         muted
         playsInline

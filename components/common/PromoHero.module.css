@@ -31,5 +31,23 @@
 
     .heroVideoMobile {
         display: block !important;
+        width: 100%;
+        object-fit: cover;
+    }
+
+    /* Crop top 10% for tam1 */
+    .cropTop {
+        height: 111.11%;
+        /* 100 / 90 */
+        margin-top: -11.11%;
+        object-position: center bottom;
+    }
+
+    /* Crop bottom 10% for tam2 */
+    .cropBottom {
+        height: 111.11%;
+        /* 100 / 90 */
+        margin-bottom: -11.11%;
+        object-position: center top;
     }
 }

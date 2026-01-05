@@ -14,32 +14,32 @@ export default function Header1({ fullWidth = false }) {
   const router = useRouter();
   const { data: session } = useSession();
   const user = session?.user;
-  
+
   const [isMobile, setIsMobile] = useState(false);
-  
+
   // Helper function to get user avatar with proxy for Google images
   const getUserAvatar = () => {
     if (!user?.image) return null;
-    
+
     // If it's a Google image, use our proxy route to bypass CORS
     if (user.image.includes('googleusercontent.com')) {
       return `/api/proxy-avatar?url=${encodeURIComponent(user.image)}`;
     }
-    
+
     return user.image;
   };
-  
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 767);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-  
+
   return (
     <header
       id="header"
@@ -55,9 +55,9 @@ export default function Header1({ fullWidth = false }) {
       }}
     >
       <div className={fullWidth ? "" : "container"}>
-        <div className="row wrapper-header align-items-center" style={{ 
-          minHeight: '70px', 
-          padding: isMobile ? '20px 15px' : '0 15px'
+        <div className="row wrapper-header align-items-center" style={{
+          minHeight: isMobile ? '60px' : '70px',
+          padding: isMobile ? '8px 10px' : '0 15px'
         }}>
           <div className="col-md-4 col-3 d-xl-none">
             <div className="d-flex align-items-center">
@@ -79,17 +79,17 @@ export default function Header1({ fullWidth = false }) {
               onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
               onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
             >
-              <Image 
-                src="/logo.png" 
-                width={180} 
-                height={48} 
-                alt="Logo" 
+              <Image
+                src="/logo.png"
+                width={180}
+                height={48}
+                alt="Logo"
                 priority
-                style={{ 
-                  width: '180px', 
+                style={{
+                  width: '180px',
                   height: 'auto',
                   filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))'
-                }} 
+                }}
               />
             </Link>
           </div>
@@ -263,30 +263,30 @@ export default function Header1({ fullWidth = false }) {
                             width: '100%',
                             boxSizing: 'border-box'
                           }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                            e.currentTarget.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                            e.currentTarget.style.color = '#ffffff';
-                            e.currentTarget.style.transform = 'scaleY(1.05)';
-                            e.currentTarget.style.boxShadow = 'inset 0 0 20px rgba(102, 126, 234, 0.3)';
-                            const icon = e.currentTarget.querySelector('svg');
-                            if (icon) {
-                              icon.style.transform = 'rotate(5deg) scale(1.1)';
-                              icon.style.filter = 'brightness(0) invert(1)';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                            e.currentTarget.style.background = 'transparent';
-                            e.currentTarget.style.color = 'inherit';
-                            e.currentTarget.style.transform = 'scaleY(1)';
-                            e.currentTarget.style.boxShadow = 'none';
-                            const icon = e.currentTarget.querySelector('svg');
-                            if (icon) {
-                              icon.style.transform = 'rotate(0deg) scale(1)';
-                              icon.style.filter = 'none';
-                            }
-                          }}>
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                              e.currentTarget.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                              e.currentTarget.style.color = '#ffffff';
+                              e.currentTarget.style.transform = 'scaleY(1.05)';
+                              e.currentTarget.style.boxShadow = 'inset 0 0 20px rgba(102, 126, 234, 0.3)';
+                              const icon = e.currentTarget.querySelector('svg');
+                              if (icon) {
+                                icon.style.transform = 'rotate(5deg) scale(1.1)';
+                                icon.style.filter = 'brightness(0) invert(1)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                              e.currentTarget.style.background = 'transparent';
+                              e.currentTarget.style.color = 'inherit';
+                              e.currentTarget.style.transform = 'scaleY(1)';
+                              e.currentTarget.style.boxShadow = 'none';
+                              const icon = e.currentTarget.querySelector('svg');
+                              if (icon) {
+                                icon.style.transform = 'rotate(0deg) scale(1)';
+                                icon.style.filter = 'none';
+                              }
+                            }}>
                             <svg
                               className="icon me-2"
                               width={16}
@@ -329,9 +329,9 @@ export default function Header1({ fullWidth = false }) {
                           overflow: 'hidden',
                           margin: '0 8px'
                         }}>
-                          <a 
-                            className="dropdown-item d-flex align-items-center" 
-                            href="#" 
+                          <a
+                            className="dropdown-item d-flex align-items-center"
+                            href="#"
                             onClick={(e) => {
                               e.preventDefault();
                               signOut();
@@ -463,7 +463,7 @@ export default function Header1({ fullWidth = false }) {
                       onClick={(e) => {
                         e.preventDefault();
                         import('@/utils/openCartModal').then(({ openCartModal }) => {
-                          openCartModal().catch(() => {});
+                          openCartModal().catch(() => { });
                         });
                       }}
                       className="nav-icon-item"
