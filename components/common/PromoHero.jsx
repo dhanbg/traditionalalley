@@ -3,11 +3,15 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./PromoHero.module.css";
 
 export default function PromoHero() {
-  const desktopVideoRef = useRef(null);
-  const mobileVideoRef = useRef(null);
+  const desktopVideoRef1 = useRef(null);
+  const desktopVideoRef2 = useRef(null);
+  const mobileVideoRef1 = useRef(null);
+  const mobileVideoRef2 = useRef(null);
   const [desktopVideoIndex, setDesktopVideoIndex] = useState(0);
   const [mobileVideoIndex, setMobileVideoIndex] = useState(0);
   const [userInteracted, setUserInteracted] = useState(false);
+  const [desktopFading, setDesktopFading] = useState(false);
+  const [mobileFading, setMobileFading] = useState(false);
 
   const desktopVideos = [
     "https://3d7fptzn6w.ucarecd.net/fec66701-9757-4c0f-87b2-14ef65ac2778/tavideo1.mp4",
@@ -36,12 +40,11 @@ export default function PromoHero() {
     const handleUserInteraction = () => {
       if (!userInteracted) {
         setUserInteracted(true);
-        attemptPlay(desktopVideoRef);
-        attemptPlay(mobileVideoRef);
+        attemptPlay(desktopVideoRef1);
+        attemptPlay(mobileVideoRef1);
       }
     };
 
-    // Listen for various user interaction events
     const events = ['touchstart', 'touchend', 'click', 'scroll'];
     events.forEach(event => {
       document.addEventListener(event, handleUserInteraction, { once: true, passive: true });
@@ -54,33 +57,34 @@ export default function PromoHero() {
     };
   }, [userInteracted]);
 
-  // Intersection Observer to play when video is in viewport
+  // Intersection Observer
   useEffect(() => {
     const observerOptions = {
-      threshold: 0.5, // Play when 50% visible
+      threshold: 0.5,
       rootMargin: '0px'
     };
 
     const handleIntersection = (entries) => {
       entries.forEach(entry => {
-        const videoRef = entry.target === desktopVideoRef.current ? desktopVideoRef : mobileVideoRef;
         if (entry.isIntersecting) {
-          attemptPlay(videoRef);
-        } else {
-          if (videoRef?.current && !videoRef.current.paused) {
-            videoRef.current.pause();
+          if (desktopVideoIndex === 0) {
+            attemptPlay(desktopVideoRef1);
+          } else {
+            attemptPlay(desktopVideoRef2);
+          }
+          if (mobileVideoIndex === 0) {
+            attemptPlay(mobileVideoRef1);
+          } else {
+            attemptPlay(mobileVideoRef2);
           }
         }
       });
     };
 
     const observer = new IntersectionObserver(handleIntersection, observerOptions);
-
-    if (desktopVideoRef.current) {
-      observer.observe(desktopVideoRef.current);
-    }
-    if (mobileVideoRef.current) {
-      observer.observe(mobileVideoRef.current);
+    const section = document.querySelector(`.${styles.promoHero}`);
+    if (section) {
+      observer.observe(section);
     }
 
     return () => {
@@ -88,64 +92,64 @@ export default function PromoHero() {
     };
   }, [desktopVideoIndex, mobileVideoIndex]);
 
-  // Try to play when videos change and preload next video
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      attemptPlay(desktopVideoRef);
-      attemptPlay(mobileVideoRef);
-    }, 100);
-
-    // Preload next video to avoid black screen
-    const nextDesktopIndex = (desktopVideoIndex + 1) % desktopVideos.length;
-    const nextMobileIndex = (mobileVideoIndex + 1) % mobileVideos.length;
-
-    // Create hidden link elements to preload next videos
-    const preloadDesktop = document.createElement('link');
-    preloadDesktop.rel = 'preload';
-    preloadDesktop.as = 'video';
-    preloadDesktop.href = desktopVideos[nextDesktopIndex];
-    document.head.appendChild(preloadDesktop);
-
-    const preloadMobile = document.createElement('link');
-    preloadMobile.rel = 'preload';
-    preloadMobile.as = 'video';
-    preloadMobile.href = mobileVideos[nextMobileIndex];
-    document.head.appendChild(preloadMobile);
-
-    return () => {
-      clearTimeout(timer);
-      document.head.removeChild(preloadDesktop);
-      document.head.removeChild(preloadMobile);
-    };
-  }, [desktopVideoIndex, mobileVideoIndex]);
-
   const handleDesktopVideoEnd = () => {
-    // Ensure smooth transition by loading the video before switching
+    setDesktopFading(true);
     const nextIndex = (desktopVideoIndex + 1) % desktopVideos.length;
-    setDesktopVideoIndex(nextIndex);
+    const nextVideoRef = nextIndex === 0 ? desktopVideoRef1 : desktopVideoRef2;
+
+    // Preload and play next video
+    if (nextVideoRef.current) {
+      nextVideoRef.current.load();
+      attemptPlay(nextVideoRef);
+    }
+
+    // Crossfade animation
+    setTimeout(() => {
+      setDesktopVideoIndex(nextIndex);
+      setDesktopFading(false);
+    }, 300);
   };
 
   const handleMobileVideoEnd = () => {
-    // Ensure smooth transition by loading the video before switching
+    setMobileFading(true);
     const nextIndex = (mobileVideoIndex + 1) % mobileVideos.length;
-    setMobileVideoIndex(nextIndex);
+    const nextVideoRef = nextIndex === 0 ? mobileVideoRef1 : mobileVideoRef2;
+
+    // Preload and play next video
+    if (nextVideoRef.current) {
+      nextVideoRef.current.load();
+      attemptPlay(nextVideoRef);
+    }
+
+    // Crossfade animation
+    setTimeout(() => {
+      setMobileVideoIndex(nextIndex);
+      setMobileFading(false);
+    }, 300);
   };
 
-  // Handle direct click on video to play
   const handleVideoClick = (videoRef) => {
-    if (videoRef?.current) {
-      if (videoRef.current.paused) {
-        attemptPlay(videoRef);
-      }
+    if (videoRef?.current && videoRef.current.paused) {
+      attemptPlay(videoRef);
     }
   };
 
   return (
     <section className={styles.promoHero}>
-      {/* Desktop Video */}
+      {/* Desktop Videos - Two elements for crossfade */}
       <video
-        ref={desktopVideoRef}
+        ref={desktopVideoRef1}
         className={`${styles.heroVideo} ${styles.heroVideoDesktop}`}
+        style={{
+          opacity: desktopVideoIndex === 0 && !desktopFading ? 1 : 0,
+          transition: 'opacity 0.3s ease-in-out',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover'
+        }}
         autoPlay
         muted
         playsInline
@@ -154,23 +158,51 @@ export default function PromoHero() {
         disableRemotePlayback
         disablePictureInPicture
         preload="auto"
-        onLoadedData={() => attemptPlay(desktopVideoRef)}
-        onCanPlay={() => attemptPlay(desktopVideoRef)}
+        onLoadedData={() => desktopVideoIndex === 0 && attemptPlay(desktopVideoRef1)}
+        onCanPlay={() => desktopVideoIndex === 0 && attemptPlay(desktopVideoRef1)}
         onEnded={handleDesktopVideoEnd}
-        onLoadStart={() => attemptPlay(desktopVideoRef)}
-        onClick={() => handleVideoClick(desktopVideoRef)}
-        poster={desktopVideoIndex === 0 ? "https://3d7fptzn6w.ucarecd.net/53d24748-46d1-4f2e-af56-386f2b514de8/tafall.jpg" : undefined}
-        key={`desktop-${desktopVideoIndex}`}
+        onClick={() => handleVideoClick(desktopVideoRef1)}
+        poster="https://3d7fptzn6w.ucarecd.net/53d24748-46d1-4f2e-af56-386f2b514de8/tafall.jpg"
       >
-        <source src={desktopVideos[desktopVideoIndex]} type="video/mp4" />
-        Your browser does not support the video tag.
+        <source src={desktopVideos[0]} type="video/mp4" />
       </video>
 
-      {/* Mobile Video */}
       <video
-        ref={mobileVideoRef}
-        className={`${styles.heroVideo} ${styles.heroVideoMobile} ${mobileVideoIndex === 0 ? styles.cropTop : styles.cropBottom
-          }`}
+        ref={desktopVideoRef2}
+        className={`${styles.heroVideo} ${styles.heroVideoDesktop}`}
+        style={{
+          opacity: desktopVideoIndex === 1 && !desktopFading ? 1 : 0,
+          transition: 'opacity 0.3s ease-in-out',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover'
+        }}
+        muted
+        playsInline
+        webkit-playsinline="true"
+        x-webkit-airplay="deny"
+        disableRemotePlayback
+        disablePictureInPicture
+        preload="auto"
+        onLoadedData={() => desktopVideoIndex === 1 && attemptPlay(desktopVideoRef2)}
+        onCanPlay={() => desktopVideoIndex === 1 && attemptPlay(desktopVideoRef2)}
+        onEnded={handleDesktopVideoEnd}
+        onClick={() => handleVideoClick(desktopVideoRef2)}
+      >
+        <source src={desktopVideos[1]} type="video/mp4" />
+      </video>
+
+      {/* Mobile Videos - Two elements for crossfade */}
+      <video
+        ref={mobileVideoRef1}
+        className={`${styles.heroVideo} ${styles.heroVideoMobile} ${styles.cropTop}`}
+        style={{
+          opacity: mobileVideoIndex === 0 && !mobileFading ? 1 : 0,
+          transition: 'opacity 0.3s ease-in-out'
+        }}
         autoPlay
         muted
         playsInline
@@ -179,16 +211,35 @@ export default function PromoHero() {
         disableRemotePlayback
         disablePictureInPicture
         preload="auto"
-        onLoadedData={() => attemptPlay(mobileVideoRef)}
-        onCanPlay={() => attemptPlay(mobileVideoRef)}
+        onLoadedData={() => mobileVideoIndex === 0 && attemptPlay(mobileVideoRef1)}
+        onCanPlay={() => mobileVideoIndex === 0 && attemptPlay(mobileVideoRef1)}
         onEnded={handleMobileVideoEnd}
-        onLoadStart={() => attemptPlay(mobileVideoRef)}
-        onClick={() => handleVideoClick(mobileVideoRef)}
-        poster={mobileVideoIndex === 0 ? "https://3d7fptzn6w.ucarecd.net/27c5b77e-f005-4442-8feb-998c176af48d/tamfall.jpg" : undefined}
-        key={`mobile-${mobileVideoIndex}`}
+        onClick={() => handleVideoClick(mobileVideoRef1)}
+        poster="https://3d7fptzn6w.ucarecd.net/27c5b77e-f005-4442-8feb-998c176af48d/tamfall.jpg"
       >
-        <source src={mobileVideos[mobileVideoIndex]} type="video/mp4" />
-        Your browser does not support the video tag.
+        <source src={mobileVideos[0]} type="video/mp4" />
+      </video>
+
+      <video
+        ref={mobileVideoRef2}
+        className={`${styles.heroVideo} ${styles.heroVideoMobile} ${styles.cropBottom}`}
+        style={{
+          opacity: mobileVideoIndex === 1 && !mobileFading ? 1 : 0,
+          transition: 'opacity 0.3s ease-in-out'
+        }}
+        muted
+        playsInline
+        webkit-playsinline="true"
+        x-webkit-airplay="deny"
+        disableRemotePlayback
+        disablePictureInPicture
+        preload="auto"
+        onLoadedData={() => mobileVideoIndex === 1 && attemptPlay(mobileVideoRef2)}
+        onCanPlay={() => mobileVideoIndex === 1 && attemptPlay(mobileVideoRef2)}
+        onEnded={handleMobileVideoEnd}
+        onClick={() => handleVideoClick(mobileVideoRef2)}
+      >
+        <source src={mobileVideos[1]} type="video/mp4" />
       </video>
     </section>
   );
