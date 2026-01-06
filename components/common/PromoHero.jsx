@@ -88,22 +88,47 @@ export default function PromoHero() {
     };
   }, [desktopVideoIndex, mobileVideoIndex]);
 
-  // Try to play when videos change
+  // Try to play when videos change and preload next video
   useEffect(() => {
     const timer = setTimeout(() => {
       attemptPlay(desktopVideoRef);
       attemptPlay(mobileVideoRef);
     }, 100);
 
-    return () => clearTimeout(timer);
+    // Preload next video to avoid black screen
+    const nextDesktopIndex = (desktopVideoIndex + 1) % desktopVideos.length;
+    const nextMobileIndex = (mobileVideoIndex + 1) % mobileVideos.length;
+
+    // Create hidden link elements to preload next videos
+    const preloadDesktop = document.createElement('link');
+    preloadDesktop.rel = 'preload';
+    preloadDesktop.as = 'video';
+    preloadDesktop.href = desktopVideos[nextDesktopIndex];
+    document.head.appendChild(preloadDesktop);
+
+    const preloadMobile = document.createElement('link');
+    preloadMobile.rel = 'preload';
+    preloadMobile.as = 'video';
+    preloadMobile.href = mobileVideos[nextMobileIndex];
+    document.head.appendChild(preloadMobile);
+
+    return () => {
+      clearTimeout(timer);
+      document.head.removeChild(preloadDesktop);
+      document.head.removeChild(preloadMobile);
+    };
   }, [desktopVideoIndex, mobileVideoIndex]);
 
   const handleDesktopVideoEnd = () => {
-    setDesktopVideoIndex((prevIndex) => (prevIndex + 1) % desktopVideos.length);
+    // Ensure smooth transition by loading the video before switching
+    const nextIndex = (desktopVideoIndex + 1) % desktopVideos.length;
+    setDesktopVideoIndex(nextIndex);
   };
 
   const handleMobileVideoEnd = () => {
-    setMobileVideoIndex((prevIndex) => (prevIndex + 1) % mobileVideos.length);
+    // Ensure smooth transition by loading the video before switching
+    const nextIndex = (mobileVideoIndex + 1) % mobileVideos.length;
+    setMobileVideoIndex(nextIndex);
   };
 
   // Handle direct click on video to play
@@ -132,6 +157,7 @@ export default function PromoHero() {
         onLoadedData={() => attemptPlay(desktopVideoRef)}
         onCanPlay={() => attemptPlay(desktopVideoRef)}
         onEnded={handleDesktopVideoEnd}
+        onLoadStart={() => attemptPlay(desktopVideoRef)}
         onClick={() => handleVideoClick(desktopVideoRef)}
         poster={desktopVideoIndex === 0 ? "https://3d7fptzn6w.ucarecd.net/53d24748-46d1-4f2e-af56-386f2b514de8/tafall.jpg" : undefined}
         key={`desktop-${desktopVideoIndex}`}
@@ -156,6 +182,7 @@ export default function PromoHero() {
         onLoadedData={() => attemptPlay(mobileVideoRef)}
         onCanPlay={() => attemptPlay(mobileVideoRef)}
         onEnded={handleMobileVideoEnd}
+        onLoadStart={() => attemptPlay(mobileVideoRef)}
         onClick={() => handleVideoClick(mobileVideoRef)}
         poster={mobileVideoIndex === 0 ? "https://3d7fptzn6w.ucarecd.net/27c5b77e-f005-4442-8feb-998c176af48d/tamfall.jpg" : undefined}
         key={`mobile-${mobileVideoIndex}`}
