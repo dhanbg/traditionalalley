@@ -3,15 +3,13 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./PromoHero.module.css";
 
 export default function PromoHero() {
-    const desktopVideoRef1 = useRef(null);
-    const desktopVideoRef2 = useRef(null);
-    const mobileVideoRef1 = useRef(null);
-    const mobileVideoRef2 = useRef(null);
+    const desktopVideo1Ref = useRef(null);
+    const desktopVideo2Ref = useRef(null);
+    const mobileVideo1Ref = useRef(null);
+    const mobileVideo2Ref = useRef(null);
 
     const [desktopVideoIndex, setDesktopVideoIndex] = useState(0);
     const [mobileVideoIndex, setMobileVideoIndex] = useState(0);
-    const [desktopActivePlayer, setDesktopActivePlayer] = useState(1); // 1 or 2
-    const [mobileActivePlayer, setMobileActivePlayer] = useState(1); // 1 or 2
     const [userInteracted, setUserInteracted] = useState(false);
 
     const desktopVideos = [
@@ -22,6 +20,11 @@ export default function PromoHero() {
     const mobileVideos = [
         "https://3d7fptzn6w.ucarecd.net/e28011d0-0fee-4b06-9146-a6ffd5cfe153/tam1.mp4",
         "https://3d7fptzn6w.ucarecd.net/445a76f8-1193-42e5-8710-b807de05937a/tam2.mp4"
+    ];
+
+    const mobilePosters = [
+        "https://3d7fptzn6w.ucarecd.net/27c5b77e-f005-4442-8feb-998c176af48d/tamfall.jpg",
+        "https://3d7fptzn6w.ucarecd.net/27c5b77e-f005-4442-8feb-998c176af48d/tamfall.jpg"
     ];
 
     // Attempt to play videos
@@ -36,17 +39,25 @@ export default function PromoHero() {
         }
     };
 
+    // Pause a video
+    const pauseVideo = (videoRef) => {
+        if (videoRef?.current && !videoRef.current.paused) {
+            videoRef.current.pause();
+            videoRef.current.currentTime = 0;
+        }
+    };
+
     // Handle first user interaction to enable autoplay on iOS
     useEffect(() => {
         const handleUserInteraction = () => {
             if (!userInteracted) {
                 setUserInteracted(true);
-                attemptPlay(desktopVideoRef1);
-                attemptPlay(mobileVideoRef1);
+                // Play the currently active videos
+                attemptPlay(desktopVideoIndex === 0 ? desktopVideo1Ref : desktopVideo2Ref);
+                attemptPlay(mobileVideoIndex === 0 ? mobileVideo1Ref : mobileVideo2Ref);
             }
         };
 
-        // Listen for various user interaction events
         const events = ['touchstart', 'touchend', 'click', 'scroll'];
         events.forEach(event => {
             document.addEventListener(event, handleUserInteraction, { once: true, passive: true });
@@ -57,132 +68,47 @@ export default function PromoHero() {
                 document.removeEventListener(event, handleUserInteraction);
             });
         };
-    }, [userInteracted]);
+    }, [userInteracted, desktopVideoIndex, mobileVideoIndex]);
 
-    // Intersection Observer to play when video is in viewport
+    // Handle desktop video transitions
     useEffect(() => {
-        const observerOptions = {
-            threshold: 0.5,
-            rootMargin: '0px'
-        };
+        const currentRef = desktopVideoIndex === 0 ? desktopVideo1Ref : desktopVideo2Ref;
+        const otherRef = desktopVideoIndex === 0 ? desktopVideo2Ref : desktopVideo1Ref;
 
-        const handleIntersection = (entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    // Play the active video
-                    if (entry.target === desktopVideoRef1.current || entry.target === desktopVideoRef2.current) {
-                        const activeRef = desktopActivePlayer === 1 ? desktopVideoRef1 : desktopVideoRef2;
-                        attemptPlay(activeRef);
-                    } else if (entry.target === mobileVideoRef1.current || entry.target === mobileVideoRef2.current) {
-                        const activeRef = mobileActivePlayer === 1 ? mobileVideoRef1 : mobileVideoRef2;
-                        attemptPlay(activeRef);
-                    }
-                }
-            });
-        };
+        pauseVideo(otherRef);
+        attemptPlay(currentRef);
+    }, [desktopVideoIndex]);
 
-        const observer = new IntersectionObserver(handleIntersection, observerOptions);
+    // Handle mobile video transitions
+    useEffect(() => {
+        const currentRef = mobileVideoIndex === 0 ? mobileVideo1Ref : mobileVideo2Ref;
+        const otherRef = mobileVideoIndex === 0 ? mobileVideo2Ref : mobileVideo1Ref;
 
-        [desktopVideoRef1, desktopVideoRef2, mobileVideoRef1, mobileVideoRef2].forEach(ref => {
-            if (ref.current) observer.observe(ref.current);
-        });
+        pauseVideo(otherRef);
+        attemptPlay(currentRef);
+    }, [mobileVideoIndex]);
 
-        return () => observer.disconnect();
-    }, [desktopActivePlayer, mobileActivePlayer]);
-
-    // Preload next video and switch smoothly
     const handleDesktopVideoEnd = () => {
-        const nextIndex = (desktopVideoIndex + 1) % desktopVideos.length;
-        const nextPlayer = desktopActivePlayer === 1 ? 2 : 1;
-        const nextVideoRef = nextPlayer === 1 ? desktopVideoRef1 : desktopVideoRef2;
-        const currentVideoRef = desktopActivePlayer === 1 ? desktopVideoRef1 : desktopVideoRef2;
-
-        // Load next video
-        if (nextVideoRef.current) {
-            nextVideoRef.current.src = desktopVideos[nextIndex];
-            nextVideoRef.current.load();
-
-            // When next video is ready, crossfade
-            nextVideoRef.current.oncanplaythrough = () => {
-                setDesktopVideoIndex(nextIndex);
-                setDesktopActivePlayer(nextPlayer);
-                attemptPlay(nextVideoRef);
-
-                // Fade out current video after a brief delay
-                setTimeout(() => {
-                    if (currentVideoRef.current) {
-                        currentVideoRef.current.pause();
-                        currentVideoRef.current.currentTime = 0;
-                    }
-                }, 500);
-            };
-        }
+        setDesktopVideoIndex((prevIndex) => (prevIndex + 1) % desktopVideos.length);
     };
 
     const handleMobileVideoEnd = () => {
-        const nextIndex = (mobileVideoIndex + 1) % mobileVideos.length;
-        const nextPlayer = mobileActivePlayer === 1 ? 2 : 1;
-        const nextVideoRef = nextPlayer === 1 ? mobileVideoRef1 : mobileVideoRef2;
-        const currentVideoRef = mobileActivePlayer === 1 ? mobileVideoRef1 : mobileVideoRef2;
-
-        // Load next video
-        if (nextVideoRef.current) {
-            nextVideoRef.current.src = mobileVideos[nextIndex];
-            nextVideoRef.current.load();
-
-            // When next video is ready, crossfade
-            nextVideoRef.current.oncanplaythrough = () => {
-                setMobileVideoIndex(nextIndex);
-                setMobileActivePlayer(nextPlayer);
-                attemptPlay(nextVideoRef);
-
-                // Fade out current video after a brief delay
-                setTimeout(() => {
-                    if (currentVideoRef.current) {
-                        currentVideoRef.current.pause();
-                        currentVideoRef.current.currentTime = 0;
-                    }
-                }, 500);
-            };
-        }
-    };
-
-    // Initial play attempt
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            attemptPlay(desktopVideoRef1);
-            attemptPlay(mobileVideoRef1);
-        }, 100);
-
-        return () => clearTimeout(timer);
-    }, []);
-
-    // Handle direct click on video to play
-    const handleVideoClick = (isDesktop) => {
-        const videoRef = isDesktop
-            ? (desktopActivePlayer === 1 ? desktopVideoRef1 : desktopVideoRef2)
-            : (mobileActivePlayer === 1 ? mobileVideoRef1 : mobileVideoRef2);
-
-        if (videoRef?.current && videoRef.current.paused) {
-            attemptPlay(videoRef);
-        }
+        setMobileVideoIndex((prevIndex) => (prevIndex + 1) % mobileVideos.length);
     };
 
     return (
         <section className={styles.promoHero}>
-            {/* Desktop Video Players - Double Buffered */}
-            <div className={styles.videoContainer}>
+            {/* Desktop Videos - both always rendered, visibility controlled by opacity */}
+            <div style={{ position: 'relative', width: '100%' }}>
                 <video
-                    ref={desktopVideoRef1}
+                    ref={desktopVideo1Ref}
                     className={`${styles.heroVideo} ${styles.heroVideoDesktop}`}
                     style={{
-                        opacity: desktopActivePlayer === 1 ? 1 : 0,
+                        opacity: desktopVideoIndex === 0 ? 1 : 0,
                         transition: 'opacity 0.5s ease-in-out',
-                        position: 'absolute',
+                        position: desktopVideoIndex === 0 ? 'relative' : 'absolute',
                         top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%'
+                        left: 0
                     }}
                     autoPlay
                     muted
@@ -192,58 +118,23 @@ export default function PromoHero() {
                     disableRemotePlayback
                     disablePictureInPicture
                     preload="auto"
-                    onLoadedData={() => desktopActivePlayer === 1 && attemptPlay(desktopVideoRef1)}
-                    onCanPlay={() => desktopActivePlayer === 1 && attemptPlay(desktopVideoRef1)}
+                    onLoadedData={() => desktopVideoIndex === 0 && attemptPlay(desktopVideo1Ref)}
+                    onCanPlay={() => desktopVideoIndex === 0 && attemptPlay(desktopVideo1Ref)}
                     onEnded={handleDesktopVideoEnd}
-                    onClick={() => handleVideoClick(true)}
                     poster="https://3d7fptzn6w.ucarecd.net/53d24748-46d1-4f2e-af56-386f2b514de8/tafall.jpg"
                 >
                     <source src={desktopVideos[0]} type="video/mp4" />
-                    Your browser does not support the video tag.
                 </video>
 
                 <video
-                    ref={desktopVideoRef2}
+                    ref={desktopVideo2Ref}
                     className={`${styles.heroVideo} ${styles.heroVideoDesktop}`}
                     style={{
-                        opacity: desktopActivePlayer === 2 ? 1 : 0,
+                        opacity: desktopVideoIndex === 1 ? 1 : 0,
                         transition: 'opacity 0.5s ease-in-out',
-                        position: 'absolute',
+                        position: desktopVideoIndex === 1 ? 'relative' : 'absolute',
                         top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%'
-                    }}
-                    muted
-                    playsInline
-                    webkit-playsinline="true"
-                    x-webkit-airplay="deny"
-                    disableRemotePlayback
-                    disablePictureInPicture
-                    preload="auto"
-                    onLoadedData={() => desktopActivePlayer === 2 && attemptPlay(desktopVideoRef2)}
-                    onCanPlay={() => desktopActivePlayer === 2 && attemptPlay(desktopVideoRef2)}
-                    onEnded={handleDesktopVideoEnd}
-                    onClick={() => handleVideoClick(true)}
-                >
-                    <source src={desktopVideos[1]} type="video/mp4" />
-                    Your browser does not support the video tag.
-                </video>
-            </div>
-
-            {/* Mobile Video Players - Double Buffered */}
-            <div className={styles.videoContainer}>
-                <video
-                    ref={mobileVideoRef1}
-                    className={`${styles.heroVideo} ${styles.heroVideoMobile} ${mobileVideoIndex === 0 ? styles.cropTop : styles.cropBottom}`}
-                    style={{
-                        opacity: mobileActivePlayer === 1 ? 1 : 0,
-                        transition: 'opacity 0.5s ease-in-out',
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%'
+                        left: 0
                     }}
                     autoPlay
                     muted
@@ -253,28 +144,28 @@ export default function PromoHero() {
                     disableRemotePlayback
                     disablePictureInPicture
                     preload="auto"
-                    onLoadedData={() => mobileActivePlayer === 1 && attemptPlay(mobileVideoRef1)}
-                    onCanPlay={() => mobileActivePlayer === 1 && attemptPlay(mobileVideoRef1)}
-                    onEnded={handleMobileVideoEnd}
-                    onClick={() => handleVideoClick(false)}
-                    poster="https://3d7fptzn6w.ucarecd.net/27c5b77e-f005-4442-8feb-998c176af48d/tamfall.jpg"
+                    onLoadedData={() => desktopVideoIndex === 1 && attemptPlay(desktopVideo2Ref)}
+                    onCanPlay={() => desktopVideoIndex === 1 && attemptPlay(desktopVideo2Ref)}
+                    onEnded={handleDesktopVideoEnd}
+                    poster="https://3d7fptzn6w.ucarecd.net/53d24748-46d1-4f2e-af56-386f2b514de8/tafall.jpg"
                 >
-                    <source src={mobileVideos[0]} type="video/mp4" />
-                    Your browser does not support the video tag.
+                    <source src={desktopVideos[1]} type="video/mp4" />
                 </video>
+            </div>
 
+            {/* Mobile Videos - both always rendered with consistent sizing */}
+            <div style={{ position: 'relative', width: '100%' }}>
                 <video
-                    ref={mobileVideoRef2}
-                    className={`${styles.heroVideo} ${styles.heroVideoMobile} ${mobileVideoIndex === 1 ? styles.cropTop : styles.cropBottom}`}
+                    ref={mobileVideo1Ref}
+                    className={`${styles.heroVideo} ${styles.heroVideoMobile} ${styles.mobileVideoConsistent}`}
                     style={{
-                        opacity: mobileActivePlayer === 2 ? 1 : 0,
+                        opacity: mobileVideoIndex === 0 ? 1 : 0,
                         transition: 'opacity 0.5s ease-in-out',
-                        position: 'absolute',
+                        position: mobileVideoIndex === 0 ? 'relative' : 'absolute',
                         top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%'
+                        left: 0
                     }}
+                    autoPlay
                     muted
                     playsInline
                     webkit-playsinline="true"
@@ -282,13 +173,38 @@ export default function PromoHero() {
                     disableRemotePlayback
                     disablePictureInPicture
                     preload="auto"
-                    onLoadedData={() => mobileActivePlayer === 2 && attemptPlay(mobileVideoRef2)}
-                    onCanPlay={() => mobileActivePlayer === 2 && attemptPlay(mobileVideoRef2)}
+                    onLoadedData={() => mobileVideoIndex === 0 && attemptPlay(mobileVideo1Ref)}
+                    onCanPlay={() => mobileVideoIndex === 0 && attemptPlay(mobileVideo1Ref)}
                     onEnded={handleMobileVideoEnd}
-                    onClick={() => handleVideoClick(false)}
+                    poster={mobilePosters[0]}
+                >
+                    <source src={mobileVideos[0]} type="video/mp4" />
+                </video>
+
+                <video
+                    ref={mobileVideo2Ref}
+                    className={`${styles.heroVideo} ${styles.heroVideoMobile} ${styles.mobileVideoConsistent}`}
+                    style={{
+                        opacity: mobileVideoIndex === 1 ? 1 : 0,
+                        transition: 'opacity 0.5s ease-in-out',
+                        position: mobileVideoIndex === 1 ? 'relative' : 'absolute',
+                        top: 0,
+                        left: 0
+                    }}
+                    autoPlay
+                    muted
+                    playsInline
+                    webkit-playsinline="true"
+                    x-webkit-airplay="deny"
+                    disableRemotePlayback
+                    disablePictureInPicture
+                    preload="auto"
+                    onLoadedData={() => mobileVideoIndex === 1 && attemptPlay(mobileVideo2Ref)}
+                    onCanPlay={() => mobileVideoIndex === 1 && attemptPlay(mobileVideo2Ref)}
+                    onEnded={handleMobileVideoEnd}
+                    poster={mobilePosters[1]}
                 >
                     <source src={mobileVideos[1]} type="video/mp4" />
-                    Your browser does not support the video tag.
                 </video>
             </div>
         </section>
