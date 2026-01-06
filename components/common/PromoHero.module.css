@@ -7,6 +7,15 @@
     background: #000;
 }
 
+.videoContainer {
+    width: 100%;
+    position: relative;
+    display: block;
+    line-height: 0;
+    overflow: hidden;
+    aspect-ratio: 21 / 9;
+}
+
 .heroVideo {
     width: 100%;
     height: auto;
@@ -25,6 +34,10 @@
 
 /* On mobile screens, hide desktop and show mobile */
 @media (max-width: 768px) {
+    .videoContainer {
+        aspect-ratio: 9 / 16;
+    }
+
     .heroVideoDesktop {
         display: none !important;
     }
