@@ -10,13 +10,13 @@ export default function PromoHero() {
   const [userInteracted, setUserInteracted] = useState(false);
 
   const desktopVideos = [
-    "https://3d7fptzn6w.ucarecd.net/fec66701-9757-4c0f-87b2-14ef65ac2778/tavideo1.mp4",
-    "https://3d7fptzn6w.ucarecd.net/b7a9891c-d831-4ba5-9419-2b15c1aee684/tavideo2.mp4"
+    "https://image2url.com/r2/default/videos/1768154821995-76f27471-4fc9-4300-bacb-a121afc7c63b.mp4",
+    "https://image2url.com/r2/default/videos/1768154840884-b1883d24-3bdf-4cd1-8c54-afa56d34be62.mp4"
   ];
 
   const mobileVideos = [
-    "https://3d7fptzn6w.ucarecd.net/e28011d0-0fee-4b06-9146-a6ffd5cfe153/tam1.mp4",
-    "https://3d7fptzn6w.ucarecd.net/445a76f8-1193-42e5-8710-b807de05937a/tam2.mp4"
+    "https://image2url.com/r2/default/videos/1768154736925-38b429d8-804e-413b-a1b4-bc02308abbba.mp4",
+    "https://image2url.com/r2/default/videos/1768154794533-26cb6b90-4857-447b-a7dd-baafe2cfbe6b.mp4"
   ];
 
   // Attempt to play videos

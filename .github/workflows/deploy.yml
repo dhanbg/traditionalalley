@@ -55,9 +55,7 @@ jobs:
       - name: Pull and run Docker image on VPS
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
-            docker login docker.io -u ${{ secrets.REGISTRY_USERNAME }} -p ${{ secrets.REGISTRY_PASSWORD }}
-            docker pull docker.io/traditionalalley/ta-frontend:latest
-            docker stop nextjs-app || true
-            docker rm nextjs-app || true
-            docker run -d --name nextjs-app -p 3000:3000 --env-file ~/traditional_frontend/prod/.env docker.io/traditionalalley/ta-frontend:latest
+            cd /root/clean_deploy
+            docker compose -f docker-compose.production.yaml pull
+            docker compose -f docker-compose.production.yaml up -d
           ENDSSH

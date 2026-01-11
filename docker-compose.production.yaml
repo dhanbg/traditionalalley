@@ -2,13 +2,7 @@ version: "3.8"
 
 services:
   nextjs:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-        NEXT_PUBLIC_STRAPI_API_TOKEN: ${NEXT_PUBLIC_STRAPI_API_TOKEN}
-        ENABLE_PRODUCTION_DEBUG: ${ENABLE_PRODUCTION_DEBUG}
+    image: traditionalalley/ta-frontend:latest
     container_name: nextjs-alley-production
     restart: unless-stopped
     env_file:
