@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   nextjs:
-    image: traditionalalley/ta-frontend:latest
+    image: docker.io/traditionalalley/ta-frontend:latest
     container_name: nextjs-alley-production
     restart: unless-stopped
     env_file:
@@ -23,6 +23,13 @@ services:
       KHALTI_WEBSITE_URL: ${KHALTI_WEBSITE_URL}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       NEXT_PUBLIC_STRAPI_API_TOKEN: ${NEXT_PUBLIC_STRAPI_API_TOKEN}
+      # NextAuth configuration
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST}
+      # Google OAuth
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
     deploy:
       resources:
         limits:

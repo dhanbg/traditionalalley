@@ -87,38 +87,38 @@ export default function TopPicks({ initialProducts = [], initialMeta = null }) {
 
   return (
     <section className="top-picks-section">
-      <div className="container">
-        <div className="section-header text-center wow fadeInUp">
-          <h2 className="section-title">
-            {meta?.heading || "CURATED FOR YOU"}
-          </h2>
-          <p className="section-subtitle">
-            {meta?.subheading || "Discover our most loved styles this season"}
-          </p>
-          <div className="title-underline"></div>
-        </div>
+      <div className="section-header text-center wow fadeInUp">
+        <h2 className="section-title">
+          {meta?.heading || "CURATED FOR YOU"}
+        </h2>
+        <p className="section-subtitle">
+          {meta?.subheading || "Discover our most loved styles this season"}
+        </p>
+        <div className="title-underline"></div>
+      </div>
 
-        {isMobile ? (
-          <div className="scroll-rows-container">
-            {productRows.map((row, rowIndex) => {
-              const direction = rowIndex % 2 === 0 ? 'ltr' : 'rtl';
-              // Duplicate products to create infinite scroll effect
-              const duplicatedRow = [...row, ...row, ...row];
+      {isMobile ? (
+        <div className="scroll-rows-container">
+          {productRows.map((row, rowIndex) => {
+            const direction = rowIndex % 2 === 0 ? 'ltr' : 'rtl';
+            // Duplicate products to create infinite scroll effect
+            const duplicatedRow = [...row, ...row, ...row];
 
-              return (
-                <div key={rowIndex} className={`scroll-row scroll-${direction}`}>
-                  <div className="scroll-track">
-                    {duplicatedRow.map((product, i) => (
-                      <div key={`${product.id}-${i}`} className="scroll-item">
-                        <ProductCard1 product={product} />
-                      </div>
-                    ))}
-                  </div>
+            return (
+              <div key={rowIndex} className={`scroll-row scroll-${direction}`}>
+                <div className="scroll-track">
+                  {duplicatedRow.map((product, i) => (
+                    <div key={`${product.id}-${i}`} className="scroll-item">
+                      <ProductCard1 product={product} />
+                    </div>
+                  ))}
                 </div>
-              );
-            })}
-          </div>
-        ) : (
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="container">
           <div className="products-carousel wow fadeInUp" data-wow-delay="0.2s">
             <Swiper
               modules={[Pagination, Autoplay]}
@@ -167,8 +167,8 @@ export default function TopPicks({ initialProducts = [], initialMeta = null }) {
 
             <div className="tp-pagination"></div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <style jsx>{`
         .top-picks-section {
@@ -181,6 +181,7 @@ export default function TopPicks({ initialProducts = [], initialMeta = null }) {
         .section-header {
           margin-bottom: 50px;
           position: relative;
+          padding: 0 20px;
         }
 
         .section-title {
@@ -239,7 +240,7 @@ export default function TopPicks({ initialProducts = [], initialMeta = null }) {
           gap: 6px;
         }
 
-        /* Infinite Scroll Rows Layout */
+        /* Infinite Scroll Rows Layout - Full Width */
         .scroll-rows-container {
           display: flex;
           flex-direction: column;
@@ -247,6 +248,8 @@ export default function TopPicks({ initialProducts = [], initialMeta = null }) {
           width: 100%;
           overflow: hidden;
           max-width: 100vw;
+          margin: 0;
+          padding: 0;
         }
 
         .scroll-row {
@@ -339,8 +342,8 @@ export default function TopPicks({ initialProducts = [], initialMeta = null }) {
         
         /* Smaller price size for scroll items */
         .scroll-item :global(.price-overlay-modern) {
-          padding: 3px 6px !important;
-          font-size: 0.55rem !important;
+          padding: 2px 5px !important;
+          font-size: 0.5rem !important;
         }
         
         .scroll-item :global(.price-overlay-modern .price-main) {
@@ -349,11 +352,11 @@ export default function TopPicks({ initialProducts = [], initialMeta = null }) {
         
         .scroll-item :global(.price-overlay-modern .current-price),
         .scroll-item :global(.price-overlay-modern .price-main) {
-          font-size: 0.55rem !important;
+          font-size: 0.5rem !important;
         }
         
         .scroll-item :global(.price-overlay-modern .old-price) {
-          font-size: 0.5rem !important;
+          font-size: 0.45rem !important;
         }
 
         /* Responsive Adjustments */
