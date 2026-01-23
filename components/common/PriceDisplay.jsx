@@ -41,10 +41,23 @@ export default function PriceDisplay({
     oldPriceInfo = oldPrice ? getDualPriceDisplay(oldPrice, userCurrency, exchangeRate) : null;
   }
 
-  // Calculate discount percentage
-  const discountPercentage = oldPrice && price
-    ? ((oldPrice - price) / oldPrice * 100).toFixed(0)
-    : null;
+  // Calculate discount percentage with validation
+  const discountPercentage = (() => {
+    const priceNum = parseFloat(price);
+    const oldPriceNum = parseFloat(oldPrice);
+
+    if (!oldPrice || !price || isNaN(priceNum) || isNaN(oldPriceNum) || oldPriceNum <= 0) {
+      return null;
+    }
+
+    const percentage = ((oldPriceNum - priceNum) / oldPriceNum * 100);
+
+    if (isNaN(percentage) || !isFinite(percentage)) {
+      return null;
+    }
+
+    return percentage.toFixed(0);
+  })();
 
   const sizeClasses = {
     small: 'price-display-small',

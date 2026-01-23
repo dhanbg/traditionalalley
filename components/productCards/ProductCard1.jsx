@@ -92,10 +92,23 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
     safeProduct.imgHover = safeProduct.imgSrc || DEFAULT_IMAGE;
   }
 
-  // Calculate discount percentage
-  const discountPercentage = safeProduct.price && safeProduct.oldPrice
-    ? ((safeProduct.oldPrice - safeProduct.price) / safeProduct.oldPrice * 100).toFixed(2)
-    : "25";
+  // Calculate discount percentage with validation
+  const discountPercentage = (() => {
+    const price = parseFloat(safeProduct.price);
+    const oldPrice = parseFloat(safeProduct.oldPrice);
+
+    if (!price || !oldPrice || isNaN(price) || isNaN(oldPrice) || oldPrice <= 0) {
+      return "25";
+    }
+
+    const percentage = ((oldPrice - price) / oldPrice * 100);
+
+    if (isNaN(percentage) || !isFinite(percentage)) {
+      return "25";
+    }
+
+    return percentage.toFixed(2);
+  })();
 
   // Check if colors are just string values and convert them
   if (safeProduct.colors && Array.isArray(safeProduct.colors) &&
