@@ -206,31 +206,25 @@ export default function ProductsCards6({ product }) {
               ))}
             </div>
           )}
-              })()}
-        </a>
-            )}
 
-        <a
-          href="#compare"
-          data-bs-toggle="offcanvas"
-          aria-controls="compare"
-          onClick={() => addToCompareItem(safeProduct.id)}
-          className="box-icon compare btn-icon-action"
-        >
-          <span className="icon icon-gitDiff" />
-          <span className="tooltip">
-            {" "}
-            {isAddedtoCompareItem(safeProduct.id)
-              ? "Already compared"
-              : "Compare"}
-          </span>
-        </a>
+          <a
+            href="#compare"
+            data-bs-toggle="offcanvas"
+            aria-controls="compare"
+            onClick={() => addToCompareItem(safeProduct.id)}
+            className="box-icon compare btn-icon-action"
+          >
+            <span className="icon icon-gitDiff" />
+            <span className="tooltip">
+              {" "}
+              {isAddedtoCompareItem(safeProduct.id)
+                ? "Already compared"
+                : "Compare"}
+            </span>
+          </a>
 
+        </div>
       </div>
-          )}
     </div>
-      </div >
-      
-    </div >
   );
 }
