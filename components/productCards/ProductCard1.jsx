@@ -228,62 +228,54 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
   };
 
   const handleCartClick = () => {
-    if (!user) {
-      signIn();
+    // Get current product ID and main product ID for variant detection
+    const currentProductId = safeProduct.documentId || safeProduct.id;
+    const mainProductId = getMainProductId(safeProduct);
+    const isVariant = mainProductId !== currentProductId;
+
+    // Create unique cart ID using consistent pattern like Details1
+    let uniqueCartId;
+    let variantInfo = null;
+
+    if (isVariant) {
+      // For variants: use main product ID + variant ID pattern
+      const baseVariantId = `${mainProductId}-variant-${currentProductId}`;
+      uniqueCartId = hasAvailableSizes && selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
+
+      // Create variant info matching Details1 structure
+      variantInfo = {
+        id: currentProductId, // Use variant's documentId as the variant identifier
+        documentId: currentProductId,
+        variantId: currentProductId, // Add variantId for checkout matching
+        title: safeProduct.title,
+        imgSrc: safeProduct.imgSrc,
+        imgSrcObject: safeProduct.imgSrc, // Preserve original image object
+        isVariant: true, // Add this flag so cart modal can identify variants
+        product_code: safeProduct.product_code // Include variant's product code
+      };
+
+      console.log('🛒 Adding variant to cart:', {
+        uniqueCartId,
+        isVariant,
+        variantInfo,
+        selectedSize
+      });
     } else {
-      // Get current product ID and main product ID for variant detection
-      const currentProductId = safeProduct.documentId || safeProduct.id;
-      const mainProductId = getMainProductId(safeProduct);
-      const isVariant = mainProductId !== currentProductId;
+      // For main products: use documentId for consistency
+      uniqueCartId = hasAvailableSizes && selectedSize ? `${currentProductId}-size-${selectedSize}` : currentProductId;
 
-      // Create unique cart ID using consistent pattern like Details1
-      let uniqueCartId;
-      let variantInfo = null;
-
-      if (isVariant) {
-        // For variants: use main product ID + variant ID pattern
-        const baseVariantId = `${mainProductId}-variant-${currentProductId}`;
-        uniqueCartId = hasAvailableSizes && selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
-
-        // Create variant info matching Details1 structure
-        variantInfo = {
-          id: currentProductId, // Use variant's documentId as the variant identifier
-          documentId: currentProductId,
-          variantId: currentProductId, // Add variantId for checkout matching
-          title: safeProduct.title,
-          imgSrc: safeProduct.imgSrc,
-          imgSrcObject: safeProduct.imgSrc, // Preserve original image object
-          isVariant: true, // Add this flag so cart modal can identify variants
-          product_code: safeProduct.product_code // Include variant's product code
-        };
-
-        console.log('🛒 Adding variant to cart:', {
-          uniqueCartId,
-          isVariant,
-          variantInfo,
-          selectedSize
-        });
-      } else {
-        // For main products: use documentId for consistency
-        uniqueCartId = hasAvailableSizes && selectedSize ? `${currentProductId}-size-${selectedSize}` : currentProductId;
-
-        console.log('🛒 Adding main product to cart:', {
-          uniqueCartId,
-          isVariant: false,
-          selectedSize
-        });
-      }
-
-      addProductToCart(uniqueCartId, 1, true, variantInfo, selectedSize);
+      console.log('🛒 Adding main product to cart:', {
+        uniqueCartId,
+        isVariant: false,
+        selectedSize
+      });
     }
+
+    addProductToCart(uniqueCartId, 1, true, variantInfo, selectedSize);
   };
 
   const handleCompareClick = (id) => {
-    if (!user) {
-      signIn();
-    } else {
-      addToCompareItem(id);
-    }
+    addToCompareItem(id);
   };
 
   return (

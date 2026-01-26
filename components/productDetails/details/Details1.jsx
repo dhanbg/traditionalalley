@@ -21,19 +21,19 @@ export default function Details1({ product, variants = [], preferredVariantId = 
   // Helper function to process image URLs consistently
   const processImageUrl = (imgData) => {
     if (!imgData) return '/logo.png';
-    
+
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
-    
+
     // If it's already a string URL, return it
     if (typeof imgData === 'string') {
       return imgData.startsWith('http') ? imgData : `${API_URL}${imgData}`;
     }
-    
+
     // If it's a Strapi media object, extract the URL
     if (imgData.url) {
       return imgData.url.startsWith('http') ? imgData.url : `${API_URL}${imgData.url}`;
     }
-    
+
     // Try formats if available
     if (imgData.formats) {
       if (imgData.formats.medium?.url) {
@@ -45,26 +45,26 @@ export default function Details1({ product, variants = [], preferredVariantId = 
         return url.startsWith('http') ? url : `${API_URL}${url}`;
       }
     }
-    
+
     return '/logo.png';
   };
 
   // Helper function to process gallery items with thumbnails
   const processGalleryItems = (galleryArray) => {
     if (!galleryArray || !Array.isArray(galleryArray)) return [];
-    
+
     return galleryArray.map(item => {
       if (!item) return null;
-      
+
       // If it's already a string URL, return it directly
       if (typeof item === 'string') return item;
-      
+
       // Create a copy of the item to avoid mutating the original
       const processedItem = { ...item };
-      
+
       // Get the best available image URL (prefer large, fall back to medium, then small, then original)
       let bestImageUrl = null;
-      
+
       // Try different formats in order of preference
       if (item.formats) {
         if (item.formats.large?.url) {
@@ -77,12 +77,12 @@ export default function Details1({ product, variants = [], preferredVariantId = 
           bestImageUrl = item.formats.thumbnail.url;
         }
       }
-      
+
       // Fall back to main URL if no formats available
       if (!bestImageUrl && item.url) {
         bestImageUrl = item.url;
       }
-      
+
       // Only process the URL once through getBestImageUrl if we have a URL
       if (bestImageUrl) {
         // Check if it's already a complete URL
@@ -94,7 +94,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
           bestImageUrl = `${API_URL}${bestImageUrl}`;
         }
       }
-      
+
       // Update the URL if we found a valid one
       if (bestImageUrl) {
         processedItem.url = bestImageUrl;
@@ -103,7 +103,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
         processedItem.url = `${API_URL}${processedItem.url}`;
       }
-      
+
       return processedItem;
     });
   };
@@ -122,9 +122,9 @@ export default function Details1({ product, variants = [], preferredVariantId = 
 
   const [activeColor, setActiveColor] = useState(
     safeProduct.colors && safeProduct.colors.length > 0
-      ? (typeof safeProduct.colors[0] === 'string' 
-          ? safeProduct.colors[0]
-          : safeProduct.colors[0].name || "Gray")
+      ? (typeof safeProduct.colors[0] === 'string'
+        ? safeProduct.colors[0]
+        : safeProduct.colors[0].name || "Gray")
       : "Gray"
   );
   const [quantity, setQuantity] = useState(1);
@@ -158,28 +158,28 @@ export default function Details1({ product, variants = [], preferredVariantId = 
   // Combine main product and variants for selection
   let allOptions = [];
   let initialActive = null;
-  
+
   if (variants && variants.length > 0) {
     // If there are variants, use them and mark one as current if it matches the main product
     allOptions = variants.map(variant => ({
       ...variant,
-      isCurrentProduct: variant.id === safeProduct.id || 
-                       variant.documentId === safeProduct.documentId ||
-                       variant.id === `current-${safeProduct.id}` || 
-                       variant.id === `current-${safeProduct.documentId}`
+      isCurrentProduct: variant.id === safeProduct.id ||
+        variant.documentId === safeProduct.documentId ||
+        variant.id === `current-${safeProduct.id}` ||
+        variant.id === `current-${safeProduct.documentId}`
     }));
-    
+
     // Priority-based variant selection:
     // 1. First, try to find the preferred variant from URL
     if (preferredVariantId) {
       console.log('🔍 Looking for preferred variant:', preferredVariantId);
-      const preferredVariant = allOptions.find(v => 
+      const preferredVariant = allOptions.find(v =>
         v.documentId === preferredVariantId ||
         v.id === preferredVariantId ||
         v.id === `current-${preferredVariantId}` ||
         (typeof v.id === 'string' && v.id.includes(preferredVariantId))
       );
-      
+
       if (preferredVariant) {
         console.log('✅ Found preferred variant:', preferredVariant);
         initialActive = preferredVariant;
@@ -187,17 +187,17 @@ export default function Details1({ product, variants = [], preferredVariantId = 
         console.log('⚠️ Preferred variant not found, falling back to current product');
       }
     }
-    
+
     // 2. If no preferred variant found, fall back to current product variant
     if (!initialActive) {
       initialActive = allOptions.find(v => v.isCurrentProduct) || allOptions[0];
     }
   } else if (safeProduct.color) {
     // If no variants but main product has a color, create a single option
-    allOptions = [{ 
-      ...safeProduct, 
+    allOptions = [{
+      ...safeProduct,
       isCurrentProduct: true,
-      id: safeProduct.documentId || `product-${safeProduct.id}` 
+      id: safeProduct.documentId || `product-${safeProduct.id}`
     }];
     initialActive = allOptions[0];
   }
@@ -210,21 +210,21 @@ export default function Details1({ product, variants = [], preferredVariantId = 
     imgHover: processImageUrl(safeProduct.imgHover) || processImageUrl(safeProduct.imgSrc) || safeProduct.imgHover,
     gallery: processGalleryItems(safeProduct.gallery || [])
   });
-  
+
   // Helper function to extract design name from variant
   const extractDesignFromVariant = (variant) => {
     if (!variant) return 'Unknown';
-    
+
     // First, check if there's a design field in the variant
     if (variant.design && typeof variant.design === 'string' && variant.design.trim() !== '') {
       return variant.design;
     }
-    
+
     // For main product, show product name if available
     if (variant.isCurrentProduct && variant.title) {
       return variant.title;
     }
-    
+
     // Try to extract from color image name
     if (variant.color?.name) {
       const filename = variant.color.name.toLowerCase();
@@ -235,7 +235,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
         }
       }
     }
-    
+
     // Try to extract from main image name
     if (variant.imgSrc) {
       const imgSrcName = typeof variant.imgSrc === 'string' ? variant.imgSrc : variant.imgSrc.name || '';
@@ -247,11 +247,11 @@ export default function Details1({ product, variants = [], preferredVariantId = 
         }
       }
     }
-    
+
     // Last resort: use a generic design name
     return 'Design';
   };
-  
+
   // Memoize slideItems to prevent infinite re-renders
   const slideItems = useMemo(() => {
     // Map variants to slideItems format if they have imgSrc, but exclude the main product variant
@@ -283,7 +283,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
     }
     return undefined;
   }, [variants, safeProduct.colors]);
-  
+
   const {
     addProductToCart,
     isAddedToCartProducts,
@@ -336,7 +336,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
         productInfoWrap.appendChild(zoomContainer);
       }
     }
-    
+
     // Force-trigger browser layout/reflow to ensure the container is ready
     if (zoomContainer) {
       zoomContainer.getBoundingClientRect();
@@ -365,7 +365,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
   // Create unique wishlist ID that matches cart ID pattern
   const wishlistId = useMemo(() => {
     const baseId = safeProduct.documentId || safeProduct.id;
-    
+
     if (activeVariant && !activeVariant.isCurrentProduct) {
       // For variants: include variant documentId and size for consistency with cart
       const variantIdentifier = activeVariant.documentId || activeVariant.id;
@@ -391,7 +391,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
   }, [activeVariant]);
 
   const isInWishlist = isAddedtoWishlist(wishlistId, variantInfoForWishlist, selectedSize);
-  
+
   // Debug log for wishlist checking
   console.log('🔍 Details1 wishlist check:', {
     productTitle: safeProduct.title,
@@ -407,19 +407,19 @@ export default function Details1({ product, variants = [], preferredVariantId = 
   const isOutOfStock = useMemo(() => {
     // Get the size_stocks from current context
     const currentSizeStocks = (activeVariant && activeVariant.size_stocks) ||
-                             currentProduct.size_stocks ||
-                             safeProduct.size_stocks;
-    
+      currentProduct.size_stocks ||
+      safeProduct.size_stocks;
+
     // If we have size_stocks object, check if ALL sizes have zero quantity
     if (currentSizeStocks && typeof currentSizeStocks === 'object' && !Array.isArray(currentSizeStocks)) {
       const sizeEntries = Object.entries(currentSizeStocks);
-      
+
       if (sizeEntries.length > 0) {
         const allSizesOutOfStock = sizeEntries.every(([size, quantity]) => {
           const qty = Number(quantity) || 0;
           return qty === 0;
         });
-        
+
         if (allSizesOutOfStock) {
           return true;
         } else {
@@ -427,12 +427,12 @@ export default function Details1({ product, variants = [], preferredVariantId = 
         }
       }
     }
-    
+
     // If no size_stocks data, fallback to isActive check
     if (safeProduct.isActive === false) {
       return true;
     }
-    
+
     return false;
   }, [activeVariant, currentProduct.size_stocks, safeProduct.size_stocks, safeProduct.isActive]);
 
@@ -441,20 +441,20 @@ export default function Details1({ product, variants = [], preferredVariantId = 
       signIn();
       return;
     }
-    
+
     if (!isOutOfStock) {
       setSizeSelectionError("This item is currently in stock. Add to cart instead!");
       return;
     }
-    
+
     if (isInWishlist) {
       setSizeSelectionError("This item is already in your wishlist.");
       return;
     }
-    
+
     setWishlistLoading(true);
     setSizeSelectionError(null);
-    
+
     try {
       console.log('🚀 Details1 adding to wishlist:', {
         wishlistId,
@@ -463,13 +463,13 @@ export default function Details1({ product, variants = [], preferredVariantId = 
         productTitle: safeProduct.title,
         activeVariantTitle: activeVariant?.title
       });
-      
+
       // Use Context's addToWishlist function with variant and size info
       await addToWishlist(wishlistId, variantInfoForWishlist, selectedSize);
-      
+
       // Show success message
       setSizeSelectionError("✓ Added to wishlist successfully!");
-      
+
       // Clear success message after 3 seconds
       setTimeout(() => {
         setSizeSelectionError(null);
@@ -482,54 +482,50 @@ export default function Details1({ product, variants = [], preferredVariantId = 
   };
 
   const handleCartClick = () => {
-    if (!user) {
-      signIn();
-    } else {
-      // Check if product has sizes and require size selection
-      const hasSizes = (currentProduct.size_stocks) || 
-                      (activeVariant && activeVariant.size_stocks) || 
-                      (safeProduct.sizes && safeProduct.sizes.length > 0);
-      
-      if (hasSizes && !selectedSize) {
-        setSizeSelectionError("Please select a size before adding to cart.");
-        return;
-      }
-      
-      // Create unique cart ID based on product, variant, and size
-      let uniqueCartId;
-      const baseId = safeProduct.documentId || safeProduct.id;
+    // Check if product has sizes and require size selection
+    const hasSizes = (currentProduct.size_stocks) ||
+      (activeVariant && activeVariant.size_stocks) ||
+      (safeProduct.sizes && safeProduct.sizes.length > 0);
 
-      if (activeVariant && !activeVariant.isCurrentProduct) {
-        const baseVariantId = `${baseId}-variant-${activeVariant.id}`;
-        uniqueCartId = selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
-      } else {
-        uniqueCartId = selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
-      }
-
-      // Prepare variant info for cart
-      const variantInfo = activeVariant && !activeVariant.isCurrentProduct ? {
-        id: activeVariant.id,
-        documentId: activeVariant.documentId,
-        variantId: activeVariant.documentId, // Add variantId for checkout matching
-        color: activeVariant.color,
-        imgSrc: activeVariant.imgSrc,
-        imgHover: activeVariant.imgHover,
-        title: activeVariant.title,
-        price: activeVariant.price,
-        oldPrice: activeVariant.oldPrice,
-        discount: activeVariant.discount,
-        sizes: activeVariant.sizes,
-        gallery: activeVariant.gallery,
-        product_code: activeVariant.product_code // Include variant's product code
-      } : null;
-
-      addProductToCart(uniqueCartId, quantity, true, variantInfo, selectedSize);
+    if (hasSizes && !selectedSize) {
+      setSizeSelectionError("Please select a size before adding to cart.");
+      return;
     }
+
+    // Create unique cart ID based on product, variant, and size
+    let uniqueCartId;
+    const baseId = safeProduct.documentId || safeProduct.id;
+
+    if (activeVariant && !activeVariant.isCurrentProduct) {
+      const baseVariantId = `${baseId}-variant-${activeVariant.id}`;
+      uniqueCartId = selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
+    } else {
+      uniqueCartId = selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
+    }
+
+    // Prepare variant info for cart
+    const variantInfo = activeVariant && !activeVariant.isCurrentProduct ? {
+      id: activeVariant.id,
+      documentId: activeVariant.documentId,
+      variantId: activeVariant.documentId, // Add variantId for checkout matching
+      color: activeVariant.color,
+      imgSrc: activeVariant.imgSrc,
+      imgHover: activeVariant.imgHover,
+      title: activeVariant.title,
+      price: activeVariant.price,
+      oldPrice: activeVariant.oldPrice,
+      discount: activeVariant.discount,
+      sizes: activeVariant.sizes,
+      gallery: activeVariant.gallery,
+      product_code: activeVariant.product_code // Include variant's product code
+    } : null;
+
+    addProductToCart(uniqueCartId, quantity, true, variantInfo, selectedSize);
   };
 
   const handleShare = async (e) => {
     e.preventDefault();
-    
+
     try {
       // Copy current page URL to clipboard
       const currentUrl = window.location.href;
@@ -544,10 +540,6 @@ export default function Details1({ product, variants = [], preferredVariantId = 
       setTimeout(() => setShareStatus(''), 3000);
     }
   };
-
-
-
-
 
   // Function to get the current display title
   const getCurrentDisplayTitle = () => {
@@ -572,9 +564,9 @@ export default function Details1({ product, variants = [], preferredVariantId = 
         quantity: variant.quantity
       });
       // Update active color (extract from color image or variant info)
-      const colorName = variant.color?.alternativeText || 
-                       variant.color?.name ||
-                       extractDesignFromVariant(variant);
+      const colorName = variant.color?.alternativeText ||
+        variant.color?.name ||
+        extractDesignFromVariant(variant);
       setActiveColor(colorName);
     }
 
@@ -589,8 +581,8 @@ export default function Details1({ product, variants = [], preferredVariantId = 
         try {
           parsedSizeStocks = JSON.parse(variant.size_stocks);
         } catch (error) {
-        parsedSizeStocks = [];
-      }
+          parsedSizeStocks = [];
+        }
       } else if (Array.isArray(variant.size_stocks) || typeof variant.size_stocks === "object") {
         parsedSizeStocks = variant.size_stocks;
       }
@@ -617,7 +609,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
       <div className="tf-main-product section-image-zoom">
         <div className="container">
           <div className="row">
-            {/* Product default */} 
+            {/* Product default */}
             <div className="col-md-66">
               <div className="tf-product-media-wrap sticky-top">
                 <Slider1
@@ -655,43 +647,25 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                             ({reviewCount} reviews)
                           </div>
                         </div>
-                        {/* <div className="tf-product-info-sold">
-                          <i className="icon icon-lightning" />
-                          <div className="text text-caption-1">
-                            18&nbsp;sold in last&nbsp;32&nbsp;hours
-                          </div>
-                        </div> */}
                       </div>
                     </div>
                     <div className="tf-product-info-desc">
                       <div className="tf-product-info-price">
-                        <PriceDisplay 
+                        <PriceDisplay
                           price={safeProduct.price}
                           oldPrice={safeProduct.oldPrice}
                           className="price-on-sale font-2"
                           size="large"
                         />
                       </div>
-                      {/* Sustainability information: Explains what "Committed" label means for eco-friendly products */}
-                      {/* <p>
-                        The garments labelled as Committed are products that
-                        have been produced using sustainable fibres or
-                        processes, reducing their environmental impact.
-                      </p> */}
-                      {/* <div className="tf-product-info-liveview">
-                        <i className="icon icon-eye" />
-                        <p className="text-caption-1">
-                          <span className="liveview-count">28</span> people are
-                          viewing this right now
-                        </p>
-                      </div> */}
                     </div>
                   </div>
+
                   <div className="tf-product-info-choose-option">
                     {/* Designs section */}
                     {allOptions.length > 0 ? (
                       <div className="tf-product-info-color">
-                        <ColorVariantSelect 
+                        <ColorVariantSelect
                           variants={allOptions}
                           activeVariant={activeVariant}
                           onVariantChange={handleVariantChange}
@@ -701,7 +675,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                       </div>
                     ) : safeProduct.colors && safeProduct.colors.length > 0 && (
                       <div className="tf-product-info-color">
-                        <ColorSelect 
+                        <ColorSelect
                           activeColor={activeColor}
                           setActiveColor={setActiveColor}
                           colorOptions={
@@ -730,7 +704,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                         />
                       </div>
                     )}
-                  
+
                     {/* Sizes section */}
                     {((currentProduct.size_stocks) || (activeVariant && activeVariant.size_stocks) || (safeProduct.sizes && safeProduct.sizes.length > 0)) && (
                       <div className="tf-product-info-size">
@@ -744,7 +718,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                               ) : null;
                             })()}
                           </div>
-                          <button 
+                          <button
                             onClick={() => setShowSizeGuide(true)}
                             style={{
                               background: "transparent",
@@ -767,10 +741,10 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                             Size Guide
                           </button>
                         </div>
-                        <SizeSelect 
+                        <SizeSelect
                           sizeStocks={
-                            (activeVariant && activeVariant.size_stocks) || 
-                            currentProduct.size_stocks || 
+                            (activeVariant && activeVariant.size_stocks) ||
+                            currentProduct.size_stocks ||
                             safeProduct.size_stocks
                           }
                           sizes={
@@ -790,49 +764,21 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                       </div>
                     )}
 
-                    {/* Weight section */}
-                    {/* Remove weight and dimensions display */}
-
-                    {/* Dimensions section */}
-                    {/* Remove weight and dimensions display */}
-
-                    {/* Commented quantity section */}
-                    {/* <div className="tf-product-info-quantity">
-                      <div className="title mb_12">Quantity:</div>
-                      <QuantitySelect
-                        quantity={
-                          isAddedToCartProducts(safeProduct.id)
-                            ? (cartProducts.filter(
-                                (elm) => elm.id == safeProduct.id
-                              )[0]?.quantity || quantity)
-                            : quantity
-                        }
-                        setQuantity={(qty) => {
-                          if (isAddedToCartProducts(safeProduct.id)) {
-                            return updateQuantity(safeProduct.id, qty);
-                          } else {
-                            setQuantity(qty);
-                            return Promise.resolve();
-                          }
-                        }}
-                      />
-                    </div> */}
-                    
                     {/* Size selection error message */}
                     {sizeSelectionError && (
-                      <div className="alert alert-warning" role="alert" style={{ 
-                        marginBottom: "16px", 
-                        padding: "10px 15px", 
-                        backgroundColor: "#fff3cd", 
-                        color: "#856404", 
-                        border: "1px solid #ffeaa7", 
+                      <div className="alert alert-warning" role="alert" style={{
+                        marginBottom: "16px",
+                        padding: "10px 15px",
+                        backgroundColor: "#fff3cd",
+                        color: "#856404",
+                        border: "1px solid #ffeaa7",
                         borderRadius: "4px",
                         fontSize: "14px"
                       }}>
                         {sizeSelectionError}
                       </div>
                     )}
-                    
+
                     <div className="tf-product-action-btns" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                       <div className="tf-product-info-by-btn mb_10" style={{ display: "flex", alignItems: "center" }}>
                         {/* Show either Add to Cart OR Add to Wishlist based on stock */}
@@ -840,14 +786,12 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                           // Add to Wishlist button (when out of stock)
                           <a
                             onClick={wishlistLoading ? null : handleWishlistClick}
-                            className={`btn-style-2 fw-6 btn-add-to-wishlist ${
-                              isInWishlist ? 'added' : ''
-                            } ${
-                              wishlistLoading ? 'loading' : ''
-                            }`}
-                            style={{ 
-                              height: "46px", 
-                              display: "flex", 
+                            className={`btn-style-2 fw-6 btn-add-to-wishlist ${isInWishlist ? 'added' : ''
+                              } ${wishlistLoading ? 'loading' : ''
+                              }`}
+                            style={{
+                              height: "46px",
+                              display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
                               padding: "0 15px",
@@ -870,7 +814,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                                 if (!user) return "Login to add to wishlist";
                                 if (isInWishlist) return "In Wishlist";
                                 return "Add to Wishlist";
-                              })()} 
+                              })()}
                             </span>
                           </a>
                         ) : (
@@ -878,9 +822,9 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                           <a
                             onClick={safeProduct.isActive === false ? null : handleCartClick}
                             className={`btn-style-2 fw-6 btn-add-to-cart ${safeProduct.isActive === false ? 'disabled' : ''}`}
-                            style={{ 
-                              height: "46px", 
-                              display: "flex", 
+                            style={{
+                              height: "46px",
+                              display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
                               padding: "0 15px",
@@ -896,7 +840,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                                 // Check if current product+size combination is in cart using same logic as handleCartClick
                                 const baseId = safeProduct.documentId || safeProduct.id;
                                 let uniqueCartIdToCheck;
-                                
+
                                 if (activeVariant && !activeVariant.isCurrentProduct) {
                                   // For variants: include variant documentId and size for consistency
                                   const variantIdentifier = activeVariant.documentId || activeVariant.id;
@@ -906,7 +850,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                                   // For main products: use documentId for consistency and include size in ID
                                   uniqueCartIdToCheck = selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
                                 }
-                                
+
                                 const isInCart = isAddedToCartProducts(uniqueCartIdToCheck);
                                 return isInCart ? "Added" : "Add to cart";
                               })() || "Add to cart"}
@@ -915,13 +859,13 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                         )}
 
 
-                        <button 
+                        <button
                           onClick={() => setShowCustomOrderForm(true)}
                           className="btn-style-1 text-btn-uppercase fw-6"
-                          style={{ 
-                            height: "46px", 
-                            display: "flex", 
-                            alignItems: "center", 
+                          style={{
+                            height: "46px",
+                            display: "flex",
+                            alignItems: "center",
                             justifyContent: "center",
                             width: "auto",
                             minWidth: "140px",
@@ -943,7 +887,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                         </button>
                       </div>
                     </div>
-                    
+
                     <div className="tf-product-info-help">
                       <div className="tf-product-info-extra-link">
                         <a
@@ -967,8 +911,8 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                             <i className="icon-share" />
                           </div>
                           <p className="text-caption-1">
-                            {shareStatus === 'copied' ? 'Copied!' : 
-                             shareStatus === 'error' ? 'Copy failed' : 'Share'}
+                            {shareStatus === 'copied' ? 'Copied!' :
+                              shareStatus === 'error' ? 'Copy failed' : 'Share'}
                           </p>
                         </a>
                       </div>
@@ -978,8 +922,8 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                           <i className="icon-truck" />
                         </div>
                         <p className="text-caption-1">
-                          <strong>Delivery Times:</strong><br/>
-                          Domestic: Zone 1 (3-5 days), Zone 2 (5-7 days), Zone 3 (6-8 days)<br/>
+                          <strong>Delivery Times:</strong><br />
+                          Domestic: Zone 1 (3-5 days), Zone 2 (5-7 days), Zone 3 (6-8 days)<br />
                           International: Express (9-11 days), Economy (16-21 days)
                         </p>
                       </div>
@@ -992,13 +936,8 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                           All sales are final.
                         </p>
                       </div>
-                      {/* View Store Information section removed */}
                     </div>
                     <ul className="tf-product-info-sku">
-                      {/* <li>
-                        <p className="text-caption-1">Product ID:</p>
-                        <p className="text-caption-1 text-1">53453412</p>
-                      </li> */}
                       <li>
                         <p className="text-caption-1">Designed By:</p>
                         <p className="text-caption-1 text-1">Traditional Alley</p>
@@ -1011,7 +950,6 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                           {safeProduct.isActive === false ? 'Inactive' : 'Active'}
                         </p>
                       </li>
-
                     </ul>
                   </div>
                 </div>
@@ -1020,20 +958,20 @@ export default function Details1({ product, variants = [], preferredVariantId = 
             {/* /tf-product-info-list */}
           </div>
         </div>
+
+        {/* Size guide modal */}
+        <SizeGuideModal
+          isOpen={showSizeGuide}
+          onClose={() => setShowSizeGuide(false)}
+        />
+
+        {/* Custom Order Form Modal */}
+        <CustomOrderForm
+          isOpen={showCustomOrderForm}
+          onClose={() => setShowCustomOrderForm(false)}
+          product={safeProduct}
+        />
       </div>
-      
-      {/* Size guide modal */}
-      <SizeGuideModal 
-        isOpen={showSizeGuide} 
-        onClose={() => setShowSizeGuide(false)}
-      />
-      
-      {/* Custom Order Form Modal */}
-      <CustomOrderForm 
-        isOpen={showCustomOrderForm} 
-        onClose={() => setShowCustomOrderForm(false)}
-        product={safeProduct}
-      />
     </section>
   );
-}
+};

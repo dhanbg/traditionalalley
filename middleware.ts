@@ -11,14 +11,14 @@ export default auth((req) => {
   }
 
   // Protected routes that require authentication
-  const protectedRoutes = ["/order", "/forum", "/wish-list", "/shopping-cart"]
-  const isProtectedRoute = protectedRoutes.some(route => 
+  const protectedRoutes = ["/order", "/forum", "/wish-list"]
+  const isProtectedRoute = protectedRoutes.some(route =>
     nextUrl.pathname.startsWith(route)
   )
 
   // Admin routes
   const adminRoutes = ["/dashboard"]
-  const isAdminRoute = adminRoutes.some(route => 
+  const isAdminRoute = adminRoutes.some(route =>
     nextUrl.pathname.startsWith(route)
   )
 
@@ -33,17 +33,17 @@ export default auth((req) => {
       console.log("🚫 Admin route access denied: User not logged in")
       return NextResponse.redirect(new URL("/login", nextUrl))
     }
-    
+
     // Check if user has admin role
     const userRole = req.auth?.user?.role
     const userEmail = req.auth?.user?.email
     console.log("🔍 Admin route check:", { userEmail, userRole, path: nextUrl.pathname })
-    
+
     if (userRole !== "admin") {
       console.log("⛔ Admin access denied for:", userEmail, "- Role:", userRole)
       return NextResponse.redirect(new URL("/", nextUrl))
     }
-    
+
     console.log("✅ Admin access granted for:", userEmail)
   }
 

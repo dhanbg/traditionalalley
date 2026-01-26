@@ -21,7 +21,7 @@ export default function ProductCompare() {
     user
   } = useContextElement();
   const { data: session } = useSession();
-  
+
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [ratings, setRatings] = useState({}); // { [documentId]: averageRating }
@@ -39,7 +39,7 @@ export default function ProductCompare() {
         setLoading(false);
         return;
       }
-      
+
       setLoading(true);
       try {
         // Create an array to track valid products
@@ -47,17 +47,17 @@ export default function ProductCompare() {
         const invalidIds = [];
         const ratingsObj = {};
         const countsObj = {};
-        
+
         // Process each product ID individually to isolate errors
         for (const id of compareItem) {
           try {
             let response;
-            
+
             // Check if the id is a number or string (documentId)
             if (typeof id === 'string' && id.length > 8) {
               // This is likely a documentId - use filters
               response = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*`);
-              
+
               // Check if we got results
               if (response?.data && Array.isArray(response.data) && response.data.length > 0) {
                 // We found it by documentId
@@ -68,41 +68,41 @@ export default function ProductCompare() {
             } else {
               // This is likely a numeric ID - use direct endpoint
               response = await fetchDataFromApi(`/api/products/${id}?populate=*`);
-              
+
               // If not found by ID, try documentId as fallback
               if (!response?.data) {
                 response = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*`);
               }
             }
-            
+
             if (!response || !response.data) {
               invalidIds.push(id);
               continue;
             }
-            
+
             // Handle both single product and array responses
-            const productData = Array.isArray(response.data) ? 
-              (response.data.length > 0 ? response.data[0] : null) : 
+            const productData = Array.isArray(response.data) ?
+              (response.data.length > 0 ? response.data[0] : null) :
               response.data;
-            
+
             if (!productData) {
               invalidIds.push(id);
               continue;
             }
-            
+
             // Extract product attributes
             const attrs = productData.attributes || productData;
             const productId = productData.id;
             const documentId = attrs.documentId || productId;
-            
+
             // Get optimized image URL
             const imgSrc = getOptimizedImageUrl(attrs.imgSrc) || DEFAULT_IMAGE;
-            
+
             // Check if we already have this product in the validProducts array
             const isDuplicate = validProducts.some(
               p => p.id === productId || p.documentId === attrs.documentId
             );
-            
+
             if (!isDuplicate) {
               // First get basic product info
               const productInfo = {
@@ -120,14 +120,14 @@ export default function ProductCompare() {
                 material: attrs.material || "Cotton",
                 brand: attrs.brand || "Brand",
               };
-              
+
               // If we have a collection reference but not the full collection data
               if (attrs.collection && typeof attrs.collection === 'object' && !attrs.collection.category) {
                 try {
                   // Fetch the collection details to get category info
                   const collectionId = attrs.collection.id;
                   const collectionResponse = await fetchDataFromApi(`/api/collections?populate=*&filters[id][$eq]=${collectionId}`);
-                  
+
                   if (collectionResponse?.data && Array.isArray(collectionResponse.data) && collectionResponse.data.length > 0) {
                     const collectionData = collectionResponse.data[0];
                     // Update product info with collection and category data
@@ -137,7 +137,7 @@ export default function ProductCompare() {
                 } catch (error) {
                 }
               }
-              
+
               validProducts.push(productInfo);
               // Fetch average rating for this product
               try {
@@ -162,13 +162,13 @@ export default function ProductCompare() {
             invalidIds.push(id);
           }
         }
-        
+
         // If we found invalid IDs, remove them from compare items
         if (invalidIds.length > 0) {
           const updatedCompareItems = compareItem.filter(id => !invalidIds.includes(id));
           setCompareItem(updatedCompareItems);
         }
-        
+
         setItems(validProducts);
         setRatings(ratingsObj);
         setRatingCounts(countsObj);
@@ -177,16 +177,12 @@ export default function ProductCompare() {
         setLoading(false);
       }
     };
-    
+
     fetchCompareProducts();
   }, [compareItem, setCompareItem]);
 
   const handleAddToCart = (id) => {
-    if (!user) {
-      signIn();
-    } else {
-      addProductToCart(id);
-    }
+    addProductToCart(id);
   };
 
   const removeItem = (product) => {

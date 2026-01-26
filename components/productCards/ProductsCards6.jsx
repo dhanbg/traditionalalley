@@ -23,11 +23,11 @@ export default function ProductsCards6({ product }) {
       imgSrc: color.imgSrc || DEFAULT_IMAGE
     })) : []
   };
-  
+
   // Parse size_stocks data for size selection
   const parseSizeStocks = (sizeStocks) => {
     if (!sizeStocks) return [];
-    
+
     try {
       let parsedData;
       if (typeof sizeStocks === 'string') {
@@ -35,7 +35,7 @@ export default function ProductsCards6({ product }) {
       } else {
         parsedData = sizeStocks;
       }
-      
+
       if (typeof parsedData === 'object' && !Array.isArray(parsedData)) {
         // Format: {"S": 10, "M": 5, "L": 0, ...}
         return Object.entries(parsedData).map(([size, quantity]) => ({
@@ -48,13 +48,13 @@ export default function ProductsCards6({ product }) {
     } catch (error) {
       console.error('Error parsing size_stocks:', error);
     }
-    
+
     return [];
   };
 
   const availableSizes = parseSizeStocks(safeProduct.size_stocks);
   const hasAvailableSizes = availableSizes.length > 0;
-  
+
   // Calculate if product is in stock based on size_stocks
   const isInStock = calculateInStock(safeProduct);
 
@@ -150,7 +150,7 @@ export default function ProductsCards6({ product }) {
           {safeProduct.title}
         </Link>
         <span className="price current-price">
-          <PriceDisplay 
+          <PriceDisplay
             price={safeProduct.price}
             oldPrice={safeProduct.oldPrice}
             className="current-price"
@@ -169,9 +169,8 @@ export default function ProductsCards6({ product }) {
               {safeProduct.colors.map((color, index) => (
                 <li
                   key={index}
-                  className={`list-color-item color-swatch ${
-                    currentImage == color.imgSrc ? "active" : ""
-                  } `}
+                  className={`list-color-item color-swatch ${currentImage == color.imgSrc ? "active" : ""
+                    } `}
                   onMouseOver={() => setCurrentImage(color.imgSrc || DEFAULT_IMAGE)}
                 >
                   <span className={`swatch-value ${color.bgColor}`} />
@@ -189,13 +188,11 @@ export default function ProductsCards6({ product }) {
           {hasAvailableSizes && !isMobile && (
             <div className="size-box list-product-btn">
               {availableSizes.map((size) => (
-                <span 
+                <span
                   key={size.id}
-                  className={`size-item box-icon ${
-                    size.disabled ? 'disable' : ''
-                  } ${
-                    selectedSize === size.value ? 'selected' : ''
-                  }`}
+                  className={`size-item box-icon ${size.disabled ? 'disable' : ''
+                    } ${selectedSize === size.value ? 'selected' : ''
+                    }`}
                   onClick={() => !size.disabled && setSelectedSize(size.value)}
                   style={{
                     cursor: size.disabled ? 'not-allowed' : 'pointer',
@@ -209,94 +206,31 @@ export default function ProductsCards6({ product }) {
               ))}
             </div>
           )}
-          {!isMobile && (
-          <div className="list-product-btn">
-            {isInStock && (
-              <a
-                onClick={() => {
-                  if (!user) {
-                    signIn();
-                    return;
-                  }
-                  
-                  // For products with sizes, require size selection
-                  if (hasAvailableSizes && !selectedSize) {
-                    return;
-                  }
-                  
-                  // Create unique cart ID that includes size information if applicable
-                  let cartId = safeProduct.documentId || safeProduct.id;
-                  if (hasAvailableSizes && selectedSize) {
-                    cartId = `${cartId}-size-${selectedSize}`;
-                  }
-                  
-                  // Check if this exact cart ID is already in cart
-                  if (isAddedToCartProducts(cartId)) {
-                    return; // Already in cart, do nothing
-                  }
-                  
-                  addProductToCart(cartId, 1, true, null, selectedSize);
-                }}
-                className={`btn-main-product ${
-                  hasAvailableSizes && !selectedSize ? 'disabled' : ''
-                }`}
-                style={{
-                  cursor: hasAvailableSizes && !selectedSize ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {(() => {
-                
-                // Check if already added to cart using the same logic as onClick
-                if (user) {
-                  // Create the same unique cart ID that would be used when adding to cart
-                  let cartIdToCheck = safeProduct.documentId || safeProduct.id;
-                  if (hasAvailableSizes && selectedSize) {
-                    cartIdToCheck = `${cartIdToCheck}-size-${selectedSize}`;
-                  }
-                  
-                  // Check if this exact cart ID is already in cart
-                  if (isAddedToCartProducts(cartIdToCheck)) {
-                    return "Already Added";
-                  }
-                  
-                  // Return appropriate text based on size selection
-                  if (hasAvailableSizes && selectedSize) {
-                    return `Add ${selectedSize} to cart`;
-                  }
-                }
-                
-                // Check if need to select size
-                if (hasAvailableSizes && !selectedSize) {
-                  return "Choose Size First";
-                }
-                
-                // Default case
-                return "Add To cart";
-              })()} 
-              </a>
+              })()}
+        </a>
             )}
 
-            <a
-              href="#compare"
-              data-bs-toggle="offcanvas"
-              aria-controls="compare"
-              onClick={() => addToCompareItem(safeProduct.id)}
-              className="box-icon compare btn-icon-action"
-            >
-              <span className="icon icon-gitDiff" />
-              <span className="tooltip">
-                {" "}
-                {isAddedtoCompareItem(safeProduct.id)
-                  ? "Already compared"
-                  : "Compare"}
-              </span>
-            </a>
+        <a
+          href="#compare"
+          data-bs-toggle="offcanvas"
+          aria-controls="compare"
+          onClick={() => addToCompareItem(safeProduct.id)}
+          className="box-icon compare btn-icon-action"
+        >
+          <span className="icon icon-gitDiff" />
+          <span className="tooltip">
+            {" "}
+            {isAddedtoCompareItem(safeProduct.id)
+              ? "Already compared"
+              : "Compare"}
+          </span>
+        </a>
 
-          </div>
-          )}
-        </div>
       </div>
-      
+          )}
     </div>
+      </div >
+      
+    </div >
   );
 }

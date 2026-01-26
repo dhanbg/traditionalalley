@@ -399,6 +399,8 @@ export default function CartModal() {
       };
       
       fetchUserCarts();
+    } else {
+      setServerCartLoading(false);
     }
   }, [user, setCartProducts, cartRefreshKey, isCartClearing, cartClearedTimestamp]);
 
