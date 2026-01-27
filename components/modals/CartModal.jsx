@@ -637,10 +637,8 @@ export default function CartModal() {
   
   // Get all cart products first
   const allCartProducts = user 
-    ? serverCartProducts.length > 0 
-      ? serverCartProducts 
-      : cartProducts // Only fall back to context cart products if server cart is empty
-    : cartProducts; // Use local cart for guest users
+    ? serverCartProducts  // Authenticated: only server cart
+    : cartProducts;        // Guest: only local cart
   
   // Filter to show only selected items in the modal
   const displayProducts = allCartProducts.filter(product => selectedCartItems[product.id]);
