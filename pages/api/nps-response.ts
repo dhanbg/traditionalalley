@@ -20,7 +20,7 @@ export default async function handler(
     if (!MerchantTxnId || !GatewayTxnId) {
       console.error('Missing required response parameters');
       // Redirect to a generic error page or home page
-      return res.redirect('/payment/error?reason=missing-parameters');
+      return res.redirect('/payment-error?reason=missing-parameters');
     }
 
     const merchantTxnId = MerchantTxnId as string;
@@ -31,15 +31,15 @@ export default async function handler(
     // Redirect to the NPS callback page with the transaction details
     // This will handle the payment processing and show the result to the user
     const callbackUrl = `/nps-callback?MerchantTxnId=${encodeURIComponent(merchantTxnId)}&GatewayTxnId=${encodeURIComponent(gatewayTxnId)}`;
-    
+
     console.log(`Redirecting to callback URL: ${callbackUrl}`);
-    
+
     return res.redirect(callbackUrl);
 
   } catch (error: any) {
     console.error('❌ Response URL processing error:', error);
-    
+
     // Redirect to error page with error information
-    return res.redirect('/payment/error?reason=processing-error');
+    return res.redirect('/payment-error?reason=processing-error');
   }
 } 
