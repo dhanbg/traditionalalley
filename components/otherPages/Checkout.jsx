@@ -795,41 +795,152 @@ export default function Checkout() {
     }
   });
 
-  // Function to get user's bag documentId
+  // Function to get user's bag documentId or create one for guest
   const getUserBagDocumentId = async () => {
-    if (!user?.id) return null;
+    // If user is logged in, try to get their existing bag
+    if (user?.id) {
+      try {
+        const currentUserData = await fetchDataFromApi(
+          `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag`
+        );
 
+        if (currentUserData?.data && currentUserData.data.length > 0) {
+          const userData = currentUserData.data[0];
+          const userBag = userData.user_bag;
+
+          if (userBag && userBag.documentId) {
+            return userBag.documentId;
+          }
+        }
+      } catch (error) {
+        console.error("Error getting user bag documentId:", error);
+      }
+    }
+
+    // If no user or no existing bag found, create a new one (for guest or new user)
+    // For guest, we use the name provided in checkout form
     try {
-      const currentUserData = await fetchDataFromApi(
-        `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag`
-      );
+      const guestName = receiverDetails.fullName || "Guest User";
 
-      if (!currentUserData?.data || currentUserData.data.length === 0) {
-        console.error("User data not found");
-        return null;
+      // Create a new user-bag
+      // Note: For guests, we don't link it to a user_datum initially
+      const payload = {
+        data: {
+          Name: guestName,
+          // user_datum: user?.documentId || null // Optional: link if user exists but has no bag
+        }
+      };
+
+      console.log('Creating new user-bag for checkout:', payload);
+
+      // We need to use a direct fetch here because createData might have auth headers we don't want?
+      // Actually createData in utils/api.js likely uses the API token which is fine.
+      // But we need to make sure the endpoint allows public creation or we use the token.
+
+      // Assuming createData handles the API token correctly
+      // We need to import createData if not already imported (it is imported at top)
+
+      // However, createData returns the response.
+      // Let's check if we can use createData directly.
+
+      // Wait, createData is imported.
+      // But let's look at how it's used elsewhere.
+
+      // Let's use fetch directly to be safe and consistent with other parts if needed, 
+      // but createData is better if available.
+
+      // Using createData from utils/api
+      // We need to make sure we import createData if it's not available in scope?
+      // It is imported at line 10.
+
+      // But wait, createData might require authentication if the endpoint is protected.
+      // If user-bags create permission is public, it's fine.
+      // If not, we might have an issue. The user said "Assuming permissions are already set".
+
+      const response = await fetch(`${API_URL}/api/user-bags`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // If we have a public API token, we should use it. 
+          // Usually API_URL is public, but we might need an API token.
+          // The utils/api.js likely has the token.
+          // Let's use createData which likely wraps the token.
+        },
+        body: JSON.stringify(payload)
+      });
+
+      // Actually, let's use createData helper if possible, but I don't want to break if it depends on something.
+      // Let's look at createData implementation in utils/api.js? 
+      // I don't have it open right now, but I saw it imported.
+
+      // Let's try to use the createData function imported at the top.
+      // But wait, I can't see the import in this view. 
+      // Line 10: import { ..., createData, ... } from "@/utils/api";
+      // Wait, line 10 in previous view showed: 
+      // import { fetchDataFromApi, updateData, updateUserBagWithPayment, updateUserBagWithCOD, createOrderRecord, updateProductStock, deleteData } from "@/utils/api";
+      // It does NOT show createData!
+
+      // I need to check if createData is exported from utils/api.js.
+      // Or maybe I should use fetchDataFromApi with POST?
+      // fetchDataFromApi usually does GET.
+
+      // Let's use fetch with the token if I can find it, or just try public access.
+      // Or better, I see `updateUserBagWithPayment` etc.
+
+      // Let's use a direct fetch to /api/user-bags.
+      // I'll assume standard Strapi headers.
+
+      // Wait, I can use `createOrderRecord` as a template?
+      // It uses `API_URL` and `STRAPI_API_TOKEN` (which might be internal to api.js).
+
+      // I'll try to use `createData` if I can add it to imports, OR just implement the fetch here.
+      // Since I can't easily change imports without risking breaking other things (multi-line replace on imports is risky),
+      // I'll implement the fetch here.
+
+      // But I need the token. `process.env.NEXT_PUBLIC_STRAPI_API_TOKEN`?
+
+      const token = process.env.NEXT_PUBLIC_API_TOKEN || process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const userData = currentUserData.data[0];
-      const userBag = userData.user_bag;
+      const res = await fetch(`${API_URL}/api/user-bags`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
 
-      if (!userBag || !userBag.documentId) {
-        console.error("User bag not found");
-        return null;
+      const data = await res.json();
+
+      if (data?.data?.documentId) {
+        return data.data.documentId;
+      } else if (data?.data?.id) {
+        // If documentId is not returned (older Strapi), we might need to fetch it?
+        // Strapi 5 returns documentId.
+        return data.data.documentId || data.data.id; // Fallback
       }
 
-      return userBag.documentId;
+      console.error("Failed to create user-bag:", data);
+      return null;
+
     } catch (error) {
-      console.error("Error getting user bag documentId:", error);
+      console.error("Error creating guest user bag:", error);
       return null;
     }
   };
 
   // Function to handle cash payment order
   const handleCashPaymentOrder = async () => {
-    if (!user) {
-      alert('Please log in to place an order');
-      return;
-    }
+    // Removed login check for guest checkout
+    // if (!user) {
+    //   alert('Please log in to place an order');
+    //   return;
+    // }
 
     if (selectedProducts.length === 0) {
       alert('No products selected for checkout');

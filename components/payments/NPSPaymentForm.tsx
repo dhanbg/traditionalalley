@@ -17,7 +17,7 @@ export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, 
   const { data: session } = useSession();
   const { userCurrency } = useContextElement();
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Use the NPS hook with proper redirect handling
   const { initiate } = useNPS({
     onSuccess: (response) => {
@@ -33,30 +33,31 @@ export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, 
   });
 
   const handlePayment = async () => {
-    if (!session?.user) {
-      onError({ message: "Please sign in to continue with payment" });
-      return;
-    }
+    // Removed session check for guest checkout
+    // if (!session?.user) {
+    //   onError({ message: "Please sign in to continue with payment" });
+    //   return;
+    // }
 
     setIsLoading(true);
     try {
       // Generate a unique merchant transaction ID
       const merchantTxnId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
+
       const paymentRequest = {
         amount,
         merchantTxnId,
         transactionRemarks: transactionRemarks || `Payment for order ${merchantTxnId}`,
         customer_info: {
-          name: session.user.name || '',
-          email: session.user.email || '',
-          phone: '' // You might want to get this from user profile
+          name: session?.user?.name || orderData?.receiver_details?.name || 'Guest Customer',
+          email: session?.user?.email || orderData?.receiver_details?.email || 'guest@example.com',
+          phone: orderData?.receiver_details?.phone || ''
         }
       };
 
       // Use the NPS hook to initiate payment with proper redirect
       await initiate(paymentRequest);
-      
+
     } catch (error) {
       console.error('Payment initiation error:', error);
       onError(error);
@@ -84,7 +85,7 @@ export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, 
           </span>
         </div>
       )}
-      
+
       {/* Currency conversion notice - only show in USD mode */}
       {userCurrency === 'USD' && (
         <div style={{
@@ -105,7 +106,7 @@ export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, 
       )}
       <button
         onClick={handlePayment}
-        disabled={isLoading || !session?.user || disabled || !shippingRatesObtained}
+        disabled={isLoading || disabled || !shippingRatesObtained}
         className="tf-btn btn-fill animate-hover-btn radius-3 justify-content-center fw-6"
         style={{
           opacity: (!shippingRatesObtained || disabled) ? 0.6 : 1,
