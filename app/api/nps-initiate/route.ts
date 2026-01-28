@@ -81,7 +81,6 @@ export async function POST(request: NextRequest) {
 
     console.log('=== NPS PAYMENT INITIATION ===');
     console.log('Environment:', process.env.NODE_ENV);
-    console.log('Environment:', process.env.NODE_ENV);
     console.log('User:', session?.user?.email || 'Guest');
     console.log('Request body:', body);
     console.log('🔍 [COUPON DEBUG] OrderData exists:', !!orderData);
@@ -101,8 +100,6 @@ export async function POST(request: NextRequest) {
     });
 
     // Get user data from Strapi using Auth.js user ID
-    let userBagId = userBagDocumentId;
-
     let userBagId = userBagDocumentId;
 
     if (!userBagId && session?.user?.id) {
