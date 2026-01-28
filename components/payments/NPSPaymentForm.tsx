@@ -43,7 +43,7 @@ export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, 
     setIsLoading(true);
     try {
       // Get user bag ID if function provided
-      let userBagId = undefined;
+      let userBagId: string | undefined = undefined;
       if (getUserBagDocumentId) {
         const id = await getUserBagDocumentId();
         if (id) userBagId = id;
