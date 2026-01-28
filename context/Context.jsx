@@ -809,6 +809,10 @@ export default function Context({ children }) {
         
         // Add the product to cart
         try {
+          // Skip backend for guest users - keep cart local only
+          if (!user) {
+            throw new Error("Guest user - skipping backend cart creation");
+          }
           // Prepare complete cart payload
           const completeCartPayload = {
             data: {

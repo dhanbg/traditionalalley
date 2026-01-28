@@ -40,14 +40,14 @@ export default function CartModal() {
   const [isAgreed, setIsAgreed] = useState(false);
   const [isViewCartLoading, setIsViewCartLoading] = useState(false);
   const [showTopPicks, setShowTopPicks] = useState(false);
-  
+
   // Build product detail URL with preferred variant when applicable
   const buildProductDetailHref = (item) => {
     const baseId = item.baseProductId || item.documentId;
     const variantId = item?.variantInfo?.documentId || item?.variantInfo?.variantId || null;
     return `/product-detail/${baseId}${variantId ? `?variant=${variantId}` : ''}`;
   };
-  
+
   // Initialize image preloader for cart modal
   const modalImagePreloader = useCartImagePreloader(serverCartProducts, {
     autoPreload: true,
@@ -63,21 +63,21 @@ export default function CartModal() {
 
   const removeItem = (id, cartDocumentId) => {
     // Find the item in the cart to confirm it exists before removing
-    const itemToRemove = displayProducts.find(item => 
-      item.id == id || 
-      (item.documentId === id) || 
+    const itemToRemove = displayProducts.find(item =>
+      item.id == id ||
+      (item.documentId === id) ||
       (item.cartDocumentId === cartDocumentId)
     );
-    
+
     if (itemToRemove) {
       // Remove from local state immediately for a responsive UI
       // This ensures the item disappears from the cart modal right away
-      setServerCartProducts(prev => prev.filter(product => 
-        product.id != id && 
-        product.documentId !== id && 
+      setServerCartProducts(prev => prev.filter(product =>
+        product.id != id &&
+        product.documentId !== id &&
         product.cartDocumentId !== cartDocumentId
       ));
-      
+
       // Use the removeFromCart function from Context to handle backend deletion
       removeFromCart(id, cartDocumentId);
     }
@@ -90,12 +90,12 @@ export default function CartModal() {
       // Remove modal classes
       modalElement.classList.remove('show');
       modalElement.style.display = 'none';
-      
+
       // Remove body modal classes
       document.body.classList.remove('modal-open');
       document.body.style.removeProperty('overflow');
       document.body.style.removeProperty('padding-right');
-      
+
       // Remove all backdrop elements
       const backdrops = document.querySelectorAll('.modal-backdrop');
       backdrops.forEach(backdrop => backdrop.remove());
@@ -129,41 +129,41 @@ export default function CartModal() {
       router.push('/shop-default-grid');
     }
   };
-  
+
   const handleProductClick = (product) => {
     // Close modal and navigate to product page
     closeCartModal();
     router.push(`/product-detail/${product.id}`);
   };
-  
+
 
 
   // Helper function to fetch fresh variant data
   const fetchFreshVariantData = async (variantId, productDocumentId) => {
     try {
       console.log('🔄 Fetching fresh variant data for variantId:', variantId, 'productDocumentId:', productDocumentId);
-      
+
       // Try fetching by documentId first
       let response = await fetchDataFromApi(`/api/product-variants?populate=*&filters[documentId][$eq]=${variantId}`);
-      
+
       // If no results and variantId is numeric, try fetching by id
       if (!response.data || response.data.length === 0) {
         console.log('🔄 Trying to fetch by numeric id:', variantId);
         response = await fetchDataFromApi(`/api/product-variants?populate=*&filters[id][$eq]=${variantId}`);
       }
-      
+
       // If still no results and we have productDocumentId, try to find variant by product relationship
       if ((!response.data || response.data.length === 0) && productDocumentId) {
         console.log('🔄 Trying to fetch variant by product relationship for product:', productDocumentId);
         response = await fetchDataFromApi(`/api/product-variants?populate=*&filters[product][documentId][$eq]=${productDocumentId}`);
-        
+
         // If multiple variants found, log them and use the first one (you might want to add more logic here)
         if (response.data && response.data.length > 0) {
           console.log('📊 Found variants for product:', response.data.map(v => ({ id: v.id, documentId: v.documentId })));
           // For now, use the first variant found
         }
       }
-      
+
       if (response.data && response.data.length > 0) {
         const freshData = response.data[0];
         console.log('✅ Fresh variant data fetched:', {
@@ -184,44 +184,44 @@ export default function CartModal() {
   useEffect(() => {
     // Don't load cart if currently clearing or recently cleared (within 5 seconds)
     const recentlyCleared = cartClearedTimestamp && (Date.now() - cartClearedTimestamp < 5000);
-    
+
     if (user && !isCartClearing && !recentlyCleared) {
-       const fetchUserCarts = async () => {
+      const fetchUserCarts = async () => {
         try {
           setServerCartLoading(true);
           // Fetch carts data from the API
           const response = await fetchDataFromApi(`/api/carts?populate=*`);
-          
+
           // Filter carts based on the current user's authUserId
           const currentUserCarts = response.data.filter(
             cart => cart.user_datum && cart.user_datum.authUserId === user.id
           );
-          
+
           // Update state with user's carts
           setUserCarts(currentUserCarts);
-          
+
           // Array to hold the complete product details
           const productsWithDetails = [];
           let totalPrice = 0;
-          
+
           // For each cart, fetch the complete product details
           for (const cart of currentUserCarts) {
             const productDocId = cart.product?.documentId;
-            
+
             if (productDocId) {
               try {
                 // Fetch product details using the documentId
                 const productDetails = await fetchDataFromApi(PRODUCT_BY_DOCUMENT_ID_API(productDocId));
-                
+
                 // The response will now be an array of products, get the first one
-                const productData = productDetails.data && productDetails.data.length > 0 
-                  ? productDetails.data[0] 
+                const productData = productDetails.data && productDetails.data.length > 0
+                  ? productDetails.data[0]
                   : null;
-                
+
                 if (!productData) {
                   continue;
                 }
-                
+
                 // Determine the appropriate image URL based on available formats
                 // Prioritize small format for cart display for better performance
                 let imgSrcUrl = null;
@@ -240,12 +240,12 @@ export default function CartModal() {
                 } else {
                   imgHoverUrl = getImageUrl(productData.imgHover);
                 }
-                
+
                 // Parse variant information if available
                 let variantInfo = null;
                 let cartItemId = productDocId || cart.product.id;
                 let title = cart.product.title;
-                
+
                 if (cart.variantInfo) {
                   try {
                     // Check if variantInfo is already an object (not a string)
@@ -260,7 +260,7 @@ export default function CartModal() {
                         variantInfo = null;
                       }
                     }
-                    
+
                     if (variantInfo) {
                       // Fetch fresh variant data if variantId exists
                       if (variantInfo.isVariant && variantInfo.variantId) {
@@ -280,7 +280,7 @@ export default function CartModal() {
                           console.error('Error fetching fresh variant data:', error);
                         }
                       }
-                      
+
                       // Reconstruct the variant-specific cart item ID using documentId (same as when adding to cart)
                       if (variantInfo.isVariant && (variantInfo.documentId || variantInfo.variantId)) {
                         // Use documentId first (preferred), then fall back to variantId for backward compatibility
@@ -297,12 +297,12 @@ export default function CartModal() {
                           }
                         });
                       }
-                      
+
                       // Use variant-specific title and image
                       if (variantInfo.title && variantInfo.isVariant) {
                         title = `${cart.product.title} - ${variantInfo.title}`;
                       }
-                      
+
                       // Handle variant-specific image with proper format selection
                       if (variantInfo.imgSrc) {
                         // Apply same small format logic to variant images
@@ -329,12 +329,12 @@ export default function CartModal() {
                     variantInfo = null;
                   }
                 }
-                
+
                 // Add size to cart item ID if available (for unique identification)
                 if (cart.size) {
                   cartItemId = `${cartItemId}-size-${cart.size}`;
                 }
-                
+
                 // Create a cart product object with all needed details
                 const productWithQuantity = {
                   id: cartItemId, // Use variant-specific ID
@@ -354,50 +354,27 @@ export default function CartModal() {
                   variantInfo: variantInfo // Include variant info
                 };
 
-                
+
                 // Add product to array
                 productsWithDetails.push(productWithQuantity);
-                
+
                 // Add to total price
                 totalPrice += cart.product.price * cart.quantity;
               } catch (error) {
               }
             }
           }
-          
+
           // Update state with products and total price
           setServerCartProducts(productsWithDetails);
           setServerTotalPrice(totalPrice);
           setServerCartLoading(false);
-          
-          // Merge server data with local cart instead of replacing entirely
-          // This prevents newly added items from disappearing during server sync
-          setCartProducts(prevCartProducts => {
-            // Create a map of server products by ID for quick lookup
-            const serverProductsMap = new Map();
-            productsWithDetails.forEach(product => {
-              serverProductsMap.set(product.id, product);
-            });
-            
-            // Start with server products as the base
-            const mergedProducts = [...productsWithDetails];
-            
-            // Add any local products that aren't in server data yet
-            // (these are likely recently added items that haven't synced yet)
-            prevCartProducts.forEach(localProduct => {
-              if (!serverProductsMap.has(localProduct.id)) {
-                mergedProducts.push(localProduct);
-              }
-            });
-            
-            return mergedProducts;
-          });
-          
+
         } catch (error) {
           setServerCartLoading(false);
         }
       };
-      
+
       fetchUserCarts();
     } else {
       setServerCartLoading(false);
@@ -407,21 +384,21 @@ export default function CartModal() {
   // Handle modal accessibility
   useEffect(() => {
     const modal = document.getElementById('shoppingCart');
-    
+
     if (!modal) return;
-    
+
     const handleModalShow = () => {
       setIsModalInert(false);
-      
+
       // Refresh cart data when modal opens
       const recentlyCleared = cartClearedTimestamp && (Date.now() - cartClearedTimestamp < 5000);
-      
+
       if (user && !isCartClearing && !recentlyCleared) {
         // Force a refresh of server cart data when the modal opens
         const refreshCartData = async () => {
           try {
             setServerCartLoading(true);
-            
+
             // First, get the user's data to find their user_datum ID
             const currentUserData = await fetchDataFromApi(
               `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`
@@ -434,28 +411,28 @@ export default function CartModal() {
 
             const userData = currentUserData.data[0];
             const userDocumentId = userData.documentId || userData.attributes?.documentId;
-            
+
             const cartResponse = await fetchDataFromApi(
               `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
             );
-            
+
             if (cartResponse?.data?.length > 0) {
               // Process cart data...
               // Update with fresh data from server
               const productsWithDetails = [];
               let totalPrice = 0;
-              
+
               for (const cart of cartResponse.data) {
                 // Skip carts without product data
                 if (!cart.attributes?.product?.data) continue;
-                
+
                 const productData = cart.attributes.product.data;
                 const productId = productData.id;
                 const productDocId = productData.attributes?.documentId;
-                
+
                 // Match current user's cart items
                 const productAttrs = productData.attributes || {};
-                
+
                 // Get image URLs, prefer small format for cart display
                 let imgSrcUrl = null;
                 if (productAttrs.imgSrc && productAttrs.imgSrc.formats && productAttrs.imgSrc.formats.small && productAttrs.imgSrc.formats.small.url) {
@@ -477,12 +454,12 @@ export default function CartModal() {
                 } else {
                   imgHoverUrl = getImageUrl(productAttrs.imgHover);
                 }
-                
+
                 // Parse variant information if available
                 let variantInfo = null;
                 let cartItemId = productDocId || productId;
                 let title = productAttrs.title || 'Product Item';
-                
+
                 if (cart.attributes.variantInfo) {
                   try {
                     // Check if variantInfo is already an object (not a string)
@@ -497,7 +474,7 @@ export default function CartModal() {
                         variantInfo = null;
                       }
                     }
-                    
+
                     if (variantInfo) {
                       // Fetch fresh variant data if variantId exists
                       if (variantInfo.isVariant && variantInfo.variantId) {
@@ -517,17 +494,17 @@ export default function CartModal() {
                           console.error('Error fetching fresh variant data:', error);
                         }
                       }
-                      
+
                       // Reconstruct the variant-specific cart item ID using documentId
                       if (variantInfo.isVariant && variantInfo.variantId) {
                         cartItemId = `${productDocId || productId}-variant-${variantInfo.variantId}`;
                       }
-                      
+
                       // Use variant-specific title and image
                       if (variantInfo.title && variantInfo.isVariant) {
                         title = `${productAttrs.title || 'Product Item'} - ${variantInfo.title}`;
                       }
-                      
+
                       // Handle variant-specific image with proper format selection
                       if (variantInfo.imgSrc) {
                         // Apply same small format logic to variant images
@@ -552,7 +529,7 @@ export default function CartModal() {
                     variantInfo = null;
                   }
                 }
-                
+
                 // Create cart product object
                 const productWithQuantity = {
                   id: cartItemId, // Use variant-specific ID
@@ -569,57 +546,37 @@ export default function CartModal() {
                   selectedSize: cart.attributes.size || null, // Include selected size
                   variantInfo: variantInfo // Include variant info
                 };
-                
+
                 productsWithDetails.push(productWithQuantity);
                 totalPrice += productWithQuantity.price * productWithQuantity.quantity;
               }
-              
+
               setServerCartProducts(productsWithDetails);
               setServerTotalPrice(totalPrice);
-              
+
               // Also merge with context cart to ensure consistency
-              setCartProducts(prevCartProducts => {
-                // Create a map of server products by ID for quick lookup
-                const serverProductsMap = new Map();
-                productsWithDetails.forEach(product => {
-                  serverProductsMap.set(product.id, product);
-                });
-                
-                // Start with server products as the base
-                const mergedProducts = [...productsWithDetails];
-                
-                // Add any local products that aren't in server data yet
-                // (these are likely recently added items that haven't synced yet)
-                prevCartProducts.forEach(localProduct => {
-                  if (!serverProductsMap.has(localProduct.id)) {
-                    mergedProducts.push(localProduct);
-                  }
-                });
-                
-                return mergedProducts;
-              });
             }
-            
+
             setServerCartLoading(false);
           } catch (error) {
             setServerCartLoading(false);
           }
         };
-        
+
         refreshCartData();
       } else {
         // For guest users, use local cart products
       }
     };
-    
+
     const handleModalHide = () => {
       setIsModalInert(true);
     };
-    
+
     // Listen for Bootstrap modal events
     modal.addEventListener('show.bs.modal', handleModalShow);
     modal.addEventListener('hidden.bs.modal', handleModalHide);
-    
+
     return () => {
       // Clean up event listeners
       modal.removeEventListener('show.bs.modal', handleModalShow);
@@ -634,27 +591,27 @@ export default function CartModal() {
     getSelectedCartItems,
     getSelectedItemsTotal
   } = useContextElement();
-  
+
   // Get all cart products first
-  const allCartProducts = user 
+  const allCartProducts = user
     ? serverCartProducts  // Authenticated: only server cart
     : cartProducts;        // Guest: only local cart
-  
+
   // Filter to show only selected items in the modal
   const displayProducts = allCartProducts.filter(product => selectedCartItems[product.id]);
-  
+
   // Calculate total price from only the selected displayed products
   const displayTotalPrice = displayProducts.reduce((total, product) => {
     return total + (product.price * product.quantity);
   }, 0);
-  
+
   // Calculate selected items
   const selectedItemsCount = displayProducts.length;
   const selectedItemsTotal = displayTotalPrice;
 
   return (
-    <div 
-      className="modal fullRight fade modal-shopping-cart" 
+    <div
+      className="modal fullRight fade modal-shopping-cart"
       id="shoppingCart"
       tabIndex="-1"
       inert={isModalInert}
@@ -667,20 +624,20 @@ export default function CartModal() {
                 Selected Items
                 <span className="cart-count">({displayProducts.length} of {allCartProducts.length})</span>
               </h5>
-              <button 
-                type="button" 
-                className="close-cart" 
+              <button
+                type="button"
+                className="close-cart"
                 data-bs-dismiss="modal"
                 aria-label="Close"
               >
                 <i className="icon-close"></i>
               </button>
             </div>
-            
+
             <div className="tf-mini-cart-wrap flex-grow-1">
-                <div className="tf-mini-cart-main">
-                  <div className="tf-mini-cart-sroll">
-                        {serverCartLoading ? (
+              <div className="tf-mini-cart-main">
+                <div className="tf-mini-cart-sroll">
+                  {serverCartLoading ? (
                     <div className="loading-container">
                       <div className="loading-spinner">
                         <div className="spinner-border text-primary" role="status">
@@ -697,10 +654,10 @@ export default function CartModal() {
                             <i className="icon-bag2"></i>
                           </div>
                           <h6>{allCartProducts.length > 0 ? 'No items selected' : 'Your cart is empty'}</h6>
-                          <p>{allCartProducts.length > 0 
-                            ? `You have ${allCartProducts.length} item${allCartProducts.length > 1 ? 's' : ''} in your cart. Select the items you want to purchase and they will appear here for checkout.` 
+                          <p>{allCartProducts.length > 0
+                            ? `You have ${allCartProducts.length} item${allCartProducts.length > 1 ? 's' : ''} in your cart. Select the items you want to purchase and they will appear here for checkout.`
                             : 'Looks like you haven\'t added any items to your cart yet.'}</p>
-                          <button 
+                          <button
                             className="tf-button-2 style-1"
                             onClick={allCartProducts.length > 0 ? handleViewCart : handleContinueShopping}
                             disabled={isViewCartLoading}
@@ -718,8 +675,8 @@ export default function CartModal() {
                             {isViewCartLoading && allCartProducts.length > 0 && (
                               <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" style={{ width: '16px', height: '16px' }} />
                             )}
-                            {allCartProducts.length > 0 
-                              ? (isViewCartLoading ? 'Loading...' : 'View Full Cart') 
+                            {allCartProducts.length > 0
+                              ? (isViewCartLoading ? 'Loading...' : 'View Full Cart')
                               : 'Start Shopping'
                             }
                           </button>
@@ -727,16 +684,16 @@ export default function CartModal() {
                       ) : (
                         <div className="top-picks-modal-section">
                           <div className="top-picks-header">
-                            <button 
+                            <button
                               className="back-button"
                               onClick={() => setShowTopPicks(false)}
                             >
                               <i className="icon-arrow-left"></i> Back
                             </button>
                           </div>
-                          <TopPicksEmptyCart 
-                            isModal={true} 
-                            maxProducts={4} 
+                          <TopPicksEmptyCart
+                            isModal={true}
+                            maxProducts={4}
                             onProductClick={handleProductClick}
                           />
                         </div>
@@ -747,79 +704,79 @@ export default function CartModal() {
                       {displayProducts.map((elm, i) => {
 
                         return (
-                        <div className="tf-mini-cart-item" key={i}>
+                          <div className="tf-mini-cart-item" key={i}>
                             <div className="tf-mini-cart-image-section">
                               <div className="tf-mini-cart-image">
-                              <Link href={buildProductDetailHref(elm)}>
-                                <FallbackImage
-                                   src={elm.variantInfo?.imgSrc || elm.imgSrc}
-                                   alt={getVariantAwareTitle(elm)}
-                                   width={60}
-                                   height={90}
-                                   priority={i < 3}
-                                   loading={i < 3 ? "eager" : "lazy"}
-                                   preload={true}
-                                   fallbackSrc="/images/placeholder.svg"
-                                  style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover",
-                                    objectPosition: "center",
-                                  }}
-                                />
-                              </Link>
+                                <Link href={buildProductDetailHref(elm)}>
+                                  <FallbackImage
+                                    src={elm.variantInfo?.imgSrc || elm.imgSrc}
+                                    alt={getVariantAwareTitle(elm)}
+                                    width={60}
+                                    height={90}
+                                    priority={i < 3}
+                                    loading={i < 3 ? "eager" : "lazy"}
+                                    preload={true}
+                                    fallbackSrc="/images/placeholder.svg"
+                                    style={{
+                                      width: "100%",
+                                      height: "100%",
+                                      objectFit: "cover",
+                                      objectPosition: "center",
+                                    }}
+                                  />
+                                </Link>
                               </div>
                               {elm.selectedSize && (
-                                <div className="size-info" style={{ 
-                                  fontSize: '12px', 
-                                  color: '#666', 
+                                <div className="size-info" style={{
+                                  fontSize: '12px',
+                                  color: '#666',
                                   marginTop: '4px',
                                   textAlign: 'center'
                                 }}>
                                   <span className="size-label" style={{ fontWeight: '500' }}>Size:</span>
                                   <span className="size-value" style={{ marginLeft: '6px' }}>{elm.selectedSize}</span>
-                                  </div>
+                                </div>
                               )}
                             </div>
-                          <div className="tf-mini-cart-info">
-                            <div className="name">
-                                  <Link
-                                className="link text-line-clamp-2"
-                                href={buildProductDetailHref(elm)}
-                                  >
-                                {getVariantAwareTitle(elm)}
-                                  </Link>
-                                </div>
-                            <div className="quantity-display-wrapper">
-                              <span className="quantity-label">Qty:</span>
-                              <span className="quantity-value">{elm.quantity}</span>
+                            <div className="tf-mini-cart-info">
+                              <div className="name">
+                                <Link
+                                  className="link text-line-clamp-2"
+                                  href={buildProductDetailHref(elm)}
+                                >
+                                  {getVariantAwareTitle(elm)}
+                                </Link>
+                              </div>
+                              <div className="quantity-display-wrapper">
+                                <span className="quantity-label">Qty:</span>
+                                <span className="quantity-value">{elm.quantity}</span>
+                              </div>
+                            </div>
+                            <div className="tf-mini-cart-right-section">
+                              <div className="price-display">
+                                <PriceDisplay
+                                  price={elm.price * elm.quantity}
+                                  className="item-total-price"
+                                  size="small"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                className="remove-btn"
+                                onClick={() => removeItem(elm.id, elm.cartDocumentId)}
+                                aria-label="Remove item"
+                              >
+                                <i className="icon-close"></i>
+                              </button>
                             </div>
                           </div>
-                          <div className="tf-mini-cart-right-section">
-                            <div className="price-display">
-                              <PriceDisplay 
-                                price={elm.price * elm.quantity}
-                                className="item-total-price"
-                                size="small"
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              className="remove-btn"
-                              onClick={() => removeItem(elm.id, elm.cartDocumentId)}
-                              aria-label="Remove item"
-                            >
-                              <i className="icon-close"></i>
-                            </button>
-                          </div>
-                        </div>
                         );
                       })}
                     </div>
                   )}
                 </div>
-                    </div>
-              
+              </div>
+
               {displayProducts.length > 0 && (
                 <div className="tf-mini-cart-bottom">
                   <div className="tf-mini-cart-bottom-wrap">
@@ -827,22 +784,22 @@ export default function CartModal() {
                       <div className="tf-cart-total">
                         <div className="tf-cart-total-title">Subtotal:</div>
                         <div className="tf-cart-total-price">
-                          <PriceDisplay 
+                          <PriceDisplay
                             price={displayTotalPrice}
                             className="total-price"
                             size="medium"
                           />
                         </div>
-                    </div>
+                      </div>
                     </div>
                     <div className="tf-mini-cart-view-checkout">
-                          <button
+                      <button
                         className="tf-button-2 style-2 w-100"
-                            onClick={handleViewCart}
+                        onClick={handleViewCart}
                         disabled={isViewCartLoading}
                         data-navigation="view-cart"
-                        style={{ 
-                          background: '#f7d2ca', 
+                        style={{
+                          background: '#f7d2ca',
                           color: '#333',
                           opacity: isViewCartLoading ? 0.7 : 1,
                           cursor: isViewCartLoading ? 'not-allowed' : 'pointer',
@@ -856,13 +813,13 @@ export default function CartModal() {
                           <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" style={{ width: '16px', height: '16px' }} />
                         )}
                         {isViewCartLoading ? 'Loading...' : 'View Cart'}
-                          </button>
-                          <button
+                      </button>
+                      <button
                         className="tf-button-2 style-1 w-100"
-                      onClick={handleCheckout}
-                    >
+                        onClick={handleCheckout}
+                      >
                         Checkout
-                          </button>
+                      </button>
                     </div>
                     <div className="continue-shopping">
                       <button
@@ -872,14 +829,14 @@ export default function CartModal() {
                         Continue Shopping
                       </button>
                     </div>
-                </div>
+                  </div>
                 </div>
               )}
             </div>
           </div>
         </div>
       </div>
-      
+
       <style jsx>{`
         .modal-shopping-cart {
           --cart-primary-color: #25D366;

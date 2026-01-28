@@ -457,59 +457,7 @@ export default function Header1({ fullWidth = false }) {
                       </svg>
                     </Link>
                   </li>
-                  <li className="nav-cart">
-                    <a
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        import('@/utils/openCartModal').then(({ openCartModal }) => {
-                          openCartModal().catch(() => { });
-                        });
-                      }}
-                      className="nav-icon-item"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '44px',
-                        height: '44px',
-                        borderRadius: '12px',
-                        transition: 'all 0.3s ease',
-                        backgroundColor: 'transparent',
-                        position: 'relative'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = '#f8f9fa';
-                        e.target.style.transform = 'translateY(-2px)';
-                        e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = 'transparent';
-                        e.target.style.transform = 'translateY(0)';
-                        e.target.style.boxShadow = 'none';
-                      }}
-                    >
-                      <svg
-                        className="icon"
-                        width={20}
-                        height={20}
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4M20 7H4L5 19H19L20 7Z"
-                          stroke="#181818"
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      <span className="count-box">
-                        <CartLength />
-                      </span>
-                    </a>
-                  </li>
+
                 </>
               ) : (
                 <li onClick={() => signIn()} className="nav-account">
