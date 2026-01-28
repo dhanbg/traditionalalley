@@ -11,9 +11,10 @@ interface NPSPaymentFormProps {
   transactionRemarks?: string;
   disabled?: boolean;
   shippingRatesObtained?: boolean;
+  getUserBagDocumentId?: () => Promise<string | null>;
 }
 
-export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, transactionRemarks, disabled = false, shippingRatesObtained = false }: NPSPaymentFormProps) {
+export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, transactionRemarks, disabled = false, shippingRatesObtained = false, getUserBagDocumentId }: NPSPaymentFormProps) {
   const { data: session } = useSession();
   const { userCurrency } = useContextElement();
   const [isLoading, setIsLoading] = useState(false);
@@ -41,6 +42,13 @@ export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, 
 
     setIsLoading(true);
     try {
+      // Get user bag ID if function provided
+      let userBagId = undefined;
+      if (getUserBagDocumentId) {
+        const id = await getUserBagDocumentId();
+        if (id) userBagId = id;
+      }
+
       // Generate a unique merchant transaction ID
       const merchantTxnId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -52,7 +60,8 @@ export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, 
           name: session?.user?.name || orderData?.receiver_details?.name || 'Guest Customer',
           email: session?.user?.email || orderData?.receiver_details?.email || 'guest@example.com',
           phone: orderData?.receiver_details?.phone || ''
-        }
+        },
+        userBagDocumentId: userBagId
       };
 
       // Use the NPS hook to initiate payment with proper redirect

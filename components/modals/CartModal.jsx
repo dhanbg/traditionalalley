@@ -28,14 +28,14 @@ export default function CartModal() {
     cartRefreshKey,
     isCartClearing,
     cartClearedTimestamp,
+    isCartLoading,
   } = useContextElement();
   const { data: session } = useSession();
   const [userCarts, setUserCarts] = useState([]);
-  const [serverCartProducts, setServerCartProducts] = useState([]);
-  const [serverCartLoading, setServerCartLoading] = useState(true);
-  const [serverTotalPrice, setServerTotalPrice] = useState(0);
+  // Removed local server cart state as we now use Context state
   const [currentOpenPopup, setCurrentOpenPopup] = useState("");
   const [isModalInert, setIsModalInert] = useState(true);
+  // Removed serverTotalPrice state
   const router = useRouter();
   const [isAgreed, setIsAgreed] = useState(false);
   const [isViewCartLoading, setIsViewCartLoading] = useState(false);
@@ -49,7 +49,7 @@ export default function CartModal() {
   };
 
   // Initialize image preloader for cart modal
-  const modalImagePreloader = useCartImagePreloader(serverCartProducts, {
+  const modalImagePreloader = useCartImagePreloader(cartProducts, {
     autoPreload: true,
     delay: 100,
     preloadOptions: {
@@ -70,13 +70,8 @@ export default function CartModal() {
     );
 
     if (itemToRemove) {
-      // Remove from local state immediately for a responsive UI
-      // This ensures the item disappears from the cart modal right away
-      setServerCartProducts(prev => prev.filter(product =>
-        product.id != id &&
-        product.documentId !== id &&
-        product.cartDocumentId !== cartDocumentId
-      ));
+      // Use the removeFromCart function from Context to handle backend deletion
+      // Context will update cartProducts state
 
       // Use the removeFromCart function from Context to handle backend deletion
       removeFromCart(id, cartDocumentId);
@@ -138,248 +133,9 @@ export default function CartModal() {
 
 
 
-  // Helper function to fetch fresh variant data
-  const fetchFreshVariantData = async (variantId, productDocumentId) => {
-    try {
-      console.log('🔄 Fetching fresh variant data for variantId:', variantId, 'productDocumentId:', productDocumentId);
+  // Helper function to fetch fresh variant data removed as it's handled in Context
 
-      // Try fetching by documentId first
-      let response = await fetchDataFromApi(`/api/product-variants?populate=*&filters[documentId][$eq]=${variantId}`);
-
-      // If no results and variantId is numeric, try fetching by id
-      if (!response.data || response.data.length === 0) {
-        console.log('🔄 Trying to fetch by numeric id:', variantId);
-        response = await fetchDataFromApi(`/api/product-variants?populate=*&filters[id][$eq]=${variantId}`);
-      }
-
-      // If still no results and we have productDocumentId, try to find variant by product relationship
-      if ((!response.data || response.data.length === 0) && productDocumentId) {
-        console.log('🔄 Trying to fetch variant by product relationship for product:', productDocumentId);
-        response = await fetchDataFromApi(`/api/product-variants?populate=*&filters[product][documentId][$eq]=${productDocumentId}`);
-
-        // If multiple variants found, log them and use the first one (you might want to add more logic here)
-        if (response.data && response.data.length > 0) {
-          console.log('📊 Found variants for product:', response.data.map(v => ({ id: v.id, documentId: v.documentId })));
-          // For now, use the first variant found
-        }
-      }
-
-      if (response.data && response.data.length > 0) {
-        const freshData = response.data[0];
-        console.log('✅ Fresh variant data fetched:', {
-          documentId: freshData.documentId,
-          id: freshData.id,
-          imgUrl: freshData.imgSrc?.formats?.small?.url
-        });
-        return freshData;
-      }
-      console.log('❌ No fresh variant data found for variantId:', variantId);
-    } catch (error) {
-      console.error('Error fetching fresh variant data:', error);
-    }
-    return null;
-  };
-
-  // Fetch user's carts from API
-  useEffect(() => {
-    // Don't load cart if currently clearing or recently cleared (within 5 seconds)
-    const recentlyCleared = cartClearedTimestamp && (Date.now() - cartClearedTimestamp < 5000);
-
-    if (user && !isCartClearing && !recentlyCleared) {
-      const fetchUserCarts = async () => {
-        try {
-          setServerCartLoading(true);
-          // Fetch carts data from the API
-          const response = await fetchDataFromApi(`/api/carts?populate=*`);
-
-          // Filter carts based on the current user's authUserId
-          const currentUserCarts = response.data.filter(
-            cart => cart.user_datum && cart.user_datum.authUserId === user.id
-          );
-
-          // Update state with user's carts
-          setUserCarts(currentUserCarts);
-
-          // Array to hold the complete product details
-          const productsWithDetails = [];
-          let totalPrice = 0;
-
-          // For each cart, fetch the complete product details
-          for (const cart of currentUserCarts) {
-            const productDocId = cart.product?.documentId;
-
-            if (productDocId) {
-              try {
-                // Fetch product details using the documentId
-                const productDetails = await fetchDataFromApi(PRODUCT_BY_DOCUMENT_ID_API(productDocId));
-
-                // The response will now be an array of products, get the first one
-                const productData = productDetails.data && productDetails.data.length > 0
-                  ? productDetails.data[0]
-                  : null;
-
-                if (!productData) {
-                  continue;
-                }
-
-                // Determine the appropriate image URL based on available formats
-                // Prioritize small format for cart display for better performance
-                let imgSrcUrl = null;
-                if (productData.imgSrc && productData.imgSrc.formats && productData.imgSrc.formats.small && productData.imgSrc.formats.small.url) {
-                  imgSrcUrl = getImageUrl(productData.imgSrc.formats.small.url);
-                } else if (productData.imgSrc && productData.imgSrc.formats && productData.imgSrc.formats.thumbnail && productData.imgSrc.formats.thumbnail.url) {
-                  imgSrcUrl = getImageUrl(productData.imgSrc.formats.thumbnail.url);
-                } else {
-                  imgSrcUrl = getImageUrl(productData.imgSrc);
-                }
-                let imgHoverUrl = null;
-                if (productData.imgHover && productData.imgHover.formats && productData.imgHover.formats.small && productData.imgHover.formats.small.url) {
-                  imgHoverUrl = getImageUrl(productData.imgHover.formats.small.url);
-                } else if (productData.imgHover && productData.imgHover.formats && productData.imgHover.formats.thumbnail && productData.imgHover.formats.thumbnail.url) {
-                  imgHoverUrl = getImageUrl(productData.imgHover.formats.thumbnail.url);
-                } else {
-                  imgHoverUrl = getImageUrl(productData.imgHover);
-                }
-
-                // Parse variant information if available
-                let variantInfo = null;
-                let cartItemId = productDocId || cart.product.id;
-                let title = cart.product.title;
-
-                if (cart.variantInfo) {
-                  try {
-                    // Check if variantInfo is already an object (not a string)
-                    if (typeof cart.variantInfo === 'object' && cart.variantInfo !== null) {
-                      variantInfo = cart.variantInfo;
-                    } else if (typeof cart.variantInfo === 'string') {
-                      // Only try to parse if it's a string and not "[object Object]"
-                      if (cart.variantInfo !== "[object Object]" && cart.variantInfo.trim() !== "") {
-                        variantInfo = JSON.parse(cart.variantInfo);
-                      } else {
-                        console.warn("Skipping invalid variantInfo string:", cart.variantInfo);
-                        variantInfo = null;
-                      }
-                    }
-
-                    if (variantInfo) {
-                      // Fetch fresh variant data if variantId exists
-                      if (variantInfo.isVariant && variantInfo.variantId) {
-                        try {
-                          const freshVariantData = await fetchFreshVariantData(variantInfo.variantId, productDocId);
-                          if (freshVariantData) {
-                            // Update variant info with fresh data
-                            if (freshVariantData.imgSrc) {
-                              variantInfo.imgSrc = freshVariantData.imgSrc;
-                            }
-                            // Update title if available
-                            if (freshVariantData.title) {
-                              variantInfo.title = freshVariantData.title;
-                            }
-                          }
-                        } catch (error) {
-                          console.error('Error fetching fresh variant data:', error);
-                        }
-                      }
-
-                      // Reconstruct the variant-specific cart item ID using documentId (same as when adding to cart)
-                      if (variantInfo.isVariant && (variantInfo.documentId || variantInfo.variantId)) {
-                        // Use documentId first (preferred), then fall back to variantId for backward compatibility
-                        const variantIdentifier = variantInfo.documentId || variantInfo.variantId;
-                        cartItemId = `${productDocId || cart.product.id}-variant-${variantIdentifier}`;
-                        console.log('🔧 Reconstructed cart item ID for variant:', {
-                          cartItemId,
-                          productDocId,
-                          variantIdentifier,
-                          variantInfo: {
-                            documentId: variantInfo.documentId,
-                            variantId: variantInfo.variantId,
-                            isVariant: variantInfo.isVariant
-                          }
-                        });
-                      }
-
-                      // Use variant-specific title and image
-                      if (variantInfo.title && variantInfo.isVariant) {
-                        title = `${cart.product.title} - ${variantInfo.title}`;
-                      }
-
-                      // Handle variant-specific image with proper format selection
-                      if (variantInfo.imgSrc) {
-                        // Apply same small format logic to variant images
-                        if (variantInfo.imgSrc.formats && variantInfo.imgSrc.formats.small && variantInfo.imgSrc.formats.small.url) {
-                          const smallUrl = variantInfo.imgSrc.formats.small.url;
-                          imgSrcUrl = smallUrl.startsWith('http') ? smallUrl : `${API_URL}${smallUrl}`;
-                        } else if (variantInfo.imgSrc.formats && variantInfo.imgSrc.formats.thumbnail && variantInfo.imgSrc.formats.thumbnail.url) {
-                          const thumbnailUrl = variantInfo.imgSrc.formats.thumbnail.url;
-                          imgSrcUrl = thumbnailUrl.startsWith('http') ? thumbnailUrl : `${API_URL}${thumbnailUrl}`;
-                        } else if (variantInfo.imgSrc.url) {
-                          const mainUrl = variantInfo.imgSrc.url;
-                          imgSrcUrl = mainUrl.startsWith('http') ? mainUrl : `${API_URL}${mainUrl}`;
-                        } else if (typeof variantInfo.imgSrc === 'string') {
-                          // If it's already a string URL, use it as is
-                          imgSrcUrl = variantInfo.imgSrc;
-                        } else {
-                          imgSrcUrl = getImageUrl(variantInfo.imgSrc);
-                        }
-                      }
-
-                    }
-                  } catch (parseError) {
-                    console.error("Error parsing variant info:", parseError, "Raw value:", cart.variantInfo);
-                    variantInfo = null;
-                  }
-                }
-
-                // Add size to cart item ID if available (for unique identification)
-                if (cart.size) {
-                  cartItemId = `${cartItemId}-size-${cart.size}`;
-                }
-
-                // Create a cart product object with all needed details
-                const productWithQuantity = {
-                  id: cartItemId, // Use variant-specific ID
-                  baseProductId: productDocId || cart.product.id, // Keep reference to base product documentId
-                  documentId: productDocId,
-                  title: title,
-                  price: cart.product.price,
-                  quantity: cart.quantity,
-                  imgSrc: imgSrcUrl,
-                  imgHover: imgHoverUrl,
-                  cartId: cart.id,
-                  cartDocumentId: cart.documentId,
-                  // Add color and size data
-                  colors: productData.colors || [],
-                  sizes: productData.sizes || productData.filterSizes || [],
-                  selectedSize: cart.size || null, // Include selected size
-                  variantInfo: variantInfo // Include variant info
-                };
-
-
-                // Add product to array
-                productsWithDetails.push(productWithQuantity);
-
-                // Add to total price
-                totalPrice += cart.product.price * cart.quantity;
-              } catch (error) {
-              }
-            }
-          }
-
-          // Update state with products and total price
-          setServerCartProducts(productsWithDetails);
-          setServerTotalPrice(totalPrice);
-          setServerCartLoading(false);
-
-        } catch (error) {
-          setServerCartLoading(false);
-        }
-      };
-
-      fetchUserCarts();
-    } else {
-      setServerCartLoading(false);
-    }
-  }, [user, setCartProducts, cartRefreshKey, isCartClearing, cartClearedTimestamp]);
+  // Fetch user's carts from API logic removed - handled by Context
 
   // Handle modal accessibility
   useEffect(() => {
@@ -390,183 +146,7 @@ export default function CartModal() {
     const handleModalShow = () => {
       setIsModalInert(false);
 
-      // Refresh cart data when modal opens
-      const recentlyCleared = cartClearedTimestamp && (Date.now() - cartClearedTimestamp < 5000);
-
-      if (user && !isCartClearing && !recentlyCleared) {
-        // Force a refresh of server cart data when the modal opens
-        const refreshCartData = async () => {
-          try {
-            setServerCartLoading(true);
-
-            // First, get the user's data to find their user_datum ID
-            const currentUserData = await fetchDataFromApi(
-              `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`
-            );
-
-            if (!currentUserData?.data || currentUserData.data.length === 0) {
-              setServerCartLoading(false);
-              return;
-            }
-
-            const userData = currentUserData.data[0];
-            const userDocumentId = userData.documentId || userData.attributes?.documentId;
-
-            const cartResponse = await fetchDataFromApi(
-              `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
-            );
-
-            if (cartResponse?.data?.length > 0) {
-              // Process cart data...
-              // Update with fresh data from server
-              const productsWithDetails = [];
-              let totalPrice = 0;
-
-              for (const cart of cartResponse.data) {
-                // Skip carts without product data
-                if (!cart.attributes?.product?.data) continue;
-
-                const productData = cart.attributes.product.data;
-                const productId = productData.id;
-                const productDocId = productData.attributes?.documentId;
-
-                // Match current user's cart items
-                const productAttrs = productData.attributes || {};
-
-                // Get image URLs, prefer small format for cart display
-                let imgSrcUrl = null;
-                if (productAttrs.imgSrc && productAttrs.imgSrc.formats && productAttrs.imgSrc.formats.small && productAttrs.imgSrc.formats.small.url) {
-                  const smallUrl = productAttrs.imgSrc.formats.small.url;
-                  imgSrcUrl = smallUrl.startsWith('http') ? smallUrl : `${API_URL}${smallUrl}`;
-                } else if (productAttrs.imgSrc && productAttrs.imgSrc.formats && productAttrs.imgSrc.formats.thumbnail && productAttrs.imgSrc.formats.thumbnail.url) {
-                  const thumbnailUrl = productAttrs.imgSrc.formats.thumbnail.url;
-                  imgSrcUrl = thumbnailUrl.startsWith('http') ? thumbnailUrl : `${API_URL}${thumbnailUrl}`;
-                } else {
-                  imgSrcUrl = getImageUrl(productAttrs.imgSrc);
-                }
-                let imgHoverUrl = null;
-                if (productAttrs.imgHover && productAttrs.imgHover.formats && productAttrs.imgHover.formats.small && productAttrs.imgHover.formats.small.url) {
-                  const smallUrl = productAttrs.imgHover.formats.small.url;
-                  imgHoverUrl = smallUrl.startsWith('http') ? smallUrl : `${API_URL}${smallUrl}`;
-                } else if (productAttrs.imgHover && productAttrs.imgHover.formats && productAttrs.imgHover.formats.thumbnail && productAttrs.imgHover.formats.thumbnail.url) {
-                  const thumbnailUrl = productAttrs.imgHover.formats.thumbnail.url;
-                  imgHoverUrl = thumbnailUrl.startsWith('http') ? thumbnailUrl : `${API_URL}${thumbnailUrl}`;
-                } else {
-                  imgHoverUrl = getImageUrl(productAttrs.imgHover);
-                }
-
-                // Parse variant information if available
-                let variantInfo = null;
-                let cartItemId = productDocId || productId;
-                let title = productAttrs.title || 'Product Item';
-
-                if (cart.attributes.variantInfo) {
-                  try {
-                    // Check if variantInfo is already an object (not a string)
-                    if (typeof cart.attributes.variantInfo === 'object' && cart.attributes.variantInfo !== null) {
-                      variantInfo = cart.attributes.variantInfo;
-                    } else if (typeof cart.attributes.variantInfo === 'string') {
-                      // Only try to parse if it's a string and not "[object Object]"
-                      if (cart.attributes.variantInfo !== "[object Object]" && cart.attributes.variantInfo.trim() !== "") {
-                        variantInfo = JSON.parse(cart.attributes.variantInfo);
-                      } else {
-                        console.warn("Skipping invalid variantInfo string:", cart.attributes.variantInfo);
-                        variantInfo = null;
-                      }
-                    }
-
-                    if (variantInfo) {
-                      // Fetch fresh variant data if variantId exists
-                      if (variantInfo.isVariant && variantInfo.variantId) {
-                        try {
-                          const freshVariantData = await fetchFreshVariantData(variantInfo.variantId, productDocId);
-                          if (freshVariantData) {
-                            // Update variant info with fresh data
-                            if (freshVariantData.imgSrc) {
-                              variantInfo.imgSrc = freshVariantData.imgSrc;
-                            }
-                            // Update title if available
-                            if (freshVariantData.title) {
-                              variantInfo.title = freshVariantData.title;
-                            }
-                          }
-                        } catch (error) {
-                          console.error('Error fetching fresh variant data:', error);
-                        }
-                      }
-
-                      // Reconstruct the variant-specific cart item ID using documentId
-                      if (variantInfo.isVariant && variantInfo.variantId) {
-                        cartItemId = `${productDocId || productId}-variant-${variantInfo.variantId}`;
-                      }
-
-                      // Use variant-specific title and image
-                      if (variantInfo.title && variantInfo.isVariant) {
-                        title = `${productAttrs.title || 'Product Item'} - ${variantInfo.title}`;
-                      }
-
-                      // Handle variant-specific image with proper format selection
-                      if (variantInfo.imgSrc) {
-                        // Apply same small format logic to variant images
-                        if (variantInfo.imgSrc.formats && variantInfo.imgSrc.formats.small && variantInfo.imgSrc.formats.small.url) {
-                          const smallUrl = variantInfo.imgSrc.formats.small.url;
-                          imgSrcUrl = smallUrl.startsWith('http') ? smallUrl : `${API_URL}${smallUrl}`;
-                        } else if (variantInfo.imgSrc.formats && variantInfo.imgSrc.formats.thumbnail && variantInfo.imgSrc.formats.thumbnail.url) {
-                          const thumbnailUrl = variantInfo.imgSrc.formats.thumbnail.url;
-                          imgSrcUrl = thumbnailUrl.startsWith('http') ? thumbnailUrl : `${API_URL}${thumbnailUrl}`;
-                        } else if (variantInfo.imgSrc.url) {
-                          const mainUrl = variantInfo.imgSrc.url;
-                          imgSrcUrl = mainUrl.startsWith('http') ? mainUrl : `${API_URL}${mainUrl}`;
-                        } else if (typeof variantInfo.imgSrc === 'string') {
-                          imgSrcUrl = variantInfo.imgSrc;
-                        } else {
-                          imgSrcUrl = getImageUrl(variantInfo.imgSrc);
-                        }
-                      }
-                    }
-                  } catch (parseError) {
-                    console.error("Error parsing variant info:", parseError, "Raw value:", cart.attributes.variantInfo);
-                    variantInfo = null;
-                  }
-                }
-
-                // Create cart product object
-                const productWithQuantity = {
-                  id: cartItemId, // Use variant-specific ID
-                  baseProductId: productDocId || productId, // Keep reference to base product documentId
-                  documentId: productDocId,
-                  title: title,
-                  price: parseFloat(productAttrs.price) || 0,
-                  quantity: cart.attributes.quantity || 1,
-                  imgSrc: imgSrcUrl,
-                  cartId: cart.id,
-                  cartDocumentId: cart.attributes.documentId,
-                  colors: productAttrs.colors || [],
-                  sizes: productAttrs.sizes || productAttrs.filterSizes || [],
-                  selectedSize: cart.attributes.size || null, // Include selected size
-                  variantInfo: variantInfo // Include variant info
-                };
-
-                productsWithDetails.push(productWithQuantity);
-                totalPrice += productWithQuantity.price * productWithQuantity.quantity;
-              }
-
-              setServerCartProducts(productsWithDetails);
-              setServerTotalPrice(totalPrice);
-
-              // Also merge with context cart to ensure consistency
-            }
-
-            setServerCartLoading(false);
-          } catch (error) {
-            setServerCartLoading(false);
-          }
-        };
-
-        refreshCartData();
-      } else {
-        // For guest users, use local cart products
-      }
+      // Refresh cart data logic removed - handled by Context
     };
 
     const handleModalHide = () => {
@@ -592,10 +172,8 @@ export default function CartModal() {
     getSelectedItemsTotal
   } = useContextElement();
 
-  // Get all cart products first
-  const allCartProducts = user
-    ? serverCartProducts  // Authenticated: only server cart
-    : cartProducts;        // Guest: only local cart
+  // Get all cart products first - Context handles merging/switching
+  const allCartProducts = cartProducts;
 
   // Filter to show only selected items in the modal
   const displayProducts = allCartProducts.filter(product => selectedCartItems[product.id]);
@@ -637,7 +215,7 @@ export default function CartModal() {
             <div className="tf-mini-cart-wrap flex-grow-1">
               <div className="tf-mini-cart-main">
                 <div className="tf-mini-cart-sroll">
-                  {serverCartLoading ? (
+                  {isCartLoading ? (
                     <div className="loading-container">
                       <div className="loading-spinner">
                         <div className="spinner-border text-primary" role="status">

@@ -47,20 +47,16 @@ interface GatewayRedirectForm {
 
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate user
+    // Authenticate user (optional for guest checkout)
     const session = await auth();
-    
-    if (!session?.user) {
-      return NextResponse.json({
-        success: false,
-        message: 'Authentication required'
-      }, { status: 401 });
-    }
+
+    // Allow guest checkout - do not enforce session
+    // if (!session?.user) { ... }
 
     const body: NPSPaymentRequest = await request.json();
-    const { 
-      amount, 
-      merchantTxnId, 
+    const {
+      amount,
+      merchantTxnId,
       transactionRemarks,
       instrumentCode,
       customer_info,
@@ -85,7 +81,8 @@ export async function POST(request: NextRequest) {
 
     console.log('=== NPS PAYMENT INITIATION ===');
     console.log('Environment:', process.env.NODE_ENV);
-    console.log('User:', session.user.email);
+    console.log('Environment:', process.env.NODE_ENV);
+    console.log('User:', session?.user?.email || 'Guest');
     console.log('Request body:', body);
     console.log('🔍 [COUPON DEBUG] OrderData exists:', !!orderData);
     if (orderData) {
@@ -105,13 +102,15 @@ export async function POST(request: NextRequest) {
 
     // Get user data from Strapi using Auth.js user ID
     let userBagId = userBagDocumentId;
-    
-    if (!userBagId) {
+
+    let userBagId = userBagDocumentId;
+
+    if (!userBagId && session?.user?.id) {
       try {
         const userDataResponse = await fetchDataFromApi(
           `/api/user-data?filters[authUserId][$eq]=${session.user.id}&populate=user_bag`
         );
-        
+
         if (userDataResponse?.data && userDataResponse.data.length > 0) {
           const userData = userDataResponse.data[0];
           userBagId = userData.user_bag?.documentId;
@@ -122,8 +121,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Shorten the merchant transaction ID to avoid potential length issues
-    const shortMerchantTxnId = merchantTxnId.length > 50 
-      ? `TXN-${Date.now()}-${merchantTxnId.split('-').pop()}` 
+    const shortMerchantTxnId = merchantTxnId.length > 50
+      ? `TXN-${Date.now()}-${merchantTxnId.split('-').pop()}`
       : merchantTxnId;
 
     console.log('Original merchantTxnId:', merchantTxnId);
@@ -151,7 +150,7 @@ export async function POST(request: NextRequest) {
       apiUsername: npsConfig.apiUsername,
       secretKey: npsConfig.secretKey ? '***PRESENT***' : '***MISSING***'
     });
-    
+
     const processIdResponse = await npsClient.post<GetProcessIdResponse>(
       '/GetProcessId',
       processIdRequest
@@ -165,7 +164,7 @@ export async function POST(request: NextRequest) {
         message: processIdResponse.data.message,
         fullResponse: processIdResponse.data
       });
-      
+
       return NextResponse.json({
         success: false,
         message: processIdResponse.data.message || 'Failed to get process ID',
@@ -187,7 +186,7 @@ export async function POST(request: NextRequest) {
           amount: amount,
           status: "Pending",
           timestamp: new Date().toISOString(),
-          authUserId: session.user.id,
+          authUserId: session?.user?.id || null,
           orderData: orderData,
         };
 
@@ -261,7 +260,7 @@ export async function POST(request: NextRequest) {
       // Server responded with error status
       const status = error.response.status;
       const responseData = error.response.data;
-      
+
       if (status === 401) {
         return NextResponse.json({
           success: false,

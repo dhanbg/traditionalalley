@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { fetchDataFromApi } from "./api";
-import type { 
-  NPSPaymentRequest, 
+import type {
+  NPSPaymentRequest,
   CheckTransactionStatusRequest,
   CheckTransactionStatusResponse,
   UseNPSOptions,
@@ -33,28 +33,28 @@ export const useNPS = (options: UseNPSOptions = {}) => {
   const getUserBagDocumentId = async (userId: string): Promise<string> => {
     try {
       console.log('Fetching user bag for userId:', userId);
-      
+
       // Use the correct API endpoint pattern that matches the existing codebase
       const response = await fetchDataFromApi(
         `/api/user-data?filters[authUserId][$eq]=${userId}&populate=user_bag`
       );
-      
+
       console.log('User data response:', response);
-      
+
       if (!response?.data || response.data.length === 0) {
         throw new Error('User data not found');
       }
-      
+
       const userData = response.data[0];
       const userBag = userData.user_bag;
-      
+
       if (!userBag || !userBag.documentId) {
         throw new Error('User bag not found or missing documentId');
       }
-      
+
       console.log('Found user bag documentId:', userBag.documentId);
       return userBag.documentId;
-      
+
     } catch (error: any) {
       console.error('Error fetching user bag documentId:', error);
       throw error;
@@ -64,7 +64,7 @@ export const useNPS = (options: UseNPSOptions = {}) => {
   // Create and submit form for gateway redirect
   const submitGatewayForm = (redirectForm: GatewayRedirectForm, gatewayUrl: string) => {
     console.log("Submitting gateway form:", redirectForm);
-    
+
     // Create a form element
     const form = document.createElement('form');
     form.method = 'POST';
@@ -98,7 +98,7 @@ export const useNPS = (options: UseNPSOptions = {}) => {
 
       const requestBody = {
         ...paymentRequest,
-        userBagDocumentId: options.userBagDocumentId,
+        userBagDocumentId: options.userBagDocumentId || paymentRequest.userBagDocumentId,
         orderData: options.orderData,
       };
 
@@ -137,14 +137,14 @@ export const useNPS = (options: UseNPSOptions = {}) => {
 
     } catch (error: any) {
       console.error("NPS payment initiation error:", error);
-      
+
       const errorObj = new Error(error.message || 'Payment initiation failed');
       setInitiationError(errorObj);
-      
+
       if (options.onError) {
         options.onError(errorObj);
       }
-      
+
       throw errorObj;
     } finally {
       setIsLoading(false);

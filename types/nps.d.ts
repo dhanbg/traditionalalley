@@ -8,7 +8,7 @@ export interface NPSBaseRequest {
 }
 
 // Get Payment Instrument Details Request
-export interface GetPaymentInstrumentDetailsRequest extends NPSBaseRequest {}
+export interface GetPaymentInstrumentDetailsRequest extends NPSBaseRequest { }
 
 // Get Service Charge Request  
 export interface GetServiceChargeRequest extends NPSBaseRequest {
@@ -122,6 +122,7 @@ export interface NPSPaymentRequest {
     email: string;
     phone: string;
   };
+  userBagDocumentId?: string;
 }
 
 // Payment data stored in user bag (supports both NPS and COD)

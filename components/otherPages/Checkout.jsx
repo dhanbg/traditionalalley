@@ -2046,6 +2046,7 @@ export default function Checkout() {
                       orderData={constructOrderData()}
                       transactionRemarks={`Payment for ${selectedProducts.length} items`}
                       shippingRatesObtained={shippingRatesObtained}
+                      getUserBagDocumentId={getUserBagDocumentId}
                     />
                   ) : (
                     <div>
