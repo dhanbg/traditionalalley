@@ -64,6 +64,17 @@ export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, 
         userBagDocumentId: userBagId
       };
 
+      // Persist the mapping between Transaction ID and User Bag ID
+      // This bridges the gap for Guest Users who don't have a session to look up their bag later
+      if (userBagId) {
+        try {
+          localStorage.setItem(`nps_txn_${merchantTxnId}`, userBagId);
+          console.log(`Saved payment context for guest recovery: ${merchantTxnId} -> ${userBagId}`);
+        } catch (e) {
+          console.warn('Could not save payment context to localStorage', e);
+        }
+      }
+
       // Use the NPS hook to initiate payment with proper redirect
       await initiate(paymentRequest);
 
