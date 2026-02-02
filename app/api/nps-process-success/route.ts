@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { fetchDataFromApi, updateUserBagWithPayment } from '@/utils/api';
-import { processPostPaymentStockAndCart } from '@/utils/postPaymentProcessing';
+import { processServerPostPayment } from '@/utils/serverPostPaymentProcessing';
 
 /**
  * API endpoint to process successful NPS payments
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
                 };
 
                 // Pass empty callback for cart clearing since we don't have backend cart items
-                const processResult = await processPostPaymentStockAndCart(
+                const processResult = await processServerPostPayment(
                     selectedProducts,
                     user,
                     async () => { console.log('ℹ️ [PROCESS-SUCCESS] Skipping backend cart clear (using fallback)'); },
@@ -228,7 +228,7 @@ export async function POST(request: NextRequest) {
             email: paymentData?.orderData?.receiver_details?.email || 'guest@example.com'
         };
 
-        const processResult = await processPostPaymentStockAndCart(
+        const processResult = await processServerPostPayment(
             selectedProducts,
             user,
             async (itemsToRemove: any[]) => {
