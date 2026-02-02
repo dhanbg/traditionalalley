@@ -154,7 +154,7 @@ const NPSCallbackContent = () => {
       console.log(`🚀 [${debugId}] Calling processPostPaymentStockAndCart utility...`);
       const processResult = await processPostPaymentStockAndCart(
         selectedProducts,
-        user || { id: 'guest', email: paymentData?.orderData?.customer_info?.email || 'guest@example.com' },
+        user || { id: 'guest', email: paymentData?.orderData?.receiver_details?.email || 'guest@example.com' },
         async (itemsToRemove: any[]) => {
           console.log(`🗑️ [${debugId}] Removing ${itemsToRemove.length} items from cart...`);
           if (clearPurchasedItemsFromCart) {
@@ -343,7 +343,7 @@ const NPSCallbackContent = () => {
 
           // Call the cleaned-up function
           await handleAutomaticUpdateStockAndDelete(
-            user || { id: 'guest' },
+            user || { id: 'guest', email: paymentData?.orderData?.receiver_details?.email || 'guest@example.com' },
             clearPurchasedItemsFromCart,
             paymentData
           );

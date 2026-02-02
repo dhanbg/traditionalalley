@@ -9,38 +9,43 @@ import { fetchDataFromApi, updateData } from './api';
 const sendAutomaticInvoiceEmail = async (paymentData) => {
   console.log('📧 [AUTO-EMAIL] Starting automatic invoice email sending...');
   console.log('📋 [AUTO-EMAIL] Payment data received:', JSON.stringify(paymentData, null, 2));
-  
+
   try {
     // Validate payment data
     if (!paymentData) {
       console.error('❌ [AUTO-EMAIL] Payment data is missing');
       throw new Error('Payment data is missing');
     }
-    
+
     // Extract orderData from payment
     const orderData = paymentData.orderData || {};
     console.log('📦 [AUTO-EMAIL] Order data extracted:', JSON.stringify(orderData, null, 2));
-    
+
     // Check if receiver details exist
     const receiverDetails = orderData.receiver_details || {};
     console.log('👤 [AUTO-EMAIL] Receiver details:', JSON.stringify(receiverDetails, null, 2));
-    console.log('📧 [AUTO-EMAIL] Customer email found:', receiverDetails.email || 'NO EMAIL FOUND');
-    
-    const customerEmail = receiverDetails.email;
-    
+
+    // Try multiple email sources for better compatibility
+    const customerEmail = receiverDetails.email
+      || orderData.customer_info?.email
+      || paymentData.user?.email
+      || null;
+
+    console.log('📧 [AUTO-EMAIL] Customer email found:', customerEmail || 'NO EMAIL FOUND');
+
     if (!customerEmail) {
       console.warn('⚠️ [AUTO-EMAIL] No customer email found. Cannot send invoice email.');
       return { success: false, error: 'No customer email found' };
     }
-    
+
     // Detect if delivery is to Nepal for currency formatting
     const isNepal = isNepalDestination(paymentData);
     const currency = isNepal ? 'Rs.' : '$';
-    
+
     // Calculate amount for display
     const orderSummary = orderData.orderSummary || {};
     let amount = paymentData.amount || orderSummary.totalAmount || 0;
-    
+
     // For Nepal orders, keep NPR amounts as-is; for international orders, convert NPR to USD
     if (!isNepal) {
       if (paymentData.amount_npr) {
@@ -57,19 +62,19 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
         amount = paymentData.amount_npr;
       }
     }
-    
+
     const formattedAmount = typeof amount === 'number' ? amount.toFixed(2) : amount;
     const txnId = paymentData.merchantTxnId || paymentData.attributes?.merchantTxnId || 'receipt';
     const fileName = `Traditional_Alley_Bill_${txnId}.pdf`;
-    
+
     console.log('📧 [AUTO-EMAIL] Preparing to send invoice email to:', customerEmail);
     console.log('💰 [AUTO-EMAIL] Amount:', `${currency} ${formattedAmount}`);
     console.log('📄 [AUTO-EMAIL] File name:', fileName);
-    
+
     // Generate PDF for email (simplified version for automation)
     const jsPDF = (await import('jspdf')).default;
     const doc = new jsPDF({ compress: true });
-    
+
     // Add Traditional Alley logo (prefer JPEG for smaller filesize, fallback to PNG)
     let logoLoaded = false;
     try {
@@ -113,10 +118,10 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
       console.warn('⚠️ [AUTO-EMAIL] Logo loading failed:', error);
       logoLoaded = false;
     }
-    
+
     // Generate PDF content (simplified version)
     let headerY = 35;
-    
+
     if (!logoLoaded) {
       doc.setFontSize(20);
       doc.setTextColor(139, 69, 19);
@@ -129,23 +134,23 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
     doc.setFontSize(16);
     doc.setTextColor(0, 0, 0);
     doc.text('INVOICE', doc.internal.pageSize.getWidth() / 2, headerY + 10, { align: 'center' });
-    
+
     // Add basic order and customer information
     let yPosition = 60;
     const pageWidth = doc.internal.pageSize.getWidth();
     const leftColumnX = 20;
     const rightColumnX = pageWidth / 2 + 30;
-    
+
     // Order Information (Left Column)
     doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
     doc.setTextColor(0, 0, 0);
     doc.text('Order Information', leftColumnX, yPosition);
-    
+
     let leftYPosition = yPosition + 10;
     doc.setFont(undefined, 'normal');
     doc.setFontSize(10);
-    
+
     const orderInfo = [
       `Order ID: ${paymentData.merchantTxnId || 'N/A'}`,
       `Gateway Reference: ${paymentData.gatewayReferenceNo || 'N/A'}`,
@@ -155,23 +160,23 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
       `Payment Method: ${paymentData.instrument || 'N/A'}`,
       `Institution: ${paymentData.institution || 'N/A'}`
     ];
-    
+
     orderInfo.forEach(info => {
       doc.text(info, leftColumnX, leftYPosition);
       leftYPosition += 6;
     });
-    
+
     // Customer Information (Right Column)
     doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
     doc.text('Customer Information', rightColumnX, yPosition);
-    
+
     let rightYPosition = yPosition + 10;
     doc.setFont(undefined, 'normal');
     doc.setFontSize(10);
-    
-  const address = receiverDetails.address || {};
-  const customerInfo = [
+
+    const address = receiverDetails.address || {};
+    const customerInfo = [
       `Name: ${receiverDetails.fullName || 'N/A'}`,
       `Email: ${receiverDetails.email || 'N/A'}`,
       `Phone: ${(receiverDetails.countryCode || '')}${receiverDetails.phone || 'N/A'}`.replace(/^\+?/, '+'),
@@ -181,12 +186,12 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
       `Postal Code: ${address.postalCode || 'N/A'}`,
       `Country: ${address.countryCode || 'N/A'}`
     ];
-    
+
     customerInfo.forEach(info => {
       doc.text(info, rightColumnX, rightYPosition);
       rightYPosition += 6;
     });
-    
+
     // Products table with identical layout to dashboard
     const products = orderData.products || [];
     const { default: autoTable } = await import('jspdf-autotable');
@@ -313,10 +318,10 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
     const footerText = 'Thank you for shopping with Traditional Alley! For any queries, please contact us at contact@traditionalalley.com';
     const footerLines = doc.splitTextToSize(footerText, doc.internal.pageSize.getWidth() - 40);
     doc.text(footerLines, doc.internal.pageSize.getWidth() / 2, footerY, { align: 'center' });
-    
+
     // Convert PDF to base64
     const pdfBase64 = doc.output('datauristring').split(',')[1];
-    
+
     // Prepare email payload
     const emailPayload = {
       customerEmail,
@@ -326,9 +331,9 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
       fileName,
       pdfBase64
     };
-    
+
     console.log('📤 [AUTO-EMAIL] Making API call to /api/send-invoice-email...');
-    
+
     // Send email via API
     const response = await fetch('/api/send-invoice-email', {
       method: 'POST',
@@ -337,18 +342,18 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
       },
       body: JSON.stringify(emailPayload),
     });
-    
+
     console.log('📥 [AUTO-EMAIL] API Response status:', response.status, response.statusText);
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('❌ [AUTO-EMAIL] API Error Response:', errorText);
       throw new Error(`HTTP error! status: ${response.status}, response: ${errorText}`);
     }
-    
+
     const emailResult = await response.json();
     console.log('📧 [AUTO-EMAIL] Email API Result:', emailResult);
-    
+
     if (emailResult.success) {
       console.log('✅ [AUTO-EMAIL] Invoice email sent successfully!');
       return { success: true, result: emailResult };
@@ -356,7 +361,7 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
       console.warn('❌ [AUTO-EMAIL] Email API returned failure:', emailResult.error);
       return { success: false, error: emailResult.error || 'Unknown error' };
     }
-    
+
   } catch (error) {
     console.error('❌ [AUTO-EMAIL] Error sending automatic invoice email:', error);
     return { success: false, error: error.message };
@@ -396,10 +401,13 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
     productsLength: selectedProducts?.length,
     hasClearFunction: typeof clearPurchasedItemsFromCart === 'function'
   });
-  
+
   if (!user?.id) {
-    console.error('❌ [POST-PAYMENT] User authentication required');
-    throw new Error('User authentication required for post-payment processing');
+    console.warn('⚠️ [POST-PAYMENT] No authenticated user, proceeding as guest');
+  } else if (user.id === 'guest') {
+    console.log('🔓 [POST-PAYMENT] Processing guest user payment');
+  } else {
+    console.log('🔐 [POST-PAYMENT] Processing authenticated user payment');
   }
 
   if (!selectedProducts || selectedProducts.length === 0) {
@@ -417,7 +425,7 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
   try {
     // Step 1: Update stock first (same logic as handleUpdateStockAndDelete)
     console.log('📦 [POST-PAYMENT] Step 1: Updating product stock...');
-    
+
     // Log each product in detail
     selectedProducts.forEach((product, index) => {
       console.log(`🔍 [POST-PAYMENT] Product ${index + 1} structure:`, {
@@ -435,11 +443,11 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
         allKeys: Object.keys(product)
       });
     });
-    
+
     // Separate products and variants for different processing
     const mainProducts = [];
     const variantProducts = [];
-    
+
     selectedProducts.forEach(product => {
       // Check if product is a variant by looking for variantInfo with documentId or isVariant flag
       if (product.variantInfo && (product.variantInfo.documentId || product.variantInfo.isVariant)) {
@@ -463,18 +471,18 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
         mainProducts.push(product);
       }
     });
-    
+
     console.log('📦 Separated products:', {
       mainProducts: mainProducts.length,
       variantProducts: variantProducts.length
     });
-    
+
     const allUpdateResults = [];
-    
+
     // Process main products
     if (mainProducts.length > 0) {
       console.log('📦 Processing main products...');
-      
+
       // Group main products by documentId
       const productGroups = mainProducts.reduce((groups, product) => {
         const documentId = product.documentId;
@@ -490,11 +498,11 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
         try {
           console.log('📦 Processing main product group:', {
             documentId,
-            products: products.map(p => ({ 
-              id: p.productId || p.id, 
-              size: p.selectedSize, 
-              quantity: p.quantity || p.pricing?.quantity, 
-              title: p.title 
+            products: products.map(p => ({
+              id: p.productId || p.id,
+              size: p.selectedSize,
+              quantity: p.quantity || p.pricing?.quantity,
+              title: p.title
             }))
           });
 
@@ -553,7 +561,7 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
           for (const product of products) {
             const selectedSize = product.selectedSize;
             const quantity = product.quantity || product.pricing?.quantity || 1;
-            
+
             if (!updatedSizeStocks.hasOwnProperty(selectedSize)) {
               console.warn('📦 Size not found in main product stock:', selectedSize);
               updateResults.push({
@@ -623,7 +631,7 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
     // Process variant products
     if (variantProducts.length > 0) {
       console.log('📦 Processing variant products...');
-      
+
       const variantPromises = variantProducts.map(async (product) => {
         try {
           const variantDocumentId = product.variantInfo.documentId;
@@ -778,12 +786,12 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
       functionType: typeof clearPurchasedItemsFromCart,
       hasFunction: !!clearPurchasedItemsFromCart
     });
-    
+
     try {
       if (typeof clearPurchasedItemsFromCart !== 'function') {
         throw new Error('clearPurchasedItemsFromCart is not a function');
       }
-      
+
       console.log('🚀 [POST-PAYMENT] Calling clearPurchasedItemsFromCart...');
       const cartClearResult = await clearPurchasedItemsFromCart(selectedProducts);
       console.log('✅ [POST-PAYMENT] Cart clearing completed successfully:', cartClearResult);
