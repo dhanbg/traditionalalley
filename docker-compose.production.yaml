@@ -30,6 +30,18 @@ services:
       # Google OAuth
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      # SMTP Configuration (Gmail for OTP emails)
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+      # Hostinger SMTP for invoice emails
+      HOSTINGER_SMTP_HOST: ${HOSTINGER_SMTP_HOST}
+      HOSTINGER_SMTP_PORT: ${HOSTINGER_SMTP_PORT}
+      HOSTINGER_SMTP_USER: ${HOSTINGER_SMTP_USER}
+      HOSTINGER_SMTP_PASS: ${HOSTINGER_SMTP_PASS}
+      HOSTINGER_SMTP_FROM: ${HOSTINGER_SMTP_FROM}
     deploy:
       resources:
         limits:
