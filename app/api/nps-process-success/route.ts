@@ -105,17 +105,10 @@ export async function POST(request: NextRequest) {
 
         const cartResponse = await fetchDataFromApi(cartApiUrl);
 
-        if (!cartResponse?.data || cartResponse.data.length === 0) {
-            console.log('ℹ️ [PROCESS-SUCCESS] No cart items found (may already be cleared)');
-            return NextResponse.json({
-                success: true,
-                alreadyProcessed: true,
-                message: 'Cart already cleared, payment may have been processed'
-            });
-        }
-
-        const currentCartItems = cartResponse.data;
-        console.log(`📦 [PROCESS-SUCCESS] Found ${currentCartItems.length} cart items`);
+        // If no cart items found, we continues to filtering (which results in empty array) 
+        // and then hits the FALLBACK mechanism below.
+        const currentCartItems = cartResponse?.data || [];
+        console.log(`📦 [PROCESS-SUCCESS] Found ${currentCartItems.length} cart items (backend)`);
 
         // Filter out cart items with null products (data integrity issue)
         const validCartItems = currentCartItems.filter((cartItem: any) => {
@@ -130,23 +123,45 @@ export async function POST(request: NextRequest) {
             console.log('ℹ️ [PROCESS-SUCCESS] No valid cart items found from backend. Checking paymentData fallback...');
 
             // FALLBACK: Use provided paymentData if available (e.g. for Guests using localStorage)
-            if (paymentData?.orderData?.ordered_products && paymentData.orderData.ordered_products.length > 0) {
-                console.log(`✅ [PROCESS-SUCCESS] Found ${paymentData.orderData.ordered_products.length} products in paymentData fallback.`);
+            // Checkout.jsx uses 'products', but we keep 'ordered_products' as backup
+            const fallbackProducts = paymentData?.orderData?.products || paymentData?.orderData?.ordered_products;
+
+            if (fallbackProducts && fallbackProducts.length > 0) {
+                console.log(`✅ [PROCESS-SUCCESS] Found ${fallbackProducts.length} products in paymentData fallback.`);
 
                 // Transform paymentData products to match selectedProducts structure
-                const selectedProducts = paymentData.orderData.ordered_products.map((item: any) => ({
-                    id: item.product?.id || item.product, // specific to how it's stored
-                    documentId: item.product?.documentId,
-                    title: item.product?.title || item.title || "Unknown Product",
-                    selectedSize: item.size || item.selectedSize,
-                    quantity: item.quantity,
-                    price: item.price,
-                    variantInfo: item.variant ? {
-                        documentId: item.variant.documentId || item.variant,
-                        isVariant: true,
-                        title: item.variant.title || item.variant.color || "Variant"
-                    } : null
-                }));
+                const selectedProducts = fallbackProducts.map((item: any) => {
+                    // Check if item is already in the clean format (from Checkout.jsx)
+                    // It has 'id' and 'title' directly, and NO 'product' property (or product is undefined/null)
+                    const isDirect = !item.product && item.id && item.title;
+
+                    if (isDirect) {
+                        return {
+                            id: item.id,
+                            documentId: item.documentId,
+                            title: item.title || "Unknown Product",
+                            selectedSize: item.selectedSize,
+                            quantity: item.quantity,
+                            price: item.price,
+                            variantInfo: item.variantInfo
+                        };
+                    }
+
+                    // Legacy/Strapi-like structure
+                    return {
+                        id: item.product?.id || item.product,
+                        documentId: item.product?.documentId,
+                        title: item.product?.title || item.title || "Unknown Product",
+                        selectedSize: item.size || item.selectedSize,
+                        quantity: item.quantity,
+                        price: item.price,
+                        variantInfo: item.variant ? {
+                            documentId: item.variant.documentId || item.variant,
+                            isVariant: true,
+                            title: item.variant.title || item.variant.color || "Variant"
+                        } : null
+                    };
+                });
 
                 console.log('🚀 [PROCESS-SUCCESS] Calling processPostPaymentStockAndCart with FALLBACK items...');
 
