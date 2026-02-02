@@ -463,10 +463,16 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
           transitDays: '2-3'
         });
 
+        // ==================== TEMPORARY TESTING OVERRIDE ====================
+        // TODO: REMOVE THIS AFTER TESTING - Setting NCM delivery cost to 0 for testing
+        const testingNCMCost = 0;
+        // Original line was: price: response.data.charge,
+        // ====================================================================
+
         // Notify parent component if callback exists
         if (onRateCalculated) {
           onRateCalculated({
-            price: response.data.charge,
+            price: testingNCMCost, // TEMPORARY: Changed from response.data.charge to 0
             currency: 'NPR',
             productName: 'NCM Delivery',
             isNCM: true
@@ -565,10 +571,16 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
           const rate = filteredRates[0]; // Use first matching rate
           const shippingCost = calculateShippingCost(rate, totalWeight);
 
+          // ==================== TEMPORARY TESTING OVERRIDE ====================
+          // TODO: REMOVE THIS AFTER TESTING - Setting shipping cost to 0 for testing
+          const testingShippingCost = 0;
+          // Original line was: price: shippingCost,
+          // ====================================================================
+
           // Notify parent component with calculated rate
           if (onRateCalculated) {
             onRateCalculated({
-              price: shippingCost,
+              price: testingShippingCost, // TEMPORARY: Changed from shippingCost to 0
               currency: 'NPR',
               productName: `${rate.service_type} to ${rate.country_name}`,
               rateDetails: rate,

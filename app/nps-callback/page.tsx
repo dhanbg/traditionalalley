@@ -341,12 +341,55 @@ const NPSCallbackContent = () => {
         if (isSuccess || (isMock && finalStatus === 'success')) {
           setProcessingStatus("✅ Payment successful! Finalizing order...");
 
-          // Call the cleaned-up function
-          await handleAutomaticUpdateStockAndDelete(
-            user || { id: 'guest', email: paymentData?.orderData?.receiver_details?.email || 'guest@example.com' },
-            clearPurchasedItemsFromCart,
-            paymentData
-          );
+          console.log('📧 [CALLBACK] Triggering post-payment processing with email automation...');
+          console.log('📧 [CALLBACK] PaymentData being passed:', {
+            hasPaymentData: !!paymentData,
+            hasOrderData: !!paymentData?.orderData,
+            hasReceiverDetails: !!paymentData?.orderData?.receiver_details,
+            receiverEmail: paymentData?.orderData?.receiver_details?.email
+          });
+
+          // NEW: Trigger email automation via API (works even if page flow is interrupted)
+          try {
+            console.log('🚀 [CALLBACK] Calling /api/nps-process-success...');
+            const processResponse = await fetch('/api/nps-process-success', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                merchantTxnId,
+                paymentData: {
+                  ...paymentData,
+                  recoveredUserBagId: targetBagId
+                }
+              })
+            });
+
+            const processResult = await processResponse.json();
+            console.log('✅ [CALLBACK] Process success result:', processResult);
+
+            if (processResult.success) {
+              if (processResult.alreadyProcessed) {
+                console.log('ℹ️ [CALLBACK] Payment already processed');
+              } else {
+                console.log('✅ [CALLBACK] Email automation completed:', {
+                  stockUpdated: processResult.stockUpdated,
+                  cartCleared: processResult.cartCleared,
+                  emailSent: processResult.emailSent
+                });
+              }
+            } else {
+              console.error('❌ [CALLBACK] Process success failed:', processResult.error);
+            }
+          } catch (processError) {
+            console.error('❌ [CALLBACK] Error calling process success:', processError);
+            // Continue with old flow as fallback
+            console.log('⚠️ [CALLBACK] Falling back to handleAutomaticUpdateStockAndDelete...');
+            await handleAutomaticUpdateStockAndDelete(
+              user || { id: 'guest', email: paymentData?.orderData?.receiver_details?.email || 'guest@example.com' },
+              clearPurchasedItemsFromCart,
+              paymentData
+            );
+          }
 
           // Coupon Handling
           setIsProcessingCoupon(true);
