@@ -117,8 +117,81 @@ export async function POST(request: NextRequest) {
         const currentCartItems = cartResponse.data;
         console.log(`📦 [PROCESS-SUCCESS] Found ${currentCartItems.length} cart items`);
 
+        // Filter out cart items with null products (data integrity issue)
+        const validCartItems = currentCartItems.filter((cartItem: any) => {
+            if (!cartItem.product) {
+                console.warn('⚠️ [PROCESS-SUCCESS] Skipping cart item with null product:', cartItem.documentId);
+                return false;
+            }
+            return true;
+        });
+
+        if (validCartItems.length === 0) {
+            console.log('ℹ️ [PROCESS-SUCCESS] No valid cart items found from backend. Checking paymentData fallback...');
+
+            // FALLBACK: Use provided paymentData if available (e.g. for Guests using localStorage)
+            if (paymentData?.orderData?.ordered_products && paymentData.orderData.ordered_products.length > 0) {
+                console.log(`✅ [PROCESS-SUCCESS] Found ${paymentData.orderData.ordered_products.length} products in paymentData fallback.`);
+
+                // Transform paymentData products to match selectedProducts structure
+                const selectedProducts = paymentData.orderData.ordered_products.map((item: any) => ({
+                    id: item.product?.id || item.product, // specific to how it's stored
+                    documentId: item.product?.documentId,
+                    title: item.product?.title || item.title || "Unknown Product",
+                    selectedSize: item.size || item.selectedSize,
+                    quantity: item.quantity,
+                    price: item.price,
+                    variantInfo: item.variant ? {
+                        documentId: item.variant.documentId || item.variant,
+                        isVariant: true,
+                        title: item.variant.title || item.variant.color || "Variant"
+                    } : null
+                }));
+
+                console.log('🚀 [PROCESS-SUCCESS] Calling processPostPaymentStockAndCart with FALLBACK items...');
+
+                const user = session?.user || {
+                    id: 'guest',
+                    email: paymentData?.orderData?.receiver_details?.email || 'guest@example.com'
+                };
+
+                // Pass empty callback for cart clearing since we don't have backend cart items
+                const processResult = await processPostPaymentStockAndCart(
+                    selectedProducts,
+                    user,
+                    async () => { console.log('ℹ️ [PROCESS-SUCCESS] Skipping backend cart clear (using fallback)'); },
+                    paymentData
+                );
+
+                // Mark payment as processed
+                if (processResult.emailSend?.success) {
+                    const updatedPayments = existingPayments.map((p: any) =>
+                        p.merchantTxnId === merchantTxnId ? { ...p, emailSent: true } : p
+                    );
+                    await updateUserBagWithPayment(targetBagId, { ...paymentData, emailSent: true });
+                }
+
+                return NextResponse.json({
+                    success: true,
+                    stockUpdated: processResult.stockUpdate?.success || false,
+                    cartCleared: false, // LocalStorage must be cleared by client
+                    emailSent: processResult.emailSend?.success || false,
+                    details: processResult,
+                    message: "Processed using fallback payment data"
+                });
+            }
+
+            return NextResponse.json({
+                success: true,
+                alreadyProcessed: true,
+                message: 'No valid cart items to process'
+            });
+        }
+
+        console.log(`✅ [PROCESS-SUCCESS] ${validCartItems.length} valid cart items (filtered from ${currentCartItems.length})`);
+
         // Transform cart items for processing
-        const selectedProducts = currentCartItems.map((cartItem: any) => ({
+        const selectedProducts = validCartItems.map((cartItem: any) => ({
             id: cartItem.product.id,
             documentId: cartItem.product.documentId,
             title: cartItem.product.title || cartItem.product.name,
@@ -147,7 +220,7 @@ export async function POST(request: NextRequest) {
                 console.log(`🗑️ [PROCESS-SUCCESS] Deleting ${itemsToRemove.length} cart items...`);
                 // Delete cart items from Strapi directly
                 const { deleteData } = await import('@/utils/api');
-                for (const item of currentCartItems) {
+                for (const item of validCartItems) {
                     try {
                         await deleteData(`/api/carts/${item.documentId}`);
                     } catch (e) {

@@ -376,6 +376,10 @@ const NPSCallbackContent = () => {
                   cartCleared: processResult.cartCleared,
                   emailSent: processResult.emailSent
                 });
+
+                // IMPORTANT: Clear client-side cart (localStorage/Context)
+                console.log('🛍 [CALLBACK] Clearing client-side cart...');
+                clearPurchasedItemsFromCart();
               }
             } else {
               console.error('❌ [CALLBACK] Process success failed:', processResult.error);
