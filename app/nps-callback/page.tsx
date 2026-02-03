@@ -293,6 +293,8 @@ const NPSCallbackContent = () => {
         let finalAmount = parseFloat(amount) || 0;
         let finalStatus = status;
         let finalProcessId = gatewayTxnId;
+        let finalInstrument: string | undefined = undefined;
+        let finalInstitution: string | undefined = undefined;
 
         if ((!status || !amount) && !isMock) {
           try {
@@ -307,6 +309,8 @@ const NPSCallbackContent = () => {
                 finalAmount = parseFloat(sData.data.Amount) || 0;
                 finalStatus = sData.data.Status;
                 finalProcessId = sData.data.ProcessId || "";
+                finalInstrument = sData.data.Instrument;
+                finalInstitution = sData.data.Institution;
               }
             }
           } catch (e) { console.error("NPS check failed", e); }
@@ -327,6 +331,8 @@ const NPSCallbackContent = () => {
           processId: finalProcessId,
           status: finalStatus,
           amount: finalAmount,
+          ...(finalInstrument && { instrument: finalInstrument }),
+          ...(finalInstitution && { institution: finalInstitution }),
           orderData: orderData,
           recoveredUserBagId: targetBagId, // Explicitly pass for internal use
           timestamp: generateLocalTimestamp()
