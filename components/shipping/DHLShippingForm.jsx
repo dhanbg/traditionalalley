@@ -251,6 +251,13 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
     return uniqueId.split('-')[0];
   };
 
+  // Helper to get country calling code
+  const getCountryCallingCode = (countryCode) => {
+    if (!countryCode) return '+--';
+    const code = getActualCountryCode(countryCode);
+    return countryCallingCodes[code] || '+--';
+  };
+
   const loadCountries = async () => {
     try {
       setLoadingCountries(true);
@@ -868,63 +875,48 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
+        
+        /* Global overrides for smaller, minimal design */
+        div[style*="padding: 1rem"] {
+          padding: 10px !important;
+        }
+        
+        input, select, textarea {
+          padding: 10px !important;
+          font-size: 12px !important;
+          border: 1px solid #e0e0e0 !important;
+          border-radius: 8px !important;
+        }
+        
+        label {
+          font-size: 12px !important;
+          color: #757575 !important;
+          margin-bottom: 6px !important;
+        }
+        
+        h2, h3, h4 {
+          font-size: 13px !important;
+          font-weight: 600 !important;
+          color: #424242 !important;
+          margin-bottom: 10px !important;
+        }
+        
+        button {
+          padding: 10px 16px !important;
+          font-size: 12px !important;
+        }
       `}</style>
       <div style={{
-        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-        padding: '2rem',
-        borderRadius: '1rem',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-        border: '1px solid #e2e8f0',
-        position: 'relative',
-        overflow: 'hidden'
+        background: '#ffffff',
+        padding: '14px',
+        borderRadius: '8px',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
+        border: '1px solid #e0e0e0',
+        position: 'relative'
       }}>
-        {/* Background decorations */}
-        <div style={{
-          position: 'absolute',
-          top: '-4rem',
-          right: '-4rem',
-          width: '8rem',
-          height: '8rem',
-          background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1))',
-          borderRadius: '50%',
-          zIndex: 1
-        }}></div>
-        <div style={{
-          position: 'absolute',
-          bottom: '-3rem',
-          left: '-3rem',
-          width: '6rem',
-          height: '6rem',
-          background: 'linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1))',
-          borderRadius: '50%',
-          zIndex: 1
-        }}></div>
-
-        <div style={{ position: 'relative', zIndex: 10 }}>
+        <div style={{ position: 'relative' }}>
           {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '4rem',
-              height: '4rem',
-              background: 'linear-gradient(45deg, #fbbf24, #f59e0b)',
-              borderRadius: '50%',
-              marginBottom: '1rem',
-              boxShadow: '0 10px 25px rgba(251, 191, 36, 0.3)',
-              fontSize: '1.5rem'
-            }}>
-              🚚
-            </div>
-            <h2 style={{
-              fontSize: '1.875rem',
-              fontWeight: 700,
-              color: '#1f2937',
-              margin: '0 0 0.5rem 0'
-            }}>Shipping</h2>
-            <p style={{ color: '#6b7280', margin: 0 }}>Fast, reliable worldwide delivery</p>
-          </div>
+          {/* Shipping Header Removed */}
 
           <div>
             {dhlError && (
@@ -976,25 +968,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                   width: '100%'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '2.5rem',
-                    height: '2.5rem',
-                    background: 'linear-gradient(45deg, #3b82f6, #2563eb)',
-                    borderRadius: '50%',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                    fontSize: '1.125rem',
-                    color: 'white'
-                  }}>
-                    🌍
-                  </div>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1f2937', margin: 0 }}>
-                    Destination Address
-                  </h3>
-                </div>
+                {/* Destination Address Header Removed */}
 
                 <div
                   style={{
@@ -1006,14 +980,12 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                 >
                   <div>
                     <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      fontSize: '0.875rem',
+                      display: 'block',
+                      fontSize: '12px',
                       fontWeight: 600,
-                      color: '#374151',
-                      marginBottom: '0.5rem'
+                      color: '#757575',
+                      marginBottom: '6px'
                     }}>
-                      <span style={{ marginRight: '0.5rem' }}>🏳️</span>
                       Country *
                     </label>
                     <select
@@ -1069,14 +1041,12 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                   {getActualCountryCode(formData.destinationAddress.countryCode) !== 'NP' && (
                     <div>
                       <label style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        fontSize: '0.875rem',
+                        display: 'block',
+                        fontSize: '12px',
                         fontWeight: 600,
-                        color: '#374151',
-                        marginBottom: '0.5rem'
+                        color: '#757575',
+                        marginBottom: '6px'
                       }}>
-                        <span style={{ marginRight: '0.5rem' }}>📦</span>
                         Service Type *
                       </label>
                       <select
@@ -1084,13 +1054,13 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                         onChange={(e) => handleInputChange('', 'serviceType', e.target.value)}
                         style={{
                           width: '100%',
-                          padding: '1rem',
-                          border: '2px solid #e5e7eb',
-                          borderRadius: '0.75rem',
-                          fontSize: '1rem',
+                          padding: '10px 12px',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px',
+                          fontSize: '13px',
                           background: 'white',
-                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                          transition: 'all 0.2s'
+                          height: '42px',
+                          boxSizing: 'border-box'
                         }}
                         required
                         disabled={loadingServiceTypes || availableServiceTypes.length === 1}
@@ -1119,14 +1089,12 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                   {getActualCountryCode(formData.destinationAddress.countryCode) === 'NP' ? (
                     <div style={{ position: 'relative' }}>
                       <label style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        fontSize: '0.875rem',
+                        display: 'block',
+                        fontSize: '12px',
                         fontWeight: 600,
-                        color: '#374151',
-                        marginBottom: '0.5rem'
+                        color: '#757575',
+                        marginBottom: '6px'
                       }}>
-                        <span style={{ marginRight: '0.5rem' }}>🏢</span>
                         Destination Branch *
                       </label>
                       <input
@@ -1138,13 +1106,15 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                         onBlur={handleBranchInputBlur}
                         style={{
                           width: '100%',
-                          padding: '1rem',
-                          border: '2px solid #e5e7eb',
-                          borderRadius: '0.75rem',
-                          fontSize: '1rem',
+                          padding: '10px 12px',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px',
+                          fontSize: '13px',
                           background: 'white',
-                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                          transition: 'all 0.2s'
+                          boxShadow: 'none',
+                          transition: 'all 0.2s',
+                          height: '42px',
+                          boxSizing: 'border-box'
                         }}
                         required
                         disabled={loadingBranches}
@@ -1168,18 +1138,22 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                           {filteredBranches.map((branch, index) => (
                             <div
                               key={index}
-                              onClick={() => handleBranchSelect(branch)}
+                              onMouseDown={(e) => {
+                                e.preventDefault(); // Prevent blur
+                                handleBranchSelect(branch);
+                              }}
                               style={{
-                                padding: '0.75rem 1rem',
+                                padding: '10px 12px',
                                 cursor: 'pointer',
                                 borderBottom: index < filteredBranches.length - 1 ? '1px solid #f3f4f6' : 'none',
-                                transition: 'background-color 0.2s'
+                                transition: 'background-color 0.2s',
+                                fontSize: '13px'
                               }}
                               onMouseEnter={(e) => e.target.style.backgroundColor = '#f9fafb'}
                               onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
                             >
                               <div style={{ fontWeight: 600, color: '#1f2937' }}>{branch.name}</div>
-                              <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                              <div style={{ fontSize: '12px', color: '#6b7280' }}>
                                 {branch.district}, {branch.region.split(' - ')[1] || branch.region}
                               </div>
                             </div>
@@ -1211,14 +1185,12 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                   ) : (
                     <div>
                       <label style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        fontSize: '0.875rem',
+                        display: 'block',
+                        fontSize: '12px',
                         fontWeight: 600,
-                        color: '#374151',
-                        marginBottom: '0.5rem'
+                        color: '#757575',
+                        marginBottom: '6px'
                       }}>
-                        <span style={{ marginRight: '0.5rem' }}>🏙️</span>
                         City *
                       </label>
                       <input
@@ -1228,13 +1200,13 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                         onChange={(e) => handleInputChange('destinationAddress', 'cityName', e.target.value)}
                         style={{
                           width: '100%',
-                          padding: '1rem',
-                          border: '2px solid #e5e7eb',
-                          borderRadius: '0.75rem',
-                          fontSize: '1rem',
+                          padding: '10px 12px',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px',
+                          fontSize: '13px',
                           background: 'white',
-                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                          transition: 'all 0.2s'
+                          height: '42px',
+                          boxSizing: 'border-box'
                         }}
                         required
                         onFocus={(e) => e.target.style.borderColor = '#eab308'}
@@ -1245,14 +1217,12 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
 
                   <div>
                     <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      fontSize: '0.875rem',
+                      display: 'block',
+                      fontSize: '12px',
                       fontWeight: 600,
-                      color: '#374151',
-                      marginBottom: '0.5rem'
+                      color: '#757575',
+                      marginBottom: '6px'
                     }}>
-                      <span style={{ marginRight: '0.5rem' }}>🏠</span>
                       Street Address *
                     </label>
                     <input
@@ -1262,13 +1232,13 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                       onChange={(e) => handleInputChange('destinationAddress', 'addressLine1', e.target.value)}
                       style={{
                         width: '100%',
-                        padding: '1rem',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '0.75rem',
-                        fontSize: '1rem',
+                        padding: '10px 12px',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '8px',
+                        fontSize: '13px',
                         background: 'white',
-                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                        transition: 'all 0.2s'
+                        height: '42px',
+                        boxSizing: 'border-box'
                       }}
                       required
                       onFocus={(e) => e.target.style.borderColor = '#eab308'}
@@ -1279,14 +1249,12 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                   {formData.destinationAddress.countryCode !== 'NP' && (
                     <div>
                       <label style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        fontSize: '0.875rem',
+                        display: 'block',
+                        fontSize: '12px',
                         fontWeight: 600,
-                        color: '#374151',
-                        marginBottom: '0.5rem'
+                        color: '#757575',
+                        marginBottom: '6px'
                       }}>
-                        <span style={{ marginRight: '0.5rem' }}>📮</span>
                         Postal Code *
                       </label>
                       <input
@@ -1296,13 +1264,13 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                         onChange={(e) => handleInputChange('destinationAddress', 'postalCode', e.target.value)}
                         style={{
                           width: '100%',
-                          padding: '1rem',
-                          border: '2px solid #e5e7eb',
-                          borderRadius: '0.75rem',
-                          fontSize: '1rem',
+                          padding: '10px 12px',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px',
+                          fontSize: '13px',
                           background: 'white',
-                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                          transition: 'all 0.2s'
+                          height: '42px',
+                          boxSizing: 'border-box'
                         }}
                         required
                         onFocus={(e) => e.target.style.borderColor = '#eab308'}
@@ -1322,25 +1290,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                   width: '100%'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '2.5rem',
-                    height: '2.5rem',
-                    background: 'linear-gradient(45deg, #10b981, #059669)',
-                    borderRadius: '50%',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                    fontSize: '1.125rem',
-                    color: 'white'
-                  }}>
-                    👤
-                  </div>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1f2937', margin: 0 }}>
-                    Recipient Details
-                  </h3>
-                </div>
+                {/* Recipient Details Header Removed */}
 
                 <div
                   style={{
@@ -1352,14 +1302,12 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                 >
                   <div>
                     <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      fontSize: '0.875rem',
+                      display: 'block',
+                      fontSize: '12px',
                       fontWeight: 600,
-                      color: '#374151',
-                      marginBottom: '0.5rem'
+                      color: '#757575',
+                      marginBottom: '6px'
                     }}>
-                      <span style={{ marginRight: '0.5rem' }}>👨‍💼</span>
                       Full Name *
                     </label>
                     <input
@@ -1369,16 +1317,12 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                       onChange={(e) => handleInputChange('recipient', 'fullName', e.target.value)}
                       style={{
                         width: '100%',
-                        fontSize: isMobile ? '1rem' : '1rem',
-                        minWidth: 0,
-                        padding: '0.5rem 0.75rem',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '0.75rem',
-                        fontSize: '1rem',
-                        background: 'white',
-                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                        transition: 'all 0.2s',
-                        lineHeight: '38px'
+                        padding: '10px 12px',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        height: '42px',
+                        boxSizing: 'border-box'
                       }}
                       required
                       onFocus={(e) => e.target.style.borderColor = '#eab308'}
@@ -1388,14 +1332,12 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
 
                   <div>
                     <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      fontSize: '0.875rem',
+                      display: 'block',
+                      fontSize: '12px',
                       fontWeight: 600,
-                      color: '#374151',
-                      marginBottom: '0.5rem'
+                      color: '#757575',
+                      marginBottom: '6px'
                     }}>
-                      <span style={{ marginRight: '0.5rem' }}>📧</span>
                       Email *
                     </label>
                     <input
@@ -1405,54 +1347,49 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                       onChange={(e) => handleInputChange('recipient', 'email', e.target.value)}
                       style={{
                         width: '100%',
-                        fontSize: isMobile ? '1rem' : '1rem',
-                        minWidth: 0,
-                        padding: '0.5rem 0.75rem',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '0.75rem',
-                        fontSize: '1rem',
-                        background: 'white',
-                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                        transition: 'all 0.2s',
-                        lineHeight: '38px'
+                        padding: '10px 12px',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        height: '42px',
+                        boxSizing: 'border-box'
                       }}
                       required
-                      onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                     />
                   </div>
 
                   <div>
                     <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      fontSize: '0.875rem',
+                      display: 'block',
+                      fontSize: '12px',
                       fontWeight: 600,
-                      color: '#374151',
-                      marginBottom: '0.5rem'
+                      color: '#757575',
+                      marginBottom: '6px'
                     }}>
-                      <span style={{ marginRight: '0.5rem' }}>📱</span>
                       Phone *
                     </label>
                     <div style={{
                       display: 'flex',
-                      borderRadius: '0.75rem',
+                      width: '100%',
+                      height: '42px',
+                      boxSizing: 'border-box',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '8px',
                       overflow: 'hidden',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                      border: '2px solid #e5e7eb',
-                      transition: 'all 0.2s'
+                      background: 'white'
                     }}>
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        padding: '1rem',
-                        background: 'linear-gradient(45deg, #f9fafb, #f3f4f6)',
-                        borderRight: '1px solid #e5e7eb',
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        color: '#374151'
+                        padding: '0 12px',
+                        background: '#f5f5f5',
+                        borderRight: '1px solid #e0e0e0',
+                        fontSize: '13px',
+                        color: '#757575',
+                        fontWeight: 500,
+                        height: '100%'
                       }}>
-                        {formData.recipient.countryCode || '+--'}
+                        {getCountryCallingCode(formData.destinationAddress.countryCode)}
                       </div>
                       <input
                         type="tel"
@@ -1461,11 +1398,12 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                         onChange={(e) => handleInputChange('recipient', 'phone', e.target.value)}
                         style={{
                           flex: 1,
-                          padding: '0.5rem 0.75rem',
+                          padding: '10px 12px',
                           border: 'none',
+                          fontSize: '13px',
+                          height: '100%',
                           outline: 'none',
-                          background: 'white',
-                          lineHeight: '37px'
+                          color: '#424242'
                         }}
                         required
                       />
@@ -1474,14 +1412,12 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
 
                   <div>
                     <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      fontSize: '0.875rem',
+                      display: 'block',
+                      fontSize: '12px',
                       fontWeight: 600,
-                      color: '#374151',
-                      marginBottom: '0.5rem'
+                      color: '#757575',
+                      marginBottom: '6px'
                     }}>
-                      <span style={{ marginRight: '0.5rem' }}>📏</span>
                       Want custom height?
                     </label>
                     <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.5rem', alignItems: 'center' }}>
@@ -1545,16 +1481,16 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
               {!isFormValid() && (
                 <div style={{
                   marginBottom: '1rem',
-                  padding: '1rem',
-                  background: 'linear-gradient(45deg, #fffbeb, #fef3c7)',
-                  border: '1px solid #fcd34d',
-                  borderRadius: '0.75rem',
+                  padding: '10px',
+                  background: '#fff3cd',
+                  border: '1px solid #ffeeba',
+                  borderRadius: '8px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.5rem'
+                  gap: '8px'
                 }}>
-                  <span style={{ color: '#d97706', fontSize: '1.125rem' }}>⚠️</span>
-                  <span style={{ color: '#92400e', fontWeight: 500 }}>
+                  <span style={{ color: '#856404', fontSize: '12px', fontWeight: 600 }}>⚠</span>
+                  <span style={{ color: '#856404', fontWeight: 500, fontSize: '12px' }}>
                     Please fill in all required fields to proceed
                   </span>
                 </div>
@@ -1569,80 +1505,82 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                 <button
                   onClick={getRates}
                   disabled={!isFormValid() || dhlLoading}
+                  className="skiper-button"
                   style={{
                     flex: 1,
                     width: isMobile ? '100%' : undefined,
                     minWidth: 0,
                     position: 'relative',
-                    overflow: 'hidden',
-                    padding: '1rem 2rem',
-                    borderRadius: '1rem',
+                    padding: '10px 20px',
+                    borderRadius: '8px',
                     fontWeight: 600,
-                    fontSize: '1.125rem',
-                    transition: 'all 0.3s',
+                    fontSize: '13px',
                     border: 'none',
                     cursor: !isFormValid() || dhlLoading ? 'not-allowed' : 'pointer',
-                    display: 'flex',
+                    display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '0.75rem',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                    background: !isFormValid() || dhlLoading ? '#d1d5db' : 'linear-gradient(45deg, #3b82f6, #2563eb)',
-                    color: !isFormValid() || dhlLoading ? '#9ca3af' : 'white'
+                    gap: '8px',
+                    background: !isFormValid() || dhlLoading ? '#e0e0e0' : '#424242',
+                    color: !isFormValid() || dhlLoading ? '#9e9e9e' : 'white',
+                    overflow: 'hidden',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   }}
-                  onMouseOver={(e) => {
-                    if (!(!isFormValid() || dhlLoading)) {
-                      e.target.style.transform = 'translateY(-2px)';
-                      e.target.style.boxShadow = '0 10px 25px -3px rgba(0, 0, 0, 0.1)';
-                      e.target.style.background = 'linear-gradient(45deg, #2563eb, #1d4ed8)';
+                  onMouseEnter={(e) => {
+                    if (isFormValid() && !dhlLoading) {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(66, 66, 66, 0.3)';
                     }
                   }}
-                  onMouseOut={(e) => {
-                    if (!(!isFormValid() || dhlLoading)) {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-                      e.target.style.background = 'linear-gradient(45deg, #3b82f6, #2563eb)';
-                    }
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
                   }}
                 >
-                  <span style={{ fontSize: '1.5rem' }}>📦</span>
                   {dhlLoading ? 'Getting Rates...' : 'Get Shipping Rates'}
+                  {!dhlLoading && isFormValid() && (
+                    <svg
+                      style={{
+                        width: '14px',
+                        height: '14px',
+                        transition: 'transform 0.3s ease',
+                      }}
+                      fill="none"
+                      viewBox="0 0 10 10"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M1.004 9.166 9.337.833m0 0v8.333m0-8.333H1.004"
+                        stroke="currentColor"
+                        strokeWidth="1.25"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
                 </button>
               </div>
 
               {/* Display Shipping Rates */}
               {shippingRates && shippingRates.length > 0 && (
                 <div style={{
-                  marginTop: '2rem',
-                  padding: '1.5rem',
-                  background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-                  borderRadius: '1rem',
-                  border: '1px solid #0ea5e9',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  marginTop: '16px',
+                  padding: '14px',
+                  background: '#f9f9f9',
+                  borderRadius: '8px',
+                  border: '1px solid #e0e0e0',
+                  boxShadow: 'none'
                 }}>
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.75rem',
-                    marginBottom: '1rem'
+                    gap: '8px',
+                    marginBottom: '10px'
                   }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '2.5rem',
-                      height: '2.5rem',
-                      background: 'linear-gradient(45deg, #0ea5e9, #0284c7)',
-                      borderRadius: '50%',
-                      fontSize: '1.125rem',
-                      color: 'white'
-                    }}>
-                      💰
-                    </div>
                     <h3 style={{
-                      fontSize: '1.25rem',
-                      fontWeight: 700,
-                      color: '#0c4a6e',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      color: '#424242',
                       margin: 0
                     }}>
                       Available Shipping Rates
@@ -1691,7 +1629,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                             textAlign: 'right'
                           }}>
                             <div style={{
-                              fontSize: '1.5rem',
+                              fontSize: '16px',
                               fontWeight: 700,
                               color: '#0ea5e9'
                             }}>
@@ -1718,26 +1656,26 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
               {/* Loading state for shipping rates */}
               {loadingShippingRates && (
                 <div style={{
-                  marginTop: '2rem',
-                  padding: '2rem',
+                  marginTop: '16px',
+                  padding: '14px',
                   textAlign: 'center',
-                  background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-                  borderRadius: '1rem',
-                  border: '1px solid #e2e8f0'
+                  background: '#f9f9f9',
+                  borderRadius: '8px',
+                  border: '1px solid #e0e0e0'
                 }}>
                   <div style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '0.75rem',
-                    fontSize: '1.125rem',
+                    gap: '8px',
+                    fontSize: '13px',
                     fontWeight: 600,
-                    color: '#475569'
+                    color: '#757575'
                   }}>
                     <div style={{
-                      width: '1.5rem',
-                      height: '1.5rem',
-                      border: '2px solid #e2e8f0',
-                      borderTop: '2px solid #3b82f6',
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid #e0e0e0',
+                      borderTop: '2px solid #424242',
                       borderRadius: '50%',
                       animation: 'spin 1s linear infinite'
                     }}></div>
@@ -1749,32 +1687,19 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
               {/* Error state for shipping rates */}
               {shippingRatesError && (
                 <div style={{
-                  marginTop: '2rem',
-                  padding: '1rem',
-                  background: 'linear-gradient(45deg, #fef2f2, #fee2e2)',
+                  marginTop: '16px',
+                  padding: '10px',
+                  background: '#fef2f2',
                   border: '1px solid #fecaca',
-                  borderRadius: '0.75rem',
+                  borderRadius: '8px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.75rem'
+                  gap: '8px'
                 }}>
-                  <div style={{
-                    flexShrink: 0,
-                    width: '2rem',
-                    height: '2rem',
-                    background: '#ef4444',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontSize: '0.875rem'
-                  }}>
-                    ❌
-                  </div>
+                  <span style={{ color: '#ef4444', fontSize: '12px', fontWeight: 600 }}>✕</span>
                   <div>
-                    <strong style={{ fontWeight: 600, color: '#991b1b' }}>Shipping Rates Error:</strong>
-                    <span style={{ color: '#b91c1c', marginLeft: '0.5rem' }}>{shippingRatesError}</span>
+                    <strong style={{ fontWeight: 600, color: '#991b1b', fontSize: '12px' }}>Error:</strong>
+                    <span style={{ color: '#b91c1c', marginLeft: '4px', fontSize: '12px' }}>{shippingRatesError}</span>
                   </div>
                 </div>
               )}

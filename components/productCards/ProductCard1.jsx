@@ -292,25 +292,6 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
         setShowSizeSelection(false);
         setSelectedSize(''); // Reset selection when mouse leaves
       }}
-      onTouchStart={(e) => {
-        // On mobile, don't show size selection on touch - prefer navigation
-        if (isMobile) return;
-        // Only handle touch for size selection, don't interfere with navigation
-        if (hasAvailableSizes && !e.target.closest('.product-img') && !e.target.closest('.title.link')) {
-          setShowSizeSelection(true);
-        }
-      }}
-      onTouchEnd={(e) => {
-        // On mobile, don't show size selection on touch - prefer navigation
-        if (isMobile) return;
-        // Only reset size selection if not clicking on navigation elements
-        if (hasAvailableSizes && !e.target.closest('.product-img') && !e.target.closest('.title.link')) {
-          setTimeout(() => {
-            setShowSizeSelection(false);
-            setSelectedSize('');
-          }, 2000);
-        }
-      }}
     >
       <div className="card-product-wrapper">
         <Link
@@ -318,12 +299,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
           className="product-img"
           style={{
             WebkitTapHighlightColor: 'transparent',
-            touchAction: 'manipulation',
-            cursor: 'pointer'
-          }}
-          onClick={(e) => {
-            // Ensure single click navigation works on mobile
-            e.stopPropagation();
+            touchAction: 'manipulation'
           }}
         >
           <Image
@@ -638,12 +614,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
           className="title link"
           style={{
             WebkitTapHighlightColor: 'transparent',
-            touchAction: 'manipulation',
-            cursor: 'pointer'
-          }}
-          onClick={(e) => {
-            // Ensure single click navigation works on mobile
-            e.stopPropagation();
+            touchAction: 'manipulation'
           }}
         >
           {safeProduct.title || 'Product'}

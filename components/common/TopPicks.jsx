@@ -85,6 +85,108 @@ export default function TopPicks({ initialProducts = [], initialMeta = null }) {
 
   const productRows = isMobile ? getProductRows() : [];
 
+  // Loading Skeleton
+  if (loading) {
+    return (
+      <section className="top-picks-section">
+        <div className="section-header text-center">
+          <div className="skeleton skeleton-title"></div>
+          <div className="skeleton skeleton-subtitle"></div>
+          <div className="title-underline" style={{ opacity: 0.3 }}></div>
+        </div>
+
+        {isMobile ? (
+          <div className="scroll-rows-container">
+            {[1, 2, 3].map((row) => (
+              <div key={row} className="scroll-row">
+                <div className="scroll-track">
+                  {[1, 2, 3, 4].map((item) => (
+                    <div key={item} className="scroll-item">
+                      <div className="skeleton skeleton-product"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="container">
+            <div className="products-carousel">
+              <div className="skeleton-grid">
+                {[1, 2, 3, 4].map((item) => (
+                  <div key={item} className="skeleton skeleton-card"></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <style jsx>{`
+          .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+          }
+
+          @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+          }
+
+          .skeleton-title {
+            height: 40px;
+            width: 300px;
+            max-width: 80%;
+            margin: 0 auto 10px;
+          }
+
+          .skeleton-subtitle {
+            height: 24px;
+            width: 400px;
+            max-width: 90%;
+            margin: 0 auto 20px;
+          }
+
+          .skeleton-product {
+            width: 120px;
+            aspect-ratio: 2/3;
+            border-radius: 0 !important;
+          }
+
+          .skeleton-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 30px;
+            padding: 0 20px;
+          }
+
+          .skeleton-card {
+            width: 100%;
+            aspect-ratio: 2/3;
+            min-height: 300px;
+          }
+
+          @media (max-width: 768px) {
+            .skeleton-title {
+              height: 32px;
+              width: 250px;
+            }
+            .skeleton-subtitle {
+              height: 20px;
+              width: 300px;
+            }
+            .skeleton-grid {
+              grid-template-columns: repeat(2, 1fr);
+              gap: 10px;
+              padding: 0 10px;
+            }
+          }
+        `}</style>
+      </section>
+    );
+  }
+
   return (
     <section className="top-picks-section">
       <div className="section-header text-center wow fadeInUp">

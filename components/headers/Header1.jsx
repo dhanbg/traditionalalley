@@ -9,6 +9,7 @@ import CartLength from "../common/CartLength";
 import CurrencySwitcher from "../common/CurrencySwitcher";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useContextElement } from "@/context/Context";
+import Skiper58Navigation from "@/components/homes/Skiper58Navigation";
 
 export default function Header1({ fullWidth = false }) {
   const router = useRouter();
@@ -94,11 +95,7 @@ export default function Header1({ fullWidth = false }) {
             </Link>
           </div>
           <div className="col-xl-6 d-none d-xl-block">
-            <nav className="box-navigation text-center">
-              <ul className="box-nav-ul d-flex align-items-center justify-content-center">
-                <Nav />
-              </ul>
-            </nav>
+            <Skiper58Navigation />
           </div>
           <div className="col-xl-3 col-md-4 col-3" style={{
             display: 'flex',

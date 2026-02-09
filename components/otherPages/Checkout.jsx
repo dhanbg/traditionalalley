@@ -1688,30 +1688,27 @@ export default function Checkout() {
               <div className="wrap">
                 {/* Discount Coupons Section */}
                 <div className="discount-section" style={{
-                  marginTop: '40px',
-                  marginBottom: '30px',
-                  borderTop: '2px solid #f0f0f0',
-                  paddingTop: '30px',
-                  background: 'linear-gradient(135deg, #fafbfc 0%, #f8f9fa 100%)',
-                  borderRadius: '12px',
-                  padding: '30px 24px',
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.04)'
+                  marginTop: '20px',
+                  marginBottom: '16px',
+                  background: '#ffffff',
+                  borderRadius: '8px',
+                  padding: '14px',
+                  border: '1px solid #e0e0e0',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '24px' }} role="img" aria-label="discount">🎫</span>
-                    <h5 className="title" style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: '#2c3e50' }}>
+                    <h5 className="title" style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#424242' }}>
                       Discount Coupons
                     </h5>
                   </div>
                   <p style={{
                     margin: 0,
-                    color: '#5a6c7d',
-                    fontSize: '14px',
-                    marginBottom: '20px',
-                    lineHeight: '1.5'
+                    color: '#757575',
+                    fontSize: '12px',
+                    marginBottom: '12px',
+                    lineHeight: '1.4'
                   }}>
-                    Have a promotional code? Apply it below to get instant savings on your order.
-                    <span style={{ fontWeight: '600', color: '#495057' }}> Only one coupon per order.</span>
+                    Apply promotional code below.
                   </p>
                   <div className="sec-discount">
                     {/* <Swiper
@@ -1765,7 +1762,7 @@ export default function Checkout() {
                       </SwiperSlide>
                     ))}
                   </Swiper> */}
-                    <div className="coupon-card" style={{ marginTop: '0px', marginBottom: '12px', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '16px', backgroundColor: '#fff' }}>
+                    <div className="coupon-card" style={{ marginTop: '0px', marginBottom: '10px', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '12px', backgroundColor: '#fff' }}>
                       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                         <input
                           type="text"
@@ -1778,12 +1775,12 @@ export default function Checkout() {
                           style={{
                             flex: 1,
                             borderRadius: '8px',
-                            border: `1px solid ${couponError ? '#dc3545' : '#d1d5db'}`,
-                            padding: '12px 14px',
-                            fontWeight: 700,
+                            border: `1px solid ${couponError ? '#d32f2f' : '#e0e0e0'}`,
+                            padding: '10px 12px',
+                            fontWeight: 600,
                             textTransform: 'uppercase',
-                            letterSpacing: '0.06em',
-                            fontSize: '14px',
+                            letterSpacing: '0.04em',
+                            fontSize: '12px',
                             backgroundColor: appliedCoupon ? '#f8f9fa' : 'white'
                           }}
                         />
@@ -1792,7 +1789,7 @@ export default function Checkout() {
                             className="tf-btn"
                             onClick={validateCoupon}
                             disabled={couponLoading || !couponCode.trim()}
-                            style={{ minWidth: '120px' }}
+                            style={{ minWidth: '100px', padding: '10px 16px', fontSize: '12px' }}
                           >
                             <span className="text">
                               {couponLoading ? 'Validating…' : 'Apply'}
@@ -1881,97 +1878,82 @@ export default function Checkout() {
                       </div>
                     )}
 
-                    <p style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
-                      ℹ️ Some coupons require a minimum order value or may be limited to certain products.
+                    <p style={{ fontSize: '11px', color: '#9e9e9e', marginTop: '6px' }}>
+                      Some coupons require a minimum order value.
                     </p>
                   </div>
 
                   {/* Order Summary */}
-                  <div className="order-summary-section" style={{ marginTop: '30px', marginBottom: '20px', borderTop: '1px solid #eaeaea', paddingTop: '20px' }}>
-                    <h5 className="title" style={{ marginBottom: '15px' }}>Order Summary</h5>
+                  <div className="order-summary-section" style={{ marginTop: '20px', marginBottom: '16px', borderTop: '1px solid #e0e0e0', paddingTop: '16px' }}>
+                    <h5 className="title" style={{ marginBottom: '12px', fontSize: '14px', fontWeight: '600', color: '#424242' }}>Order Summary</h5>
                     <div className="sec-total-price">
-                      <div className="top">
-                        <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
-                          <span>Subtotal</span>
-                          <span>
-                            <PriceDisplay
-                              price={subtotal}
-                              className="text-button"
-                              size="normal"
-                            />
-                          </span>
-                        </div>
-                        {totalDiscounts > 0.01 && (
-                          <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
-                            <span>Product Discounts</span>
-                            <span style={{ color: '#28a745' }}>
-                              <PriceDisplay
-                                price={-totalDiscounts}
-                                className="text-button"
-                                size="normal"
-                              />
-                            </span>
-                          </div>
-                        )}
-                        {couponDiscount > 0 && (
-                          <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
-                            <span>Coupon Discount ({appliedCoupon?.code})</span>
-                            <span style={{ color: '#28a745' }}>
-                              <PriceDisplay
-                                price={-couponDiscount}
-                                className="text-button"
-                                size="normal"
-                              />
-                            </span>
-                          </div>
-                        )}
-                        <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
-                          <span>Total (Without Shipping Charges)</span>
-                          <span>
-                            <PriceDisplay
-                              price={finalTotal}
-                              className="text-button"
-                              size="normal"
-                            />
-                          </span>
-                        </div>
-                        <div className="item d-flex align-items-center justify-content-between text-button" style={{ marginBottom: '10px' }}>
-                          <span>Shipping</span>
-                          <span>
-                            {shippingCost > 0 ? (
-                              <PriceDisplay
-                                price={shippingCost}
-                                className="text-button"
-                                size="normal"
-                                isNPR={userCurrency === 'NPR'}
-                              />
-                            ) : (
-                              'Get Shipping Rates'
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="bottom">
-                        <h5 className="d-flex justify-content-between">
-                          <span>Grand Total</span>
-                          <span className="total-price-checkout">
-                            {userCurrency === 'NPR' ? (
-                              <PriceDisplay
-                                price={nprAmount}
-                                className="text-button"
-                                size="large"
-                                isNPR={true}
-                              />
-                            ) : (
-                              <PriceDisplay
-                                price={finalTotal + shippingCost}
-                                className="text-button"
-                                size="normal"
-                              />
-                            )}
-                          </span>
-                        </h5>
-                      </div>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                        <tbody>
+                          <tr style={{ borderBottom: '1px solid #f5f5f5' }}>
+                            <td style={{ padding: '10px 0', color: '#424242' }}>Subtotal</td>
+                            <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 600 }}>
+                              <PriceDisplay price={subtotal} size="normal" />
+                            </td>
+                          </tr>
+                          {totalDiscounts > 0.01 && (
+                            <tr style={{ borderBottom: '1px solid #f5f5f5' }}>
+                              <td style={{ padding: '10px 0', color: '#424242' }}>Product Discounts</td>
+                              <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 600, color: '#28a745' }}>
+                                <PriceDisplay price={-totalDiscounts} size="normal" />
+                              </td>
+                            </tr>
+                          )}
+                          {couponDiscount > 0 && (
+                            <tr style={{ borderBottom: '1px solid #f5f5f5' }}>
+                              <td style={{ padding: '10px 0', color: '#424242' }}>
+                                Coupon Discount ({appliedCoupon?.code})
+                              </td>
+                              <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 600, color: '#28a745' }}>
+                                <PriceDisplay price={-couponDiscount} size="normal" />
+                              </td>
+                            </tr>
+                          )}
+                          <tr style={{ borderBottom: '1px solid #f5f5f5' }}>
+                            <td style={{ padding: '10px 0', color: '#424242' }}>
+                              Total (Without Shipping)
+                            </td>
+                            <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 600 }}>
+                              <PriceDisplay price={finalTotal} size="normal" />
+                            </td>
+                          </tr>
+                          <tr style={{ borderBottom: '1px solid #e0e0e0' }}>
+                            <td style={{ padding: '10px 0', color: '#424242' }}>Shipping</td>
+                            <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 600 }}>
+                              {shippingCost > 0 ? (
+                                <PriceDisplay
+                                  price={shippingCost}
+                                  size="normal"
+                                  isNPR={userCurrency === 'NPR'}
+                                />
+                              ) : (
+                                <span style={{ fontSize: '12px', color: '#757575' }}>Get Shipping Rates</span>
+                              )}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '12px 0', fontWeight: 700, fontSize: '14px', color: '#1f2937' }}>Grand Total</td>
+                            <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 700, fontSize: '16px', color: '#1f2937' }}>
+                              {userCurrency === 'NPR' ? (
+                                <PriceDisplay
+                                  price={nprAmount}
+                                  size="large"
+                                  isNPR={true}
+                                />
+                              ) : (
+                                <PriceDisplay
+                                  price={finalTotal + shippingCost}
+                                  size="normal"
+                                />
+                              )}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 </div>
@@ -1979,15 +1961,14 @@ export default function Checkout() {
               <div className="wrap">
                 {/* Payment Method Selection */}
                 <div style={{
-                  background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-                  padding: '24px',
-                  borderRadius: '12px',
-                  border: '1px solid #e2e8f0',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                  marginBottom: '20px'
+                  background: '#ffffff',
+                  padding: '14px',
+                  borderRadius: '8px',
+                  border: '1px solid #e0e0e0',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
+                  marginBottom: '12px'
                 }}>
-                  <h5 className="title" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '20px' }}>💳</span>
+                  <h5 className="title" style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600', color: '#424242' }}>
                     Payment Method
                   </h5>
 
@@ -2032,11 +2013,11 @@ export default function Checkout() {
 
                 {/* Payment Form Section */}
                 <div style={{
-                  background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-                  padding: '24px',
-                  borderRadius: '12px',
-                  border: '1px solid #e2e8f0',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                  background: '#ffffff',
+                  padding: '14px',
+                  borderRadius: '8px',
+                  border: '1px solid #e0e0e0',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)'
                 }}>
                   {selectedPaymentMethod === 'nps' ? (
                     <NPSPaymentForm
@@ -2104,13 +2085,14 @@ export default function Checkout() {
                     position: 'relative',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '10px',
+                    gap: '6px',
                     marginBottom: '0',
-                    background: 'linear-gradient(90deg, #f7d2ca 0%, #e8b4a0 100%)',
-                    color: '#333',
-                    padding: '8px 15px',
-                    borderRadius: '4px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    background: '#f5f5f5',
+                    color: '#424242',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
+                    fontSize: '14px'
                   }}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path
@@ -2132,56 +2114,55 @@ export default function Checkout() {
                     <span>{selectedProducts.length}</span>
                   </div>
                 </div>
-                <div className="list-product">
-                  {selectedProducts.map((elm, i) => (
-                    <div key={i} className="item-product">
-                      <Link
-                        href={buildProductDetailHref(elm)}
-                        className="img-product"
-                      >
-                        <Image
-                          alt="img-product"
-                          src={getThumbnailImageUrl(elm.imgSrc)}
-                          width={600}
-                          height={800}
-                          priority={i < 3}
-                          loading={i < 3 ? "eager" : "lazy"}
-                          style={{ objectFit: 'cover' }}
-                        />
-                      </Link>
-                      <div className="content-box">
-                        <div className="info">
-                          <Link
-                            href={buildProductDetailHref(elm)}
-                            className="name-product link text-title"
-                          >
-                            {getVariantAwareTitle(elm)}
-                          </Link>
-                          <div className="variant text-caption-1 text-secondary">
-                            {elm.selectedSize && (
-                              <span className="size">{elm.selectedSize}</span>
-                            )}
-                            {elm.selectedSize && elm.variantInfo && elm.variantInfo.isVariant && (
-                              <span>/</span>
-                            )}
-                            {elm.variantInfo && elm.variantInfo.isVariant && (
-                              <span className="color">{elm.variantInfo.title}</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="total-price text-button">
-                          <span className="count">{elm.quantity}</span>X
-                          <span className="price">
+                <div className="checkout-product-table">
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #e0e0e0', color: '#757575', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        <th style={{ textAlign: 'left', padding: '8px 4px', fontWeight: 600 }}>Product</th>
+                        <th style={{ textAlign: 'right', padding: '8px 4px', fontWeight: 600 }}>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedProducts.map((elm, i) => (
+                        <tr key={i} style={{ borderBottom: i < selectedProducts.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+                          <td style={{ padding: '12px 4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                              <div style={{ position: 'relative', width: '80px', height: '106px', flexShrink: 0, border: '1px solid #f0f0f0', borderRadius: '4px', overflow: 'hidden' }}>
+                                <Image
+                                  alt="img-product"
+                                  src={getThumbnailImageUrl(elm.imgSrc)}
+                                  fill
+                                  sizes="80px"
+                                  style={{ objectFit: 'cover' }}
+                                />
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div style={{ fontWeight: 600, color: '#1f2937', fontSize: '12px', lineHeight: '1.3' }}>
+                                  {getVariantAwareTitle(elm)}
+                                </div>
+                                {(elm.selectedSize || (elm.variantInfo && elm.variantInfo.isVariant)) && (
+                                  <div style={{ color: '#6b7280', fontSize: '11px' }}>
+                                    {elm.selectedSize && <span>Size: {elm.selectedSize}</span>}
+                                    {elm.selectedSize && elm.variantInfo && elm.variantInfo.isVariant && <span> / </span>}
+                                    {elm.variantInfo && elm.variantInfo.isVariant && <span>{elm.variantInfo.title}</span>}
+                                  </div>
+                                )}
+                                <div style={{ color: '#6b7280', fontSize: '11px' }}>
+                                  Qty: {elm.quantity} × <PriceDisplay price={elm.price} size="small" style={{ display: 'inline' }} />
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ textAlign: 'right', padding: '12px 4px', verticalAlign: 'middle', fontWeight: 600, color: '#1f2937' }}>
                             <PriceDisplay
-                              price={elm.price}
-                              className="text-button"
+                              price={elm.price * elm.quantity}
                               size="small"
                             />
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>

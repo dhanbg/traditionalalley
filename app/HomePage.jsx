@@ -13,6 +13,7 @@ import Products from "@/components/common/Products3";
 import InstagramVideoCards from "@/components/common/InstagramVideoCards";
 import TopPicks from "@/components/common/TopPicks";
 import PromoHero from "@/components/common/PromoHero";
+import Skiper58Navigation from "@/components/homes/Skiper58Navigation";
 
 import Testimonials3 from "@/components/common/Testimonials3";
 import MarqueeSection from "@/components/common/MarqueeSection";
