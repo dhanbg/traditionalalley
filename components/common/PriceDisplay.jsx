@@ -9,16 +9,19 @@ export default function PriceDisplay({
   className = "",
   showConversion = false,
   size = "normal", // normal, small, large
-  isNPR = false // indicates if price is already in NPR (e.g., DHL shipping costs)
+  isNPR = false, // indicates if price is already in NPR (e.g., DHL shipping costs)
+  inline = false, // new prop to control display mode
+  children // allow custom content
 }) {
   const { userCurrency, exchangeRate } = useContextElement();
 
-  if (!price && price !== 0) return null;
+  if (!children && !price && price !== 0) return null;
 
   // Get price display information
   let priceInfo, oldPriceInfo;
 
-  if (isNPR) {
+  if (!children) {
+    if (isNPR) {
     // Price is already in NPR, so format accordingly
     if (userCurrency === 'NPR') {
       priceInfo = {
@@ -40,9 +43,11 @@ export default function PriceDisplay({
     priceInfo = getDualPriceDisplay(price, userCurrency, exchangeRate);
     oldPriceInfo = oldPrice ? getDualPriceDisplay(oldPrice, userCurrency, exchangeRate) : null;
   }
+  }
 
   // Calculate discount percentage with validation
   const discountPercentage = (() => {
+    if (children) return null;
     const priceNum = parseFloat(price);
     const oldPriceNum = parseFloat(oldPrice);
 
@@ -68,23 +73,27 @@ export default function PriceDisplay({
   return (
     <div className={`price-display ${sizeClasses[size]} ${className}`}>
       <div className="price-main">
-        {/* Old Price (if exists) */}
-        {oldPriceInfo && (
-          <span className="old-price">
-            {oldPriceInfo.primary.formatted}
-          </span>
-        )}
+        {children ? children : (
+          <>
+            {/* Old Price (if exists) */}
+            {oldPriceInfo && (
+              <span className="old-price">
+                {oldPriceInfo.primary.formatted}
+              </span>
+            )}
 
-        {/* Current Price */}
-        <span className="current-price">
-          {priceInfo.primary.formatted}
-        </span>
+            {/* Current Price */}
+            <span className="current-price">
+              {priceInfo.primary.formatted}
+            </span>
 
-        {/* Discount Badge */}
-        {discountPercentage && (
-          <span className="discount-badge">
-            -{discountPercentage}%
-          </span>
+            {/* Discount Badge */}
+            {discountPercentage && (
+              <span className="discount-badge">
+                -{discountPercentage}%
+              </span>
+            )}
+          </>
         )}
       </div>
 
@@ -95,6 +104,13 @@ export default function PriceDisplay({
           display: flex;
           flex-direction: column;
           gap: 2px;
+        }
+
+        .price-display.inline {
+          display: inline-flex;
+          flex-direction: row;
+          align-items: baseline;
+          vertical-align: middle;
         }
 
         .price-main {

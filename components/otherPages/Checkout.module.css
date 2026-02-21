@@ -1,12 +1,13 @@
 /* Payment Methods Styles - Minimal Gray */
 .paymentMethods {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 8px;
   margin-top: 12px;
 }
 
 .paymentMethodCard {
+  flex: 1;
   position: relative;
   border: 1px solid #e0e0e0;
   border-radius: 8px;

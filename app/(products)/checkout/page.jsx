@@ -17,11 +17,13 @@ export default function page() {
           className="page-title"
           style={{ 
             backgroundImage: "url(/images/section/page-title.jpg)",
-            height: "250px",
-            minHeight: "250px",
+            height: "200px",
+            minHeight: "200px",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center"
+            justifyContent: "center",
+            paddingTop: 0,
+            paddingBottom: 0
           }}
         >
           <div className="container" style={{
@@ -31,8 +33,8 @@ export default function page() {
             justifyContent: "center",
             height: "100%"
           }}>
-            <h3 className="heading text-center">Check Out</h3>
-            <ul className="breadcrumbs d-flex align-items-center justify-content-center">
+            <h3 className="heading text-center" style={{ marginBottom: 0 }}>Check Out</h3>
+            <ul className="breadcrumbs d-flex align-items-center justify-content-center" style={{ marginTop: 0, gap: '2px' }}>
               <li>
                 <Link className="link" href={`/`}>
                   Homepage

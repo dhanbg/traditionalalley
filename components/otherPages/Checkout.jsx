@@ -1565,31 +1565,10 @@ export default function Checkout() {
       <div className="container">
         <div className="row">
           <div className="col-xl-6">
-            <div className="flat-spacing tf-page-checkout">
-              <div className="wrap">
-                {/* <div className="title-login">
-                  <p>Already have an account?</p>{" "}
-                  <Link href={`/login`} className="text-button">
-                    Login here
-                  </Link>
-                </div>
-                <form
-                  className="login-box"
-                  onSubmit={(e) => e.preventDefault()}
-                >
-                  <div className="grid-2">
-                    <input type="text" placeholder="Your name/Email" />
-                    <input type="password" placeholder="Password" />
-                  </div>
-                  <button className="tf-btn" type="submit">
-                    <span className="text">Login</span>
-                  </button>
-                </form> */}
-              </div>
-              <div className="wrap">
-                <DHLShippingForm
-                  isCheckoutMode={true}
-                  initialPackages={selectedProducts.reduce((acc, product) => {
+            <div className="flat-spacing-4 tf-page-checkout">
+              <DHLShippingForm
+                isCheckoutMode={true}
+                initialPackages={selectedProducts.reduce((acc, product) => {
                     const fetchedProduct = productsWithOldPrice[product.id];
 
                     // Get weight and dimensions from either fetched data or original product data
@@ -1684,32 +1663,24 @@ export default function Checkout() {
                   }}
                   onReceiverChange={setReceiverDetails}
                 />
-              </div>
-              <div className="wrap">
-                {/* Discount Coupons Section */}
-                <div className="discount-section" style={{
-                  marginTop: '20px',
-                  marginBottom: '16px',
+              {/* Discount Coupons Section */}
+                <div className="checkout-combined-card" style={{
                   background: '#ffffff',
                   borderRadius: '8px',
-                  padding: '14px',
                   border: '1px solid #e0e0e0',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                  marginTop: '20px',
+                  overflow: 'hidden'
+                }}>
+                <div className="discount-section" style={{
+                  padding: '14px',
+                  paddingBottom: '0'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
                     <h5 className="title" style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#424242' }}>
                       Discount Coupons
                     </h5>
                   </div>
-                  <p style={{
-                    margin: 0,
-                    color: '#757575',
-                    fontSize: '12px',
-                    marginBottom: '12px',
-                    lineHeight: '1.4'
-                  }}>
-                    Apply promotional code below.
-                  </p>
                   <div className="sec-discount">
                     {/* <Swiper
                     dir="ltr"
@@ -1805,9 +1776,6 @@ export default function Checkout() {
                           </button>
                         )}
                       </div>
-                      <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
-                        💡 Tip: Coupon codes are not case sensitive.
-                      </div>
                     </div>
 
                     {/* Coupon Error Message */}
@@ -1864,8 +1832,19 @@ export default function Checkout() {
                           </span>
                         </div>
                         {typeof couponDiscount === 'number' && couponDiscount > 0 && (
-                          <div style={{ marginTop: '8px', fontSize: '12px', opacity: 0.85, fontWeight: '500' }}>
-                            💰 You are saving <PriceDisplay price={couponDiscount} className="text-button" size="normal" /> on this order.
+                          <div style={{ 
+                            marginTop: '8px', 
+                            fontSize: '12px', 
+                            opacity: 0.85, 
+                            fontWeight: '500',
+                            display: 'flex',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: '6px'
+                          }}>
+                            <span>💰 You are saving</span>
+                            <PriceDisplay price={couponDiscount} className="text-button" size="normal" inline={true} />
+                            <span>on this order.</span>
                           </div>
                         )}
                         {appliedCoupon.autoSelected && (
@@ -1877,53 +1856,49 @@ export default function Checkout() {
                         )}
                       </div>
                     )}
-
-                    <p style={{ fontSize: '11px', color: '#9e9e9e', marginTop: '6px' }}>
-                      Some coupons require a minimum order value.
-                    </p>
                   </div>
 
                   {/* Order Summary */}
-                  <div className="order-summary-section" style={{ marginTop: '20px', marginBottom: '16px', borderTop: '1px solid #e0e0e0', paddingTop: '16px' }}>
-                    <h5 className="title" style={{ marginBottom: '12px', fontSize: '14px', fontWeight: '600', color: '#424242' }}>Order Summary</h5>
+                  <div className="order-summary-section" style={{ marginTop: '16px', marginBottom: '0px', borderTop: '1px solid #e0e0e0', paddingTop: '12px' }}>
+                    <h5 className="title" style={{ marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#424242' }}>Order Summary</h5>
                     <div className="sec-total-price">
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                         <tbody>
-                          <tr style={{ borderBottom: '1px solid #f5f5f5' }}>
-                            <td style={{ padding: '10px 0', color: '#424242' }}>Subtotal</td>
-                            <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 600 }}>
+                          <tr style={{ borderBottom: '1px solid #e0e0e0' }}>
+                            <td style={{ padding: '6px 0', color: '#424242' }}>Subtotal</td>
+                            <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 600 }}>
                               <PriceDisplay price={subtotal} size="normal" />
                             </td>
                           </tr>
                           {totalDiscounts > 0.01 && (
-                            <tr style={{ borderBottom: '1px solid #f5f5f5' }}>
-                              <td style={{ padding: '10px 0', color: '#424242' }}>Product Discounts</td>
-                              <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 600, color: '#28a745' }}>
+                            <tr style={{ borderBottom: '1px solid #e0e0e0' }}>
+                              <td style={{ padding: '6px 0', color: '#424242' }}>Product Discounts</td>
+                              <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 600, color: '#28a745' }}>
                                 <PriceDisplay price={-totalDiscounts} size="normal" />
                               </td>
                             </tr>
                           )}
                           {couponDiscount > 0 && (
-                            <tr style={{ borderBottom: '1px solid #f5f5f5' }}>
-                              <td style={{ padding: '10px 0', color: '#424242' }}>
+                            <tr style={{ borderBottom: '1px solid #e0e0e0' }}>
+                              <td style={{ padding: '6px 0', color: '#424242' }}>
                                 Coupon Discount ({appliedCoupon?.code})
                               </td>
-                              <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 600, color: '#28a745' }}>
+                              <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 600, color: '#28a745' }}>
                                 <PriceDisplay price={-couponDiscount} size="normal" />
                               </td>
                             </tr>
                           )}
-                          <tr style={{ borderBottom: '1px solid #f5f5f5' }}>
-                            <td style={{ padding: '10px 0', color: '#424242' }}>
+                          <tr style={{ borderBottom: '1px solid #e0e0e0' }}>
+                            <td style={{ padding: '6px 0', color: '#424242' }}>
                               Total (Without Shipping)
                             </td>
-                            <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 600 }}>
+                            <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 600 }}>
                               <PriceDisplay price={finalTotal} size="normal" />
                             </td>
                           </tr>
                           <tr style={{ borderBottom: '1px solid #e0e0e0' }}>
-                            <td style={{ padding: '10px 0', color: '#424242' }}>Shipping</td>
-                            <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 600 }}>
+                            <td style={{ padding: '6px 0', color: '#424242' }}>Shipping</td>
+                            <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 600 }}>
                               {shippingCost > 0 ? (
                                 <PriceDisplay
                                   price={shippingCost}
@@ -1931,13 +1906,15 @@ export default function Checkout() {
                                   isNPR={userCurrency === 'NPR'}
                                 />
                               ) : (
-                                <span style={{ fontSize: '12px', color: '#757575' }}>Get Shipping Rates</span>
+                                <PriceDisplay size="normal">
+                                  <span style={{ fontSize: '13px', color: '#757575' }}>Get Shipping Rates</span>
+                                </PriceDisplay>
                               )}
                             </td>
                           </tr>
                           <tr>
-                            <td style={{ padding: '12px 0', fontWeight: 700, fontSize: '14px', color: '#1f2937' }}>Grand Total</td>
-                            <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 700, fontSize: '16px', color: '#1f2937' }}>
+                            <td style={{ padding: '10px 0', fontWeight: 700, fontSize: '14px', color: '#1f2937' }}>Grand Total</td>
+                            <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 700, fontSize: '16px', color: '#1f2937' }}>
                               {userCurrency === 'NPR' ? (
                                 <PriceDisplay
                                   price={nprAmount}
@@ -1957,16 +1934,11 @@ export default function Checkout() {
                     </div>
                   </div>
                 </div>
-              </div>
-              <div className="wrap">
+              <div className="wrap" style={{ marginTop: '0px' }}>
                 {/* Payment Method Selection */}
                 <div style={{
-                  background: '#ffffff',
                   padding: '14px',
-                  borderRadius: '8px',
-                  border: '1px solid #e0e0e0',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
-                  marginBottom: '12px'
+                  marginBottom: '0px'
                 }}>
                   <h5 className="title" style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600', color: '#424242' }}>
                     Payment Method
@@ -2013,11 +1985,7 @@ export default function Checkout() {
 
                 {/* Payment Form Section */}
                 <div style={{
-                  background: '#ffffff',
-                  padding: '14px',
-                  borderRadius: '8px',
-                  border: '1px solid #e0e0e0',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)'
+                  padding: '14px'
                 }}>
                   {selectedPaymentMethod === 'nps' ? (
                     <NPSPaymentForm
@@ -2072,13 +2040,14 @@ export default function Checkout() {
                   )}
                 </div>
               </div>
+              </div>
             </div>
           </div>
           <div className="col-xl-1">
             <div className="line-separation" />
           </div>
           <div className="col-xl-5">
-            <div className="flat-spacing flat-sidebar-checkout">
+            <div className="flat-spacing-4 flat-sidebar-checkout">
               <div className="sidebar-checkout-content">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
                   <h5 className="title" style={{

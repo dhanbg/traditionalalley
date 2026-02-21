@@ -300,10 +300,8 @@
 
 @media (max-width: 768px) {
   .page-title {
-    padding-top: 16px !important;
-    padding-bottom: 16px !important;
-    min-height: 130px !important;
-    height: 130px !important;
+    min-height: 100px !important;
+    height: 100px !important;
   }
 
   .page-title .heading {

@@ -3337,3 +3337,10 @@
     }
   }
 }
+
+@media (max-width: 768px) {
+  .page-title {
+    min-height: 100px !important;
+    height: 100px !important;
+  }
+}

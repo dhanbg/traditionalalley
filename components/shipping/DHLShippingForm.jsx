@@ -908,7 +908,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
       `}</style>
       <div style={{
         background: '#ffffff',
-        padding: '14px',
+        padding: '8px',
         borderRadius: '8px',
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
         border: '1px solid #e0e0e0',
@@ -1178,7 +1178,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                           fontSize: '0.875rem',
                           zIndex: 1000
                         }}>
-                          No branches found matching "{branchSearchTerm}"
+                          No branches found matching &quot;{branchSearchTerm}&quot;
                         </div>
                       )}
                     </div>
@@ -1474,13 +1474,13 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
 
             {/* Actions */}
             <div style={{
-              marginTop: '2rem',
-              paddingTop: '1.5rem',
+              marginTop: '1rem',
+              paddingTop: '1rem',
               borderTop: '1px solid #e5e7eb'
             }}>
               {!isFormValid() && (
                 <div style={{
-                  marginBottom: '1rem',
+                  marginBottom: '0.5rem',
                   padding: '10px',
                   background: '#fff3cd',
                   border: '1px solid #ffeeba',

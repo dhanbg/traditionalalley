@@ -88,24 +88,6 @@ export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, 
 
   return (
     <div className="nps-payment-form">
-      {!shippingRatesObtained && (
-        <div style={{
-          background: 'linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%)',
-          border: '1px solid #ffc107',
-          borderRadius: '8px',
-          padding: '12px 16px',
-          marginBottom: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <span style={{ fontSize: '18px' }}>⚠️</span>
-          <span style={{ color: '#856404', fontSize: '14px', fontWeight: '500' }}>
-            Please calculate shipping rates before proceeding with payment
-          </span>
-        </div>
-      )}
-
       {/* Currency conversion notice - only show in USD mode */}
       {userCurrency === 'USD' && (
         <div style={{
