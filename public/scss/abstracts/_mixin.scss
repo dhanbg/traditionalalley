@@ -1,0 +1,222 @@
+
+@mixin flex($alignItem, $justifyContent) {
+    display: flex;
+    align-items: $alignItem;
+    justify-content: $justifyContent;
+}
+
+@mixin grid($loop, $num) {
+    display: grid;
+    grid-template-columns: repeat($loop, $num);
+}
+
+@mixin transformScale {
+    transform: scale(1);
+    -moz-transform: scale(1);
+    -webkit-transform: scale(1);
+    -ms-transform: scale(1);
+    -o-transform: scale(1);
+}
+
+@mixin topcenter() {
+    top: 50%;
+    -webkit-transform: translateY(-50%);
+    -moz-transform: translateY(-50%);
+    -ms-transform: translateY(-50%);
+    -o-transform: translateY(-50%);
+    transform: translateY(-50%);
+}
+
+@mixin center() {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+@mixin wh-full() {
+    width: 100%;
+    height: 100%;
+}
+
+// --------------------------
+@mixin  transition3 (){
+    -webkit-transition: all 0.3s ease;
+    -moz-transition   : all 0.3s ease;
+    -ms-transition    : all 0.3s ease;
+    -o-transition     : all 0.3s ease;
+    transition        : all 0.3s ease;
+}
+
+@mixin  transition4 (){
+    -webkit-transition: all 0.4s ease;
+    -moz-transition   : all 0.4s ease;
+    -ms-transition    : all 0.4s ease;
+    -o-transition     : all 0.4s ease;
+    transition        : all 0.4s ease;
+}
+
+@mixin  transition5 (){
+    -webkit-transition: all 0.5s ease;
+    -moz-transition   : all 0.5s ease;
+    -ms-transition    : all 0.5s ease;
+    -o-transition     : all 0.5s ease;
+    transition        : all 0.5s ease;
+}
+
+@mixin  transition6 (){
+    -webkit-transition: all 0.6s ease;
+    -moz-transition   : all 0.6s ease;
+    -ms-transition    : all 0.6s ease;
+    -o-transition     : all 0.6s ease;
+    transition        : all 0.6s ease;
+}
+
+@mixin  transitionY (){
+    -webkit-transform: translateY(-50%);
+    -ms-transform    : translateY(-50%);
+    -o-transform     : translateY(-50%);
+    transform        : translateY(-50%);
+}
+
+@mixin  transitionY3 (){
+    -webkit-transform : translateY(30px);
+    -ms-transform     : translateY(30px);
+    -o-transform      : translateY(30px);
+    transform         : translateY(30px);
+}
+
+@mixin  transitionY0 (){
+    -webkit-transform : translateY(0);
+    -ms-transform     : translateY(0);
+    -o-transform      : translateY(0);
+    transform         : translateY(0);
+}
+
+@mixin absolute {
+    top     : 0;
+    right   : 0;
+    left    : 0;
+    bottom  : 0;
+    position: absolute;
+}
+
+@mixin icon {
+    width   : 50px;
+    height  : 50px;
+    top     : 0;
+    right   : 0;
+    left    : 0;
+    bottom  : 0;
+    position: absolute;
+}
+
+// Modern Animation Mixins
+@mixin smooth-transition($properties: all, $duration: 0.3s, $easing: ease) {
+    -webkit-transition: $properties $duration $easing;
+    -moz-transition: $properties $duration $easing;
+    -ms-transition: $properties $duration $easing;
+    -o-transition: $properties $duration $easing;
+    transition: $properties $duration $easing;
+}
+
+@mixin cubic-bezier-transition($properties: all, $duration: 0.3s) {
+    -webkit-transition: $properties $duration cubic-bezier(0.4, 0, 0.2, 1);
+    -moz-transition: $properties $duration cubic-bezier(0.4, 0, 0.2, 1);
+    -ms-transition: $properties $duration cubic-bezier(0.4, 0, 0.2, 1);
+    -o-transition: $properties $duration cubic-bezier(0.4, 0, 0.2, 1);
+    transition: $properties $duration cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@mixin bounce-transition($properties: transform, $duration: 0.3s) {
+    -webkit-transition: $properties $duration cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    -moz-transition: $properties $duration cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    -ms-transition: $properties $duration cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    -o-transition: $properties $duration cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    transition: $properties $duration cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@mixin hover-lift($lift: -4px, $shadow: 0 10px 25px rgba(0, 0, 0, 0.15)) {
+    @include cubic-bezier-transition(transform, 0.3s);
+    @include cubic-bezier-transition(box-shadow, 0.3s);
+    
+    &:hover {
+        transform: translateY($lift);
+        box-shadow: $shadow;
+    }
+}
+
+@mixin hover-scale($scale: 1.05) {
+    @include cubic-bezier-transition(transform, 0.3s);
+    
+    &:hover {
+        transform: scale($scale);
+    }
+}
+
+@mixin hover-glow($color: var(--primary), $intensity: 0.4) {
+    @include smooth-transition(box-shadow, 0.3s);
+    
+    &:hover {
+        box-shadow: 0 0 20px rgba($color, $intensity);
+    }
+}
+
+@mixin micro-interaction($scale: 0.95) {
+    @include bounce-transition(transform, 0.2s);
+    
+    &:active {
+        transform: scale($scale);
+    }
+}
+
+@mixin focus-ring($color: var(--primary), $opacity: 0.3) {
+    @include smooth-transition(box-shadow, 0.2s);
+    
+    &:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba($color, $opacity);
+    }
+}
+
+@mixin fade-in-animation($duration: 0.6s, $delay: 0s) {
+    opacity: 0;
+    animation: fadeInUp $duration ease-out $delay forwards;
+}
+
+@mixin stagger-animation($max-children: 8, $delay-increment: 0.1s) {
+    > * {
+        opacity: 0;
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+    
+    @for $i from 1 through $max-children {
+        > *:nth-child(#{$i}) {
+            animation-delay: #{$i * $delay-increment};
+        }
+    }
+}
+
+@mixin loading-spinner($size: 20px, $border-width: 2px, $color: var(--main)) {
+    width: $size;
+    height: $size;
+    border: $border-width solid rgba($color, 0.2);
+    border-top: $border-width solid $color;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@mixin shimmer-effect($bg-color: #f0f0f0, $shimmer-color: #e0e0e0) {
+    background: linear-gradient(90deg, $bg-color 25%, $shimmer-color 50%, $bg-color 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+// Keyframes for shimmer effect
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}

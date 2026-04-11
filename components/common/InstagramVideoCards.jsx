@@ -1,0 +1,435 @@
+"use client";
+import React, { useState, useEffect, useRef } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import Link from "next/link";
+import { Pagination } from "swiper/modules";
+import { fetchDataFromApi } from "@/utils/api";
+import { API_URL } from "@/utils/urls";
+
+// Single video manager for mobile - only one video plays at a time
+const videoManager = {
+  activeVideo: null,
+  setActive(video) {
+    if (this.activeVideo && this.activeVideo !== video) {
+      this.activeVideo.pause();
+    }
+    this.activeVideo = video;
+  }
+};
+
+// Autoplay Video Player optimized for iOS
+const AutoplayVideoPlayer = ({ src, poster, alt }) => {
+  const videoRef = useRef(null);
+  const observerRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showPoster, setShowPoster] = useState(true);
+  const [canAutoplay, setCanAutoplay] = useState(true);
+  const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // iOS setup
+    video.muted = true;
+    video.playsInline = true;
+    video.defaultMuted = true;
+
+    const handlePlay = () => {
+      setIsPlaying(true);
+      setShowPoster(false);
+    };
+
+    const handlePause = () => {
+      setIsPlaying(false);
+      setShowPoster(true);
+    };
+
+    const handlePlaying = () => {
+      setShowPoster(false);
+    };
+
+    const handleWaiting = () => {
+      // Keep poster visible while buffering
+      if (!isPlaying) {
+        setShowPoster(true);
+      }
+    };
+
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+    video.addEventListener('playing', handlePlaying);
+    video.addEventListener('waiting', handleWaiting);
+
+    // Intersection Observer for autoplay
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // Video is in view - try to play
+            if (canAutoplay) {
+              // On mobile, ensure only one video plays
+              if (isMobile) {
+                videoManager.setActive(video);
+              }
+
+              const playPromise = video.play();
+              if (playPromise !== undefined) {
+                playPromise
+                  .then(() => {
+                    // Autoplay started successfully
+                    setIsPlaying(true);
+                  })
+                  .catch((error) => {
+                    // Autoplay blocked - this is normal on iOS on first load
+                    console.log('Autoplay prevented (tap to play):', error.message);
+                    setCanAutoplay(false);
+                    setShowPoster(true);
+                  });
+              }
+            }
+          } else {
+            // Video is out of view - pause it
+            if (!video.paused) {
+              video.pause();
+            }
+          }
+        });
+      },
+      {
+        threshold: isMobile ? 0.75 : 0.5, // Need to be more in view on mobile
+        rootMargin: '0px'
+      }
+    );
+
+    observerRef.current.observe(video);
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('playing', handlePlaying);
+      video.removeEventListener('waiting', handleWaiting);
+    };
+  }, [canAutoplay, isMobile]);
+
+  const handleClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isPlaying) {
+      video.pause();
+    } else {
+      video.play()
+        .then(() => setCanAutoplay(true))
+        .catch(err => console.error('Play failed:', err));
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        cursor: 'pointer',
+        backgroundColor: '#000'
+      }}
+      onClick={handleClick}
+    >
+      {/* Poster Image - visible until video plays */}
+      {showPoster && poster && (
+        <img
+          src={poster}
+          alt={alt || "Video thumbnail"}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            zIndex: 2,
+            pointerEvents: 'none'
+          }}
+        />
+      )}
+
+      {/* Play Button - shows if autoplay failed */}
+      {showPoster && !canAutoplay && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 3,
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease',
+            pointerEvents: 'none'
+          }}
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            style={{ marginLeft: '3px' }}
+          >
+            <path d="M8 5v14l11-7z" fill="currentColor" />
+          </svg>
+        </div>
+      )}
+
+      {/* Video Element */}
+      <video
+        ref={videoRef}
+        src={src}
+        poster={poster}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          display: 'block'
+        }}
+        muted
+        loop
+        playsInline
+        webkit-playsinline="true"
+        x5-playsinline="true"
+        preload="metadata"
+        controls={false}
+      />
+    </div>
+  );
+};
+
+export default function InstagramVideoCards({ parentClass = "", initialPosts = null }) {
+  const [instagramPosts, setInstagramPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchInstagramPosts = async () => {
+      try {
+        const apiEndpoint = '/api/instagrams?populate=*';
+        const response = await fetchDataFromApi(apiEndpoint);
+        setInstagramPosts(response.data || []);
+      } catch (error) {
+        console.error('Failed to fetch Instagram posts:', error);
+        setInstagramPosts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (initialPosts && Array.isArray(initialPosts) && initialPosts.length > 0) {
+      setInstagramPosts(initialPosts);
+      setLoading(false);
+      return;
+    }
+    fetchInstagramPosts();
+  }, [initialPosts]);
+
+  return (
+    <section className={parentClass} style={{ marginTop: '60px', marginBottom: '60px' }}>
+      <div className="container" style={{ paddingTop: '40px', paddingBottom: '40px' }}>
+        <div className="heading-section text-center">
+          <h3 className="heading wow fadeInUp">Explore Instagram</h3>
+          <p className="subheading text-secondary wow fadeInUp">
+            Elevate your wardrobe with fresh finds today!
+          </p>
+        </div>
+
+        <Swiper
+          dir="ltr"
+          className="swiper tf-sw-shop-gallery"
+          spaceBetween={10}
+          breakpoints={{
+            1200: { slidesPerView: 5 },
+            768: { slidesPerView: 3 },
+            0: { slidesPerView: 2 },
+          }}
+          loop={false}
+          modules={[Pagination]}
+          pagination={{
+            clickable: true,
+            el: ".spd-instagram",
+          }}
+        >
+          {loading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <SwiperSlide key={i}>
+                <div className="gallery-item hover-overlay hover-img">
+                  <div className="img-style">
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '640px',
+                        backgroundColor: '#f0f0f0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      Loading...
+                    </div>
+                  </div>
+                </div>
+              </SwiperSlide>
+            ))
+          ) : instagramPosts.length === 0 ? (
+            <SwiperSlide>
+              <div className="gallery-item hover-overlay hover-img">
+                <div className="img-style">
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '640px',
+                      backgroundColor: '#fff7e6',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#b36b00',
+                      fontWeight: 500
+                    }}
+                  >
+                    Instagram posts are not available right now.
+                  </div>
+                </div>
+              </div>
+            </SwiperSlide>
+          ) : (
+            instagramPosts.slice(0, 5).map((item, i) => {
+              // Build URLs
+              let mediaUrl = '/images/placeholder.jpg';
+              if (item.media?.url) {
+                if (item.media.url.startsWith('http')) {
+                  mediaUrl = item.media.url;
+                } else {
+                  const baseUrl = process.env.NEXT_PUBLIC_API_URL || API_URL;
+                  mediaUrl = `${baseUrl}${item.media.url}`;
+                }
+              }
+
+              const isVideo = item.media?.mime?.startsWith('video/');
+
+              // Get poster
+              let posterSrc = mediaUrl;
+              if (item.media?.formats?.thumbnail?.url) {
+                const thumbUrl = item.media.formats.thumbnail.url;
+                posterSrc = thumbUrl.startsWith('http')
+                  ? thumbUrl
+                  : `${process.env.NEXT_PUBLIC_API_URL || API_URL}${thumbUrl}`;
+              } else if (item.media?.formats?.small?.url) {
+                const smallUrl = item.media.formats.small.url;
+                posterSrc = smallUrl.startsWith('http')
+                  ? smallUrl
+                  : `${process.env.NEXT_PUBLIC_API_URL || API_URL}${smallUrl}`;
+              }
+
+              return (
+                <SwiperSlide key={item.id || i}>
+                  <div
+                    className="gallery-item hover-overlay hover-img wow fadeInUp"
+                    data-wow-delay={`${(i + 1) * 0.1}s`}
+                    onMouseEnter={(e) => {
+                      const eyeIcon = e.currentTarget.querySelector('.box-icon');
+                      if (eyeIcon) {
+                        eyeIcon.style.opacity = '1';
+                        eyeIcon.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+                        const iconSpan = eyeIcon.querySelector('.icon-eye');
+                        if (iconSpan) iconSpan.style.color = 'black';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      const eyeIcon = e.currentTarget.querySelector('.box-icon');
+                      if (eyeIcon) {
+                        eyeIcon.style.opacity = '0';
+                      }
+                    }}
+                  >
+                    <div
+                      className="img-style"
+                      style={{
+                        position: 'relative',
+                        width: '100%',
+                        height: '100%',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      {isVideo ? (
+                        <AutoplayVideoPlayer
+                          src={mediaUrl}
+                          poster={posterSrc}
+                          alt={item.media?.alternativeText || "Instagram video"}
+                        />
+                      ) : (
+                        <img
+                          className="lazyload img-hover"
+                          alt={item.media?.alternativeText || "Instagram post"}
+                          src={mediaUrl}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      )}
+                    </div>
+                    <Link
+                      href={item.link || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="box-icon hover-tooltip"
+                      style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        opacity: 0,
+                        transition: 'all 0.3s ease',
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        borderRadius: '50%',
+                        width: '50px',
+                        height: '50px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 10
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                        const iconSpan = e.currentTarget.querySelector('.icon-eye');
+                        if (iconSpan) iconSpan.style.color = 'white';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+                        const iconSpan = e.currentTarget.querySelector('.icon-eye');
+                        if (iconSpan) iconSpan.style.color = 'black';
+                      }}
+                    >
+                      <span className="icon icon-eye" style={{ color: 'black' }} />
+                      <span className="tooltip">View Instagram Post</span>
+                    </Link>
+                  </div>
+                </SwiperSlide>
+              );
+            })
+          )}
+        </Swiper>
+        <div className="d-flex d-lg-none sw-pagination-collection sw-dots type-circle justify-content-center spd-instagram" />
+      </div>
+    </section>
+  );
+}

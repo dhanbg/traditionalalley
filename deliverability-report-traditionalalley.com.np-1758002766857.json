@@ -1,0 +1,38 @@
+{
+  "spf": {
+    "exists": true,
+    "record": "v=spf1 include:_spf.mail.hostinger.com ~all",
+    "status": "FOUND"
+  },
+  "dkim": {
+    "exists": false,
+    "status": "MISSING"
+  },
+  "dmarc": {
+    "exists": true,
+    "record": "v=DMARC1; p=none",
+    "status": "FOUND"
+  },
+  "mx": {
+    "exists": true,
+    "records": [
+      {
+        "exchange": "mx1.hostinger.com",
+        "priority": 5
+      },
+      {
+        "exchange": "mx2.hostinger.com",
+        "priority": 10
+      }
+    ],
+    "status": "FOUND"
+  },
+  "issues": [
+    "Missing DKIM record"
+  ],
+  "recommendations": [
+    "Add your email provider's SPF include (e.g., include:_spf.google.com)",
+    "Enable DKIM signing in your email provider and add DKIM DNS record",
+    "Consider upgrading DMARC policy from p=none to p=quarantine after monitoring"
+  ]
+}

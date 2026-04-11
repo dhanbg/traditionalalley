@@ -1,0 +1,29 @@
+API_URL: http://localhost:1337
+Token exists: true
+Fetching: http://localhost:1337/api/instagrams?populate=*
+Found 5 posts.
+
+Post 1 (ID: 2):
+  Media URL: /uploads/MONSOON_SALE_Get_up_to_20_off_on_Traditional_Alley_s_best_selling_designs_until_the_end_of_this_Shrawan_only_Pick_yours_before_it_s_gone_Check_out_our_story_for_all_the_items_that_are_on_sale_Hurry_16d08e311a.mp4
+  Media Mime: video/mp4
+  Local file check (C:\Users\Administrator\Documents\projects\t\traditional_strapi\public\uploads\MONSOON_SALE_Get_up_to_20_off_on_Traditional_Alley_s_best_selling_designs_until_the_end_of_this_Shrawan_only_Pick_yours_before_it_s_gone_Check_out_our_story_for_all_the_items_that_are_on_sale_Hurry_16d08e311a.mp4): EXISTS
+
+Post 2 (ID: 4):
+  Media URL: /uploads/Presenting_you_the_exclusive_launch_MAYA_by_traditional_alley_Celebrating_you_A_beautiful_silhouette_enhancing_the_curvy_features_in_you_This_outfit_celebrates_all_beautiful_curves_adding_a_bit_of_dr_bdf6740efd.mp4
+  Media Mime: video/mp4
+  Local file check (C:\Users\Administrator\Documents\projects\t\traditional_strapi\public\uploads\Presenting_you_the_exclusive_launch_MAYA_by_traditional_alley_Celebrating_you_A_beautiful_silhouette_enhancing_the_curvy_features_in_you_This_outfit_celebrates_all_beautiful_curves_adding_a_bit_of_dr_bdf6740efd.mp4): EXISTS
+
+Post 3 (ID: 6):
+  Media URL: /uploads/Nepali_summer_Nepali_dhaka_corsets_by_traditional_alley_d57b1abe76.mp4
+  Media Mime: video/mp4
+  Local file check (C:\Users\Administrator\Documents\projects\t\traditional_strapi\public\uploads\Nepali_summer_Nepali_dhaka_corsets_by_traditional_alley_d57b1abe76.mp4): EXISTS
+
+Post 4 (ID: 9):
+  Media URL: /uploads/A_heartfelt_love_Make_her_feel_special_this_teej_with_Traditional_Alley_s_special_teej_package_20192b5055.mp4
+  Media Mime: video/mp4
+  Local file check (C:\Users\Administrator\Documents\projects\t\traditional_strapi\public\uploads\A_heartfelt_love_Make_her_feel_special_this_teej_with_Traditional_Alley_s_special_teej_package_20192b5055.mp4): EXISTS
+
+Post 5 (ID: 11):
+  Media URL: /uploads/The_feminine_urge_to_wear_saree_when_you_hear_this_song_850ba8119f.mp4
+  Media Mime: video/mp4
+  Local file check (C:\Users\Administrator\Documents\projects\t\traditional_strapi\public\uploads\The_feminine_urge_to_wear_saree_when_you_hear_this_song_850ba8119f.mp4): EXISTS

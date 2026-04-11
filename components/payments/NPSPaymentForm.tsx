@@ -1,0 +1,122 @@
+import { useSession } from "next-auth/react";
+import { useState } from "react";
+import { useNPS } from "@/utils/useNPS";
+import { useContextElement } from "@/context/Context";
+
+interface NPSPaymentFormProps {
+  amount: number;
+  onSuccess: (response: any) => void;
+  onError: (error: any) => void;
+  orderData?: any;
+  transactionRemarks?: string;
+  disabled?: boolean;
+  shippingRatesObtained?: boolean;
+  getUserBagDocumentId?: () => Promise<string | null>;
+}
+
+export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, transactionRemarks, disabled = false, shippingRatesObtained = false, getUserBagDocumentId }: NPSPaymentFormProps) {
+  const { data: session } = useSession();
+  const { userCurrency } = useContextElement();
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Use the NPS hook with proper redirect handling
+  const { initiate } = useNPS({
+    onSuccess: (response) => {
+      console.log('NPS Payment initiated successfully, redirecting to gateway...');
+      onSuccess(response);
+    },
+    onError: (error) => {
+      console.error('NPS Payment initiation failed:', error);
+      onError(error);
+    },
+    orderData,
+    autoRedirect: true // Enable automatic redirect to Nepal payment gateway
+  });
+
+  const handlePayment = async () => {
+    // Removed session check for guest checkout
+    // if (!session?.user) {
+    //   onError({ message: "Please sign in to continue with payment" });
+    //   return;
+    // }
+
+    setIsLoading(true);
+    try {
+      // Get user bag ID if function provided
+      let userBagId: string | undefined = undefined;
+      if (getUserBagDocumentId) {
+        const id = await getUserBagDocumentId();
+        if (id) userBagId = id;
+      }
+
+      // Generate a unique merchant transaction ID
+      const merchantTxnId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      const paymentRequest = {
+        amount,
+        merchantTxnId,
+        transactionRemarks: transactionRemarks || `Payment for order ${merchantTxnId}`,
+        customer_info: {
+          name: session?.user?.name || orderData?.receiver_details?.name || 'Guest Customer',
+          email: session?.user?.email || orderData?.receiver_details?.email || 'guest@example.com',
+          phone: orderData?.receiver_details?.phone || ''
+        },
+        userBagDocumentId: userBagId
+      };
+
+      // Persist the mapping between Transaction ID and User Bag ID
+      // This bridges the gap for Guest Users who don't have a session to look up their bag later
+      if (userBagId) {
+        try {
+          localStorage.setItem(`nps_txn_${merchantTxnId}`, userBagId);
+          console.log(`Saved payment context for guest recovery: ${merchantTxnId} -> ${userBagId}`);
+        } catch (e) {
+          console.warn('Could not save payment context to localStorage', e);
+        }
+      }
+
+      // Use the NPS hook to initiate payment with proper redirect
+      await initiate(paymentRequest);
+
+    } catch (error) {
+      console.error('Payment initiation error:', error);
+      onError(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="nps-payment-form">
+      {/* Currency conversion notice - only show in USD mode */}
+      {userCurrency === 'USD' && (
+        <div style={{
+          background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+          border: '1px solid #2196f3',
+          borderRadius: '8px',
+          padding: '12px 16px',
+          marginBottom: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span style={{ fontSize: '16px' }}>💱</span>
+          <span style={{ color: '#1565c0', fontSize: '14px', fontWeight: '500' }}>
+            Your amount is converted to Nepali currency for payment processing
+          </span>
+        </div>
+      )}
+      <button
+        onClick={handlePayment}
+        disabled={isLoading || disabled || !shippingRatesObtained}
+        className="tf-btn btn-fill animate-hover-btn radius-3 justify-content-center fw-6"
+        style={{
+          opacity: (!shippingRatesObtained || disabled) ? 0.6 : 1,
+          cursor: (!shippingRatesObtained || disabled) ? 'not-allowed' : 'pointer'
+        }}
+      >
+        {isLoading ? "Processing..." : `Pay Rs.${amount}`}
+      </button>
+    </div>
+  );
+}

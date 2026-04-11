@@ -1,0 +1,8 @@
+.no-video-controls::-webkit-media-controls {
+  display: none !important;
+}
+
+.no-video-controls {
+  /* Allow touch events on iOS for autoplay to work */
+  pointer-events: auto;
+}

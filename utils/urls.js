@@ -1,0 +1,41 @@
+export const STRAPI_API_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+
+// Explicit public URL for browser images and client-side fetch, hardcoded fallback to ensure production availability
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://admin.traditionalalley.com.np";
+// Dedicated internal server-side Docker loopback
+export const INTERNAL_API_URL = process.env.STRAPI_INTERNAL_URL || process.env.API_URL || API_URL;
+
+// Strapi 5 populate helpers - populate=* only populates media, NOT relations
+// We must explicitly populate all relation fields
+export const PRODUCT_POPULATE = "populate[imgSrc]=*&populate[imgHover]=*&populate[gallery]=*&populate[color]=*&populate[collection][populate][category]=*&populate[product_variants][populate]=*&populate[customer_reviews]=*";
+export const COLLECTION_POPULATE = "populate[image]=*&populate[category]=*&populate[products]=*";
+export const VARIANT_POPULATE = "populate[imgSrc]=*&populate[imgHover]=*&populate[gallery]=*&populate[color]=*&populate[product][populate][collection][populate][category]=*";
+export const TOP_PICKS_POPULATE = "populate[products]=*&populate[product_variants]=*";
+
+// Product endpoints
+export const PRODUCTS_API = `/api/products?${PRODUCT_POPULATE}`;
+export const PRODUCTS_BY_CATEGORY_API = (category) => `/api/products?filters[category][$eq]=${category}&${PRODUCT_POPULATE}`;
+export const PRODUCT_BY_DOCUMENT_ID_API = (documentId) => `/api/products?filters[documentId][$eq]=${documentId}&${PRODUCT_POPULATE}`;
+
+// Collection endpoints
+export const COLLECTIONS_API = `/api/collections?${COLLECTION_POPULATE}`;
+export const COLLECTION_BY_SLUG_API = (slug) => `/api/collections?filters[slug][$eq]=${slug}&${COLLECTION_POPULATE}`;
+export const COLLECTION_BY_DOCUMENT_ID_API = (documentId) => `/api/collections/${documentId}?${COLLECTION_POPULATE}`;
+
+// Cart endpoints
+export const CARTS_API = "/api/carts?populate=*";
+export const USER_CARTS_API = (userId) => `/api/carts?filters[userId][$eq]=${userId}&populate=*`;
+
+// Reviews endpoints
+export const CUSTOMER_REVIEWS_API = "/api/customer-reviews?populate=*";
+export const PRODUCT_REVIEWS_API = (productDocumentId) => `/api/customer-reviews?filters[product][documentId][$eq]=${productDocumentId}&populate=*`;
+
+// Orders endpoints
+export const ORDERS_API = "/api/orders";
+export const USER_BAGS_API = "/api/user-bags";
+
+// Search endpoint
+export const SEARCH_PRODUCTS_API = (query) => `/api/products?filters[title][$containsi]=${encodeURIComponent(query)}&${PRODUCT_POPULATE}`;
+
+// Hero slides endpoint
+export const HERO_SLIDES_API = "/api/hero-slides?populate=*";

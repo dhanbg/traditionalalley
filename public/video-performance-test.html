@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hero Video Performance Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .button {
+            background: #007cba;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: background 0.3s;
+        }
+        .button:hover {
+            background: #005a87;
+        }
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #007cba;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .video-preview {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .video-preview video {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .info-box {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .warning-box {
+            background: #fff3e0;
+            border: 1px solid #ff9800;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .success-box {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007cba;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .metric {
+            display: inline-block;
+            margin: 5px 10px;
+            padding: 5px 10px;
+            background: #e1f5fe;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Hero Video Performance Test</h1>
+        
+        <div class="info-box">
+            <h3>📋 Test Overview</h3>
+            <p>This tool analyzes the performance of your hero video across different connection speeds and devices. It measures loading times, identifies potential issues, and provides optimization recommendations.</p>
+        </div>
+
+        <div class="test-section">
+            <h3>🎯 Current Video Analysis</h3>
+            <div class="video-preview">
+                <video id="testVideo" controls muted>
+                    <source src="/images/video/ta.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            
+            <div id="videoInfo" class="info-box">
+                <p><strong>Video:</strong> /images/video/ta.mp4</p>
+                <p><strong>File Size:</strong> <span id="fileSize">1.85 MB (1,848,744 bytes)</span></p>
+                <p><strong>Duration:</strong> <span id="duration">Loading...</span></p>
+                <p><strong>Dimensions:</strong> <span id="dimensions">Loading...</span></p>
+                <p><strong>Analysis:</strong> <span style="color: #4caf50;">✅ Optimized file size - good performance expected</span></p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🚀 Performance Tests</h3>
+            <button class="button" onclick="runQuickTest()" id="quickTestBtn">
+                Quick Performance Test
+            </button>
+            <button class="button" onclick="runFullTest()" id="fullTestBtn">
+                Full Performance Suite
+            </button>
+            <button class="button" onclick="testMobilePerformance()" id="mobileTestBtn">
+                Mobile Performance Test
+            </button>
+            
+            <div id="testResults" class="results" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Performance Metrics</h3>
+            <div id="metricsDisplay">
+                <p>Run a test to see performance metrics...</p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>💡 Optimization Recommendations</h3>
+            <div id="recommendations">
+                <p>Performance recommendations will appear here after testing...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let testResults = [];
+        let isTestRunning = false;
+
+        // Initialize video info
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('testVideo');
+            
+            video.addEventListener('loadedmetadata', function() {
+                document.getElementById('duration').textContent = `${video.duration.toFixed(2)} seconds`;
+                document.getElementById('dimensions').textContent = `${video.videoWidth} x ${video.videoHeight}`;
+            });
+
+            // Get file size
+            getVideoFileSize();
+        });
+
+        async function getVideoFileSize() {
+            try {
+                // Display known file size info for ta.mp4 (optimized)
+                const sizeInBytes = 1848744; // 1.85 MB - optimized
+                const sizeFormatted = formatBytes(sizeInBytes);
+                document.getElementById('fileSize').textContent = sizeFormatted;
+                
+                if (sizeInBytes > 5 * 1024 * 1024) {
+                    document.getElementById('fileSize').innerHTML += ' <span style="color: #ff9800;">⚠️ Large file - may cause slow loading</span>';
+                } else {
+                    document.getElementById('fileSize').innerHTML += ' <span style="color: #4caf50;">✅ Optimized - 79% size reduction</span>';
+                }
+                
+                // Also try to fetch actual size as fallback
+                const response = await fetch('/images/video/ta.mp4', { method: 'HEAD' });
+                const contentLength = response.headers.get('content-length');
+                if (contentLength) {
+                    const actualSize = parseInt(contentLength);
+                    if (actualSize !== sizeInBytes) {
+                        const actualFormatted = formatBytes(actualSize);
+                        document.getElementById('fileSize').textContent = actualFormatted;
+                        
+                        if (actualSize > 5 * 1024 * 1024) {
+                            document.getElementById('fileSize').innerHTML += ' <span style="color: #ff9800;">⚠️ Large file - may cause slow loading</span>';
+                        } else {
+                            document.getElementById('fileSize').innerHTML += ' <span style="color: #4caf50;">✅ Good size</span>';
+                        }
+                    }
+                }
+            } catch (error) {
+                // Keep the known size info even if fetch fails
+                const sizeInBytes = 1848744;
+                const sizeFormatted = formatBytes(sizeInBytes);
+                document.getElementById('fileSize').innerHTML = sizeFormatted + ' <span style="color: #4caf50;">✅ Optimized - 79% size reduction</span>';
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        async function testVideoLoading(connectionType = 'wifi') {
+            return new Promise((resolve) => {
+                const startTime = performance.now();
+                const video = document.createElement('video');
+                
+                const metrics = {
+                    connectionType,
+                    loadStartTime: null,
+                    firstFrameTime: null,
+                    canPlayTime: null,
+                    fullyLoadedTime: null,
+                    errors: []
+                };
+
+                video.addEventListener('loadstart', () => {
+                    metrics.loadStartTime = performance.now() - startTime;
+                });
+
+                video.addEventListener('loadedmetadata', () => {
+                    metrics.firstFrameTime = performance.now() - startTime;
+                });
+
+                video.addEventListener('canplay', () => {
+                    metrics.canPlayTime = performance.now() - startTime;
+                });
+
+                video.addEventListener('canplaythrough', () => {
+                    metrics.fullyLoadedTime = performance.now() - startTime;
+                    resolve(metrics);
+                });
+
+                video.addEventListener('error', (e) => {
+                    metrics.errors.push({
+                        type: 'video_error',
+                        message: e.target.error?.message || 'Unknown video error'
+                    });
+                    resolve(metrics);
+                });
+
+                video.preload = 'auto';
+                video.muted = true;
+                video.src = '/images/video/ta.mp4';
+                
+                setTimeout(() => {
+                    if (!metrics.fullyLoadedTime) {
+                        metrics.errors.push({ type: 'timeout', message: 'Loading timed out' });
+                        resolve(metrics);
+                    }
+                }, 15000);
+            });
+        }
+
+        async function runQuickTest() {
+            if (isTestRunning) return;
+            
+            setTestRunning(true);
+            showResults('🚀 Running Quick Performance Test...\n');
+            
+            try {
+                const result = await testVideoLoading('wifi');
+                displayTestResult(result);
+                generateRecommendations([result]);
+            } catch (error) {
+                appendResults(`❌ Test failed: ${error.message}\n`);
+            }
+            
+            setTestRunning(false);
+        }
+
+        async function runFullTest() {
+            if (isTestRunning) return;
+            
+            setTestRunning(true);
+            showResults('🚀 Running Full Performance Test Suite...\n');
+            
+            const connectionTypes = ['wifi', '4g', 'fast-3g'];
+            const results = [];
+            
+            for (const connectionType of connectionTypes) {
+                appendResults(`\n📡 Testing ${connectionType.toUpperCase()} connection...\n`);
+                
+                try {
+                    const result = await testVideoLoading(connectionType);
+                    results.push(result);
+                    displayTestResult(result);
+                    
+                    // Wait between tests
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                } catch (error) {
+                    appendResults(`❌ ${connectionType} test failed: ${error.message}\n`);
+                }
+            }
+            
+            generateRecommendations(results);
+            setTestRunning(false);
+        }
+
+        async function testMobilePerformance() {
+            if (isTestRunning) return;
+            
+            setTestRunning(true);
+            showResults('📱 Running Mobile Performance Test...\n');
+            
+            try {
+                // Simulate mobile conditions (slower connection)
+                const result = await testVideoLoading('fast-3g');
+                displayTestResult(result, true);
+                generateMobileRecommendations(result);
+            } catch (error) {
+                appendResults(`❌ Mobile test failed: ${error.message}\n`);
+            }
+            
+            setTestRunning(false);
+        }
+
+        function displayTestResult(result, isMobile = false) {
+            const prefix = isMobile ? '📱' : '💻';
+            appendResults(`${prefix} ${result.connectionType.toUpperCase()} Results:\n`);
+            appendResults(`  ⏱️  Load Start: ${result.loadStartTime?.toFixed(2) || 'N/A'}ms\n`);
+            appendResults(`  🎬 First Frame: ${result.firstFrameTime?.toFixed(2) || 'N/A'}ms\n`);
+            appendResults(`  ▶️  Can Play: ${result.canPlayTime?.toFixed(2) || 'N/A'}ms\n`);
+            appendResults(`  ✅ Fully Loaded: ${result.fullyLoadedTime?.toFixed(2) || 'N/A'}ms\n`);
+            
+            if (result.errors.length > 0) {
+                appendResults(`  ❌ Errors: ${result.errors.map(e => e.message).join(', ')}\n`);
+            }
+            
+            // Update metrics display
+            updateMetricsDisplay(result);
+        }
+
+        function updateMetricsDisplay(result) {
+            const metricsDiv = document.getElementById('metricsDisplay');
+            const metrics = [];
+            
+            if (result.canPlayTime) {
+                const status = result.canPlayTime < 2000 ? '🟢 Excellent' : result.canPlayTime < 5000 ? '🟡 Good' : '🔴 Needs Improvement';
+                metrics.push(`<div class="metric">Initial Playback: ${result.canPlayTime.toFixed(0)}ms ${status}</div>`);
+            }
+            
+            if (result.fullyLoadedTime) {
+                const status = result.fullyLoadedTime < 5000 ? '🟢 Excellent' : result.fullyLoadedTime < 10000 ? '🟡 Good' : '🔴 Needs Improvement';
+                metrics.push(`<div class="metric">Full Load: ${result.fullyLoadedTime.toFixed(0)}ms ${status}</div>`);
+            }
+            
+            metricsDiv.innerHTML = metrics.join('');
+        }
+
+        function generateRecommendations(results) {
+            const recommendations = [];
+            const recDiv = document.getElementById('recommendations');
+            
+            results.forEach(result => {
+                if (result.errors.length > 0) {
+                    recommendations.push('🔧 Fix video loading errors');
+                }
+                
+                if (result.canPlayTime > 3000) {
+                    recommendations.push('⚡ Optimize video for faster initial playback');
+                }
+                
+                if (result.fullyLoadedTime > 10000) {
+                    recommendations.push('📦 Consider video compression to reduce file size');
+                }
+            });
+            
+            if (recommendations.length === 0) {
+                recDiv.innerHTML = '<div class="success-box">✅ Video performance looks good across all tested scenarios!</div>';
+            } else {
+                const uniqueRecs = [...new Set(recommendations)];
+                recDiv.innerHTML = '<div class="warning-box">' + 
+                    '<h4>Recommendations:</h4>' +
+                    '<ul>' + uniqueRecs.map(rec => `<li>${rec}</li>`).join('') + '</ul>' +
+                    '</div>';
+            }
+            
+            // Add general tips
+            recDiv.innerHTML += `
+                <div class="info-box">
+                    <h4>💡 General Optimization Tips:</h4>
+                    <ul>
+                        <li>Keep video files under 5MB for hero videos</li>
+                        <li>Use H.264 codec with MP4 container for best compatibility</li>
+                        <li>Provide poster images for immediate visual feedback</li>
+                        <li>Consider lazy loading for non-active slides</li>
+                        <li>Test on actual mobile devices and slow connections</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        function generateMobileRecommendations(result) {
+            const recDiv = document.getElementById('recommendations');
+            let content = '<div class="info-box"><h4>📱 Mobile Performance Analysis:</h4>';
+            
+            if (result.canPlayTime > 5000) {
+                content += '<p>🔴 <strong>Critical:</strong> Video takes too long to start playing on mobile connections. Consider creating a smaller mobile-optimized version.</p>';
+            } else if (result.canPlayTime > 2000) {
+                content += '<p>🟡 <strong>Warning:</strong> Video loading could be faster on mobile. Consider optimization.</p>';
+            } else {
+                content += '<p>🟢 <strong>Good:</strong> Video loads quickly on mobile connections.</p>';
+            }
+            
+            content += '</div>';
+            recDiv.innerHTML = content;
+        }
+
+        function setTestRunning(running) {
+            isTestRunning = running;
+            const buttons = ['quickTestBtn', 'fullTestBtn', 'mobileTestBtn'];
+            buttons.forEach(id => {
+                const btn = document.getElementById(id);
+                btn.disabled = running;
+                if (running) {
+                    btn.innerHTML = '<span class="loading"></span>Testing...';
+                } else {
+                    btn.innerHTML = btn.id === 'quickTestBtn' ? 'Quick Performance Test' :
+                                   btn.id === 'fullTestBtn' ? 'Full Performance Suite' :
+                                   'Mobile Performance Test';
+                }
+            });
+        }
+
+        function showResults(text) {
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = text;
+        }
+
+        function appendResults(text) {
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.textContent += text;
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+/* Payment Methods Styles - Minimal Gray */
+.paymentMethods {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.paymentMethodCard {
+  flex: 1;
+  position: relative;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #ffffff;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+}
+
+.paymentMethodCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #f5f5f5;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.paymentMethodCard:hover {
+  border-color: #bdbdbd;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  transform: translateY(-1px);
+}
+
+.paymentMethodCard:hover::before {
+  opacity: 1;
+}
+
+.paymentMethodCard.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #fafafa;
+}
+
+.paymentMethodCard.disabled:hover {
+  transform: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  border-color: #e0e0e0;
+}
+
+.paymentMethodCard.disabled::before {
+  opacity: 0 !important;
+}
+
+.paymentMethodCard.selected {
+  border-color: #9e9e9e;
+  background: #f5f5f5;
+  color: #424242;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.paymentMethodCard.selected::before {
+  opacity: 1;
+  background: #e0e0e0;
+}
+
+.paymentMethodCard input[type="radio"] {
+  display: none;
+}
+
+.paymentMethodCard label {
+  display: block;
+  cursor: pointer;
+  margin: 0;
+}
+
+.paymentMethodHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  position: relative;
+}
+
+.paymentIcon {
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease;
+}
+
+.paymentMethodCard.selected .paymentIcon {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.lockIcon {
+  margin-left: auto;
+  font-size: 12px;
+  opacity: 0.5;
+}
+
+.errorMessage {
+  margin-top: 6px;
+  color: #d32f2f;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 5px 8px;
+  background: rgba(211, 47, 47, 0.05);
+  border-radius: 5px;
+  border-left: 2px solid #d32f2f;
+}
+
+/* Simplified Section Styles */
+.simplifiedSection {
+  background: #ffffff;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  margin-bottom: 12px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #424242;
+}
+
+.brandButton {
+  background: #f5f5f5;
+  color: #424242;
+  border: 1px solid #e0e0e0;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.brandButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  background: #eeeeee;
+  border-color: #bdbdbd;
+}
+
+.brandButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .paymentMethods {
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .paymentMethodCard {
+    padding: 8px 10px;
+    border-radius: 6px;
+  }
+
+  .paymentMethodHeader {
+    gap: 6px;
+    font-size: 12px;
+  }
+
+  .paymentIcon {
+    font-size: 14px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .lockIcon {
+    font-size: 11px;
+  }
+
+  .errorMessage {
+    font-size: 10px;
+    padding: 4px 6px;
+    margin-top: 5px;
+  }
+
+  .simplifiedSection {
+    padding: 12px;
+  }
+
+  .sectionHeader {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .paymentMethods {
+    gap: 5px;
+  }
+
+  .paymentMethodCard {
+    padding: 7px 9px;
+  }
+
+  .paymentMethodHeader {
+    gap: 5px;
+    font-size: 11px;
+  }
+
+  .paymentIcon {
+    font-size: 13px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .simplifiedSection {
+    padding: 10px;
+  }
+}

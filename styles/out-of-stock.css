@@ -1,0 +1,130 @@
+/* Out of Stock Product Styling */
+
+/* Out of stock product card overlay */
+.card-product.out-of-stock {
+  position: relative;
+  opacity: 0.7;
+}
+
+.card-product.out-of-stock::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.3);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Out of stock badge */
+.out-of-stock-wrap {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+}
+
+.out-of-stock-badge {
+  background: #dc3545;
+  color: white;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Disabled action buttons */
+.card-product.out-of-stock .list-product-btn a.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.card-product.out-of-stock .list-product-btn a.disabled:hover {
+  transform: none;
+}
+
+/* Disabled main button */
+.btn-main-product.disabled,
+.btn-main-product.out-of-stock-btn {
+  background: #6c757d !important;
+  border-color: #6c757d !important;
+  color: white !important;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.btn-main-product.disabled:hover,
+.btn-main-product.out-of-stock-btn:hover {
+  background: #6c757d !important;
+  border-color: #6c757d !important;
+  transform: none;
+}
+
+/* Product image grayscale effect for out of stock */
+.card-product.out-of-stock .img-product {
+  filter: grayscale(30%);
+  transition: filter 0.3s ease;
+}
+
+.card-product.out-of-stock:hover .img-product {
+  filter: grayscale(20%);
+}
+
+/* Product title styling for out of stock */
+.card-product.out-of-stock .card-product-info .title {
+  color: #6c757d;
+}
+
+/* Price styling for out of stock */
+.card-product.out-of-stock .product-card-price {
+  opacity: 0.7;
+}
+
+/* Tooltip styling for disabled buttons */
+.card-product.out-of-stock .list-product-btn a.disabled .tooltip {
+  background: #dc3545;
+}
+
+.card-product.out-of-stock .list-product-btn a.disabled .tooltip::after {
+  border-top-color: #dc3545;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .out-of-stock-badge {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+  
+  .out-of-stock-wrap {
+    top: 8px;
+    left: 8px;
+  }
+}
+
+/* Animation for out of stock badge */
+.out-of-stock-badge {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.out-of-stock {
+  bottom: -25px;
+}

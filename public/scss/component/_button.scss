@@ -1,0 +1,512 @@
+@use "../abstracts/mixin";
+
+.tf-btn{
+    @include mixin.transition3;
+    background-color: var(--main);
+    color: var(--white);
+    padding: 16px 36px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 16px;
+    line-height: 26px;
+    font-weight: 600;
+    text-transform: capitalize;
+    border: 1px solid var(--main);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    span{
+        color: inherit;
+    }
+    .icon {
+        font-size: 22px;
+    }
+    .text,.icon{
+        position: relative;
+        z-index: 2;
+    }
+    &.btn-md{
+        padding: 10px 24px;
+    }
+    &:not(.btn-reset){
+        &:after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--main) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1;
+        }
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            color: var(--white);
+            &::after{
+                opacity: 1;
+            }
+        }
+        &:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+    }
+    &.btn-reset{
+        &:hover{
+            background-color: var(--primary);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            color: var(--white);
+        }
+    }
+    
+    &.btn-white {
+        background-color: var(--white);
+        border: 1px solid var(--line);
+        color: var(--main);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        &:hover{
+            color: var(--white);
+            background-color: var(--main);
+            border-color: var(--main);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        &::after{
+            background: linear-gradient(135deg, var(--primary) 0%, var(--main) 100%);
+        }
+        &.has-border {
+            border: 1px solid var(--main);
+            &:hover{
+                border-color: var(--primary);
+            }
+        }
+    }
+    &.btn-square{
+        border-radius: 12px;
+    }
+    &.radius-4 {
+        border-radius: 8px;
+    }
+    &.btn-rounded {
+        border-radius: 99px;
+    }
+    &.btn-lg {
+        padding: 18px 40px;
+        font-size: 18px;
+        line-height: 28px;
+    }
+    &.btn-sm {
+        padding: 12px 24px;
+        font-size: 14px;
+        line-height: 22px;
+    }
+}
+.btn-line{
+    font-size: 16px;
+    line-height: 26px;
+    padding-bottom: 4px;
+    font-weight: 600;
+    color: var(--main);
+    position: relative;
+    @include mixin.transition3;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(to right, var(--primary) 50%, var(--main) 50%);
+    background-size: 200% 100%;
+    background-position: right;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    transition: background-position 0.3s linear;
+
+    &::after{
+        position: absolute;
+        content: "";
+        left: 0;
+        bottom: 0;
+        right: 0;
+        height: 2px;
+        background-color: var(--main);
+        @include mixin.transition3;
+    }
+    &::before {
+        position: absolute;
+        content: "";
+        left: 0;
+        width: 0;
+        bottom: 0;
+        height: 2px;
+        background-color: var(--primary);
+        transition: width 0.3s linear;
+        z-index: 1;
+    }
+    &.style-white{
+        color: var(--white);
+        background: linear-gradient(to right, var(--primary) 50%, var(--white) 50%);
+        background-size: 200% 100%;
+        background-position: right;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        transition: background-position 0.3s linear;
+        &::after{
+            background-color: var(--white);
+        }
+    }
+    &:hover{
+        background-position: left;
+        &::before {
+            width: 100%;
+        }
+    }
+    
+}
+
+.tf-btn-default {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    line-height: 20px;
+    i {
+        font-size: 20px;
+    }
+    &:hover {
+        color: var(--primary);
+    }
+    &.style-white {
+        color: var(--white);
+        &:hover {
+            color: var(--primary);
+        }
+    }
+}
+
+.btn-style-1 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 22px;
+    height: 40px;
+    transition: all 0.3s ease;
+    background-color: var(--white);
+    cursor: pointer;
+    &:hover {
+        border-color: var(--main);
+        background-color: var(--main);
+        color: var(--white);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+    &:focus {
+        outline: 2px solid var(--main);
+        outline-offset: 2px;
+    }
+    &:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    // Enhanced styles for custom order buttons with persistent visibility
+    &[aria-label*="Custom Order"] {
+        background-color: var(--main);
+        color: var(--white);
+        border-color: var(--main);
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        &:hover {
+            background-color: var(--main);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            filter: brightness(1.1);
+        }
+        &:focus {
+            outline: 3px solid rgba(var(--main-rgb), 0.3);
+            outline-offset: 3px;
+        }
+    }
+}
+
+.btn-style-2 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: max-content;
+    padding: 16px 24px;
+    border-radius: 12px;
+    color: var(--white);
+    letter-spacing: 0.05em;
+    border: 1px solid var(--main);
+    background-color: var(--main);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    &:hover {
+        background-color: var(--primary);
+        border-color: var(--primary);
+        color: var(--white);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+}
+
+.btn-style-3 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 24px;
+    border-radius: 12px;
+    background-color: var(--primary);
+    color: var(--white);
+    letter-spacing: 0.05em;
+    border: 1px solid var(--primary);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    &:hover {
+        background-color: var(--main);
+        border-color: var(--main);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+}
+
+.btn-style-4 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: max-content;
+    padding: 16px 32px;
+    border-radius: 12px;
+    border: 1px solid var(--main);
+    background-color: var(--white);
+    color: var(--main);
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    &:hover {
+        background-color: var(--main);
+        color: var(--white);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+}
+
+.btn-style-5 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: max-content;
+    padding: 16px 32px;
+    border-radius: 12px;
+    border: 1px solid rgba(254, 167, 36, 1);
+    background-color: rgba(254, 167, 36, 1);
+    color: var(--white);
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(254, 167, 36, 0.3);
+    &:hover {
+        background-color: var(--white);
+        border-color: var(--main);
+        color: var(--main);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+}
+
+.btn-sold-out {
+    pointer-events: none;
+    background-color: var(--line) !important;
+    color: var(--secondary-2) !important;
+    cursor: no-drop;
+}
+
+.btn-out-line{
+    padding: 10px 40px;
+    @include mixin.transition3;
+    cursor: pointer;
+    border-radius: 44px;
+    border: 2px solid var(--line);
+    background-color: var(--white);
+    color: var(--main);
+    &:hover{
+        color: var(--primary);
+    }
+}
+.load-more-btn{
+    width: auto;
+    min-width: 163px;
+    height: 42px;
+    font-size: 12px;
+    line-height: 20px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+}
+
+.tf-loading{
+    position: relative;
+    &::before{
+        width: 18px;
+        height: 18px;
+        border: solid 2px transparent;
+        border-top-color: transparent !important;
+        content: "";
+        position: absolute;
+        z-index: 2;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: auto;
+        border-radius: 50%;
+        animation: tf_rotator 0.6s linear infinite paused;
+        opacity: 0;
+    }
+    .text-btn{
+        color: inherit;
+        
+    }
+    &.loading{
+        &::before {
+           
+            border: solid 2px var(--main);
+            opacity: 1;
+            animation-play-state: running;
+        }
+        .text-btn{
+            display: none;
+        }
+    }
+   
+}
+.btn-infinite-scroll{
+    height: 32px;
+    padding: 0;
+    border: none;
+    &::before {
+        width: 22px;
+        height: 22px;
+        border: solid 2px var(--main);
+        opacity: 1;
+        animation-play-state: running;
+    }
+}
+
+@keyframes tf_rotator {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.btn-style-6 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: max-content;
+    padding: 16px 32px;
+    border-radius: 12px;
+    border: 1px solid var(--main);
+    background-color: var(--main);
+    color: var(--white);
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    &:hover {
+        background-color: var(--white);
+        color: var(--main);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+}
+
+.btn-style-7 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: max-content;
+    padding: 16px 32px;
+    border-radius: 12px;
+    border: 1px solid var(--white);
+    background-color: var(--white);
+    color: var(--main);
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    &:hover {
+        background-color: var(--main);
+        color: var(--white);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+}
+
+.btn-style-8 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: max-content;
+    padding: 16px 32px;
+    border-radius: 12px;
+    border: 1px solid var(--main);
+    background-color: var(--white);
+    color: var(--main);
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    &:hover {
+        background-color: var(--main);
+        color: var(--white);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+}
+
+.btn-fixed-cart{
+    position: fixed;
+    top: 40%;
+    right: 20px;
+    background-color: var(--main);
+    width: 60px;
+    height: 60px;
+    display: block;
+    @include mixin.flex(center,center);
+    z-index: 999;
+    border-radius: 99px 0px 99px 99px;
+    .count-box{
+        right: 6px;
+        top: 16px;
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border-radius: 99px;
+        background-color: var(--primary);
+        font-size: 10px;
+        line-height: 8px;
+        color: var(--white);
+        @include mixin.flex(center,center);
+    }
+
+}

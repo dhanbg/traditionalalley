@@ -1,0 +1,5 @@
+[2025-09-05T13:42:03.079Z] Starting exchange rate update...
+[2025-09-05T13:42:03.952Z] Fetched new rate: 1 USD = 141.11 NPR
+[2025-09-05T13:42:03.954Z] Current rate: 134.5, New rate: 141.11, Change: 4.91%
+[2025-09-05T13:42:03.956Z] ✅ Updated fallback rate from 134.5 to 141.11
+[2025-09-05T13:42:03.957Z] Exchange rate update completed successfully
