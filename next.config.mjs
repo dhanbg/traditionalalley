@@ -2,7 +2,7 @@
 const nextConfig = {
   images: {
     // ✅ PERFORMANCE: Enable image optimization for WebP conversion and responsive sizing
-    // unoptimized: true, // Commented out to enable optimization
+    unoptimized: true, 
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
@@ -40,11 +40,9 @@ const nextConfig = {
       }] : []),
     ],
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
+  sassOptions: {
+    // Use the modern Sass API to fix the deprecation warning
+    api: "modern",
   },
 };
 

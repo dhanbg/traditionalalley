@@ -1,16 +1,20 @@
 export const STRAPI_API_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
 
 // Explicit public URL for browser images and client-side fetch, hardcoded fallback to ensure production availability
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://admin.traditionalalley.com.np";
-// Dedicated internal server-side Docker loopback
-export const INTERNAL_API_URL = process.env.STRAPI_INTERNAL_URL || process.env.API_URL || API_URL;
+export const API_URL = (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL !== "undefined") 
+  ? process.env.NEXT_PUBLIC_API_URL 
+  : "https://admin.traditionalalley.com.np";
 
-// Strapi 5 populate helpers - populate=* only populates media, NOT relations
-// We must explicitly populate all relation fields
-export const PRODUCT_POPULATE = "populate[imgSrc]=*&populate[imgHover]=*&populate[gallery]=*&populate[color]=*&populate[collection][populate][category]=*&populate[product_variants][populate]=*&populate[customer_reviews]=*";
-export const COLLECTION_POPULATE = "populate[image]=*&populate[category]=*&populate[products]=*";
-export const VARIANT_POPULATE = "populate[imgSrc]=*&populate[imgHover]=*&populate[gallery]=*&populate[color]=*&populate[product][populate][collection][populate][category]=*";
-export const TOP_PICKS_POPULATE = "populate[products]=*&populate[product_variants]=*";
+// Dedicated internal server-side Docker loopback (only used on server)
+export const INTERNAL_API_URL = (typeof window === 'undefined') 
+  ? (process.env.STRAPI_INTERNAL_URL || process.env.STRAPI_URL || API_URL) 
+  : API_URL;
+
+// Strapi 5 populate helpers - populate=* populates 1st level relations/media. For deep, use strictly valid syntax.
+export const PRODUCT_POPULATE = "populate=*&populate[collection][populate]=*&populate[product_variants][populate]=*&populate[customer_reviews][populate]=*";
+export const COLLECTION_POPULATE = "populate=*&populate[category][populate]=*&populate[products][populate]=*";
+export const VARIANT_POPULATE = "populate=*&populate[product][populate][collection][populate]=*";
+export const TOP_PICKS_POPULATE = "populate=*&populate[products][populate]=*&populate[product_variants][populate]=*";
 
 // Product endpoints
 export const PRODUCTS_API = `/api/products?${PRODUCT_POPULATE}`;

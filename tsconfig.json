@@ -9,10 +9,11 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": false,
+    "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "incremental": true,
-    "module": "esnext",
     "esModuleInterop": true,
+    "module": "esnext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -22,19 +23,20 @@
         "name": "next"
       }
     ],
-    "baseUrl": ".", // Set baseUrl to the root of your project
+    "strictNullChecks": true,
+    "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ] // This creates an alias for @ to point to the root directory
-    },
-    "strictNullChecks": true
+      "@/*": ["./*"]
+    }
   },
   "include": [
     "next-env.d.ts",
     ".next/types/**/*.ts",
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    "app/HomePage.jsx",
+    "app/(admin)/admin/product-variant-manager/page.jsx",
+    "app/debug-hero/page.jsx"
   ],
   "exclude": [
     "node_modules"

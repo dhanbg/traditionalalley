@@ -13,6 +13,10 @@ export default function Collections() {
     const fetchCollections = async () => {
       try {
         const response = await fetchDataFromApi(COLLECTIONS_API);
+        if (!response || !response.data || !Array.isArray(response.data)) {
+          return;
+        }
+
         // Filter collections securely using structural slug definitions to bypass Strapi 5 missing relations
         const kidsSlugs = ['events', 'kids'];
         const filteredCollections = response.data.filter(item => {
@@ -24,33 +28,12 @@ export default function Collections() {
           id: item.id,
           name: item.attributes?.name || item.name || "Unnamed Collection",
           slug: item.attributes?.slug || item.slug || `collection-${item.id}`,
-          image: getImageUrl(item),
+          image: getBestImageUrl(item.attributes?.image || item.image) || "/logo.png",
         }));
         setCollections(transformedCollections);
       } catch (error) {
         // Silently handle error
       }
-    };
-
-    // Helper function to extract the correct image URL
-    const getImageUrl = (item) => {
-      // For attributes-based structure (Strapi v4)
-      if (item.attributes?.image?.data?.attributes) {
-        const imageData = item.attributes.image.data.attributes;
-        // Use medium format if available, otherwise use the main URL
-        const imageUrl = imageData.formats?.medium?.url || imageData.url;
-        return imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`;
-      }
-      
-      // For direct structure
-      if (item.image) {
-        // Use medium format if available, otherwise use the main URL
-        const imageUrl = item.image.formats?.medium?.url || item.image.url;
-        return imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`;
-      }
-      
-      // Fallback to default image
-      return '/images/collections/default.jpg';
     };
 
     fetchCollections();

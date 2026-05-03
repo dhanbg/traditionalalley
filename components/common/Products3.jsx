@@ -3,7 +3,8 @@ import ProductCard1 from "@/components/productCards/ProductCard1";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { fetchDataFromApi } from "@/utils/api";
-import { PRODUCTS_API, API_URL } from "@/utils/urls";
+import { PRODUCTS_API } from "@/utils/urls";
+import { getBestImageUrl } from "@/utils/imageUtils";
 
 
 const tabItems = ["New Arrivals", "Best Seller", "On Sale"];
@@ -35,19 +36,7 @@ export default function Products3({ parentClass = "flat-spacing-3" }) {
           // Transform the products to the format expected by ProductCard1
           const transformedProducts = response.data.map(product => {
             if (!product) return null;
-            // Pass the image object directly for ProductCard1 to handle small format
-            let imgSrc = product.imgSrc || null;
-            let imgHover = product.imgHover || null;
-            // Process gallery images if available
-            const gallery = Array.isArray(product.gallery) 
-              ? product.gallery.map(img => img || null) 
-              : [];
-            let processedColors = null;
-            if (Array.isArray(product.colors)) {
-              processedColors = product.colors;
-            }
             const tabFilterOptions2 = product.tabFilterOptions2 || [];
-            // Use isActive from the API - treat null or undefined as inactive
             const isActive = product.isActive === true;
             
             return {
@@ -56,10 +45,12 @@ export default function Products3({ parentClass = "flat-spacing-3" }) {
               title: product.title || "Untitled Product",
               price: product.price || 0,
               oldPrice: product.oldPrice || null,
-              imgSrc,
-              imgHover,
-              gallery,
-              colors: processedColors,
+              imgSrc: getBestImageUrl(product.imgSrc, 'small') || DEFAULT_IMAGE,
+              imgHover: getBestImageUrl(product.imgHover, 'small') || getBestImageUrl(product.imgSrc, 'small') || DEFAULT_IMAGE,
+              gallery: Array.isArray(product.gallery) 
+                ? product.gallery.map(img => ({ ...img, url: getBestImageUrl(img, 'medium') })) 
+                : [],
+              colors: product.colors || null,
               sizes: product.sizes || [],
               tabFilterOptions2,
               isActive,

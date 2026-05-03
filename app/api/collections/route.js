@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
 
+export const dynamic = 'force-dynamic';
 export async function GET(request) {
   let strapiUrl;
   try {
@@ -8,22 +10,20 @@ export async function GET(request) {
     const searchParams = url.searchParams;
     
     // Ensure defaults if not passed
-    if (!searchParams.has('populate')) {
+    const hasPopulate = Array.from(searchParams.keys()).some(key => key.startsWith('populate'));
+    if (!hasPopulate) {
         searchParams.set('populate', '*');
-        searchParams.set('populate[products]', '*');
-        searchParams.set('populate[category]', '*');
     }
     if (!searchParams.has('pagination[pageSize]')) searchParams.set('pagination[pageSize]', '100');
     searchParams.set('publicationState', 'live');
 
-    // Construct the URL for the Strapi API using the public domain to completely bypass Docker network bridges
-    const apiUrl = process.env.API_URL || process.env['NEXT_PUBLIC_API_URL'] || 'https://admin.traditionalalley.com.np';
-    strapiUrl = `${apiUrl}/api/collections?${searchParams.toString()}`;
+    // Construct the URL for the Strapi API using the internal docker network to bypass Cloudflare
+    strapiUrl = `${INTERNAL_API_URL}/api/collections?${searchParams.toString()}`;
 
     // Fetch collections from Strapi
     const response = await fetch(strapiUrl, {
       headers: {
-        'Authorization': `Bearer ${process.env['NEXT_PUBLIC_STRAPI_API_TOKEN']}`
+        'Authorization': `Bearer ${STRAPI_API_TOKEN}`
       }
     });
 

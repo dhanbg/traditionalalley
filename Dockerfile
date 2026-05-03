@@ -43,8 +43,9 @@ COPY --from=builder /app/auth.config.ts ./auth.config.ts
 COPY --from=builder /app/auth.ts ./auth.ts
 COPY --from=builder /app/middleware.ts ./middleware.ts
 
-# Set ownership to nextjs user
-RUN chown -R nextjs:nodejs /app
+# Create required directories for uploads and set permissions
+RUN mkdir -p /app/public/uploads/invoices && \
+    chown -R nextjs:nodejs /app
 
 # Install only production dependencies
 RUN npm install --omit=dev --legacy-peer-deps
@@ -57,18 +58,6 @@ USER nextjs
 
 # Expose the port the app runs on
 EXPOSE 3000
-
-# Set runtime environment variables (these will be provided via --env-file or -e at docker run)
-# DO NOT hardcode secrets here. These lines are just for documentation/reference:
-# ENV CLERK_SECRET_KEY=...
-# ENV CLERK_WEBHOOK_SECRET=...
-# ENV STRIPE_SECRET_KEY=...
-# ENV STRIPE_WEBHOOK_SECRET=...
-# ENV KHALTI_BASE_URL=...
-# ENV KHALTI_SECRET_KEY=...
-# ENV KHALTI_PUBLIC_KEY=...
-# ENV KHALTI_RETURN_URL=...
-# ENV KHALTI_WEBSITE_URL=...
 
 # Use dumb-init to handle zombie processes and signals properly
 CMD ["dumb-init", "node_modules/.bin/next", "start"]

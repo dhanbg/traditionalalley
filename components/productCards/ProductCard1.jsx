@@ -6,47 +6,20 @@ import CountdownTimer from "../common/Countdown";
 import PriceDisplay from "../common/PriceDisplay";
 import { useContextElement } from "@/context/Context";
 import { useSession, signIn } from "next-auth/react";
-import { getImageUrl } from "@/utils/imageUtils";
+import { getBestImageUrl } from "@/utils/imageUtils";
 import { calculateInStock } from "@/utils/stockUtils";
 
 // Default placeholder image
 const DEFAULT_IMAGE = '/logo.png';
 
-function getStrapiSmallImage(imageObj) {
-  if (!imageObj) return DEFAULT_IMAGE;
-
-  // Handle string URLs directly
-  if (typeof imageObj === 'string') {
-    return imageObj.startsWith('http') ? imageObj : (getImageUrl(imageObj) || DEFAULT_IMAGE);
-  }
-
-  // Handle Strapi image objects with formats
-  if (imageObj.formats && imageObj.formats.small && imageObj.formats.small.url) {
-    const smallUrl = imageObj.formats.small.url;
-    return smallUrl.startsWith('http') ? smallUrl : getImageUrl(smallUrl);
-  }
-
-  // Handle objects with direct url property
-  if (imageObj.url) {
-    return imageObj.url.startsWith('http') ? imageObj.url : getImageUrl(imageObj.url);
-  }
-
-  // Handle Strapi data structure with data.attributes
-  if (imageObj.data && imageObj.data.attributes && imageObj.data.attributes.url) {
-    const attrUrl = imageObj.data.attributes.url;
-    return attrUrl.startsWith('http') ? attrUrl : getImageUrl(attrUrl);
-  }
-
-  return DEFAULT_IMAGE;
-}
 
 export default function ProductCard1({ product, gridClass = "", index = 0, onRemoveFromWishlist = null }) {
 
   // Ensure product has valid image properties
   const safeProduct = {
     ...product,
-    imgSrc: getStrapiSmallImage(product.imgSrc) || DEFAULT_IMAGE,
-    imgHover: getStrapiSmallImage(product.imgHover) || getStrapiSmallImage(product.imgSrc) || DEFAULT_IMAGE
+    imgSrc: getBestImageUrl(product.imgSrc, 'small') || DEFAULT_IMAGE,
+    imgHover: getBestImageUrl(product.imgHover, 'small') || getBestImageUrl(product.imgSrc, 'small') || DEFAULT_IMAGE
   };
 
   // Parse size_stocks data for size selection

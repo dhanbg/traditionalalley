@@ -113,16 +113,17 @@ export const fetchDataFromApi = async (endpoint) => {
     }
     
     // Make sure the endpoint is properly encoded for any special characters
-    // Only encode the part after the query params to avoid double-encoding the ? and = characters
     let processedEndpoint = endpoint;
     if (endpoint.includes('?')) {
       const [basePath, queryString] = endpoint.split('?');
-      // Split by & to process each param individually
       const queryParams = queryString.split('&').map(param => {
-        const [key, value] = param.split('=');
-        // Only encode the value part, not the key or operators
+        if (!param.includes('=')) return param;
+        const index = param.indexOf('=');
+        const key = param.substring(0, index);
+        const value = param.substring(index + 1);
+        
+        // If the value contains Strapi-style operators/brackets, return as is or encode carefully
         if (value.includes('[') || value.includes(']')) {
-          // Don't encode operators like [$eq]
           return param;
         } else {
           return `${key}=${encodeURIComponent(value)}`;
@@ -132,12 +133,17 @@ export const fetchDataFromApi = async (endpoint) => {
     }
 
     // Determine if this is a Next.js API route or Strapi API call
-    const isNextApiRoute = processedEndpoint.startsWith('/api/ncm/') || processedEndpoint.startsWith('/api/auth/') || processedEndpoint.startsWith('/api/webhook/') || processedEndpoint.startsWith('/api/instagrams');
-    const fetchUrl = isNextApiRoute ? processedEndpoint : `${INTERNAL_API_URL}${processedEndpoint}`;
+    const isNextApiRoute = processedEndpoint.startsWith('/api/ncm/') || processedEndpoint.startsWith('/api/auth/') || processedEndpoint.startsWith('/api/webhook/') || processedEndpoint.startsWith('/api/instagrams') || processedEndpoint.startsWith('/api/categories') || processedEndpoint.startsWith('/api/products') || processedEndpoint.startsWith('/api/collections') || processedEndpoint.startsWith('/api/product-variants') || processedEndpoint.startsWith('/api/top-picks');
     
-    // Don't add Strapi auth header for Next.js API routes
+    let fetchUrl = processedEndpoint;
+    if (!isNextApiRoute) {
+        fetchUrl = `${INTERNAL_API_URL}${processedEndpoint}`;
+    } else if (typeof window === 'undefined') {
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+        fetchUrl = `${baseUrl}${processedEndpoint}`;
+    }
+    
     const fetchOptions = isNextApiRoute ? { method: "GET" } : options;
-    
     const res = await fetch(fetchUrl, fetchOptions);
     
     if (!res.ok) {

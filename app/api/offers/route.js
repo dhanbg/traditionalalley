@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
 export async function GET(request) {
   let strapiUrl;
   try {
@@ -8,8 +9,9 @@ export async function GET(request) {
     const populate = searchParams.get('populate') || '*';
     const pageSize = searchParams.get('pageSize') || '100';
 
-    // Construct the URL for the Strapi API with proper population and publication state
-    strapiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/offers?publicationState=live&pagination[pageSize]=${pageSize}&populate=${populate}`;
+    // Construct the URL for the Strapi API with proper population and publication state using internal network
+    const apiUrl = process.env.STRAPI_INTERNAL_URL || process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://strapi-alley-production:1337';
+    strapiUrl = `${apiUrl}/api/offers?publicationState=live&pagination[pageSize]=${pageSize}&populate=${populate}`;
 
     console.log('🎯 Fetching offers from Strapi:', strapiUrl);
 

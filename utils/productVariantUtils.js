@@ -129,7 +129,8 @@ export async function getWelcomeCouponForAutoSelection(userId) {
 }
 
 const DEFAULT_IMAGE = '/logo.png';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
+
+import { API_URL } from "./urls";
 
 /**
  * Fetch products with their variants and return them as separate items for listing pages
@@ -425,11 +426,12 @@ function transformProductForListing(rawProduct) {
     isActive: rawProduct.isActive === true,
     isOnSale: !!rawProduct.oldPrice,
     salePercentage: rawProduct.salePercentage || "25%",
-    category: rawProduct.collection?.category?.title || null,
+    // Strapi 5 relations are now flattened by default or handled via populate
+    category: rawProduct.collection?.category?.title || rawProduct.category?.title || null,
     collection: rawProduct.collection?.title || null,
     hotSale: rawProduct.hotSale || false,
     countdown: rawProduct.countdown || null,
-    updatedAt: rawProduct.updatedAt // Include updatedAt for sorting
+    updatedAt: rawProduct.updatedAt
   };
 }
 
@@ -477,29 +479,28 @@ function transformVariantForListing(rawVariant, parentProduct) {
     id: rawVariant.id,
     documentId: rawVariant.documentId,
     title: variantTitle,
-    price: parentProduct.price || 0, // Use parent product price
-    oldPrice: parentProduct.oldPrice || null,
+    price: rawVariant.price || parentProduct?.price || 0, 
+    oldPrice: rawVariant.oldPrice || parentProduct?.oldPrice || null,
     imgSrc,
     imgHover,
     gallery,
     colors: variantColor ? [variantColor] : [],
-    sizes: parentProduct.sizes || [], // Use parent product sizes
-    size_stocks: rawVariant.size_stocks || parentProduct.size_stocks,
-    tabFilterOptions: parentProduct.tabFilterOptions || [],
+    sizes: rawVariant.sizes || parentProduct?.sizes || [], 
+    size_stocks: rawVariant.size_stocks || parentProduct?.size_stocks,
+    tabFilterOptions: parentProduct?.tabFilterOptions || [],
     isActive: rawVariant.isActive !== false,
-    isOnSale: !!parentProduct.oldPrice,
-    salePercentage: parentProduct.salePercentage || "25%",
-    category: parentProduct.collection?.category?.title || null,
-    collection: parentProduct.collection?.title || null,
+    isOnSale: !!(rawVariant.oldPrice || parentProduct?.oldPrice),
+    salePercentage: rawVariant.salePercentage || parentProduct?.salePercentage || "25%",
+    category: parentProduct?.collection?.category?.title || parentProduct?.category?.title || null,
+    collection: parentProduct?.collection?.title || null,
     design: rawVariant.design,
     variantId: rawVariant.documentId,
-    hotSale: parentProduct.hotSale || false,
-    countdown: parentProduct.countdown || null,
-    // Add main product reference so getMainProductId can find it
+    hotSale: rawVariant.hotSale || parentProduct?.hotSale || false,
+    countdown: rawVariant.countdown || parentProduct?.countdown || null,
     product: {
-      documentId: parentProduct.documentId
+      documentId: parentProduct?.documentId
     },
-    updatedAt: rawVariant.updatedAt // Include updatedAt for sorting
+    updatedAt: rawVariant.updatedAt 
   };
 }
 

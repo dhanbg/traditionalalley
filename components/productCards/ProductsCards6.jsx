@@ -7,6 +7,7 @@ import CountdownTimer from "../common/Countdown";
 import { useContextElement } from "@/context/Context";
 import { calculateInStock } from "@/utils/stockUtils";
 import PriceDisplay from "@/components/common/PriceDisplay";
+import { getBestImageUrl } from "@/utils/imageUtils";
 import { useSession, signIn } from "next-auth/react";
 
 // Default placeholder image
@@ -16,11 +17,11 @@ export default function ProductsCards6({ product }) {
   // Ensure product has valid image properties
   const safeProduct = {
     ...product,
-    imgSrc: product.imgSrc || DEFAULT_IMAGE,
-    imgHover: product.imgHover || product.imgSrc || DEFAULT_IMAGE,
+    imgSrc: getBestImageUrl(product.imgSrc, 'medium') || DEFAULT_IMAGE,
+    imgHover: getBestImageUrl(product.imgHover, 'medium') || getBestImageUrl(product.imgSrc, 'medium') || DEFAULT_IMAGE,
     colors: Array.isArray(product.colors) ? product.colors.map(color => ({
       ...color,
-      imgSrc: color.imgSrc || DEFAULT_IMAGE
+      imgSrc: getBestImageUrl(color.imgSrc, 'medium') || DEFAULT_IMAGE
     })) : []
   };
 

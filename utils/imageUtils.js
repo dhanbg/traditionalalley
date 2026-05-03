@@ -34,26 +34,34 @@ export const getImageUrl = (imageUrl) => {
 export const getBestImageUrl = (imgSrc, preferredFormat = 'medium') => {
   if (!imgSrc) return "";
   
+  // If it's already a string, just pass it to getImageUrl
+  if (typeof imgSrc === 'string') {
+    return getImageUrl(imgSrc);
+  }
+
+  // Handle Strapi 5 array-wrapped media
+  const target = Array.isArray(imgSrc) ? imgSrc[0] : imgSrc;
+  if (!target) return "";
+
   let imageUrl = "";
   
+  // Handle data.attributes structure (Strapi 4)
+  const data = target.data?.attributes ? target.data.attributes : target;
+  
   // Try to get the preferred format first
-  if (imgSrc.formats && imgSrc.formats[preferredFormat]) {
-    imageUrl = imgSrc.formats[preferredFormat].url;
+  if (data.formats && data.formats[preferredFormat]) {
+    imageUrl = data.formats[preferredFormat].url;
   }
   // Fall back to other formats
-  else if (imgSrc.formats) {
-    if (imgSrc.formats.medium) imageUrl = imgSrc.formats.medium.url;
-    else if (imgSrc.formats.small) imageUrl = imgSrc.formats.small.url;
-    else if (imgSrc.formats.thumbnail) imageUrl = imgSrc.formats.thumbnail.url;
-    else if (imgSrc.formats.large) imageUrl = imgSrc.formats.large.url;
+  else if (data.formats) {
+    if (data.formats.medium) imageUrl = data.formats.medium.url;
+    else if (data.formats.small) imageUrl = data.formats.small.url;
+    else if (data.formats.thumbnail) imageUrl = data.formats.thumbnail.url;
+    else if (data.formats.large) imageUrl = data.formats.large.url;
   }
   // Fall back to the main URL
-  else if (imgSrc.url) {
-    imageUrl = imgSrc.url;
-  }
-  // Handle data.attributes structure
-  else if (imgSrc.data && imgSrc.data.attributes) {
-    imageUrl = imgSrc.data.attributes.url;
+  else if (data.url) {
+    imageUrl = data.url;
   }
   
   return getImageUrl(imageUrl);

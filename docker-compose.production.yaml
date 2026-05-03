@@ -3,9 +3,7 @@ version: "3.8"
 services:
   nextjs:
     image: docker.io/traditionalalley/ta-frontend:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
+    container_name: nextjs-alley-production
     restart: unless-stopped
     env_file:
       - .env.production
@@ -13,7 +11,7 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: production
-      STRAPI_INTERNAL_URL: "http://strapi-alley-prod-v3:1337"
+      STRAPI_INTERNAL_URL: "http://strapi-alley-production:1337"
       # Runtime environment variables
       CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
       CLERK_WEBHOOK_SECRET: ${CLERK_WEBHOOK_SECRET}
@@ -54,18 +52,14 @@ services:
           cpus: '0.2'
           memory: 256M
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/favicon.ico" ]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/ping" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
     networks:
       - alley-network
-      - strapi-network
 
 networks:
   alley-network:
     driver: bridge
-  strapi-network:
-    external: true
-    name: traditional_strapi_strapi-production-network

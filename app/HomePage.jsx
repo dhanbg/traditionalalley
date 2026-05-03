@@ -142,9 +142,9 @@ export default function Home({
             <Header1 />
             <MarqueeSection />
             <Hero initialSlidesRaw={initialHeroSlidesRaw} isMobileInitial={isMobileInitial} />
-            <PromoHero />
+            {/* <PromoHero /> */}
             <Collections />
-            {/* <Products /> */}
+            <Products />
             {/* <BannerCollection /> */}
             <BannerCountdown initialOfferData={initialOfferData} />
             {/* <Testimonials3 /> */}

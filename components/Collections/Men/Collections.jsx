@@ -5,6 +5,7 @@ import Image from "next/image";
 // Removed Swiper imports - now using grid layout
 import { fetchDataFromApi } from "@/utils/api";
 import { API_URL, COLLECTIONS_API } from "@/utils/urls";
+import { getBestImageUrl } from "@/utils/imageUtils";
 
 export default function Collections() {
   const [collections, setCollections] = useState([]);
@@ -13,10 +14,14 @@ export default function Collections() {
     const fetchCollections = async () => {
       try {
         const response = await fetchDataFromApi(COLLECTIONS_API);
+        if (!response || !response.data || !Array.isArray(response.data)) {
+          return;
+        }
+
         // Filter collections by Men category relation from Strapi
         const filteredCollections = response.data.filter(item => {
-          const name = (item.name || "").toLowerCase();
-          const slug = (item.slug || "").toLowerCase();
+          const name = (item.attributes?.name || item.name || "").toLowerCase();
+          const slug = (item.attributes?.slug || item.slug || "").toLowerCase();
           
           // Whitelist for Men's portal
           const menItems = ["daura surwal", "tops"];
@@ -29,32 +34,12 @@ export default function Collections() {
           id: item.id,
           name: item.attributes?.name || item.name || "Unnamed Collection",
           slug: item.attributes?.slug || item.slug || `collection-${item.id}`,
-          image: getImageUrl(item),
+          image: getBestImageUrl(item.attributes?.image || item.image) || "/logo.png",
         }));
         setCollections(transformedCollections);
       } catch (error) {
         // Silently handle error
       }
-    };
-
-    // Helper function to extract the correct image URL
-    const getImageUrl = (item) => {
-      // For attributes-based structure (Strapi v4)
-      if (item.attributes?.image?.data?.attributes) {
-        const imageData = item.attributes.image.data.attributes;
-        // Use medium format if available, otherwise use the main URL
-        const imageUrl = imageData.formats?.medium?.url || imageData.url;
-        return imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`;
-      }
-      
-      // For direct structure
-      if (item.image) {
-        // Use medium format if available, otherwise use the main URL
-        const imageUrl = item.image.formats?.medium?.url || item.image.url;
-        return imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`;
-      }
-      
-      return "/logo.png";
     };
 
     fetchCollections();

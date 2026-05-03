@@ -18,95 +18,6 @@ import { fetchDataFromApi } from "../../../utils/api";
 import PriceDisplay from "@/components/common/PriceDisplay";
 
 export default function Details1({ product, variants = [], preferredVariantId = null }) {
-  // Helper function to process image URLs consistently
-  const processImageUrl = (imgData) => {
-    if (!imgData) return '/logo.png';
-
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
-
-    // If it's already a string URL, return it
-    if (typeof imgData === 'string') {
-      return imgData.startsWith('http') ? imgData : `${API_URL}${imgData}`;
-    }
-
-    // If it's a Strapi media object, extract the URL
-    if (imgData.url) {
-      return imgData.url.startsWith('http') ? imgData.url : `${API_URL}${imgData.url}`;
-    }
-
-    // Try formats if available
-    if (imgData.formats) {
-      if (imgData.formats.medium?.url) {
-        const url = imgData.formats.medium.url;
-        return url.startsWith('http') ? url : `${API_URL}${url}`;
-      }
-      if (imgData.formats.small?.url) {
-        const url = imgData.formats.small.url;
-        return url.startsWith('http') ? url : `${API_URL}${url}`;
-      }
-    }
-
-    return '/logo.png';
-  };
-
-  // Helper function to process gallery items with thumbnails
-  const processGalleryItems = (galleryArray) => {
-    if (!galleryArray || !Array.isArray(galleryArray)) return [];
-
-    return galleryArray.map(item => {
-      if (!item) return null;
-
-      // If it's already a string URL, return it directly
-      if (typeof item === 'string') return item;
-
-      // Create a copy of the item to avoid mutating the original
-      const processedItem = { ...item };
-
-      // Get the best available image URL (prefer large, fall back to medium, then small, then original)
-      let bestImageUrl = null;
-
-      // Try different formats in order of preference
-      if (item.formats) {
-        if (item.formats.large?.url) {
-          bestImageUrl = item.formats.large.url;
-        } else if (item.formats.medium?.url) {
-          bestImageUrl = item.formats.medium.url;
-        } else if (item.formats.small?.url) {
-          bestImageUrl = item.formats.small.url;
-        } else if (item.formats.thumbnail?.url) {
-          bestImageUrl = item.formats.thumbnail.url;
-        }
-      }
-
-      // Fall back to main URL if no formats available
-      if (!bestImageUrl && item.url) {
-        bestImageUrl = item.url;
-      }
-
-      // Only process the URL once through getBestImageUrl if we have a URL
-      if (bestImageUrl) {
-        // Check if it's already a complete URL
-        if (bestImageUrl.startsWith('http')) {
-          bestImageUrl = bestImageUrl;
-        } else {
-          // Only add API_URL if it's a relative URL
-          const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
-          bestImageUrl = `${API_URL}${bestImageUrl}`;
-        }
-      }
-
-      // Update the URL if we found a valid one
-      if (bestImageUrl) {
-        processedItem.url = bestImageUrl;
-      } else if (processedItem.url && !processedItem.url.startsWith('http')) {
-        // Fallback to the old behavior if no URL was found
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
-        processedItem.url = `${API_URL}${processedItem.url}`;
-      }
-
-      return processedItem;
-    });
-  };
 
   // Set default values for missing properties to prevent errors
   const safeProduct = {
@@ -115,9 +26,14 @@ export default function Details1({ product, variants = [], preferredVariantId = 
     sizes: product.sizes || [],
     price: product.price || 0,
     oldPrice: product.oldPrice || null,
-    imgSrc: processImageUrl(product.imgSrc) || getBestImageUrl(product.imgSrc, 'medium') || '/logo.png',
-    imgHover: processImageUrl(product.imgHover) || processImageUrl(product.imgSrc) || '/logo.png',
-    gallery: processGalleryItems(product.gallery || [])
+    imgSrc: getBestImageUrl(product.imgSrc, 'medium') || '/logo.png',
+    imgHover: getBestImageUrl(product.imgHover, 'medium') || getBestImageUrl(product.imgSrc, 'medium') || '/logo.png',
+    gallery: Array.isArray(product.gallery) 
+      ? product.gallery.map(item => ({ 
+          ...item, 
+          url: getBestImageUrl(item, 'large') 
+        })) 
+      : []
   };
 
   const [activeColor, setActiveColor] = useState(
@@ -203,12 +119,11 @@ export default function Details1({ product, variants = [], preferredVariantId = 
   }
 
   const [activeVariant, setActiveVariant] = useState(initialActive);
-  // Initialize currentProduct with properly processed images from the start
   const [currentProduct, setCurrentProduct] = useState({
     ...safeProduct,
-    imgSrc: processImageUrl(safeProduct.imgSrc) || safeProduct.imgSrc,
-    imgHover: processImageUrl(safeProduct.imgHover) || processImageUrl(safeProduct.imgSrc) || safeProduct.imgHover,
-    gallery: processGalleryItems(safeProduct.gallery || [])
+    imgSrc: getBestImageUrl(safeProduct.imgSrc, 'medium'),
+    imgHover: getBestImageUrl(safeProduct.imgHover, 'medium') || getBestImageUrl(safeProduct.imgSrc, 'medium'),
+    gallery: safeProduct.gallery
   });
 
   // Helper function to extract design name from variant
@@ -260,25 +175,20 @@ export default function Details1({ product, variants = [], preferredVariantId = 
         .filter(variant => !variant.isCurrentProduct) // Filter out the main product variant to avoid duplicates
         .map((variant, index) => ({
           id: index + 1,
-          src: processImageUrl(variant.imgSrc),
-          alt: extractDesignFromVariant(variant),
-          color: extractDesignFromVariant(variant),
-          width: 600,
-          height: 800,
-          imgSrc: processImageUrl(variant.imgSrc),
-          imgHover: processImageUrl(variant.imgHover) || processImageUrl(variant.imgSrc)
+          imgSrc: getBestImageUrl(variant.imgSrc, 'medium'),
+          imgHover: getBestImageUrl(variant.imgHover, 'medium') || getBestImageUrl(variant.imgSrc, 'medium')
         }));
     }
     // Fallback to original color mapping
     if (safeProduct.colors && safeProduct.colors.length > 0 && safeProduct.colors[0].imgSrc) {
       return safeProduct.colors.map((color, index) => ({
         id: index + 1,
-        src: processImageUrl(color.imgSrc),
+        src: getBestImageUrl(color.imgSrc, 'medium'),
         alt: color.name,
         color: color.name,
         width: 600,
         height: 800,
-        imgSrc: processImageUrl(color.imgSrc)
+        imgSrc: getBestImageUrl(color.imgSrc, 'medium')
       }));
     }
     return undefined;
@@ -346,14 +256,15 @@ export default function Details1({ product, variants = [], preferredVariantId = 
   // Add state for wishlist operations
   const [wishlistLoading, setWishlistLoading] = useState(false);
 
-  // Update currentProduct when activeVariant changes
   useEffect(() => {
     if (activeVariant && safeProduct) {
       setCurrentProduct({
         ...safeProduct,
-        imgSrc: processImageUrl(activeVariant.imgSrc) || processImageUrl(safeProduct.imgSrc),
-        imgHover: processImageUrl(activeVariant.imgHover) || processImageUrl(activeVariant.imgSrc) || processImageUrl(safeProduct.imgHover),
-        gallery: processGalleryItems(activeVariant.gallery && activeVariant.gallery.length > 0 ? activeVariant.gallery : safeProduct.gallery),
+        imgSrc: getBestImageUrl(activeVariant.imgSrc, 'medium') || getBestImageUrl(safeProduct.imgSrc, 'medium'),
+        imgHover: getBestImageUrl(activeVariant.imgHover, 'medium') || getBestImageUrl(activeVariant.imgSrc, 'medium') || getBestImageUrl(safeProduct.imgHover, 'medium'),
+        gallery: Array.isArray(activeVariant.gallery) && activeVariant.gallery.length > 0 
+          ? activeVariant.gallery.map(item => ({ ...item, url: getBestImageUrl(item, 'large') }))
+          : safeProduct.gallery,
         inStock: calculateInStock(activeVariant),
         quantity: activeVariant.quantity
       });
@@ -557,9 +468,11 @@ export default function Details1({ product, variants = [], preferredVariantId = 
     if (variant) {
       setCurrentProduct({
         ...safeProduct,
-        imgSrc: processImageUrl(variant.imgSrc),
-        imgHover: processImageUrl(variant.imgHover) || processImageUrl(safeProduct.imgHover),
-        gallery: processGalleryItems(variant.gallery && variant.gallery.length > 0 ? variant.gallery : safeProduct.gallery),
+        imgSrc: getBestImageUrl(variant.imgSrc, 'medium'),
+        imgHover: getBestImageUrl(variant.imgHover, 'medium') || getBestImageUrl(safeProduct.imgHover, 'medium'),
+        gallery: Array.isArray(variant.gallery) && variant.gallery.length > 0 
+          ? variant.gallery.map(item => ({ ...item, url: getBestImageUrl(item, 'large') }))
+          : safeProduct.gallery,
         inStock: calculateInStock(variant),
         quantity: variant.quantity
       });
