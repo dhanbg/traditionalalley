@@ -4,6 +4,24 @@ export const dynamic = 'force-dynamic';
 
 import { INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
 
+const STRAPI_PUBLIC_URL = 'https://admin.traditionalalley.com.np';
+
+function rewriteImageUrls(obj: any): any {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(rewriteImageUrls);
+  const result: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === 'string' && value.startsWith('/uploads/')) {
+      result[key] = `${STRAPI_PUBLIC_URL}${value}`;
+    } else if (typeof value === 'object' && value !== null) {
+      result[key] = rewriteImageUrls(value);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -37,7 +55,7 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await strapiResponse.json();
-    return NextResponse.json(data);
+    return NextResponse.json(rewriteImageUrls(data));
   } catch (error) {
     console.error('Error in product-variants API route:', error);
     return NextResponse.json(

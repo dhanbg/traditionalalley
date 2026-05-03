@@ -2,6 +2,34 @@ import { NextResponse } from 'next/server';
 import { INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
 
 export const dynamic = 'force-dynamic';
+
+// The public-facing Strapi domain for media assets
+const STRAPI_PUBLIC_URL = 'https://admin.traditionalalley.com.np';
+
+/**
+ * Recursively rewrites all /uploads/ relative URLs in Strapi JSON to absolute URLs.
+ * This ensures images load correctly regardless of the NEXT_PUBLIC_API_URL env var.
+ */
+function rewriteImageUrls(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+
+  if (Array.isArray(obj)) {
+    return obj.map(rewriteImageUrls);
+  }
+
+  const result = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === 'string' && value.startsWith('/uploads/')) {
+      result[key] = `${STRAPI_PUBLIC_URL}${value}`;
+    } else if (typeof value === 'object' && value !== null) {
+      result[key] = rewriteImageUrls(value);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 export async function GET(request) {
   let strapiUrl;
   try {
@@ -32,12 +60,14 @@ export async function GET(request) {
     }
 
     const products = await response.json();
-    console.log('Products data from Strapi:', products);
 
-    return NextResponse.json(products);
+    // Rewrite /uploads/ relative image URLs to absolute Strapi URLs
+    const rewritten = rewriteImageUrls(products);
+
+    return NextResponse.json(rewritten);
   } catch (error) {
     // Log the error and the Strapi URL (without token) for debugging
-    console.error('Error fetching collections from Strapi:', error.message);
+    console.error('Error fetching products from Strapi:', error.message);
     if (strapiUrl) {
       console.error('Strapi URL:', strapiUrl);
     } else {
@@ -45,7 +75,7 @@ export async function GET(request) {
     }
 
     return NextResponse.json({ 
-      error: 'Failed to fetch collections', 
+      error: 'Failed to fetch products', 
       details: error.message,
       strapiUrl: strapiUrl || null
     }, { status: 500 });
