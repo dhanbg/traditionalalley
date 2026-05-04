@@ -1,7 +1,28 @@
 import { NextResponse } from 'next/server';
-import { INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
+import { API_URL, INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
 
 export const dynamic = 'force-dynamic';
+
+function rewriteImageUrls(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+
+  if (Array.isArray(obj)) {
+    return obj.map(rewriteImageUrls);
+  }
+
+  const result = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === 'string' && value.startsWith('/uploads/')) {
+      result[key] = `${API_URL}${value}`;
+    } else if (typeof value === 'object' && value !== null) {
+      result[key] = rewriteImageUrls(value);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 export async function GET(request) {
   let strapiUrl;
   try {
@@ -32,9 +53,8 @@ export async function GET(request) {
     }
 
     const collections = await response.json();
-    console.log('Collections data from Strapi:', collections);
 
-    return NextResponse.json(collections);
+    return NextResponse.json(rewriteImageUrls(collections));
   } catch (error) {
     // Log the error and the Strapi URL (without token) for debugging
     console.error('Error fetching collections from Strapi:', error.message);

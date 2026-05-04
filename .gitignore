@@ -32,6 +32,29 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env
 .env.local
+.env.production
+vps_env.txt
+vps_*_api.*
+
+# local debug/output artifacts
+curled*.json
+debug-*.html
+out.txt
+temp*.json
+test_*output*.txt
+new_prices*.txt
+usd_prices.txt
+*_prices.txt
+*.fixed
+calc_new_prices.js
+check_strapi_api.js
+convert_prices.js
+get_raw_prices.js
+get_true_prices.js
+test_clean.json
+test_pop_combos.js
+test_production_api.js
+test_strapi_populate.js
 
 # vercel
 .vercel
