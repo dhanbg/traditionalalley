@@ -6,10 +6,8 @@ import Header1 from "@/components/headers/Header1";
 // import Topbar from "@/components/headers/Topbar";
 import BannerCountdown from "@/components/homes/BannerCountdown";
 import Blogs from "@/components/homes/Blogs";
-import Collections from "@/components/homes/Categories";
 import Features from "@/components/common/Features";
 import Hero from "@/components/homes/Hero";
-import Products from "@/components/common/Products3";
 import InstagramVideoCards from "@/components/common/InstagramVideoCards";
 import TopPicks from "@/components/common/TopPicks";
 import PromoHero from "@/components/common/PromoHero";
@@ -143,8 +141,8 @@ export default function Home({
             <MarqueeSection />
             <Hero initialSlidesRaw={initialHeroSlidesRaw} isMobileInitial={isMobileInitial} />
             {/* <PromoHero /> */}
-            <Collections />
-            <Products />
+            {/* <Collections /> */}
+            {/* <Products /> */}
             {/* <BannerCollection /> */}
             <BannerCountdown initialOfferData={initialOfferData} />
             {/* <Testimonials3 /> */}
