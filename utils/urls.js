@@ -12,7 +12,7 @@ export const INTERNAL_API_URL = (typeof window === 'undefined')
 
 // Strapi 5 populate helpers - populate=* populates 1st level relations/media. For deep, use strictly valid syntax.
 export const PRODUCT_POPULATE = "populate[imgSrc][populate]=*&populate[imgHover][populate]=*&populate[gallery][populate]=*&populate[collection][populate]=*&populate[product_variants][populate]=*&populate[customer_reviews][populate]=*";
-export const COLLECTION_POPULATE = "populate=*&populate[category][populate]=*&populate[products][populate]=*";
+export const COLLECTION_POPULATE = "populate[image][populate]=*&populate[category][populate]=*&populate[products][populate]=*";
 export const VARIANT_POPULATE = "populate[imgSrc][populate]=*&populate[imgHover][populate]=*&populate[gallery][populate]=*&populate[product][populate][collection][populate]=*";
 export const TOP_PICKS_POPULATE = "populate=*&populate[products][populate]=*&populate[product_variants][populate]=*";
 
