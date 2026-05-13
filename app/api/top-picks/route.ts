@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-import { INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
-
-const STRAPI_PUBLIC_URL = 'https://admin.traditionalalley.com.np';
+import { API_URL, INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
 
 function rewriteImageUrls(obj: any): any {
   if (!obj || typeof obj !== 'object') return obj;
@@ -12,7 +10,7 @@ function rewriteImageUrls(obj: any): any {
   const result: any = {};
   for (const [key, value] of Object.entries(obj)) {
     if (typeof value === 'string' && value.startsWith('/uploads/')) {
-      result[key] = `${STRAPI_PUBLIC_URL}${value}`;
+      result[key] = `${API_URL}${value}`;
     } else if (typeof value === 'object' && value !== null) {
       result[key] = rewriteImageUrls(value);
     } else {

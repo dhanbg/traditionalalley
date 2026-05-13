@@ -16,19 +16,18 @@ export default function Collections() {
         if (!response || !response.data || !Array.isArray(response.data)) {
           return;
         }
-        
+
         // Filter collections by Women category relation from Strapi
         const filteredCollections = response.data.filter(item => {
-          const name = (item.attributes?.name || item.name || "").toLowerCase();
-          const slug = (item.attributes?.slug || item.slug || "").toLowerCase();
-          
-          // Whitelist for Women's portal
-          const womenItems = ["gown", "dresses", "lehenga", "kurtha", "graduation", "saree", "blazer", "lady", "corset", "ordinate"];
-          if (womenItems.some(i => name.includes(i) || slug.includes(i))) return true;
-          
-          return false; // Hide everything else if it doesn't match the whitelist
+          // Use the actual category relation from Strapi data
+          const category = item.attributes?.category || item.category;
+          if (category) {
+            const categoryTitle = (category.data?.attributes?.title || category.title || "").toLowerCase();
+            return categoryTitle === "women";
+          }
+          return false;
         });
-        
+
         const transformedCollections = filteredCollections.map((item) => ({
           id: item.id,
           name: item.attributes?.name || item.name || "Unnamed Collection",

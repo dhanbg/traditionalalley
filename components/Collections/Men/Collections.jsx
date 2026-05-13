@@ -9,7 +9,7 @@ import { getBestImageUrl } from "@/utils/imageUtils";
 
 export default function Collections() {
   const [collections, setCollections] = useState([]);
-  
+
   useEffect(() => {
     const fetchCollections = async () => {
       try {
@@ -20,16 +20,15 @@ export default function Collections() {
 
         // Filter collections by Men category relation from Strapi
         const filteredCollections = response.data.filter(item => {
-          const name = (item.attributes?.name || item.name || "").toLowerCase();
-          const slug = (item.attributes?.slug || item.slug || "").toLowerCase();
-          
-          // Whitelist for Men's portal
-          const menItems = ["daura surwal", "tops"];
-          if (menItems.some(i => name.includes(i) || slug.includes(i))) return true;
-          
-          return false; // Hide everything else if it doesn't match the whitelist
+          // Use the actual category relation from Strapi data
+          const category = item.attributes?.category || item.category;
+          if (category) {
+            const categoryTitle = (category.data?.attributes?.title || category.title || "").toLowerCase();
+            return categoryTitle === "men";
+          }
+          return false;
         });
-        
+
         const transformedCollections = filteredCollections.map((item) => ({
           id: item.id,
           name: item.attributes?.name || item.name || "Unnamed Collection",
@@ -44,7 +43,7 @@ export default function Collections() {
 
     fetchCollections();
   }, []);
-  
+
   return (
     <section className="flat-spacing-2">
       <div className="container">

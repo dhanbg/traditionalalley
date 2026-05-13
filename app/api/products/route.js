@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
-import { INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
+import { API_URL, INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
 
 export const dynamic = 'force-dynamic';
-
-// The public-facing Strapi domain for media assets
-const STRAPI_PUBLIC_URL = 'https://admin.traditionalalley.com.np';
 
 /**
  * Recursively rewrites all /uploads/ relative URLs in Strapi JSON to absolute URLs.
@@ -20,7 +17,7 @@ function rewriteImageUrls(obj) {
   const result = {};
   for (const [key, value] of Object.entries(obj)) {
     if (typeof value === 'string' && value.startsWith('/uploads/')) {
-      result[key] = `${STRAPI_PUBLIC_URL}${value}`;
+      result[key] = `${API_URL}${value}`;
     } else if (typeof value === 'object' && value !== null) {
       result[key] = rewriteImageUrls(value);
     } else {

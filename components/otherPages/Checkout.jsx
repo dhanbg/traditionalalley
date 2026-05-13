@@ -18,62 +18,7 @@ import { getVariantAwareTitle } from "@/utils/titleUtils";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
 
-// Function to get small format image URL from product image object
-const getThumbnailImageUrl = (imgSrc) => {
-  // If it's already a string URL, check if we can convert it to small format
-  if (typeof imgSrc === 'string') {
-    // If it contains medium_ or large_, replace with small_
-    if (imgSrc.includes('/medium_') || imgSrc.includes('/large_')) {
-      return imgSrc.replace(/\/(medium|large)_/, '/small_');
-    }
-    // If it's a regular upload URL without size prefix, add small_ prefix
-    if (imgSrc.includes('/uploads/') && !imgSrc.includes('/small_') && !imgSrc.includes('/medium_') && !imgSrc.includes('/large_') && !imgSrc.includes('/thumbnail_')) {
-      return imgSrc.replace('/uploads/', '/uploads/small_');
-    }
-    return imgSrc;
-  }
-
-  // If it's an object with formats, prioritize small format
-  if (imgSrc && typeof imgSrc === 'object') {
-    // Prioritize small format for better performance in cart
-    if (imgSrc.formats && imgSrc.formats.small && imgSrc.formats.small.url) {
-      return imgSrc.formats.small.url.startsWith('http')
-        ? imgSrc.formats.small.url
-        : `${API_URL}${imgSrc.formats.small.url}`;
-    }
-    // Fallback to thumbnail if small not available
-    else if (imgSrc.formats && imgSrc.formats.thumbnail && imgSrc.formats.thumbnail.url) {
-      return imgSrc.formats.thumbnail.url.startsWith('http')
-        ? imgSrc.formats.thumbnail.url
-        : `${API_URL}${imgSrc.formats.thumbnail.url}`;
-    }
-    // Fallback to medium if neither small nor thumbnail available
-    else if (imgSrc.formats && imgSrc.formats.medium && imgSrc.formats.medium.url) {
-      return imgSrc.formats.medium.url.startsWith('http')
-        ? imgSrc.formats.medium.url
-        : `${API_URL}${imgSrc.formats.medium.url}`;
-    }
-    // Fallback to original URL with small_ prefix added
-    else if (imgSrc.url) {
-      let originalUrl = imgSrc.url.startsWith('http')
-        ? imgSrc.url
-        : `${API_URL}${imgSrc.url}`;
-
-      // Try to convert original URL to small format
-      if (originalUrl.includes('/medium_') || originalUrl.includes('/large_')) {
-        return originalUrl.replace(/\/(medium|large)_/, '/small_');
-      }
-      // If it's a regular upload URL, add small_ prefix
-      else if (originalUrl.includes('/uploads/') && !originalUrl.includes('/small_') && !originalUrl.includes('/medium_') && !originalUrl.includes('/large_') && !originalUrl.includes('/thumbnail_')) {
-        return originalUrl.replace('/uploads/', '/uploads/small_');
-      }
-      return originalUrl;
-    }
-  }
-
-  // Return fallback image if nothing works
-  return '/images/products/default-product.jpg';
-};
+import { getBestImageUrl } from "@/utils/imageUtils";
 
 // Build product detail URL with preferred variant when applicable
 const buildProductDetailHref = (item) => {
@@ -2099,7 +2044,7 @@ export default function Checkout() {
                               <div style={{ position: 'relative', width: '80px', height: '106px', flexShrink: 0, border: '1px solid #f0f0f0', borderRadius: '4px', overflow: 'hidden' }}>
                                 <Image
                                   alt="img-product"
-                                  src={getThumbnailImageUrl(elm.imgSrc)}
+                                  src={getBestImageUrl(elm.imgSrc, 'small')}
                                   fill
                                   sizes="80px"
                                   style={{ objectFit: 'cover' }}

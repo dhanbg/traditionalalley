@@ -264,9 +264,8 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
       setCountriesError('');
 
       // First, get the total count to determine number of pages
-      const initialResponse = await fetch(`${API_BASE_URL}/api/shipping-rates?populate=*&pagination[pageSize]=25`, {
+      const initialResponse = await fetch('/api/shipping-rates?populate=*&pagination[pageSize]=25', {
         headers: {
-          'Authorization': `Bearer ${API_TOKEN}`,
           'Content-Type': 'application/json'
         }
       });
@@ -282,9 +281,8 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
       const allCountries = new Set();
 
       for (let page = 1; page <= totalPages; page++) {
-        const response = await fetch(`${API_BASE_URL}/api/shipping-rates?populate=*&pagination[page]=${page}&pagination[pageSize]=25`, {
+        const response = await fetch(`/api/shipping-rates?populate=*&pagination[page]=${page}&pagination[pageSize]=25`, {
           headers: {
-            'Authorization': `Bearer ${API_TOKEN}`,
             'Content-Type': 'application/json'
           }
         });
@@ -342,9 +340,8 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
     try {
       setLoadingServiceTypes(true);
 
-      const response = await fetch(`${API_BASE_URL}/api/shipping-rates?filters[country_code][$eq]=${countryCode}&populate=*`, {
+      const response = await fetch(`/api/shipping-rates?filters[country_code][$eq]=${countryCode}&populate=*`, {
         headers: {
-          'Authorization': `Bearer ${API_TOKEN}`,
           'Content-Type': 'application/json'
         }
       });
