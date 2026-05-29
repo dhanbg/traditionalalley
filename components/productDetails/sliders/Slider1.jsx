@@ -30,17 +30,8 @@ export default function Slider1({
   useEffect(() => {
     // Helper function to generate thumbnail URL from main URL
     const generateThumbnailUrl = (mainUrl) => {
-      if (!mainUrl) return mainUrl;
-      
-      // Convert: /uploads/DSC_05252_570f97c504.jpg
-      // To: /uploads/thumbnail_DSC_05252_570f97c504.jpg
-      const urlParts = mainUrl.split('/');
-      const filename = urlParts[urlParts.length - 1];
-      if (filename && !filename.startsWith('thumbnail_')) {
-        const thumbnailFilename = `thumbnail_${filename}`;
-        urlParts[urlParts.length - 1] = thumbnailFilename;
-        return urlParts.join('/');
-      }
+      // Next.js Image component automatically optimizes and resizes images.
+      // Guessing the 'thumbnail_' prefix leads to 404 errors if Strapi didn't generate it.
       return mainUrl;
     };
 
