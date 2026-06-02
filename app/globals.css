@@ -2217,3 +2217,382 @@ img {
     --sidebar-ring: oklch(0.556 0 0);
   }
 }
+
+/* ==========================================================================
+   WORLD CUP CORSET JERSEY TEASER CAMPAIGN STYLES (MATCHES VANTAGE BRAND)
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700;800&family=Outfit:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+
+.teaser-content-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 9%;
+  padding-right: 9%;
+  z-index: 10;
+  font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+  background: rgba(255, 255, 255, 0.02);
+}
+.teaser-left-content {
+  max-width: 580px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  animation: fadeInUpTeaser 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes fadeInUpTeaser {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.teaser-badge {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: #dfba6b;
+  margin-bottom: 1.8rem;
+  text-transform: uppercase;
+  font-family: 'Outfit', sans-serif;
+}
+.teaser-headline {
+  font-size: 5.0rem !important;
+  font-weight: 800 !important;
+  line-height: 0.9 !important;
+  letter-spacing: -0.01em !important;
+  color: #111111 !important;
+  margin-bottom: 1.8rem !important;
+  text-transform: uppercase !important;
+  font-family: 'Oswald', sans-serif !important;
+}
+.teaser-headline span.gold-text {
+  color: #dfba6b !important;
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  -webkit-text-fill-color: unset !important;
+}
+.teaser-description {
+  font-size: 1.0rem;
+  color: #333333;
+  line-height: 1.5;
+  margin-bottom: 2.5rem;
+  max-width: 480px;
+  font-weight: 400;
+  font-family: 'Outfit', sans-serif;
+}
+.teaser-actions {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 4.5rem;
+  width: 100%;
+}
+.teaser-btn-gold {
+  background: #dfba6b !important;
+  color: #111111 !important;
+  border: none !important;
+  padding: 1.0rem 2.8rem !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.15em !important;
+  border-radius: 0px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.6rem !important;
+  transition: all 0.3s ease !important;
+  font-family: 'Outfit', sans-serif !important;
+  text-transform: uppercase !important;
+}
+.teaser-btn-gold:hover {
+  background: #d4ae59 !important;
+}
+.teaser-btn-gold .arrow {
+  font-size: 1.1rem;
+  transition: transform 0.3s ease;
+  line-height: 1;
+}
+.teaser-btn-gold:hover .arrow {
+  transform: translateX(4px);
+}
+.teaser-btn-outline {
+  background: transparent !important;
+  color: #111111 !important;
+  border: 1.5px solid #111111 !important;
+  padding: 1.0rem 2.8rem !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.15em !important;
+  border-radius: 0px !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  transition: all 0.3s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-family: 'Outfit', sans-serif !important;
+  text-transform: uppercase !important;
+}
+.teaser-btn-outline:hover {
+  background: #111111 !important;
+  color: #ffffff !important;
+}
+.teaser-countdown-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0px;
+  width: 100%;
+  margin-top: 1.5rem;
+}
+.teaser-countdown-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #dfba6b;
+  white-space: nowrap;
+  font-family: 'Outfit', sans-serif;
+  border-left: 2.5px solid #dfba6b;
+  padding-left: 12px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+.teaser-countdown-divider {
+  width: 1px;
+  height: 35px;
+  background: rgba(0, 0, 0, 0.15);
+  margin-left: 1.8rem;
+  margin-right: 1.8rem;
+}
+.teaser-countdown-values {
+  display: flex;
+  align-items: center;
+  gap: 0px;
+}
+.teaser-countdown-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+}
+.teaser-countdown-item .val {
+  font-size: 2.4rem !important;
+  font-weight: 700 !important;
+  color: #111111 !important;
+  line-height: 1 !important;
+  font-family: 'Outfit', sans-serif !important;
+}
+.teaser-countdown-item .lbl {
+  font-size: 0.65rem !important;
+  font-weight: 700 !important;
+  color: #111111 !important;
+  letter-spacing: 0.12em !important;
+  margin-top: 0.4rem !important;
+  font-family: 'Outfit', sans-serif !important;
+}
+.teaser-countdown-item-divider {
+  width: 1px;
+  height: 35px;
+  background: rgba(0, 0, 0, 0.15);
+  margin-left: 1.8rem;
+  margin-right: 1.8rem;
+}
+
+/* Premium Email Modal Styles */
+.teaser-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  opacity: 0;
+  animation: fadeInOverlay 0.3s ease-out forwards;
+}
+@keyframes fadeInOverlay {
+  to { opacity: 1; }
+}
+.teaser-modal-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 3rem;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  position: relative;
+  text-align: center;
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  transform: translateY(20px);
+  animation: slideUpCard 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  font-family: 'Outfit', sans-serif;
+}
+@keyframes slideUpCard {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.teaser-modal-close {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: transparent;
+  border: none;
+  font-size: 1.8rem;
+  cursor: pointer;
+  color: #999999;
+  transition: color 0.2s;
+  line-height: 1;
+}
+.teaser-modal-close:hover {
+  color: #111111;
+}
+.teaser-modal-icon {
+  font-size: 2.5rem;
+  color: #dfba6b;
+  margin-bottom: 1rem;
+}
+.teaser-modal-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #111111;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.teaser-modal-subtitle {
+  font-size: 0.95rem;
+  color: #666666;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+.teaser-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+.teaser-input {
+  padding: 1rem 1.2rem;
+  border: 1.5px solid #dddddd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: 'Outfit', sans-serif;
+}
+.teaser-input:focus {
+  border-color: #dfba6b;
+}
+.teaser-modal-btn {
+  background: #111111;
+  color: #ffffff;
+  border: none;
+  padding: 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: 'Outfit', sans-serif;
+}
+.teaser-modal-btn:hover {
+  background: #333333;
+}
+.teaser-status-msg {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.teaser-status-msg.success {
+  color: #2e7d32;
+}
+.teaser-status-msg.error {
+  color: #c62828;
+}
+
+/* Responsive rules */
+@media (max-width: 768px) {
+  .teaser-content-container {
+    padding-left: 6% !important;
+    padding-right: 6% !important;
+    padding-top: 15% !important;
+    align-items: flex-start !important;
+  }
+  .teaser-left-content {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .teaser-headline {
+    font-size: 3.2rem !important;
+  }
+  .teaser-description {
+    font-size: 0.95rem !important;
+    margin-bottom: 1.8rem !important;
+  }
+  .teaser-actions {
+    flex-direction: column !important;
+    gap: 0.8rem !important;
+    margin-bottom: 3.0rem !important;
+  }
+  .teaser-btn-gold, .teaser-btn-outline {
+    width: 100% !important;
+    padding: 0.9rem !important;
+    justify-content: center !important;
+  }
+  .teaser-countdown-wrap {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0px !important;
+    margin-top: 2rem !important;
+    width: 100% !important;
+    flex-wrap: wrap !important;
+  }
+  .teaser-countdown-divider {
+    margin-left: 0.8rem !important;
+    margin-right: 0.8rem !important;
+    height: 25px !important;
+  }
+  .teaser-countdown-item-divider {
+    margin-left: 0.8rem !important;
+    margin-right: 0.8rem !important;
+    height: 25px !important;
+  }
+  .teaser-countdown-item {
+    min-width: 40px !important;
+  }
+  .teaser-countdown-item .val {
+    font-size: 1.6rem !important;
+  }
+  .teaser-countdown-item .lbl {
+    font-size: 0.55rem !important;
+    margin-top: 0.2rem !important;
+  }
+  .teaser-countdown-label {
+    font-size: 0.7rem !important;
+    padding-left: 8px !important;
+    height: 14px !important;
+  }
+  .teaser-modal-card {
+    padding: 2rem 1.5rem !important;
+    margin: 1rem !important;
+  }
+}

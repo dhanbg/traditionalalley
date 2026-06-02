@@ -5,30 +5,29 @@ export const localHeroSlides = [
   {
     id: "local-1",
     documentId: "local-1",
-    // ✅ Using static image instead of 6MB+ video
     media: {
-      url: "/images/tafall.jpg", // Desktop image
-      mime: "image/jpeg",
-      ext: ".jpg",
-      name: "tafall.jpg",
+      url: "/images/jersey_teaser.png", // Teaser Campaign Image
+      mime: "image/png",
+      ext: ".png",
+      name: "jersey_teaser.png",
     },
-    // Mobile image
     mobileMedia: {
-      url: "/images/tamfall.jpg",
-      mime: "image/jpeg",
-      ext: ".jpg",
-      name: "tamfall.jpg",
+      url: "/images/jersey_teaser_mobile.png",
+      mime: "image/png",
+      ext: ".png",
+      name: "jersey_teaser_mobile.png",
     },
     poster: {
-      url: "/images/tafall.jpg",
+      url: "/images/jersey_teaser_mobile.png",
     },
-    alt: "hero-slide-1",
-    subheading: "", // Empty - no subtitle
-    heading: "", // Empty - no title
-    btnText: "Shop Now",
+    alt: "World Cup Corset Jersey Teaser",
+    subheading: "A NEW MATCHDAY ERA",
+    heading: "SOMETHING\nICONIC\nIS COMING",
+    description: "A bold new drop is on the horizon.\nDesigned for moments that matter.",
+    btnText: "Notify Me",
     videoName: null,
+    isTeaser: true, // Custom campaign trigger
   },
-  // Second slide removed for cleaner, faster homepage
 ];
 
 export default localHeroSlides;

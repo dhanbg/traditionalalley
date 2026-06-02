@@ -44,6 +44,14 @@ export default function MarqueeSection() {
                             <span className="icon icon-lightning" style={iconStyle} />
                         </div>
 
+                        {/* Added: Made in Nepal */}
+                        <div className="marquee-child-item">
+                            <h3 className="text-uppercase" style={textStyle}>MADE IN NEPAL</h3>
+                        </div>
+                        <div className="marquee-child-item">
+                            <span className="icon icon-tag" style={iconStyle} />
+                        </div>
+
                         {/* 2 */}
                         <div className="marquee-child-item">
                             <h3 className="text-uppercase" style={textStyle}>10% OFF FIRST PURCHASE</h3>
@@ -58,6 +66,14 @@ export default function MarqueeSection() {
                         </div>
                         <div className="marquee-child-item">
                             <span className="icon icon-lightning" style={iconStyle} />
+                        </div>
+
+                        {/* Added: Made in Nepal */}
+                        <div className="marquee-child-item">
+                            <h3 className="text-uppercase" style={textStyle}>MADE IN NEPAL</h3>
+                        </div>
+                        <div className="marquee-child-item">
+                            <span className="icon icon-tag" style={iconStyle} />
                         </div>
 
                         {/* 3 */}
@@ -76,6 +92,14 @@ export default function MarqueeSection() {
                             <span className="icon icon-lightning" style={iconStyle} />
                         </div>
 
+                        {/* Added: Made in Nepal */}
+                        <div className="marquee-child-item">
+                            <h3 className="text-uppercase" style={textStyle}>MADE IN NEPAL</h3>
+                        </div>
+                        <div className="marquee-child-item">
+                            <span className="icon icon-tag" style={iconStyle} />
+                        </div>
+
                         {/* 4 */}
                         <div className="marquee-child-item">
                             <h3 className="text-uppercase" style={textStyle}>10% OFF FIRST PURCHASE</h3>
@@ -89,6 +113,14 @@ export default function MarqueeSection() {
                         </div>
                         <div className="marquee-child-item">
                             <span className="icon icon-lightning" style={iconStyle} />
+                        </div>
+
+                        {/* Added: Made in Nepal */}
+                        <div className="marquee-child-item">
+                            <h3 className="text-uppercase" style={textStyle}>MADE IN NEPAL</h3>
+                        </div>
+                        <div className="marquee-child-item">
+                            <span className="icon icon-tag" style={iconStyle} />
                         </div>
                     </div>
 
@@ -110,6 +142,14 @@ export default function MarqueeSection() {
                             <span className="icon icon-lightning" style={iconStyle} />
                         </div>
 
+                        {/* Added: Made in Nepal */}
+                        <div className="marquee-child-item">
+                            <h3 className="text-uppercase" style={textStyle}>MADE IN NEPAL</h3>
+                        </div>
+                        <div className="marquee-child-item">
+                            <span className="icon icon-tag" style={iconStyle} />
+                        </div>
+
                         {/* 2 */}
                         <div className="marquee-child-item">
                             <h3 className="text-uppercase" style={textStyle}>10% OFF FIRST PURCHASE</h3>
@@ -124,6 +164,14 @@ export default function MarqueeSection() {
                         </div>
                         <div className="marquee-child-item">
                             <span className="icon icon-lightning" style={iconStyle} />
+                        </div>
+
+                        {/* Added: Made in Nepal */}
+                        <div className="marquee-child-item">
+                            <h3 className="text-uppercase" style={textStyle}>MADE IN NEPAL</h3>
+                        </div>
+                        <div className="marquee-child-item">
+                            <span className="icon icon-tag" style={iconStyle} />
                         </div>
 
                         {/* 3 */}
@@ -142,6 +190,14 @@ export default function MarqueeSection() {
                             <span className="icon icon-lightning" style={iconStyle} />
                         </div>
 
+                        {/* Added: Made in Nepal */}
+                        <div className="marquee-child-item">
+                            <h3 className="text-uppercase" style={textStyle}>MADE IN NEPAL</h3>
+                        </div>
+                        <div className="marquee-child-item">
+                            <span className="icon icon-tag" style={iconStyle} />
+                        </div>
+
                         {/* 4 */}
                         <div className="marquee-child-item">
                             <h3 className="text-uppercase" style={textStyle}>10% OFF FIRST PURCHASE</h3>
@@ -155,6 +211,14 @@ export default function MarqueeSection() {
                         </div>
                         <div className="marquee-child-item">
                             <span className="icon icon-lightning" style={iconStyle} />
+                        </div>
+
+                        {/* Added: Made in Nepal */}
+                        <div className="marquee-child-item">
+                            <h3 className="text-uppercase" style={textStyle}>MADE IN NEPAL</h3>
+                        </div>
+                        <div className="marquee-child-item">
+                            <span className="icon icon-tag" style={iconStyle} />
                         </div>
                     </div>
                 </div>

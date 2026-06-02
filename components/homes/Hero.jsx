@@ -29,6 +29,76 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
   const swiperRef = useRef(null);
   const slideTimeoutRef = useRef(null);
 
+  // Campaign Teaser states & effects
+  const [isNotifyModalOpen, setIsNotifyModalOpen] = useState(false);
+  const [notifyEmail, setNotifyEmail] = useState("");
+  const [subscribeStatus, setSubscribeStatus] = useState(null); // 'loading', 'success', 'error'
+  
+  const targetTeaserDate = "2026-06-11T00:00:00"; // FIFA World Cup 2026 start date (June 11, 2026)
+  const [countdownTime, setCountdownTime] = useState({
+    days: "18",
+    hours: "07",
+    minutes: "42",
+    seconds: "31"
+  });
+
+  useEffect(() => {
+    const calculateTeaserTimeLeft = () => {
+      const difference = +new Date(targetTeaserDate) - +new Date();
+      if (difference > 0) {
+        const d = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const h = Math.floor((difference / (1000 * 60 * 60)) % 24);
+        const m = Math.floor((difference / 1000 / 60) % 60);
+        const s = Math.floor((difference / 1000) % 60);
+        setCountdownTime({
+          days: String(d).padStart(2, '0'),
+          hours: String(h).padStart(2, '0'),
+          minutes: String(m).padStart(2, '0'),
+          seconds: String(s).padStart(2, '0')
+        });
+      } else {
+        setCountdownTime({
+          days: "00",
+          hours: "00",
+          minutes: "00",
+          seconds: "00"
+        });
+      }
+    };
+
+    calculateTeaserTimeLeft();
+    const interval = setInterval(calculateTeaserTimeLeft, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleNotifySubmit = async (e) => {
+    e.preventDefault();
+    if (!notifyEmail) return;
+    setSubscribeStatus('loading');
+    try {
+      const response = await fetch("/api/add-contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: notifyEmail }),
+      });
+      if (response.ok) {
+        setSubscribeStatus('success');
+        setNotifyEmail("");
+        setTimeout(() => {
+          setIsNotifyModalOpen(false);
+          setSubscribeStatus(null);
+        }, 3000);
+      } else {
+        setSubscribeStatus('error');
+      }
+    } catch (error) {
+      console.error("Subscription failed:", error);
+      setSubscribeStatus('error');
+    }
+  };
+
   // Function to validate video source
   const validateVideoSource = async (videoSrc) => {
     if (!videoSrc) return false;
@@ -100,6 +170,8 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
               alt: item.alt || "fashion-slideshow",
               subheading: item.subheading || "",
               heading: item.heading?.replace("<br/>", "\n") || "",
+              description: item.description || "",
+              isTeaser: item.isTeaser || false,
               btnText: item.btnText || "Shop Now",
               poster: item.poster ? getImageUrl(item.poster?.url || item.poster?.formats?.large?.url) : getImageUrl(fallbackImageUrl),
               // Carry forward videoName for product filtering (prefer mobileMedia name)
@@ -140,6 +212,8 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
               alt: item.alt || "fashion-slideshow",
               subheading: item.subheading || "",
               heading: item.heading?.replace("<br/>", "\n") || "",
+              description: item.description || "",
+              isTeaser: item.isTeaser || false,
               btnText: item.btnText || "Shop Now",
               poster: item.poster ? getImageUrl(item.poster?.url || item.poster?.formats?.large?.url) : getImageUrl(fallbackImageUrl),
             };
@@ -322,7 +396,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
 
       <section className="tf-slideshow slider-default slider-position slider-effect-fade" style={heroWrapperStyle}>
         {/* Intro overlay image shown instantly before videos are ready */}
-        {showIntroImage && (
+        {showIntroImage && slides.some(s => s.mediaType === 'video') && (
           <div
             style={{
               position: 'absolute',
@@ -537,38 +611,519 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                       }}
                     />
                   )}
-                  <div className="box-content" style={contentStyle}>
-                    <div className="content-slider">
-                      <div className="box-title-slider">
-                        <p className="fade-item fade-item-1 subheading text-btn-uppercase text-white">
+                  {slide.isTeaser ? (
+                    <div className="teaser-content-container">
+                      <div className="teaser-left-content">
+                        <span className="teaser-badge">
                           {slide.subheading}
-                        </p>
-                        <div className="fade-item fade-item-2 heading text-white title-display">
+                        </span>
+                        
+                        <h1 className="teaser-headline">
                           {slide.heading.split("\n").map((line, idx) => (
-                            <span key={idx}>
+                            <span key={idx} className={line === "ICONIC" ? "gold-text" : ""}>
                               {line}
                               <br />
                             </span>
                           ))}
+                        </h1>
+                        
+                        <p className="teaser-description">
+                          {slide.description}
+                        </p>
+                        
+                        <div className="teaser-actions">
+                          {/* <button 
+                            className="teaser-btn-gold"
+                            onClick={() => setIsNotifyModalOpen(true)}
+                          >
+                            <span>NOTIFY ME</span>
+                            <span className="arrow">→</span>
+                          </button> */}
+                          
+                          <Link href="/women" className="teaser-btn-outline">
+                            EXPLORE COLLECTION
+                          </Link>
+                        </div>
+                        
+                        {/* Custom Countdown */}
+                        <div className="teaser-countdown-wrap">
+                          <span className="teaser-countdown-label">WORLD CUP 2026</span>
+                          <div className="teaser-countdown-divider" />
+                          <div className="teaser-countdown-values">
+                            <div className="teaser-countdown-item">
+                              <span className="val">{countdownTime.days}</span>
+                              <span className="lbl">DAYS</span>
+                            </div>
+                            <div className="teaser-countdown-item-divider" />
+                            <div className="teaser-countdown-item">
+                              <span className="val">{countdownTime.hours}</span>
+                              <span className="lbl">HRS</span>
+                            </div>
+                            <div className="teaser-countdown-item-divider" />
+                            <div className="teaser-countdown-item">
+                              <span className="val">{countdownTime.minutes}</span>
+                              <span className="lbl">MINS</span>
+                            </div>
+                            <div className="teaser-countdown-item-divider" />
+                            <div className="teaser-countdown-item">
+                              <span className="val">{countdownTime.seconds}</span>
+                              <span className="lbl">SECS</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="fade-item fade-item-3 box-btn-slider">
-                        <Link
-                          href={`/hero-products?slideId=${slide.documentId || slide.id}&btnText=${encodeURIComponent(slide.btnText)}${slide.videoName ? `&videoName=${encodeURIComponent(slide.videoName)}` : ''}`}
-                          className="tf-btn btn-fill btn-white"
-                        >
-                          <span className="text">{slide.btnText}</span>
-                          <i className="icon icon-arrowUpRight" />
-                        </Link>
+                    </div>
+                  ) : (
+                    <div className="box-content" style={contentStyle}>
+                      <div className="content-slider">
+                        <div className="box-title-slider">
+                          <p className="fade-item fade-item-1 subheading text-btn-uppercase text-white">
+                            {slide.subheading}
+                          </p>
+                          <div className="fade-item fade-item-2 heading text-white title-display">
+                            {slide.heading.split("\n").map((line, idx) => (
+                              <span key={idx}>
+                                {line}
+                                <br />
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="fade-item fade-item-3 box-btn-slider">
+                          <Link
+                            href={`/hero-products?slideId=${slide.documentId || slide.id}&btnText=${encodeURIComponent(slide.btnText)}${slide.videoName ? `&videoName=${encodeURIComponent(slide.videoName)}` : ''}`}
+                            className="tf-btn btn-fill btn-white"
+                          >
+                            <span className="text">{slide.btnText}</span>
+                            <i className="icon icon-arrowUpRight" />
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </SwiperSlide>
             )
           })}
         </Swiper>
       </section>
+
+      {/* Subscription Modal Popup */}
+      {isNotifyModalOpen && (
+        <div className="teaser-modal-overlay" onClick={() => setIsNotifyModalOpen(false)}>
+          <div className="teaser-modal-card" onClick={(e) => e.stopPropagation()}>
+            <button className="teaser-modal-close" onClick={() => setIsNotifyModalOpen(false)}>×</button>
+            <div className="teaser-modal-icon">✉</div>
+            <h3 className="teaser-modal-title">SOMETHING ICONIC</h3>
+            <p className="teaser-modal-subtitle">
+              Sign up below to receive an exclusive early notification and special access when the collection drops.
+            </p>
+            <form onSubmit={handleNotifySubmit} className="teaser-form-group">
+              <input
+                type="email"
+                required
+                placeholder="Enter your email address"
+                value={notifyEmail}
+                onChange={(e) => setNotifyEmail(e.target.value)}
+                className="teaser-input"
+                disabled={subscribeStatus === 'loading'}
+              />
+              <button
+                type="submit"
+                className="teaser-modal-btn"
+                disabled={subscribeStatus === 'loading'}
+              >
+                {subscribeStatus === 'loading' ? 'SUBMITTING...' : 'NOTIFY ME'}
+              </button>
+            </form>
+            {subscribeStatus === 'success' && (
+              <p className="teaser-status-msg success">✓ Thank you! You will be notified instantly.</p>
+            )}
+            {subscribeStatus === 'error' && (
+              <p className="teaser-status-msg error">✗ Something went wrong. Please try again.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Custom styles for teaser drop */}
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700;800&family=Outfit:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+
+        .teaser-content-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          padding-left: 9%;
+          padding-right: 9%;
+          z-index: 10;
+          font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+          background: rgba(255, 255, 255, 0.02);
+        }
+        .teaser-left-content {
+          max-width: 580px;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          text-align: left;
+          animation: fadeInUpTeaser 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes fadeInUpTeaser {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .teaser-badge {
+          font-size: 0.85rem;
+          font-weight: 700;
+          letter-spacing: 0.2em;
+          color: #dfba6b;
+          margin-bottom: 1.8rem;
+          text-transform: uppercase;
+          font-family: 'Outfit', sans-serif;
+        }
+        .teaser-headline {
+          font-size: 5.0rem;
+          font-weight: 800;
+          line-height: 0.9;
+          letter-spacing: -0.01em;
+          color: #111111;
+          margin-bottom: 1.8rem;
+          text-transform: uppercase;
+          font-family: 'Oswald', sans-serif;
+        }
+        .teaser-headline span.gold-text {
+          color: #dfba6b;
+          background: none;
+          -webkit-background-clip: unset;
+          -webkit-text-fill-color: unset;
+        }
+        .teaser-description {
+          font-size: 1.0rem;
+          color: #333333;
+          line-height: 1.5;
+          margin-bottom: 2.5rem;
+          max-width: 480px;
+          font-weight: 400;
+          font-family: 'Outfit', sans-serif;
+        }
+        .teaser-actions {
+          display: flex;
+          gap: 1.5rem;
+          margin-bottom: 4.5rem;
+          width: 100%;
+        }
+        .teaser-btn-gold {
+          background: #dfba6b;
+          color: #111111;
+          border: none;
+          padding: 1.0rem 2.8rem;
+          font-size: 0.85rem;
+          font-weight: 700;
+          letter-spacing: 0.15em;
+          border-radius: 0px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          transition: all 0.3s ease;
+          font-family: 'Outfit', sans-serif;
+          text-transform: uppercase;
+        }
+        .teaser-btn-gold:hover {
+          background: #d4ae59;
+        }
+        .teaser-btn-gold .arrow {
+          font-size: 1.1rem;
+          transition: transform 0.3s ease;
+          line-height: 1;
+        }
+        .teaser-btn-gold:hover .arrow {
+          transform: translateX(4px);
+        }
+        .teaser-btn-outline {
+          background: transparent;
+          color: #111111;
+          border: 1.5px solid #111111;
+          padding: 1.0rem 2.8rem;
+          font-size: 0.85rem;
+          font-weight: 700;
+          letter-spacing: 0.15em;
+          border-radius: 0px;
+          cursor: pointer;
+          text-decoration: none;
+          transition: all 0.3s ease;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Outfit', sans-serif;
+          text-transform: uppercase;
+        }
+        .teaser-btn-outline:hover {
+          background: #111111;
+          color: #ffffff;
+        }
+        .teaser-countdown-wrap {
+          display: flex;
+          align-items: center;
+          gap: 0px;
+          width: 100%;
+          margin-top: 1.5rem;
+        }
+        .teaser-countdown-label {
+          font-size: 0.8rem;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          color: #dfba6b;
+          white-space: nowrap;
+          font-family: 'Outfit', sans-serif;
+          border-left: 2.5px solid #dfba6b;
+          padding-left: 12px;
+          height: 18px;
+          display: inline-flex;
+          align-items: center;
+          line-height: 1;
+        }
+        .teaser-countdown-divider {
+          width: 1px;
+          height: 35px;
+          background: rgba(0, 0, 0, 0.15);
+          margin-left: 1.8rem;
+          margin-right: 1.8rem;
+        }
+        .teaser-countdown-values {
+          display: flex;
+          align-items: center;
+          gap: 0px;
+        }
+        .teaser-countdown-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-width: 50px;
+        }
+        .teaser-countdown-item .val {
+          font-size: 2.4rem;
+          font-weight: 700;
+          color: #111111;
+          line-height: 1;
+          font-family: 'Outfit', sans-serif;
+        }
+        .teaser-countdown-item .lbl {
+          font-size: 0.65rem;
+          font-weight: 700;
+          color: #111111;
+          letter-spacing: 0.12em;
+          margin-top: 0.4rem;
+          font-family: 'Outfit', sans-serif;
+        }
+        .teaser-countdown-item-divider {
+          width: 1px;
+          height: 35px;
+          background: rgba(0, 0, 0, 0.15);
+          margin-left: 1.8rem;
+          margin-right: 1.8rem;
+        }
+
+        /* Premium Email Modal Styles */
+        .teaser-modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(8px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 99999;
+          opacity: 0;
+          animation: fadeInOverlay 0.3s ease-out forwards;
+        }
+        @keyframes fadeInOverlay {
+          to { opacity: 1; }
+        }
+        .teaser-modal-card {
+          background: #ffffff;
+          border-radius: 16px;
+          padding: 3rem;
+          width: 100%;
+          max-width: 480px;
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+          position: relative;
+          text-align: center;
+          border: 1px solid rgba(197, 168, 128, 0.2);
+          transform: translateY(20px);
+          animation: slideUpCard 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          font-family: 'Outfit', sans-serif;
+        }
+        @keyframes slideUpCard {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .teaser-modal-close {
+          position: absolute;
+          top: 1.5rem;
+          right: 1.5rem;
+          background: transparent;
+          border: none;
+          font-size: 1.8rem;
+          cursor: pointer;
+          color: #999999;
+          transition: color 0.2s;
+          line-height: 1;
+        }
+        .teaser-modal-close:hover {
+          color: #111111;
+        }
+        .teaser-modal-icon {
+          font-size: 2.5rem;
+          color: #dfba6b;
+          margin-bottom: 1rem;
+        }
+        .teaser-modal-title {
+          font-size: 1.5rem;
+          font-weight: 800;
+          color: #111111;
+          margin-bottom: 0.5rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .teaser-modal-subtitle {
+          font-size: 0.95rem;
+          color: #666666;
+          margin-bottom: 2rem;
+          line-height: 1.5;
+        }
+        .teaser-form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          width: 100%;
+        }
+        .teaser-input {
+          padding: 1rem 1.2rem;
+          border: 1.5px solid #dddddd;
+          border-radius: 8px;
+          font-size: 0.95rem;
+          outline: none;
+          transition: border-color 0.2s;
+          font-family: 'Outfit', sans-serif;
+        }
+        .teaser-input:focus {
+          border-color: #dfba6b;
+        }
+        .teaser-modal-btn {
+          background: #111111;
+          color: #ffffff;
+          border: none;
+          padding: 1rem;
+          font-size: 0.95rem;
+          font-weight: 700;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: background 0.2s;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          font-family: 'Outfit', sans-serif;
+        }
+        .teaser-modal-btn:hover {
+          background: #333333;
+        }
+        .teaser-status-msg {
+          margin-top: 1rem;
+          font-size: 0.9rem;
+          font-weight: 600;
+        }
+        .teaser-status-msg.success {
+          color: #2e7d32;
+        }
+        .teaser-status-msg.error {
+          color: #c62828;
+        }
+
+        /* Responsive rules */
+        @media (max-width: 768px) {
+          .teaser-content-container {
+            padding-left: 6%;
+            padding-right: 6%;
+            padding-top: 15%;
+            align-items: flex-start;
+          }
+          .teaser-left-content {
+            width: 100%;
+            max-width: 100%;
+          }
+          .teaser-headline {
+            font-size: 3.2rem;
+          }
+          .teaser-description {
+            font-size: 0.95rem;
+            margin-bottom: 1.8rem;
+          }
+          .teaser-actions {
+            flex-direction: column;
+            gap: 0.8rem;
+            margin-bottom: 3.0rem;
+          }
+          .teaser-btn-gold, .teaser-btn-outline {
+            width: 100%;
+            padding: 0.9rem;
+            justify-content: center;
+          }
+          .teaser-countdown-wrap {
+            flex-direction: row;
+            align-items: center;
+            gap: 0px;
+            margin-top: 2rem;
+            width: 100%;
+            flex-wrap: wrap;
+          }
+          .teaser-countdown-divider {
+            margin-left: 0.8rem;
+            margin-right: 0.8rem;
+            height: 25px;
+          }
+          .teaser-countdown-item-divider {
+            margin-left: 0.8rem;
+            margin-right: 0.8rem;
+            height: 25px;
+          }
+          .teaser-countdown-item {
+            min-width: 40px;
+          }
+          .teaser-countdown-item .val {
+            font-size: 1.6rem;
+          }
+          .teaser-countdown-item .lbl {
+            font-size: 0.55rem;
+            margin-top: 0.2rem;
+          }
+          .teaser-countdown-label {
+            font-size: 0.7rem;
+            padding-left: 8px;
+            height: 14px;
+          }
+          .teaser-modal-card {
+            padding: 2rem 1.5rem;
+            margin: 1rem;
+          }
+        }
+      `}</style>
     </>
   );
 }
