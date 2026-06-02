@@ -166,7 +166,7 @@ export const fetchDataFromApi = async (endpoint) => {
     const fetchUrl = getFetchUrl(processedEndpoint);
     const isRoute = isNextApiRoute(processedEndpoint);
     
-    const fetchOptions = isRoute ? { method: "GET" } : options;
+    const fetchOptions = (isRoute && typeof window !== 'undefined') ? { method: "GET" } : options;
     const res = await fetch(fetchUrl, fetchOptions);
     
     if (!res.ok) {
