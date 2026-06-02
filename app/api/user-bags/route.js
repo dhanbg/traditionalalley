@@ -19,7 +19,8 @@ export async function GET(request) {
     if (page) {
       queryParts.push(`pagination[page]=${page}`);
     }
-    strapiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/user-bags?${queryParts.join('&')}`;
+    const base = process.env['STRAPI_INTERNAL_URL'] || process.env['STRAPI_URL'] || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
+    strapiUrl = `${base}/api/user-bags?${queryParts.join('&')}`;
 
     // Fetch user bags from Strapi
     const response = await fetch(strapiUrl, {

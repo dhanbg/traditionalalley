@@ -87,6 +87,37 @@ export const getOptimizedImageUrl = (imgObj) => {
   return imageUrl;
 };
 
+const isNextApiRoute = (endpoint) => {
+  const cleanEndpoint = endpoint.split('?')[0];
+  return cleanEndpoint.startsWith('/api/ncm/') || 
+         cleanEndpoint.startsWith('/api/auth/') || 
+         cleanEndpoint.startsWith('/api/webhook/') || 
+         cleanEndpoint.startsWith('/api/instagrams') || 
+         cleanEndpoint.startsWith('/api/categories') || 
+         cleanEndpoint.startsWith('/api/products') || 
+         cleanEndpoint.startsWith('/api/collections') || 
+         cleanEndpoint.startsWith('/api/product-variants') || 
+         cleanEndpoint.startsWith('/api/top-picks') ||
+         cleanEndpoint.startsWith('/api/user-bags') ||
+         cleanEndpoint.startsWith('/api/user-orders') ||
+         cleanEndpoint.startsWith('/api/wishlists') ||
+         cleanEndpoint.startsWith('/api/shipping-rates') ||
+         cleanEndpoint.startsWith('/api/coupons');
+};
+
+const getFetchUrl = (endpoint) => {
+  if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+    return endpoint;
+  }
+  if (typeof window === 'undefined') {
+    return `${INTERNAL_API_URL}${endpoint}`;
+  }
+  if (isNextApiRoute(endpoint)) {
+    return endpoint; // Relative URL for browser
+  }
+  return `${INTERNAL_API_URL}${endpoint}`;
+};
+
 export const fetchDataFromApi = async (endpoint) => {
   const options = {
     method: "GET",
@@ -132,18 +163,10 @@ export const fetchDataFromApi = async (endpoint) => {
       processedEndpoint = `${basePath}?${queryParams.join('&')}`;
     }
 
-    // Determine if this is a Next.js API route or Strapi API call
-    const isNextApiRoute = processedEndpoint.startsWith('/api/ncm/') || processedEndpoint.startsWith('/api/auth/') || processedEndpoint.startsWith('/api/webhook/') || processedEndpoint.startsWith('/api/instagrams') || processedEndpoint.startsWith('/api/categories') || processedEndpoint.startsWith('/api/products') || processedEndpoint.startsWith('/api/collections') || processedEndpoint.startsWith('/api/product-variants') || processedEndpoint.startsWith('/api/top-picks');
+    const fetchUrl = getFetchUrl(processedEndpoint);
+    const isRoute = isNextApiRoute(processedEndpoint);
     
-    let fetchUrl = processedEndpoint;
-    if (!isNextApiRoute) {
-        fetchUrl = `${INTERNAL_API_URL}${processedEndpoint}`;
-    } else if (typeof window === 'undefined') {
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-        fetchUrl = `${baseUrl}${processedEndpoint}`;
-    }
-    
-    const fetchOptions = isNextApiRoute ? { method: "GET" } : options;
+    const fetchOptions = isRoute ? { method: "GET" } : options;
     const res = await fetch(fetchUrl, fetchOptions);
     
     if (!res.ok) {
@@ -183,7 +206,8 @@ export const createData = async (endpoint, data) => {
   }
   
   try {
-    const res = await fetch(`${INTERNAL_API_URL}${endpoint}`, options)
+    const fetchUrl = getFetchUrl(endpoint);
+    const res = await fetch(fetchUrl, options)
     
     if (!res.ok) {
       // Try to get the response body to include more details
@@ -214,7 +238,8 @@ export const updateData = async (endpoint, data) => {
   
   try {
     // Send the request
-    const res = await fetch(`${INTERNAL_API_URL}${endpoint}`, options);
+    const fetchUrl = getFetchUrl(endpoint);
+    const res = await fetch(fetchUrl, options);
     
     // Get the response text for parsing
     const responseText = await res.text();
@@ -232,7 +257,7 @@ export const updateData = async (endpoint, data) => {
       const error = new Error(`Update failed: ${res.statusText}`);
       error.status = res.status;
       error.detail = responseData || responseText;
-      error.url = `${INTERNAL_API_URL}${endpoint}`;
+      error.url = fetchUrl;
       throw error;
     }
     
@@ -254,7 +279,8 @@ export const deleteData = async (endpoint) => {
   
   try {
     // Send the delete request
-    const res = await fetch(`${INTERNAL_API_URL}${cleanEndpoint}`, options);
+    const fetchUrl = getFetchUrl(cleanEndpoint);
+    const res = await fetch(fetchUrl, options);
     
     // Get response text if possible
     let responseText;
@@ -279,7 +305,7 @@ export const deleteData = async (endpoint) => {
       const error = new Error(`Delete failed: ${res.statusText}`);
       error.status = res.status;
       error.detail = responseData || responseText;
-      error.url = `${INTERNAL_API_URL}${cleanEndpoint}`;
+      error.url = fetchUrl;
       throw error;
     }
     
