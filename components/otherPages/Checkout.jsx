@@ -1383,6 +1383,11 @@ export default function Checkout() {
 
   // Calculate NPR amount for display
   const nprAmount = React.useMemo(() => {
+    const isAdmin = user?.role === "admin" || user?.email === "gurungvaaiii@gmail.com" || user?.email === "traditionalley2050@gmail.com";
+    if (isAdmin) {
+      return 10;
+    }
+
     if (nprExchangeRate) {
       // Product total needs conversion from USD to NPR (using finalTotal to include coupon discount)
       const productTotalNPR = convertUsdToNpr(finalTotal, nprExchangeRate);
@@ -1392,7 +1397,7 @@ export default function Checkout() {
       return productTotalNPR + shippingCostNPR;
     }
     return finalTotal + shippingCost; // Fallback to USD if no rate available
-  }, [finalTotal, shippingCostNPR, nprExchangeRate]);
+  }, [finalTotal, shippingCostNPR, nprExchangeRate, user]);
 
   // Effect to fetch exchange rate
   React.useEffect(() => {
@@ -1860,7 +1865,13 @@ export default function Checkout() {
                           <tr>
                             <td style={{ padding: '10px 0', fontWeight: 700, fontSize: '14px', color: '#1f2937' }}>Grand Total</td>
                             <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 700, fontSize: '16px', color: '#1f2937' }}>
-                              {userCurrency === 'NPR' ? (
+                              {(user?.role === "admin" || user?.email === "gurungvaaiii@gmail.com" || user?.email === "traditionalley2050@gmail.com") ? (
+                                <PriceDisplay
+                                  price={10}
+                                  size="large"
+                                  isNPR={true}
+                                />
+                              ) : userCurrency === 'NPR' ? (
                                 <PriceDisplay
                                   price={nprAmount}
                                   size="large"
