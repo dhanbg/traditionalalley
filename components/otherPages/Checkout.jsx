@@ -745,9 +745,16 @@ export default function Checkout() {
     // If user is logged in, try to get their existing bag
     if (user?.id) {
       try {
-        const currentUserData = await fetchDataFromApi(
+        let currentUserData = await fetchDataFromApi(
           `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag`
         );
+
+        if ((!currentUserData?.data || currentUserData.data.length === 0) && user?.email) {
+          console.log("🔍 [CHECKOUT] User bag not found by authUserId, fallback to email search:", user.email);
+          currentUserData = await fetchDataFromApi(
+            `/api/user-data?filters[email][$eq]=${encodeURIComponent(user.email)}&populate=user_bag`
+          );
+        }
 
         if (currentUserData?.data && currentUserData.data.length > 0) {
           const userData = currentUserData.data[0];

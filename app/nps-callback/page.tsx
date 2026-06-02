@@ -76,7 +76,11 @@ const NPSCallbackContent = () => {
       if (!targetUserBagId && user?.id) {
         console.log(`🔍 [${debugId}] Step 1 (Auth): Fetching user data for logged-in user...`);
         try {
-          const userDataResponse = await fetchDataFromApi(`/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`);
+          let userDataResponse = await fetchDataFromApi(`/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`);
+          if ((!userDataResponse?.data || userDataResponse.data.length === 0) && user?.email) {
+            console.log(`🔍 [${debugId}] Bag not found by authUserId, attempting search by email: ${user.email}`);
+            userDataResponse = await fetchDataFromApi(`/api/user-data?filters[email][$eq]=${encodeURIComponent(user.email)}&populate=*`);
+          }
           if (userDataResponse?.data && userDataResponse.data.length > 0) {
             targetUserBagId = userDataResponse.data[0].user_bag?.documentId;
             console.log(`✅ [${debugId}] Found User Bag ID via Session: ${targetUserBagId}`);
@@ -252,9 +256,14 @@ const NPSCallbackContent = () => {
         // 1. Try Logged In
         if (user?.id) {
           try {
-            const userDataResponse = await fetchDataFromApi(`/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag`);
+            let userDataResponse = await fetchDataFromApi(`/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag`);
+            if ((!userDataResponse?.data || userDataResponse.data.length === 0) && user?.email) {
+              console.log(`🔍 [NPS-CALLBACK] Bag not found by authUserId, attempting search by email: ${user.email}`);
+              userDataResponse = await fetchDataFromApi(`/api/user-data?filters[email][$eq]=${encodeURIComponent(user.email)}&populate=user_bag`);
+            }
             if (userDataResponse?.data?.[0]) {
               targetBagId = userDataResponse.data[0].user_bag?.documentId;
+              console.log(`✅ [NPS-CALLBACK] Found user bag via session (email/authUserId): ${targetBagId}`);
             }
           } catch (e) {
             console.error("Error finding user bag by session:", e);

@@ -103,13 +103,14 @@ export default {
           
           console.log('✅ Authentication successful! Creating user object...');
           
-          // Generate a new session ID instead of using the stored authUserId
-          // This ensures we don't reuse pending IDs from registration
+          // Generate a new session ID instead of using the stored authUserId (if missing)
+          // Otherwise, prioritize the stable authUserId from the database to keep session query selectors intact
           const sessionId = `credentials_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          console.log('🆔 Generated new session ID:', sessionId, '(replacing stored authUserId:', user.authUserId, ')');
+          const stableId = user.authUserId || sessionId;
+          console.log('🆔 Using session user ID:', stableId, '(database authUserId:', user.authUserId, ')');
           
           const authUser = {
-            id: sessionId,
+            id: stableId,
             email: user.email,
             name: `${user.firstName} ${user.lastName}`.trim(),
             image: user.avatar,
