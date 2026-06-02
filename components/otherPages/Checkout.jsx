@@ -680,7 +680,7 @@ export default function Checkout() {
       // Apply coupon if one was used
       if (appliedCoupon && appliedCoupon.id) {
         try {
-          const response = await fetch(`${API_URL}/api/coupons/apply`, {
+          const response = await fetch(`/api/coupons/apply`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1322,7 +1322,7 @@ export default function Checkout() {
 
           // Validate the coupon to get the discount amount
           try {
-            const response = await fetch(`${API_URL}/api/coupons/validate`, {
+            const response = await fetch(`/api/coupons/validate`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -1443,7 +1443,7 @@ export default function Checkout() {
     setCouponError('');
 
     try {
-      const response = await fetch(`${API_URL}/api/coupons/validate`, {
+      const response = await fetch(`/api/coupons/validate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2055,7 +2055,7 @@ export default function Checkout() {
                               <div style={{ position: 'relative', width: '80px', height: '106px', flexShrink: 0, border: '1px solid #f0f0f0', borderRadius: '4px', overflow: 'hidden' }}>
                                 <Image
                                   alt="img-product"
-                                  src={getBestImageUrl(elm.imgSrc, 'small')}
+                                  src={getBestImageUrl(elm.variantInfo?.imgSrc || elm.imgSrc, 'small') || '/images/products/default-product.svg'}
                                   fill
                                   sizes="80px"
                                   style={{ objectFit: 'cover' }}
