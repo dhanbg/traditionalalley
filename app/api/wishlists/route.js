@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
-const STRAPI_URL = process.env.NEXT_PUBLIC_API_URL || process.env.STRAPI_URL;
+const STRAPI_URL = process.env['STRAPI_INTERNAL_URL'] || process.env['STRAPI_URL'] || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
 const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN;
 
 export async function GET(request) {

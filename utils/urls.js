@@ -7,7 +7,7 @@ export const API_URL = (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBL
 
 // Dedicated internal server-side Docker loopback (only used on server)
 export const INTERNAL_API_URL = (typeof window === 'undefined') 
-  ? (process.env.STRAPI_INTERNAL_URL || process.env.STRAPI_URL || API_URL) 
+  ? (process.env['STRAPI_INTERNAL_URL'] || process.env['STRAPI_URL'] || API_URL) 
   : API_URL;
 
 // Strapi 5 populate helpers - populate=* populates 1st level relations/media. For deep, use strictly valid syntax.
