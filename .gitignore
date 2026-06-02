@@ -62,3 +62,7 @@ test_strapi_populate.js
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# deployment archives
+/deploy.zip
+/deploy_auto.zip
