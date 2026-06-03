@@ -31,24 +31,19 @@ RUN apk add --no-cache wget dumb-init
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Copy only what's needed for production
-COPY --from=builder /app/.next ./.next
+# Copy public assets and static files
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/next.config.mjs ./next.config.mjs
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
-COPY --from=builder /app/next-env.d.ts ./next-env.d.ts
-# Copy additional files needed for API routes and authentication
-COPY --from=builder /app/auth.config.ts ./auth.config.ts
-COPY --from=builder /app/auth.ts ./auth.ts
-COPY --from=builder /app/middleware.ts ./middleware.ts
+
+# Set the correct permission for prerender cache
+RUN mkdir .next && chown nextjs:nodejs .next
+
+# Copy the standalone build
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Create required directories for uploads and set permissions
 RUN mkdir -p /app/public/uploads/invoices && \
     chown -R nextjs:nodejs /app
-
-# Copy node_modules from builder to avoid npm install overhead
-COPY --from=builder /app/node_modules ./node_modules
 
 # Limit Node.js memory to prevent excessive CPU usage
 ENV NODE_OPTIONS="--max-old-space-size=768"
@@ -59,5 +54,8 @@ USER nextjs
 # Expose the port the app runs on
 EXPOSE 3000
 
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
 # Use dumb-init to handle zombie processes and signals properly
-CMD ["dumb-init", "node_modules/.bin/next", "start"]
+CMD ["dumb-init", "node", "server.js"]

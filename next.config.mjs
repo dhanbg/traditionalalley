@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   images: {
     // ✅ PERFORMANCE: Enable image optimization for WebP conversion and responsive sizing
     unoptimized: true, 
