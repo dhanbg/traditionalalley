@@ -259,8 +259,15 @@ const NPSCallbackContent = () => {
         let targetBagId: string | null = null;
         let bagData: any = null;
 
-        // 1. Try Logged In
-        if (user?.id) {
+        // 0. HIGHEST PRIORITY: Server-recovered bagId from URL (set by nps-response.ts)
+        const serverBagId = searchParams?.get("bagId");
+        if (serverBagId) {
+          targetBagId = serverBagId;
+          console.log(`✅ [NPS-CALLBACK] Using server-recovered Bag ID from URL: ${targetBagId}`);
+        }
+
+        // 1. Try Logged In (if not already found)
+        if (!targetBagId && user?.id) {
           try {
             let userDataResponse = await fetchDataFromApi(`/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag`);
             if ((!userDataResponse?.data || userDataResponse.data.length === 0) && user?.email) {
@@ -276,17 +283,18 @@ const NPSCallbackContent = () => {
           }
         }
 
-        // 2. Try Guest Recovery
+        // 2. Try Guest Recovery from localStorage (last resort)
         if (!targetBagId && merchantTxnId) {
           const storedId = localStorage.getItem(`nps_txn_${merchantTxnId}`);
           if (storedId) {
-            console.log(`✅ [GUEST] Recovered Bag ID: ${storedId}`);
+            console.log(`✅ [GUEST] Recovered Bag ID from localStorage: ${storedId}`);
             targetBagId = storedId;
           }
         }
 
         if (!targetBagId) {
-          console.error("❌ Could not determine Bag ID.");
+          console.error("❌ Could not determine Bag ID. Tried: URL param, session lookup, localStorage.");
+          console.error("❌ Debug info:", { serverBagId, userId: user?.id, merchantTxnId, sessionStatus });
           setProcessingStatus("❌ Could not locate your order.");
           setTimeout(() => window.location.href = "/", 3000);
           return;

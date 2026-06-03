@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
     // Step 2: Prepare gateway redirect form
     const host = request.headers.get('host');
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-    const responseUrl = `${protocol}://${host}/nps-callback`;
+    const responseUrl = `${protocol}://${host}/api/nps-response`;
 
     const gatewayParams = {
       MerchantId: npsConfig.merchantId,

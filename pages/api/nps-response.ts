@@ -1,5 +1,50 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
+// Server-side bag ID recovery from Strapi
+async function recoverBagIdFromStrapi(merchantTxnId: string): Promise<string | null> {
+  try {
+    const STRAPI_URL = process.env.STRAPI_URL || process.env.NEXT_PUBLIC_STRAPI_URL || 'http://strapi-alley-production:1337';
+    const STRAPI_TOKEN = process.env.STRAPI_TOKEN || process.env.NEXT_PUBLIC_STRAPI_TOKEN;
+    
+    console.log(`🔍 [NPS-RESPONSE] Looking up bagId for merchantTxnId: ${merchantTxnId}`);
+    
+    // Search all user-bags for one with a pending payment matching this merchantTxnId
+    const url = `${STRAPI_URL}/api/user-bags?populate=*&pagination[pageSize]=100`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${STRAPI_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      console.error(`🔍 [NPS-RESPONSE] Strapi responded with ${response.status}`);
+      return null;
+    }
+    
+    const data = await response.json();
+    const bags = data?.data || [];
+    
+    for (const bag of bags) {
+      const orders = bag.user_orders;
+      if (!orders?.payments) continue;
+      
+      for (const payment of orders.payments) {
+        if (payment.merchantTxnId === merchantTxnId && payment.provider === 'nps') {
+          console.log(`✅ [NPS-RESPONSE] Found bag ${bag.documentId} for merchantTxnId ${merchantTxnId}`);
+          return bag.documentId;
+        }
+      }
+    }
+    
+    console.log(`⚠️ [NPS-RESPONSE] No bag found for merchantTxnId: ${merchantTxnId}`);
+    return null;
+  } catch (error) {
+    console.error(`❌ [NPS-RESPONSE] Error recovering bag ID:`, error);
+    return null;
+  }
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -14,32 +59,42 @@ export default async function handler(
     console.log('Query params:', req.query);
     console.log('Headers:', req.headers);
 
-    const { MerchantTxnId, GatewayTxnId } = req.query;
+    const merchantTxnId = (req.query.MerchantTxnId || req.query.merchantTxnId) as string;
+    const gatewayTxnId = (req.query.GatewayTxnId || req.query.processId) as string;
 
     // Validate required parameters
-    if (!MerchantTxnId || !GatewayTxnId) {
-      console.error('Missing required response parameters');
-      // Redirect to a generic error page or home page
+    if (!merchantTxnId) {
+      console.error('Missing required response parameters: merchantTxnId');
       return res.redirect('/payment-error?reason=missing-parameters');
     }
 
-    const merchantTxnId = MerchantTxnId as string;
-    const gatewayTxnId = GatewayTxnId as string;
+    console.log(`Processing response for merchant transaction: ${merchantTxnId}, gateway transaction: ${gatewayTxnId || 'none'}`);
 
-    console.log(`Processing response for merchant transaction: ${merchantTxnId}, gateway transaction: ${gatewayTxnId}`);
+    // SERVER-SIDE BAG ID RECOVERY: Look up the bag from Strapi using the merchantTxnId
+    // This is reliable regardless of localStorage/session state on the client
+    const recoveredBagId = await recoverBagIdFromStrapi(merchantTxnId);
 
-    // Redirect to the NPS callback page with the transaction details
-    // This will handle the payment processing and show the result to the user
-    const callbackUrl = `/nps-callback?MerchantTxnId=${encodeURIComponent(merchantTxnId)}&GatewayTxnId=${encodeURIComponent(gatewayTxnId)}`;
+    // Build callback URL with all available params, preserving all parameters sent by NPS
+    const queryParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(req.query)) {
+      if (value) {
+        queryParams.set(key, Array.isArray(value) ? value[0] : value);
+      }
+    }
+    if (recoveredBagId) {
+      queryParams.set("bagId", recoveredBagId);
+      console.log(`✅ [NPS-RESPONSE] Including server-recovered bagId in redirect: ${recoveredBagId}`);
+    } else {
+      console.warn(`⚠️ [NPS-RESPONSE] Could not recover bagId server-side, client will attempt localStorage fallback`);
+    }
 
+    const callbackUrl = `/nps-callback?${queryParams.toString()}`;
     console.log(`Redirecting to callback URL: ${callbackUrl}`);
 
     return res.redirect(callbackUrl);
 
   } catch (error: any) {
     console.error('❌ Response URL processing error:', error);
-
-    // Redirect to error page with error information
     return res.redirect('/payment-error?reason=processing-error');
   }
 } 
