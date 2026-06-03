@@ -47,8 +47,8 @@ COPY --from=builder /app/middleware.ts ./middleware.ts
 RUN mkdir -p /app/public/uploads/invoices && \
     chown -R nextjs:nodejs /app
 
-# Install only production dependencies
-RUN npm install --omit=dev --legacy-peer-deps
+# Copy node_modules from builder to avoid npm install overhead
+COPY --from=builder /app/node_modules ./node_modules
 
 # Limit Node.js memory to prevent excessive CPU usage
 ENV NODE_OPTIONS="--max-old-space-size=768"
