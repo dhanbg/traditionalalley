@@ -119,6 +119,19 @@ const getFetchUrl = (endpoint) => {
   return `${INTERNAL_API_URL}${endpoint}`;
 };
 
+const shouldCacheEndpoint = (endpoint) => {
+  const cleanEndpoint = endpoint.split('?')[0];
+  return cleanEndpoint.startsWith('/api/products') ||
+         cleanEndpoint.startsWith('/api/hero-slides') ||
+         cleanEndpoint.startsWith('/api/offers') ||
+         cleanEndpoint.startsWith('/api/top-picks') ||
+         cleanEndpoint.startsWith('/api/instagrams') ||
+         cleanEndpoint.startsWith('/api/categories') ||
+         cleanEndpoint.startsWith('/api/collections') ||
+         cleanEndpoint.startsWith('/api/product-variants') ||
+         cleanEndpoint.startsWith('/api/customer-reviews');
+};
+
 export const fetchDataFromApi = async (endpoint) => {
   const options = {
     method: "GET",
@@ -167,7 +180,10 @@ export const fetchDataFromApi = async (endpoint) => {
     const fetchUrl = getFetchUrl(processedEndpoint);
     const isRoute = isNextApiRoute(processedEndpoint);
     
-    const fetchOptions = (isRoute && typeof window !== 'undefined') ? { method: "GET" } : options;
+    const fetchOptions = (isRoute && typeof window !== 'undefined') ? { method: "GET" } : { ...options };
+    if (typeof window === 'undefined' && shouldCacheEndpoint(processedEndpoint)) {
+      fetchOptions.next = { revalidate: 60 };
+    }
     const res = await fetch(fetchUrl, fetchOptions);
     
     if (!res.ok) {

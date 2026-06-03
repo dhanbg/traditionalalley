@@ -43,19 +43,13 @@ export default async function Page() {
   // Fetch all homepage content from Strapi before rendering
   // Gate rendering until all requests resolve
   const results = await Promise.allSettled([
-    // Strapi collection: hero-slides (still fetched, but we will override with local slides)
-    fetchDataFromApi('/api/hero-slides?populate=*'),
     // Strapi collection: offers
     fetchDataFromApi('/api/offers?populate=*'),
     // Strapi single/collection: top-picks meta
     fetchDataFromApi('/api/top-picks?fields=heading,subheading,isActive'),
-    // Fetch Instagram posts through Next API route for robustness
-    fetchDataFromApi('/api/instagrams?populate=*'),
   ]);
-  const heroRes = results[0].status === 'fulfilled' ? results[0].value : null;
-  const offersRes = results[1].status === 'fulfilled' ? results[1].value : null;
-  const topPicksMetaRes = results[2].status === 'fulfilled' ? results[2].value : null;
-  const instagramRes = results[3].status === 'fulfilled' ? results[3].value : null;
+  const offersRes = results[0].status === 'fulfilled' ? results[0].value : null;
+  const topPicksMetaRes = results[1].status === 'fulfilled' ? results[1].value : null;
 
   // Override hero slides with local static slides using public videos
   const initialHeroSlidesRaw = Array.isArray(localHeroSlides) ? localHeroSlides : [];
@@ -63,7 +57,7 @@ export default async function Page() {
   const initialTopPicksMeta = Array.isArray(topPicksMetaRes?.data) && topPicksMetaRes.data.length > 0
     ? (topPicksMetaRes.data[0]?.isActive === false ? null : { heading: topPicksMetaRes.data[0]?.heading, subheading: topPicksMetaRes.data[0]?.subheading })
     : null;
-  const initialInstagramPosts = Array.isArray(instagramRes?.data) ? instagramRes.data : [];
+  const initialInstagramPosts = [];
 
   // Top picks items (products + variants) require transformation; fetch separately
   const initialTopPicks = await fetchTopPicksItems();

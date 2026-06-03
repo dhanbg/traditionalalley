@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 import { INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +24,8 @@ export async function GET(request) {
     const response = await fetch(strapiUrl, {
       headers: {
         'Authorization': `Bearer ${STRAPI_API_TOKEN}`
-      }
+      },
+      next: { revalidate: 60 }
     });
 
     if (!response.ok) {

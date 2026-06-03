@@ -49,7 +49,8 @@ export async function GET(request) {
     const response = await fetch(strapiUrl, {
       headers: {
         'Authorization': `Bearer ${STRAPI_API_TOKEN}`
-      }
+      },
+      next: { revalidate: 60 }
     });
 
     if (!response.ok) {

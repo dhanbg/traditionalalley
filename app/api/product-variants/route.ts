@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${STRAPI_API_TOKEN}`,
       },
-      cache: 'no-store',
+      next: { revalidate: 60 },
     });
 
     if (!strapiResponse.ok) {

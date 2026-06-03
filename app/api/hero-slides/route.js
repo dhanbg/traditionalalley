@@ -42,7 +42,7 @@ export async function GET(request) {
     const response = await fetch(url, {
       method: 'GET',
       headers,
-      cache: 'no-store', // Disable caching for debugging
+      next: { revalidate: 60 },
     });
     
     if (!response.ok) {
