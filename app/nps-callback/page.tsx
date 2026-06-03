@@ -11,7 +11,7 @@ import { useContextElement } from "@/context/Context";
 // Wrapper component that uses searchParams
 const NPSCallbackContent = () => {
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const user = session?.user;
   const { clearPurchasedItemsFromCart, cartProducts, selectedCartItems } = useContextElement();
   const [isProcessing, setIsProcessing] = useState(true);
@@ -203,6 +203,12 @@ const NPSCallbackContent = () => {
     console.log("MerchantTxnId:", merchantTxnId);
 
     const savePaymentData = async () => {
+      // Wait for session status to be determined (either authenticated or unauthenticated)
+      if (sessionStatus === "loading") {
+        console.log("⏳ [NPS-CALLBACK] Waiting for session loading...");
+        return;
+      }
+
       // Prevent double execution
       if (processingRef.current && user?.id) {
         console.log("🚫 [EXECUTION GUARD] Double execution prevented");
@@ -446,7 +452,7 @@ const NPSCallbackContent = () => {
 
     savePaymentData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, merchantTxnId, gatewayTxnId, amount, status, message]);
+  }, [user, sessionStatus, merchantTxnId, gatewayTxnId, amount, status, message]);
 
   // Cleanup
   useEffect(() => {

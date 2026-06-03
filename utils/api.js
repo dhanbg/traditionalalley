@@ -102,7 +102,8 @@ const isNextApiRoute = (endpoint) => {
          cleanEndpoint.startsWith('/api/user-orders') ||
          cleanEndpoint.startsWith('/api/wishlists') ||
          cleanEndpoint.startsWith('/api/shipping-rates') ||
-         cleanEndpoint.startsWith('/api/coupons');
+         cleanEndpoint.startsWith('/api/coupons') ||
+         cleanEndpoint.startsWith('/api/user-data');
 };
 
 const getFetchUrl = (endpoint) => {
