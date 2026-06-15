@@ -30,10 +30,20 @@ export const npsConfig = {
     ? (process.env.NPS_API_PASSWORD || 'D9v@eX#2LmZ!q')
     : (process.env.NPS_API_PASSWORD || 'Alley@111'),
   
-  // Secret key based on environment
-  secretKey: process.env.NODE_ENV === 'production'
-    ? (process.env.NPS_SECRET_KEY || 'T$5nLz#o1Xp@')
-    : (process.env.NPS_SECRET_KEY || 'Key@123'),
+  // Secret key based on environment (with automatic cleaning of backslashes or incorrect variable expansions)
+  secretKey: (() => {
+    const rawKey = process.env.NODE_ENV === 'production'
+      ? (process.env.NPS_SECRET_KEY || 'T$5nLz#o1Xp@')
+      : (process.env.NPS_SECRET_KEY || 'Key@123');
+    
+    if (rawKey === 'T#o1Xp@' || rawKey === 'T\\$5nLz#o1Xp@') {
+      return 'T$5nLz#o1Xp@';
+    }
+    if (rawKey.startsWith('T\\$5nLz')) {
+      return rawKey.replace('T\\$5nLz', 'T$5nLz');
+    }
+    return rawKey;
+  })(),
   
   // Test bank credentials (for testing purposes only)
   testBank: {
@@ -149,3 +159,55 @@ export const createAPISignature = (params: Record<string, any>): string => {
   console.log('Generated signature:', signature);
   return signature;
 };
+
+// Native fetch wrapper that mimics Axios signature/auth integration
+export async function npsFetch<T>(path: string, data: any): Promise<{ data: T }> {
+  const url = `${npsConfig.baseURL}${path}`;
+  
+  // Make a shallow copy of payload to prevent modifying the original caller's data
+  const requestData = { ...data };
+  
+  // Automatically generate signature if not provided, empty, or placeholder
+  if (!requestData.Signature || requestData.Signature === 'placeholder' || requestData.Signature === '') {
+    requestData.Signature = createAPISignature(requestData);
+  }
+  
+  const authHeader = 'Basic ' + Buffer.from(`${npsConfig.apiUsername}:${npsConfig.apiPassword}`).toString('base64');
+  
+  console.log(`NPS Fetch Request: POST ${url}`);
+  console.log('Request Data:', JSON.stringify(requestData, null, 2));
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': authHeader
+    },
+    body: JSON.stringify(requestData)
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    let errorData;
+    try {
+      errorData = JSON.parse(errorText);
+    } catch {
+      errorData = { Message: errorText };
+    }
+    
+    // Mimic Axios error structure so existing try/catch blocks don't break
+    const errorObj = new Error(errorData.Message || `HTTP error! status: ${response.status}`) as any;
+    errorObj.response = {
+      status: response.status,
+      data: errorData
+    };
+    throw errorObj;
+  }
+  
+  const responseData = await response.json();
+  console.log(`NPS Fetch Response: ${response.status}`);
+  console.log('Response Data:', JSON.stringify(responseData, null, 2));
+  
+  return { data: responseData as T };
+}

@@ -34,7 +34,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
   const [notifyEmail, setNotifyEmail] = useState("");
   const [subscribeStatus, setSubscribeStatus] = useState(null); // 'loading', 'success', 'error'
   
-  const targetTeaserDate = "2026-06-11T00:00:00"; // FIFA World Cup 2026 start date (June 11, 2026)
+  const targetTeaserDate = "2026-06-19T00:00:00"; // Increased by 3 days from current date
   const [countdownTime, setCountdownTime] = useState({
     days: "18",
     hours: "07",

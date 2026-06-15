@@ -45,7 +45,8 @@ export const useNPS = (options: UseNPSOptions = {}) => {
         throw new Error('User data not found');
       }
 
-      const userData = response.data[0];
+      const userWithBag = response.data.find((u: any) => u.user_bag?.documentId);
+      const userData = userWithBag || response.data[0];
       const userBag = userData.user_bag;
 
       if (!userBag || !userBag.documentId) {

@@ -12,8 +12,9 @@ export const loadWishlistFromBackend = createAsyncThunk(
                 return [];
             }
 
-            const currentUser = userData.data[0];
-            const userBag = currentUser?.attributes?.user_bag?.data;
+            const userWithBag = userData.data.find(u => u.attributes?.user_bag?.data || u.user_bag);
+            const currentUser = userWithBag || userData.data[0];
+            const userBag = currentUser?.attributes?.user_bag?.data || currentUser?.user_bag;
 
             if (!userBag) {
                 return [];
@@ -46,8 +47,9 @@ export const addToWishlistInBackend = createAsyncThunk(
                 throw new Error('User not found');
             }
 
-            const currentUser = userData.data[0];
-            const userBagData = currentUser?.attributes?.user_bag?.data;
+            const userWithBag = userData.data.find(u => u.attributes?.user_bag?.data || u.user_bag);
+            const currentUser = userWithBag || userData.data[0];
+            const userBagData = currentUser?.attributes?.user_bag?.data || currentUser?.user_bag;
 
             if (!userBagData) {
                 throw new Error('User bag not found');
@@ -83,8 +85,9 @@ export const removeFromWishlistInBackend = createAsyncThunk(
                 throw new Error('User not found');
             }
 
-            const currentUser = userData.data[0];
-            const userBag = currentUser?.attributes?.user_bag?.data;
+            const userWithBag = userData.data.find(u => u.attributes?.user_bag?.data || u.user_bag);
+            const currentUser = userWithBag || userData.data[0];
+            const userBag = currentUser?.attributes?.user_bag?.data || currentUser?.user_bag;
 
             if (!userBag) {
                 throw new Error('User bag not found');

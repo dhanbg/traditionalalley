@@ -530,7 +530,7 @@ export const fetchFilterOptions = async (categoryTitle) => {
 export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) => {
   try {
     // First, fetch the current user-bag to get existing user_orders
-    const currentBagResponse = await fetchDataFromApi(`/api/user-bags/${userBagDocumentId}?populate=*`);
+    const currentBagResponse = await fetchDataFromApi(`/api/user-bags/${userBagDocumentId}`);
     
     if (!currentBagResponse || !currentBagResponse.data) {
       throw new Error(`User bag with documentId ${userBagDocumentId} not found`);
@@ -743,7 +743,7 @@ export const createOrderRecord = async (orderData, userId) => {
 export const updateUserBagWithCOD = async (userBagDocumentId, codOrderData) => {
   try {
     // First, fetch the current user-bag to get existing COD orders
-    const currentBagResponse = await fetchDataFromApi(`/api/user-bags/${userBagDocumentId}?populate=*`);
+    const currentBagResponse = await fetchDataFromApi(`/api/user-bags/${userBagDocumentId}`);
     
     if (!currentBagResponse || !currentBagResponse.data) {
       throw new Error(`User bag with documentId ${userBagDocumentId} not found`);

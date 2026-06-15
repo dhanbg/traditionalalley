@@ -34,7 +34,6 @@ export async function GET(request) {
     }
 
     const userBags = await response.json();
-    console.log('User bags data from Strapi:', userBags); // Log the data
 
     return NextResponse.json(userBags);
   } catch (error) {

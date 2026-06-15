@@ -743,7 +743,8 @@ export default function Context({ children }) {
         }
         
         // Extract the current user data
-        const currentUser = currentUserData?.data?.[0];
+        const userWithBag = currentUserData?.data?.find(u => u.user_bag?.documentId || u.attributes?.user_bag?.data?.documentId);
+        const currentUser = userWithBag || currentUserData?.data?.[0];
         const currentUserId = currentUser?.id;
         const currentUserDocumentId = currentUser?.attributes?.documentId || currentUser?.documentId;
         const currentUserAttrs = currentUser?.attributes || {};

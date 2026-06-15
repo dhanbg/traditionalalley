@@ -757,7 +757,8 @@ export default function Checkout() {
         }
 
         if (currentUserData?.data && currentUserData.data.length > 0) {
-          const userData = currentUserData.data[0];
+          const userWithBag = currentUserData.data.find(u => u.user_bag?.documentId);
+          const userData = userWithBag || currentUserData.data[0];
           const userBag = userData.user_bag;
 
           if (userBag && userBag.documentId) {

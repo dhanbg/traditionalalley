@@ -4,12 +4,13 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 async function recoverBagIdFromStrapi(merchantTxnId: string): Promise<string | null> {
   try {
     const STRAPI_URL = process.env.STRAPI_URL || process.env.NEXT_PUBLIC_STRAPI_URL || 'http://strapi-alley-production:1337';
-    const STRAPI_TOKEN = process.env.STRAPI_TOKEN || process.env.NEXT_PUBLIC_STRAPI_TOKEN;
+    const STRAPI_TOKEN = process.env.STRAPI_TOKEN || process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
     
     console.log(`🔍 [NPS-RESPONSE] Looking up bagId for merchantTxnId: ${merchantTxnId}`);
     
     // Search all user-bags for one with a pending payment matching this merchantTxnId
-    const url = `${STRAPI_URL}/api/user-bags?populate=*&pagination[pageSize]=100`;
+    // Sort by updatedAt:desc to search the most recently active bags first
+    const url = `${STRAPI_URL}/api/user-bags?pagination[pageSize]=100&sort=updatedAt:desc`;
     const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${STRAPI_TOKEN}`,

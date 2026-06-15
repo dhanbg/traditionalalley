@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { npsClient } from '../../utils/npsConfig';
+import { npsFetch } from '../../utils/npsConfig';
 import type { 
   GetPaymentInstrumentDetailsRequest, 
   GetPaymentInstrumentDetailsResponse 
@@ -34,7 +34,7 @@ export default async function handler(
 
     console.log('Payment instruments request:', requestData);
 
-    const response = await npsClient.post<GetPaymentInstrumentDetailsResponse>(
+    const response = await npsFetch<GetPaymentInstrumentDetailsResponse>(
       '/GetPaymentInstrumentDetails',
       requestData
     );

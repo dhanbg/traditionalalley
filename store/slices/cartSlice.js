@@ -47,7 +47,8 @@ export const loadCartFromBackend = createAsyncThunk(
                 return [];
             }
 
-            const currentUser = userData.data[0];
+            const userWithBag = userData.data.find(u => u.attributes?.user_bag?.data || u.user_bag);
+            const currentUser = userWithBag || userData.data[0];
             const userDocumentId = currentUser.documentId;
             console.log('👤 User documentId:', userDocumentId);
 
@@ -114,8 +115,9 @@ export const syncCartItemToBackend = createAsyncThunk(
                 throw new Error('User not found');
             }
 
-            const currentUser = userData.data[0];
-            let userBagData = currentUser?.attributes?.user_bag?.data;
+            const userWithBag = userData.data.find(u => u.attributes?.user_bag?.data || u.user_bag);
+            const currentUser = userWithBag || userData.data[0];
+            let userBagData = currentUser?.attributes?.user_bag?.data || currentUser?.user_bag;
 
             // If user bag doesn't exist, check if there's an orphaned bag for this user
             if (!userBagData) {

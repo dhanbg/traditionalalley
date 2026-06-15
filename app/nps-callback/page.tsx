@@ -82,7 +82,9 @@ const NPSCallbackContent = () => {
             userDataResponse = await fetchDataFromApi(`/api/user-data?filters[email][$eq]=${encodeURIComponent(user.email)}&populate=*`);
           }
           if (userDataResponse?.data && userDataResponse.data.length > 0) {
-            targetUserBagId = userDataResponse.data[0].user_bag?.documentId;
+            const userWithBag = userDataResponse.data.find((u: any) => u.user_bag?.documentId);
+            const userData = userWithBag || userDataResponse.data[0];
+            targetUserBagId = userData.user_bag?.documentId;
             console.log(`✅ [${debugId}] Found User Bag ID via Session: ${targetUserBagId}`);
           }
         } catch (e) {
@@ -109,7 +111,7 @@ const NPSCallbackContent = () => {
 
       // Fetch User Bag Data (to get userDocumentId if available)
       console.log(`🔄 [${debugId}] Step 2: Fetching full user-bag data for ID: ${targetUserBagId}`);
-      const bagResponse = await fetchDataFromApi(`/api/user-bags/${targetUserBagId}?populate=*`);
+      const bagResponse = await fetchDataFromApi(`/api/user-bags/${targetUserBagId}?populate=user_datum`);
 
       if (!bagResponse?.data) {
         console.error(`❌ [${debugId}] User Bag not found for ID: ${targetUserBagId}`);
@@ -274,8 +276,10 @@ const NPSCallbackContent = () => {
               console.log(`🔍 [NPS-CALLBACK] Bag not found by authUserId, attempting search by email: ${user.email}`);
               userDataResponse = await fetchDataFromApi(`/api/user-data?filters[email][$eq]=${encodeURIComponent(user.email)}&populate=user_bag`);
             }
-            if (userDataResponse?.data?.[0]) {
-              targetBagId = userDataResponse.data[0].user_bag?.documentId;
+            if (userDataResponse?.data && userDataResponse.data.length > 0) {
+              const userWithBag = userDataResponse.data.find((u: any) => u.user_bag?.documentId);
+              const userData = userWithBag || userDataResponse.data[0];
+              targetBagId = userData.user_bag?.documentId;
               console.log(`✅ [NPS-CALLBACK] Found user bag via session (email/authUserId): ${targetBagId}`);
             }
           } catch (e) {
@@ -302,7 +306,7 @@ const NPSCallbackContent = () => {
 
         // Fetch Bag Data
         try {
-          const bagResponse = await fetchDataFromApi(`/api/user-bags/${targetBagId}?populate=*`);
+          const bagResponse = await fetchDataFromApi(`/api/user-bags/${targetBagId}`);
           if (!bagResponse?.data) throw new Error("Bag not found");
           bagData = bagResponse.data;
         } catch (fetchError) {
@@ -361,8 +365,9 @@ const NPSCallbackContent = () => {
           timestamp: generateLocalTimestamp()
         };
 
-        // SAVE
-        await updateUserBagWithPayment(targetBagId, paymentData);
+        // SKIP client-side save (updateUserBagWithPayment) to avoid Cloudflare WAF blocking client-side PUT requests.
+        // Persisting successful payment to database is fully handled on the server side by /api/nps-process-success.
+        console.log('📝 [CALLBACK] Bypassing client-side user bag update to avoid Cloudflare WAF block; delegated to server-side.');
 
         // --- HANDLE SUCCESS ---
         const isSuccess = ['Success', 'SUCCESS', 'success', 'COMPLETED', 'completed'].includes(finalStatus as string);

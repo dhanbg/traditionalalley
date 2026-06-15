@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { npsClient } from '../../utils/npsConfig';
+import { npsFetch } from '../../utils/npsConfig';
 import type { 
   GetServiceChargeRequest, 
   GetServiceChargeResponse 
@@ -52,7 +52,7 @@ export default async function handler(
 
     console.log('Service charge request:', requestData);
 
-    const response = await npsClient.post<GetServiceChargeResponse>(
+    const response = await npsFetch<GetServiceChargeResponse>(
       '/GetServiceCharge',
       requestData
     );

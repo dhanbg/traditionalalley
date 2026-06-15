@@ -14,7 +14,7 @@ export async function GET(request) {
     if (!hasPopulate) {
         searchParams.set('populate', '*');
     }
-    if (!searchParams.has('pagination[pageSize]')) searchParams.set('pagination[pageSize]', '100');
+    if (!searchParams.has('pagination[pageSize]') && !searchParams.has('pagination[limit]')) searchParams.set('pagination[pageSize]', '100');
     searchParams.set('publicationState', 'live');
 
     // Construct the URL for the Strapi API using the internal docker network to bypass Cloudflare

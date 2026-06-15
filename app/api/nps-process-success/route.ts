@@ -41,8 +41,10 @@ export async function POST(request: NextRequest) {
                 const userDataResponse = await fetchDataFromApi(
                     `/api/user-data?filters[authUserId][$eq]=${session.user.id}&populate=user_bag`
                 );
-                if (userDataResponse?.data?.[0]) {
-                    targetBagId = userDataResponse.data[0].user_bag?.documentId;
+                if (userDataResponse?.data && userDataResponse.data.length > 0) {
+                    const userWithBag = userDataResponse.data.find((u: any) => u.user_bag?.documentId);
+                    const userData = userWithBag || userDataResponse.data[0];
+                    targetBagId = userData.user_bag?.documentId;
                     console.log(`✅ [PROCESS-SUCCESS] Found bag ID: ${targetBagId}`);
                 }
             } catch (e) {
@@ -66,7 +68,7 @@ export async function POST(request: NextRequest) {
 
         // Fetch bag data
         console.log(`🔄 [PROCESS-SUCCESS] Fetching bag data for: ${targetBagId}`);
-        const bagResponse = await fetchDataFromApi(`/api/user-bags/${targetBagId}?populate=*`);
+        const bagResponse = await fetchDataFromApi(`/api/user-bags/${targetBagId}?populate=user_datum`);
 
         if (!bagResponse?.data) {
             console.error('❌ [PROCESS-SUCCESS] Bag not found');
@@ -92,6 +94,34 @@ export async function POST(request: NextRequest) {
                 alreadyProcessed: true,
                 message: 'Payment already processed'
             });
+        }
+
+        // 1. Immediately update the payment status to Success in the database.
+        // This ensures the database record is updated even if emails or stocks fail.
+        const isSuccessInDb = existingPayment && ['Success', 'SUCCESS', 'success', 'COMPLETED', 'completed'].includes(existingPayment.status);
+        if (!isSuccessInDb) {
+            console.log('📝 [PROCESS-SUCCESS] Updating database status to SUCCESS...');
+            try {
+                const finalPaymentData = {
+                    provider: "nps",
+                    merchantTxnId,
+                    status: "Success",
+                    amount: paymentData?.amount || existingPayment?.amount || bagData.orderData?.orderSummary?.totalAmount || 0,
+                    timestamp: paymentData?.timestamp || new Date().toISOString(),
+                    ...paymentData
+                };
+                
+                await updateUserBagWithPayment(targetBagId, finalPaymentData);
+                console.log('✅ [PROCESS-SUCCESS] Payment status updated to SUCCESS in database');
+                
+                // Re-fetch bag data to get the updated payments list for subsequent steps
+                const updatedBagRes = await fetchDataFromApi(`/api/user-bags/${targetBagId}?populate=user_datum`);
+                if (updatedBagRes?.data) {
+                    bagData = updatedBagRes.data;
+                }
+            } catch (updateDbError) {
+                console.error('❌ [PROCESS-SUCCESS] Error updating payment status in database:', updateDbError);
+            }
         }
 
         // Fetch cart items

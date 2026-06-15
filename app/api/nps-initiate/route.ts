@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { npsClient, npsConfig, createGatewaySignature } from '@/utils/npsConfig';
+import { npsFetch, npsConfig, createGatewaySignature } from '@/utils/npsConfig';
 import { updateUserBagWithPayment, fetchDataFromApi } from '@/utils/api';
 
 interface NPSPaymentRequest {
@@ -109,7 +109,8 @@ export async function POST(request: NextRequest) {
         );
 
         if (userDataResponse?.data && userDataResponse.data.length > 0) {
-          const userData = userDataResponse.data[0];
+          const userWithBag = userDataResponse.data.find((u: any) => u.user_bag?.documentId);
+          const userData = userWithBag || userDataResponse.data[0];
           userBagId = userData.user_bag?.documentId;
         }
       } catch (error) {
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
       secretKey: npsConfig.secretKey ? '***PRESENT***' : '***MISSING***'
     });
 
-    const processIdResponse = await npsClient.post<GetProcessIdResponse>(
+    const processIdResponse = await npsFetch<GetProcessIdResponse>(
       '/GetProcessId',
       processIdRequest
     );
