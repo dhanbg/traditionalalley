@@ -232,3 +232,23 @@
     padding: 10px;
   }
 }
+
+:global(html.dark) .paymentMethodCard {
+  background: #1a1d26;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+:global(html.dark) .paymentMethodCard.selected {
+  background: #242836;
+  border-color: #dfba6b;
+  color: #ffffff;
+}
+
+:global(html.dark) .simplifiedSection {
+  background: #1a1d26;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+:global(html.dark) .sectionHeader {
+  color: #ffffff;
+}

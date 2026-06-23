@@ -34,42 +34,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
   const [notifyEmail, setNotifyEmail] = useState("");
   const [subscribeStatus, setSubscribeStatus] = useState(null); // 'loading', 'success', 'error'
   
-  const targetTeaserDate = "2026-06-19T00:00:00"; // Increased by 3 days from current date
-  const [countdownTime, setCountdownTime] = useState({
-    days: "18",
-    hours: "07",
-    minutes: "42",
-    seconds: "31"
-  });
 
-  useEffect(() => {
-    const calculateTeaserTimeLeft = () => {
-      const difference = +new Date(targetTeaserDate) - +new Date();
-      if (difference > 0) {
-        const d = Math.floor(difference / (1000 * 60 * 60 * 24));
-        const h = Math.floor((difference / (1000 * 60 * 60)) % 24);
-        const m = Math.floor((difference / 1000 / 60) % 60);
-        const s = Math.floor((difference / 1000) % 60);
-        setCountdownTime({
-          days: String(d).padStart(2, '0'),
-          hours: String(h).padStart(2, '0'),
-          minutes: String(m).padStart(2, '0'),
-          seconds: String(s).padStart(2, '0')
-        });
-      } else {
-        setCountdownTime({
-          days: "00",
-          hours: "00",
-          minutes: "00",
-          seconds: "00"
-        });
-      }
-    };
-
-    calculateTeaserTimeLeft();
-    const interval = setInterval(calculateTeaserTimeLeft, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleNotifySubmit = async (e) => {
     e.preventDefault();
@@ -358,8 +323,9 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
   const contentStyle = {
     opacity: !imageLoaded ? 0.8 : 1, // Only fade based on image load, not loading state
     position: 'absolute',
-    top: '50%',
-    transform: 'translateY(-50%)',
+    top: isMobile ? 'auto' : '50%',
+    bottom: isMobile ? '35px' : 'auto',
+    transform: isMobile ? 'none' : 'translateY(-50%)',
     transition: 'opacity 0.3s ease' // Faster transition
   };
 
@@ -409,10 +375,11 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
           >
             <Image
               alt={"hero-intro"}
-              src={isMobile ? '/images/tamfall.jpg' : '/images/tafall.jpg'}
+              src={isMobile ? 'https://4k3pbkj0o1.ucarecd.net/d5acb57b-63d3-41c6-a7f7-c4cd71f2ceb3/mobile.png' : '/images/tafall.jpg'}
               width={1920}
               height={803}
               priority
+
               style={{
                 width: '100%',
                 height: '100%',
@@ -462,9 +429,10 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                         disableRemotePlayback
                         webkit-playsinline="true"
                         preload={loadedVideos.has(index) || index === activeSlideIndex ? "auto" : "none"}
-                        poster={index === 0 ? (isMobile ? '/images/tamfall.jpg' : '/images/tafall.jpg') : (slide.poster || slide.imgSrc)}
+                        poster={index === 0 ? (isMobile ? 'https://4k3pbkj0o1.ucarecd.net/d5acb57b-63d3-41c6-a7f7-c4cd71f2ceb3/mobile.png' : '/images/tafall.jpg') : (slide.poster || slide.imgSrc)}
                         style={{
                           width: '100%',
+
                           height: '100%',
                           objectFit: 'cover',
                           objectPosition: isMobile ? 'center bottom' : 'center center',
@@ -618,59 +586,42 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                           {slide.subheading}
                         </span>
                         
-                        <h1 className="teaser-headline">
-                          {slide.heading.split("\n").map((line, idx) => (
-                            <span key={idx} className={line === "ICONIC" ? "gold-text" : ""}>
-                              {line}
-                              <br />
-                            </span>
-                          ))}
-                        </h1>
-                        
-                        <p className="teaser-description">
-                          {slide.description}
-                        </p>
+                        <div className="teaser-middle-group">
+                          <h1 className="teaser-headline">
+                            {slide.heading.split("\n").map((line, idx) => (
+                              <span key={idx} className={(line === "JERSEY" || line === "ICONIC") ? "gold-text" : ""}>
+                                {line}
+                                <br />
+                              </span>
+                            ))}
+                          </h1>
+                          
+                          <p className="teaser-description">
+                            {slide.description}
+                          </p>
+                        </div>
                         
                         <div className="teaser-actions">
-                          {/* <button 
+                          <a 
+                            href="#worldcup-showcase-section" 
                             className="teaser-btn-gold"
-                            onClick={() => setIsNotifyModalOpen(true)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              const element = document.getElementById("worldcup-showcase-section");
+                              if (element) {
+                                element.scrollIntoView({ behavior: "smooth" });
+                              }
+                            }}
                           >
-                            <span>NOTIFY ME</span>
+                            <span>SHOP THE DROP</span>
                             <span className="arrow">→</span>
-                          </button> */}
+                          </a>
                           
                           <Link href="/women" className="teaser-btn-outline">
                             EXPLORE COLLECTION
                           </Link>
                         </div>
                         
-                        {/* Custom Countdown */}
-                        <div className="teaser-countdown-wrap">
-                          <span className="teaser-countdown-label">WORLD CUP 2026</span>
-                          <div className="teaser-countdown-divider" />
-                          <div className="teaser-countdown-values">
-                            <div className="teaser-countdown-item">
-                              <span className="val">{countdownTime.days}</span>
-                              <span className="lbl">DAYS</span>
-                            </div>
-                            <div className="teaser-countdown-item-divider" />
-                            <div className="teaser-countdown-item">
-                              <span className="val">{countdownTime.hours}</span>
-                              <span className="lbl">HRS</span>
-                            </div>
-                            <div className="teaser-countdown-item-divider" />
-                            <div className="teaser-countdown-item">
-                              <span className="val">{countdownTime.minutes}</span>
-                              <span className="lbl">MINS</span>
-                            </div>
-                            <div className="teaser-countdown-item-divider" />
-                            <div className="teaser-countdown-item">
-                              <span className="val">{countdownTime.seconds}</span>
-                              <span className="lbl">SECS</span>
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   ) : (
@@ -758,9 +709,9 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
           height: 100%;
           display: flex;
           align-items: center;
-          justify-content: flex-start;
-          padding-left: 9%;
-          padding-right: 9%;
+          justify-content: flex-end;
+          padding-left: 0%;
+          padding-right: 12%;
           z-index: 10;
           font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
           background: rgba(255, 255, 255, 0.02);
@@ -772,6 +723,9 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
           align-items: flex-start;
           text-align: left;
           animation: fadeInUpTeaser 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .teaser-middle-group {
+          display: contents;
         }
         @keyframes fadeInUpTeaser {
           from {
@@ -797,7 +751,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
           font-weight: 800;
           line-height: 0.9;
           letter-spacing: -0.01em;
-          color: #111111;
+          color: #ffffff;
           margin-bottom: 1.8rem;
           text-transform: uppercase;
           font-family: 'Oswald', sans-serif;
@@ -810,7 +764,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
         }
         .teaser-description {
           font-size: 1.0rem;
-          color: #333333;
+          color: #e0e0e0;
           line-height: 1.5;
           margin-bottom: 2.5rem;
           max-width: 480px;
@@ -853,8 +807,8 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
         }
         .teaser-btn-outline {
           background: transparent;
-          color: #111111;
-          border: 1.5px solid #111111;
+          color: #ffffff;
+          border: 1.5px solid #ffffff;
           padding: 1.0rem 2.8rem;
           font-size: 0.85rem;
           font-weight: 700;
@@ -1061,28 +1015,53 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
           .teaser-content-container {
             padding-left: 6%;
             padding-right: 6%;
-            padding-top: 15%;
-            align-items: flex-start;
+            padding-top: 0;
+            padding-bottom: 0;
+            align-items: stretch;
           }
           .teaser-left-content {
             width: 100%;
             max-width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding-top: 10px;
+            padding-bottom: 0px;
+          }
+          .teaser-middle-group {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            flex-grow: 1;
+            margin-top: 10.5rem;
+            margin-bottom: 1.0rem;
+          }
+          .teaser-badge {
+            margin-bottom: 0;
           }
           .teaser-headline {
             font-size: 3.2rem;
+            margin-bottom: 0.8rem;
           }
           .teaser-description {
-            font-size: 0.95rem;
-            margin-bottom: 1.8rem;
+            display: none;
           }
           .teaser-actions {
             flex-direction: column;
             gap: 0.8rem;
-            margin-bottom: 3.0rem;
+            margin-bottom: 0rem;
           }
-          .teaser-btn-gold, .teaser-btn-outline {
+          .teaser-btn-gold {
             width: 100%;
-            padding: 0.9rem;
+            padding: 0.6rem 1.2rem !important;
+            font-size: 0.75rem !important;
+            justify-content: center;
+          }
+          .teaser-btn-outline {
+            width: 100%;
+            padding: 0.45rem 1.0rem !important;
+            font-size: 0.7rem !important;
             justify-content: center;
           }
           .teaser-countdown-wrap {

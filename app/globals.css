@@ -2231,9 +2231,9 @@ img {
   height: 100%;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  padding-left: 9%;
-  padding-right: 9%;
+  justify-content: flex-end;
+  padding-left: 0%;
+  padding-right: 12%;
   z-index: 10;
   font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
   background: rgba(255, 255, 255, 0.02);
@@ -2270,7 +2270,7 @@ img {
   font-weight: 800 !important;
   line-height: 0.9 !important;
   letter-spacing: -0.01em !important;
-  color: #111111 !important;
+  color: #ffffff !important;
   margin-bottom: 1.8rem !important;
   text-transform: uppercase !important;
   font-family: 'Oswald', sans-serif !important;
@@ -2283,7 +2283,7 @@ img {
 }
 .teaser-description {
   font-size: 1.0rem;
-  color: #333333;
+  color: #e0e0e0 !important;
   line-height: 1.5;
   margin-bottom: 2.5rem;
   max-width: 480px;
@@ -2326,8 +2326,8 @@ img {
 }
 .teaser-btn-outline {
   background: transparent !important;
-  color: #111111 !important;
-  border: 1.5px solid #111111 !important;
+  color: #ffffff !important;
+  border: 1.5px solid #ffffff !important;
   padding: 1.0rem 2.8rem !important;
   font-size: 0.85rem !important;
   font-weight: 700 !important;
@@ -2343,8 +2343,8 @@ img {
   text-transform: uppercase !important;
 }
 .teaser-btn-outline:hover {
-  background: #111111 !important;
-  color: #ffffff !important;
+  background: #ffffff !important;
+  color: #111111 !important;
 }
 .teaser-countdown-wrap {
   display: flex;

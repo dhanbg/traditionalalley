@@ -183,9 +183,9 @@ export default function PromoHero() {
         onCanPlay={() => attemptPlay(mobileVideoRef)}
         onEnded={handleMobileVideoEnd}
         onLoadStart={() => attemptPlay(mobileVideoRef)}
-        onClick={() => handleVideoClick(mobileVideoRef)}
-        poster={mobileVideoIndex === 0 ? "https://3d7fptzn6w.ucarecd.net/27c5b77e-f005-4442-8feb-998c176af48d/tamfall.jpg" : undefined}
+        poster={mobileVideoIndex === 0 ? "https://4k3pbkj0o1.ucarecd.net/d5acb57b-63d3-41c6-a7f7-c4cd71f2ceb3/mobile.png" : undefined}
         key={`mobile-${mobileVideoIndex}`}
+
       >
         <source src={mobileVideos[mobileVideoIndex]} type="video/mp4" />
         Your browser does not support the video tag.

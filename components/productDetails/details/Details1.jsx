@@ -633,23 +633,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                           </div>
                           <button
                             onClick={() => setShowSizeGuide(true)}
-                            style={{
-                              background: "transparent",
-                              border: "none",
-                              color: "#000",
-                              fontSize: "14px",
-                              fontWeight: "500",
-                              textDecoration: "underline",
-                              cursor: "pointer",
-                              padding: "0",
-                              transition: "all 0.2s ease"
-                            }}
-                            onMouseOver={(e) => {
-                              e.currentTarget.style.color = "#777";
-                            }}
-                            onMouseOut={(e) => {
-                              e.currentTarget.style.color = "#000";
-                            }}
+                            className="size-guide-btn"
                           >
                             Size Guide
                           </button>

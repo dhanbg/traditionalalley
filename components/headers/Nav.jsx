@@ -40,7 +40,7 @@ export default function Nav() {
     }
 
     // Filter collections by valid structural slugs to bypass Strapi 5 missing relations
-    const womenSlugs = ['graduation', 'kurtha', 'dresses', 'sareesets', 'corsets', 'gown', 'bosslady', 'lehenga', 'tops', 'coordinates'];
+    const womenSlugs = ['graduation', 'kurtha', 'dresses', 'sareesets', 'corsets', 'gown', 'bosslady', 'lehenga', 'tops', 'coordinates', 'worldcup'];
     const menSlugs = ['dauracoat', 'blazer', 'nepalidhaka'];
     const kidsSlugs = ['events', 'kids'];
 

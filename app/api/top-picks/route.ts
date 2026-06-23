@@ -30,7 +30,6 @@ export async function GET(request: NextRequest) {
       // Use the optimized Strapi 5 population for Top Picks
       searchParams.set('populate[products][populate]', '*');
       searchParams.set('populate[product_variants][populate]', '*');
-      searchParams.set('populate', '*');
     }
     
     const strapiUrl = `${INTERNAL_API_URL}/api/top-picks?${searchParams.toString()}`;

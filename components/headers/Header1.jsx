@@ -118,26 +118,6 @@ export default function Header1({ fullWidth = false }) {
                   href="#search"
                   data-bs-toggle="modal"
                   className="nav-icon-item"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '12px',
-                    transition: 'all 0.3s ease',
-                    backgroundColor: 'transparent'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = '#f8f9fa';
-                    e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = 'transparent';
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = 'none';
-                  }}
                 >
                   <svg
                     className="icon"
@@ -173,26 +153,6 @@ export default function Header1({ fullWidth = false }) {
                         className="nav-icon-item dropdown-toggle"
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '44px',
-                          height: '44px',
-                          borderRadius: '12px',
-                          transition: 'all 0.3s ease',
-                          backgroundColor: 'transparent'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = '#f8f9fa';
-                          e.target.style.transform = 'translateY(-2px)';
-                          e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = 'transparent';
-                          e.target.style.transform = 'translateY(0)';
-                          e.target.style.boxShadow = 'none';
-                        }}
                       >
                         {getUserAvatar() ? (
                           <img
@@ -414,28 +374,7 @@ export default function Header1({ fullWidth = false }) {
                     </div>
                   </li>
                   <li className="nav-wishlist">
-                    <Link href={`/wish-list`} className="nav-icon-item"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '44px',
-                        height: '44px',
-                        borderRadius: '12px',
-                        transition: 'all 0.3s ease',
-                        backgroundColor: 'transparent'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = '#f8f9fa';
-                        e.target.style.transform = 'translateY(-2px)';
-                        e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = 'transparent';
-                        e.target.style.transform = 'translateY(0)';
-                        e.target.style.boxShadow = 'none';
-                      }}
-                    >
+                    <Link href={`/wish-list`} className="nav-icon-item">
                       <svg
                         className="icon"
                         width={20}
@@ -458,28 +397,7 @@ export default function Header1({ fullWidth = false }) {
                 </>
               ) : (
                 <li onClick={() => signIn()} className="nav-account">
-                  <a href="#" className="nav-icon-item"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '12px',
-                      transition: 'all 0.3s ease',
-                      backgroundColor: 'transparent'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = '#f8f9fa';
-                      e.target.style.transform = 'translateY(-2px)';
-                      e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = 'transparent';
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = 'none';
-                    }}
-                  >
+                  <a href="#" className="nav-icon-item">
                     <svg
                       className="icon"
                       width={20}
@@ -516,27 +434,6 @@ export default function Header1({ fullWidth = false }) {
                     });
                   }}
                   className="nav-icon-item"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '12px',
-                    transition: 'all 0.3s ease',
-                    backgroundColor: 'transparent',
-                    position: 'relative'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = '#f8f9fa';
-                    e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = 'transparent';
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = 'none';
-                  }}
                 >
                   <svg
                     className="icon"
@@ -559,6 +456,7 @@ export default function Header1({ fullWidth = false }) {
                   </span>
                 </a>
               </li>
+
             </ul>
           </div>
         </div>

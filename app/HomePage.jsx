@@ -3,19 +3,10 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
-// import Topbar from "@/components/headers/Topbar";
-import BannerCountdown from "@/components/homes/BannerCountdown";
-import Blogs from "@/components/homes/Blogs";
-import Features from "@/components/common/Features";
 import Hero from "@/components/homes/Hero";
-import InstagramVideoCards from "@/components/common/InstagramVideoCards";
-import TopPicks from "@/components/common/TopPicks";
-import PromoHero from "@/components/common/PromoHero";
-
-import Testimonials3 from "@/components/common/Testimonials3";
-import MarqueeSection from "@/components/common/MarqueeSection";
-import CouponPopup from "@/components/common/CouponPopup";
-
+import WorldCupShowcase from "@/components/common/WorldCupShowcase";
+import WorldCupMarquee from "@/components/common/WorldCupMarquee";
+import WorldCupCountdown from "@/components/common/WorldCupCountdown";
 
 function PaymentMessageHandler() {
     const searchParams = useSearchParams();
@@ -126,45 +117,25 @@ export default function Home({
     isMobileInitial = false
 }) {
     return (
-        <>
-            {/* Customization Popup - Disabled (New Year is over) */}
-            {/* <CouponPopup /> */}
-
-
+        <div className="worldcup-page-wrapper">
             {/* Payment Status Message */}
             <Suspense fallback={<div style={{ display: 'none' }}>Loading payment status...</div>}>
                 <PaymentMessageHandler />
             </Suspense>
 
-            {/* <Topbar /> */}
+            {/* Header and Marquee */}
             <Header1 />
-            <MarqueeSection />
+            <WorldCupMarquee />
+            
+            {/* Hero Section */}
             <Hero initialSlidesRaw={initialHeroSlidesRaw} isMobileInitial={isMobileInitial} />
-            {/* <PromoHero /> */}
-            {/* <Collections /> */}
-            {/* <Products /> */}
-            {/* <BannerCollection /> */}
-            <BannerCountdown initialOfferData={initialOfferData} />
-            {/* <Testimonials3 /> */}
-            <TopPicks initialProducts={initialTopPicks} initialMeta={initialTopPicksMeta} />
-            {/* <InstagramVideoCards initialPosts={initialInstagramPosts} /> */}
-            {/* <Features /> */}
-            {/* <Blogs /> */}
-            <Footer1 hasPaddingBottom />
+            
+            {/* World Cup Event Offer & Showcase */}
+            <WorldCupCountdown />
+            <WorldCupShowcase />
 
-            {/* CSS for animation */}
-            <style jsx>{`
-        @keyframes slideInRight {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-      `}</style>
-        </>
+            {/* Footer */}
+            <Footer1 hasPaddingBottom />
+        </div>
     );
 }

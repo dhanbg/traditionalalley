@@ -85,3 +85,172 @@
     opacity: 1 !important;
   }
 }
+
+/* FAQ Dark Mode Background Fix */
+html.dark {
+  .style-faqs .accordion-product-item,
+  .ask-question {
+    background-color: transparent !important;
+  }
+}
+
+/* Tab Menu Bar Styling (Pill layout with padding and rounded corners) */
+.widget-tabs.style-1 .widget-menu-tab {
+  background-color: #ededed;
+  border: 1px solid var(--line);
+  border-radius: 50px !important;
+  padding: 8px 10px !important;
+  max-width: max-content;
+  margin: 0 auto 35px auto !important;
+  gap: 10px !important;
+}
+
+/* Tab Menu Item styling adjustment */
+.widget-tabs.style-1 .widget-menu-tab .item-title {
+  font-size: 16px !important;
+  font-weight: 500;
+  line-height: 24px;
+  padding: 8px 20px !important;
+  border-radius: 30px !important;
+  color: #5c5c5c !important;
+  transition: all 0.3s ease;
+  &:hover {
+    color: #000000 !important;
+  }
+}
+
+/* Hide underline to make it a pill selector */
+.widget-tabs.style-1 .widget-menu-tab .item-title::after {
+  display: none !important;
+}
+
+.widget-tabs.style-1 .widget-menu-tab .item-title.active {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+
+  span, .inner {
+    color: #000000 !important;
+  }
+}
+
+/* Dark Mode Overrides for Tabs Menu and Outer Container */
+html.dark {
+  .widget-tabs {
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .widget-content-inner {
+    background-color: #1a1d26 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .widget-tabs.style-1 .widget-menu-tab {
+    background-color: #12141c !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .widget-tabs.style-1 .widget-menu-tab .item-title {
+    color: #a0aec0 !important;
+    &:hover {
+      color: #ffffff !important;
+    }
+  }
+
+  .widget-tabs.style-1 .widget-menu-tab .item-title.active {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+
+    span, .inner {
+      color: #000000 !important;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .widget-tabs.style-1 .widget-menu-tab {
+    padding: 6px 8px !important;
+    gap: 6px !important;
+  }
+  .widget-tabs.style-1 .widget-menu-tab .item-title {
+    font-size: 13px !important;
+    padding: 6px 12px !important;
+  }
+}
+
+/* Product Card Premium Styling */
+.card-product {
+  background-color: #ffffff;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--line);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .card-product-wrapper {
+    border-radius: 0 !important;
+  }
+
+  .card-product-info {
+    padding: 15px 15px 18px 15px !important;
+    background-color: #ffffff;
+    flex-grow: 1;
+  }
+
+  .btn-main-product.disabled,
+  .btn-main-product.disabled:hover {
+    color: #000000 !important;
+  }
+}
+
+/* Dark Mode Overrides for Product Card */
+html.dark {
+  .card-product {
+    background-color: #1a1d26 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+
+    .card-product-info {
+      background-color: #1a1d26 !important;
+    }
+
+    .btn-main-product.disabled,
+    .btn-main-product.disabled:hover {
+      color: #000000 !important;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .card-product {
+    border-radius: 12px !important;
+    .card-product-info {
+      padding: 10px 10px 12px 10px !important;
+    }
+  }
+}
+
+/* Ensure active tab title nested spans have black text in all modes */
+.widget-menu-tab .item-title.active span,
+.widget-menu-tab .item-title.active .inner,
+html.dark .widget-menu-tab .item-title.active span,
+html.dark .widget-menu-tab .item-title.active .inner {
+  color: #000000 !important;
+}
+
+/* WorldCup title ball icon styling */
+.small-title-icon {
+  object-fit: contain !important;
+  border-radius: 50% !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  margin-left: 12px !important;
+  margin-top: -6px !important;
+}
+
+
+

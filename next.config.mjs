@@ -32,6 +32,12 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: '*.ucarecd.net',
+        port: '',
+        pathname: '/**',
+      },
       // Dynamic hostname based on NEXT_PUBLIC_API_URL
       ...(process.env.NEXT_PUBLIC_API_URL ? [{
         protocol: process.env.NEXT_PUBLIC_API_URL.startsWith('https') ? 'https' : 'http',

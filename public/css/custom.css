@@ -435,3 +435,919 @@
     gap: 15px !important;
   }
 }
+
+/* ================= WORLD CUP THEME & DARK MODE TOGGLING ================= */
+
+/* Transition utilities */
+body, #wrapper, .worldcup-page-wrapper, header, .header-default, .tf-header, footer, .footer, .tf-footer {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, border-bottom 0.3s ease, border-top 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+/* Light Mode Defaults */
+body, #wrapper, .worldcup-page-wrapper {
+    background-color: #f4f6fa !important;
+    color: #151821 !important;
+}
+
+header, .header-default, .tf-header {
+    background-color: #ffffff !important;
+    border-bottom: 2px solid #d4af37 !important; /* Premium Gold border */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+header a, .nav-link, .tf-header a {
+    color: #151821 !important;
+}
+
+header a:hover, .nav-link:hover, .menu-outer li a:hover {
+    color: #b8860b !important;
+}
+
+header .icon, header i, .tf-header .icon, .tf-header i {
+    color: #151821 !important;
+    stroke: #151821 !important;
+}
+
+header .icon:hover, header i:hover,
+header .nav-theme-toggle button:hover .theme-toggle-sun,
+header .nav-theme-toggle button:hover .theme-toggle-moon {
+    color: #b8860b !important;
+    stroke: #b8860b !important;
+}
+
+/* Sun & Moon SVG styling & transitions */
+.theme-toggle-sun,
+.theme-toggle-moon {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform-origin: center !important;
+    width: 20px !important;
+    height: 20px !important;
+    display: block !important;
+}
+.theme-toggle-sun {
+    transform: translate(-50%, -50%) rotate(0deg) scale(1) !important;
+    opacity: 1;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease, color 0.3s ease, stroke 0.3s ease;
+    color: #151821 !important;
+    stroke: #151821 !important;
+}
+.theme-toggle-moon {
+    transform: translate(-55%, -53%) rotate(90deg) scale(0) !important;
+    opacity: 0;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease, color 0.3s ease, stroke 0.3s ease;
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+
+/* Dark Mode Transitions */
+html.dark .theme-toggle-sun {
+    transform: translate(-50%, -50%) rotate(-90deg) scale(0) !important;
+    opacity: 0;
+}
+html.dark .theme-toggle-moon {
+    transform: translate(-55%, -53%) rotate(0deg) scale(1) !important;
+    opacity: 1;
+}
+
+/* ================= DARK MODE OVERRIDES ================= */
+html.dark body, html.dark #wrapper, html.dark .worldcup-page-wrapper {
+    background-color: #0d0f14 !important;
+    color: #ffffff !important;
+}
+
+/* Header Dark Mode overrides */
+html.dark header, html.dark .header-default, html.dark .tf-header {
+    background-color: #12141c !important;
+    border-bottom: 2px solid #b8860b !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark header a, html.dark .nav-link, html.dark .tf-header a {
+    color: #ffffff !important;
+}
+
+html.dark header a:hover, html.dark .nav-link:hover, html.dark .menu-outer li a:hover {
+    color: #e5c158 !important;
+}
+
+html.dark header .icon, html.dark header i, html.dark .tf-header .icon, html.dark .tf-header i {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+
+html.dark header .icon:hover, html.dark header i:hover,
+html.dark header .nav-theme-toggle button:hover .theme-toggle-sun,
+html.dark header .nav-theme-toggle button:hover .theme-toggle-moon {
+    color: #e5c158 !important;
+    stroke: #e5c158 !important;
+}
+
+html.dark header .nav-icon-item:hover,
+html.dark header .nav-theme-toggle button:hover,
+html.dark header .nav-account > .dropdown > a:hover {
+    background-color: #1a1d26 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Dropdown Menu Dark Mode */
+html.dark .dropdown-menu {
+    background-color: #1a1d26 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .dropdown-menu a {
+    color: #ffffff !important;
+}
+
+html.dark .dropdown-menu a:hover {
+    background: linear-gradient(135deg, #b8860b 0%, #d4af37 100%) !important;
+    color: #000000 !important;
+}
+
+html.dark .dropdown-divider {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Logo inversion in dark mode */
+html.dark .logo-header img {
+    filter: invert(1) brightness(1.5) drop-shadow(0 2px 4px rgba(255, 255, 255, 0.15)) !important;
+}
+
+/* Footer Dark Mode overrides */
+html.dark footer, html.dark .footer, html.dark .tf-footer {
+    background-color: #12141c !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+    color: #a0aec0 !important;
+}
+
+html.dark footer h6, html.dark footer h5, html.dark footer h4, html.dark .footer-title, html.dark .footer-menu-title {
+    color: #e5c158 !important;
+}
+
+html.dark footer a, html.dark .footer-link {
+    color: #a0aec0 !important;
+}
+
+html.dark footer a:hover {
+    color: #ffffff !important;
+}
+
+/* Countdown Section Dark Mode overrides */
+html.dark .wc-countdown-section {
+    background: #0d0f14 !important;
+}
+
+html.dark .countdown-card {
+    background: rgba(26, 29, 38, 0.85) !important;
+    border-color: rgba(212, 175, 55, 0.45) !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .countdown-card .title {
+    color: #ffffff !important;
+}
+
+html.dark .countdown-card .description {
+    color: #a0aec0 !important;
+}
+
+html.dark .countdown-card .timer-label {
+    color: #a0aec0 !important;
+}
+
+html.dark .countdown-card .timer-item {
+    background: #12141c !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
+}
+
+html.dark .countdown-card .timer-num {
+    color: #ffffff !important;
+}
+
+html.dark .countdown-card .timer-unit {
+    color: #a0aec0 !important;
+}
+
+html.dark .countdown-card .countdown-image-wrapper {
+    background: linear-gradient(135deg, #151821 0%, #0d0f14 100%) !important;
+    border-left-color: rgba(212, 175, 55, 0.2) !important;
+}
+
+/* Showcase Section Dark Mode overrides */
+html.dark .worldcup-section {
+    background: linear-gradient(to bottom, #0d0f14 0%, #12141c 100%) !important;
+    color: #ffffff !important;
+}
+
+html.dark .worldcup-section .section-title {
+    color: #ffffff !important;
+}
+
+html.dark .worldcup-section .section-subtitle {
+    color: #a0aec0 !important;
+}
+
+html.dark .product-card-wc {
+    background: #1a1d26 !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark .product-card-wc:hover {
+    border-color: rgba(212, 175, 55, 0.45) !important;
+}
+
+html.dark .card-media-wrapper {
+    background: #12141c !important;
+}
+
+html.dark .card-info {
+    background: #1a1d26 !important;
+}
+
+html.dark .product-title {
+    color: #ffffff !important;
+}
+
+html.dark .product-desc {
+    color: #a0aec0 !important;
+}
+
+html.dark .price-sale {
+    color: #ffffff !important;
+}
+
+html.dark .price-original {
+    color: #718096 !important;
+}
+
+html.dark .card-footer-action {
+    border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .avail-status {
+    color: #a0aec0 !important;
+}
+
+html.dark .view-details-btn {
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+html.dark .view-details-btn:hover {
+    color: #ffffff !important;
+    background: var(--accent-color) !important;
+    border-color: var(--accent-color) !important;
+}
+
+html.dark .edition-badge {
+    background: rgba(18, 20, 28, 0.9) !important;
+    color: #e5c158 !important;
+    border-color: rgba(212, 175, 55, 0.3) !important;
+}
+
+html.dark .glass-overlay {
+    background: linear-gradient(to top, rgba(26, 29, 38, 0.95) 0%, rgba(26, 29, 38, 0) 100%) !important;
+}
+
+/* Payment Message Animation */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Force header SVG paths to inherit currentColor to support dark mode colors */
+header svg path, .tf-header svg path {
+    stroke: currentColor !important;
+}
+
+/* Navigation actions styling overrides */
+.nav-icon-item {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 12px !important;
+    transition: all 0.3s ease !important;
+    background-color: transparent !important;
+    position: relative !important;
+    border: none !important;
+    padding: 0 !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+}
+
+/* Light mode hover style */
+.nav-icon-item:hover,
+.nav-theme-toggle button:hover {
+    background-color: #f8f9fa !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Force light mode icon color on hover */
+.nav-icon-item:hover svg path {
+    stroke: #b8860b !important;
+}
+
+/* Dark mode overrides */
+html.dark .nav-icon-item:hover,
+html.dark .nav-theme-toggle button:hover {
+    background-color: #1a1d26 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .nav-icon-item:hover svg path {
+    stroke: #e5c158 !important;
+}
+
+/* ================= COMPREHENSIVE GLOBAL DARK MODE OVERRIDES ================= */
+
+/* Section and page background resets */
+html.dark,
+html.dark body,
+html.dark #wrapper,
+html.dark main,
+html.dark section,
+html.dark .worldcup-page-wrapper,
+html.dark .flat-spacing,
+html.dark .flat-spacing-1,
+html.dark .flat-spacing-2,
+html.dark .flat-spacing-3,
+html.dark .flat-spacing-v2,
+html.dark .flat-spacing-v3,
+html.dark .tf-section,
+html.dark .page-title,
+html.dark .compare-wrapper,
+html.dark .shopping-cart,
+html.dark .checkout-wrap,
+html.dark .my-account-wrap,
+html.dark .faq-content,
+html.dark .bg-surface,
+html.dark .bg-white,
+html.dark .bg_white {
+    background-color: #0d0f14 !important;
+    background-image: none !important;
+    color: #ffffff !important;
+}
+
+/* Gray/Light Background elements */
+html.dark .bg-grey,
+html.dark .bg-gray,
+html.dark .bg-light,
+html.dark .bg-surface-gray {
+    background-color: #12141c !important;
+}
+
+/* Cards, boxes, panels, and container borders */
+html.dark .card-product,
+html.dark .card-box,
+html.dark .sidebar-account,
+html.dark .my-account-content,
+html.dark .tf-compare-table,
+html.dark .accordion-product-item,
+html.dark .modal-content,
+html.dark .canvas-sidebar,
+html.dark .widget-tabs,
+html.dark .box-order,
+html.dark .box-discount,
+html.dark .fl-sidebar-cart,
+html.dark .checkout-sidebar,
+html.dark .payment-method-item,
+html.dark .my-account-orders-details,
+html.dark .order-card,
+html.dark .flat-spacing-1.bg-surface,
+html.dark .flat-spacing-2.bg-surface,
+html.dark .flat-spacing-3.bg-surface {
+    background-color: #1a1d26 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Headings and title visibility */
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4,
+html.dark h5,
+html.dark h6,
+html.dark .title,
+html.dark .heading,
+html.dark .title-display,
+html.dark .product-title,
+html.dark .product-name,
+html.dark .cart-title,
+html.dark .card-title,
+html.dark .accordion-title,
+html.dark .section-title,
+html.dark .checkout-title {
+    color: #ffffff !important;
+}
+
+/* Keep designated gold items styled appropriately */
+html.dark .gold-text,
+html.dark .text-gold {
+    color: #dfba6b !important;
+}
+
+/* Standard text and paragraphs */
+html.dark p,
+html.dark span,
+html.dark li,
+html.dark label,
+html.dark .text,
+html.dark .desc,
+html.dark .description,
+html.dark .text-button,
+html.dark .text-caption-1,
+html.dark .text-caption-2,
+html.dark .text-secondary,
+html.dark .text-muted,
+html.dark .avail-status,
+html.dark .stock-alert {
+    color: #e2e8f0 !important;
+}
+
+/* Interactive link items */
+html.dark a,
+html.dark .link,
+html.dark .nav-link {
+    color: #ffffff !important;
+    transition: color 0.2s ease;
+}
+
+html.dark a:hover,
+html.dark .link:hover,
+html.dark .nav-link:hover,
+html.dark .menu-outer li a:hover,
+html.dark .breadcrumbs li a:hover {
+    color: #e5c158 !important;
+}
+
+/* Breadcrumbs text & icons */
+html.dark .breadcrumbs,
+html.dark .breadcrumbs li,
+html.dark .breadcrumbs a,
+html.dark .breadcrumbs-default,
+html.dark .breadcrumbs-content {
+    color: #a0aec0 !important;
+}
+
+html.dark .breadcrumbs i,
+html.dark .breadcrumbs .icon,
+html.dark .breadcrumbs-default i,
+html.dark .icon-arrRight {
+    color: #a0aec0 !important;
+    stroke: #a0aec0 !important;
+}
+
+/* Form Fields & inputs */
+html.dark input[type="text"],
+html.dark input[type="email"],
+html.dark input[type="password"],
+html.dark input[type="tel"],
+html.dark input[type="search"],
+html.dark input[type="number"],
+html.dark select,
+html.dark textarea,
+html.dark .form-control {
+    background-color: #1a1d26 !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 8px !important;
+}
+
+html.dark input:focus,
+html.dark select:focus,
+html.dark textarea:focus {
+    border-color: #e5c158 !important;
+    box-shadow: 0 0 0 2px rgba(229, 193, 88, 0.2) !important;
+    outline: none !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: #718096 !important;
+    opacity: 1 !important;
+}
+
+/* Custom Checkbox checkmarks */
+html.dark .custom-checkmark {
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    background-color: #1a1d26 !important;
+}
+
+html.dark .modern-checkbox input[type="checkbox"]:checked + .custom-checkmark {
+    background: #1a1d26 !important;
+    border-color: #e5c158 !important;
+}
+
+/* Table overrides (for Shopping Cart page / Comparison tables) */
+html.dark table,
+html.dark .table,
+html.dark thead,
+html.dark tbody,
+html.dark tr {
+    background-color: transparent !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark th,
+html.dark td,
+html.dark .tf-table-page-cart th,
+html.dark .tf-table-page-cart td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background-color: transparent !important;
+    color: #ffffff !important;
+}
+
+html.dark .tf-table-page-cart thead tr {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Compare Product cells & layout styles */
+html.dark .tf-compare-col,
+html.dark .tf-compare-field,
+html.dark .tf-compare-table,
+html.dark .tf-compare-row {
+    background-color: #12141c !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+}
+
+html.dark .tf-compare-field.d-md-block.d-none {
+    background-color: #1a1d26 !important;
+    color: #ffffff !important;
+}
+
+/* Cart Quantity controls */
+html.dark .wg-quantity,
+html.dark .quantity-select {
+    background-color: #1a1d26 !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+}
+
+html.dark .wg-quantity .btn-quantity,
+html.dark .wg-quantity input {
+    color: #ffffff !important;
+    background-color: transparent !important;
+    border: none !important;
+}
+
+/* Accordion FAQs and information sheets */
+html.dark .accordion-title,
+html.dark .accordion-title h6,
+html.dark .accordion-product-wrap .accordion-title {
+    color: #ffffff !important;
+}
+
+html.dark .accordion-faqs-content,
+html.dark .accordion-faqs-content p,
+html.dark .accordion-product-wrap .accordion-faqs-content {
+    color: #e2e8f0 !important;
+}
+
+/* Nice Select custom styling */
+html.dark .nice-select {
+    background-color: #1a1d26 !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+}
+
+html.dark .nice-select .current {
+    color: #ffffff !important;
+}
+
+html.dark .nice-select .list {
+    background-color: #1a1d26 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .nice-select .option:hover,
+html.dark .nice-select .option.focus,
+html.dark .nice-select .option.selected.focus {
+    background: linear-gradient(135deg, #b8860b 0%, #d4af37 100%) !important;
+    color: #000000 !important;
+}
+
+/* Product Pricing visibility in dark mode */
+html.dark .price,
+html.dark .price-sale,
+html.dark .current-price,
+html.dark .total-price,
+html.dark .cart-price {
+    color: #ffffff !important;
+}
+
+html.dark .price-original,
+html.dark .old-price {
+    color: #718096 !important;
+    text-decoration: line-through !important;
+}
+
+/* Checkout specific updates */
+html.dark .payment-method-item label,
+html.dark .checkout-sidebar p,
+html.dark .checkout-sidebar span {
+    color: #ffffff !important;
+}
+
+/* My Account Navigation styles */
+html.dark .my-account-nav li a {
+    color: #a0aec0 !important;
+}
+
+html.dark .my-account-nav li a.active,
+html.dark .my-account-nav li a:hover {
+    color: #e5c158 !important;
+    background-color: #1a1d26 !important;
+}
+
+/* Modals & popup dialogs */
+html.dark .modal-header,
+html.dark .modal-body,
+html.dark .modal-footer {
+    background-color: #12141c !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .modal-title {
+    color: #ffffff !important;
+}
+
+/* Keep marquee text black in dark mode */
+html.dark .marquee-track span {
+    color: #000000 !important;
+}
+
+/* Force currency switcher text to remain black in dark mode */
+html.dark .currency-switcher .currency-code,
+html.dark .currency-switcher-trigger .currency-code,
+html.dark .currency-option .currency-code {
+    color: #000000 !important;
+}
+
+/* Force read-more button text & border to be white in dark mode */
+html.dark .btn-read-more {
+    border-color: #ffffff !important;
+    color: #ffffff !important;
+}
+
+/* Size guide button styling (overrides inline styles) */
+.size-guide-btn {
+    background: transparent !important;
+    border: none !important;
+    color: #000000 !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    text-decoration: underline !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    transition: all 0.2s ease !important;
+}
+.size-guide-btn:hover {
+    color: #777777 !important;
+}
+
+html.dark .size-guide-btn {
+    color: #ffffff !important;
+}
+html.dark .size-guide-btn:hover {
+    color: #dfba6b !important;
+}
+
+/* Floating Theme Toggle Button */
+.floating-theme-toggle {
+    position: fixed !important;
+    bottom: 24px !important;
+    left: 24px !important;
+    z-index: 9999 !important;
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    background-color: rgba(255, 255, 255, 0.85) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    cursor: pointer !important;
+}
+
+.floating-theme-toggle:hover {
+    transform: scale(1.08) rotate(15deg) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12) !important;
+    background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Floating Theme Toggle Button in Dark Mode */
+html.dark .floating-theme-toggle {
+    background-color: rgba(26, 29, 38, 0.85) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .floating-theme-toggle:hover {
+    background-color: rgba(26, 29, 38, 0.95) !important;
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Ensure Sun/Moon icons look good inside the floating button */
+.floating-theme-toggle .theme-toggle-sun {
+    color: #151821 !important;
+    stroke: #151821 !important;
+}
+
+.floating-theme-toggle:hover .theme-toggle-sun {
+    color: #b8860b !important;
+    stroke: #b8860b !important;
+}
+
+html.dark .floating-theme-toggle .theme-toggle-moon {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+
+html.dark .floating-theme-toggle:hover .theme-toggle-moon {
+    color: #dfba6b !important;
+    stroke: #dfba6b !important;
+}
+
+/* FAQ Dark Mode Background Fix */
+html.dark .style-faqs .accordion-product-item,
+html.dark .ask-question {
+    background-color: transparent !important;
+}
+
+/* Tab Menu Bar Styling (Pill layout with padding and rounded corners) */
+.widget-tabs.style-1 .widget-menu-tab {
+    background-color: #ededed;
+    border: 1px solid var(--line);
+    border-radius: 50px !important;
+    padding: 8px 10px !important;
+    max-width: max-content;
+    margin: 0 auto 35px auto !important;
+    gap: 10px !important;
+}
+
+/* Tab Menu Item styling adjustment */
+.widget-tabs.style-1 .widget-menu-tab .item-title {
+    font-size: 16px !important;
+    font-weight: 500;
+    line-height: 24px;
+    padding: 8px 20px !important;
+    border-radius: 30px !important;
+    color: #5c5c5c !important;
+    transition: all 0.3s ease;
+}
+
+.widget-tabs.style-1 .widget-menu-tab .item-title:hover {
+    color: #000000 !important;
+}
+
+/* Hide underline to make it a pill selector */
+.widget-tabs.style-1 .widget-menu-tab .item-title::after {
+    display: none !important;
+}
+
+.widget-tabs.style-1 .widget-menu-tab .item-title.active {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+.widget-tabs.style-1 .widget-menu-tab .item-title.active span,
+.widget-tabs.style-1 .widget-menu-tab .item-title.active .inner {
+    color: #000000 !important;
+}
+
+/* Dark Mode Overrides for Tabs Menu and Outer Container */
+html.dark .widget-tabs {
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+html.dark .widget-content-inner {
+    background-color: #1a1d26 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .widget-tabs.style-1 .widget-menu-tab {
+    background-color: #12141c !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .widget-tabs.style-1 .widget-menu-tab .item-title {
+    color: #a0aec0 !important;
+}
+
+html.dark .widget-tabs.style-1 .widget-menu-tab .item-title:hover {
+    color: #ffffff !important;
+}
+
+html.dark .widget-tabs.style-1 .widget-menu-tab .item-title.active {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .widget-tabs.style-1 .widget-menu-tab .item-title.active span,
+html.dark .widget-tabs.style-1 .widget-menu-tab .item-title.active .inner {
+    color: #000000 !important;
+}
+
+@media (max-width: 768px) {
+    .widget-tabs.style-1 .widget-menu-tab {
+        padding: 6px 8px !important;
+        gap: 6px !important;
+    }
+    .widget-tabs.style-1 .widget-menu-tab .item-title {
+        font-size: 13px !important;
+        padding: 6px 12px !important;
+    }
+}
+
+/* Product Card Premium Styling */
+.card-product {
+    background-color: #ffffff;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--line);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-product .card-product-wrapper {
+    border-radius: 0 !important;
+}
+
+.card-product .card-product-info {
+    padding: 15px 15px 18px 15px !important;
+    background-color: #ffffff;
+    flex-grow: 1;
+}
+
+/* Dark Mode Overrides for Product Card */
+html.dark .card-product {
+    background-color: #1a1d26 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+html.dark .card-product .card-product-info {
+    background-color: #1a1d26 !important;
+}
+
+@media (max-width: 768px) {
+    .card-product {
+        border-radius: 12px !important;
+    }
+    .card-product .card-product-info {
+        padding: 10px 10px 12px 10px !important;
+    }
+}
+
+/* Make "choose size first text" black on product card */
+.card-product .btn-main-product.disabled,
+.card-product .btn-main-product.disabled:hover,
+html.dark .card-product .btn-main-product.disabled,
+html.dark .card-product .btn-main-product.disabled:hover {
+    color: #000000 !important;
+}
+
+/* Ensure active tab title nested spans have black text in all modes */
+.widget-menu-tab .item-title.active span,
+.widget-menu-tab .item-title.active .inner,
+html.dark .widget-menu-tab .item-title.active span,
+html.dark .widget-menu-tab .item-title.active .inner {
+    color: #000000 !important;
+}
+
+/* WorldCup title ball icon styling */
+.small-title-icon {
+    object-fit: contain !important;
+    border-radius: 50% !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+    margin-left: 12px !important;
+    margin-top: -6px !important;
+}
+
+
+
+

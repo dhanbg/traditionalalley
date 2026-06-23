@@ -23,12 +23,12 @@ const TextRoll = ({ children, center = false }) => {
                 display: "block",
                 overflow: "hidden",
                 lineHeight: 1, // Tighter line height
-                fontFamily: "skip, sans-serif",
+                fontFamily: '"Outfit", sans-serif',
                 fontSize: "1rem", // 16px to match standard nav
                 fontWeight: 500, // Reduced from 800 for a cleaner look
                 textTransform: "uppercase",
                 letterSpacing: "0", // Standard spacing
-                color: "black", // Changed to black
+                color: "currentColor",
             }}
         >
             <div>

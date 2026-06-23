@@ -16,6 +16,9 @@ import NextTopLoader from 'nextjs-toploader';
 import EnhancedWhatsApp from "@/components/common/EnhancedWhatsApp";
 import CenterLoader from "@/components/common/CenterLoader";
 import { SessionProvider } from "next-auth/react";
+import { ThemeProvider } from "@/components/ui/skiper-ui/theme-provider";
+import ThemeToggleButton from "@/components/ui/skiper-ui/theme-toggle-button";
+
 
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
@@ -157,23 +160,27 @@ export default function ClientLayout({ children }) {
 
   return (
     <SessionProvider>
-      <ToastProvider>
-        <Context>
-          <NextTopLoader showSpinner={false} />
-          <CenterLoader />
-          <div id="wrapper">{children}</div>
-          <CartModal />
-          <Compare />
-          <MobileMenu />
-          <SearchModal />
-          <SizeGuide />
-          <Wishlist />
-          <DemoModal />
-          <Categories />
-          <ScrollTop />
-          <EnhancedWhatsApp />
-        </Context>
-      </ToastProvider>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <ToastProvider>
+          <Context>
+            <NextTopLoader showSpinner={false} />
+            <CenterLoader />
+            <div id="wrapper">{children}</div>
+            <CartModal />
+            <Compare />
+            <MobileMenu />
+            <SearchModal />
+            <SizeGuide />
+            <Wishlist />
+            <DemoModal />
+            <Categories />
+            <ScrollTop />
+            <EnhancedWhatsApp />
+            {/* Floating Dark Mode Toggle Button */}
+            <ThemeToggleButton className="floating-theme-toggle" start="bottom-left" />
+          </Context>
+        </ToastProvider>
+      </ThemeProvider>
     </SessionProvider>
   );
 }

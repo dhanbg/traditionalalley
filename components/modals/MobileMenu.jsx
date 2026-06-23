@@ -225,7 +225,7 @@ const MobileMenu = React.memo(function MobileMenu() {
           border: 1px solid var(--line);
           border-radius: 12px;
           transition: all 0.2s ease;
-          font-family: "Kumbh Sans", sans-serif;
+          font-family: "Outfit", sans-serif;
           position: relative;
           overflow: hidden;
           min-height: 56px;
@@ -248,7 +248,7 @@ const MobileMenu = React.memo(function MobileMenu() {
           border: 1px solid var(--line);
           border-radius: 12px;
           transition: all 0.2s ease;
-          font-family: "Kumbh Sans", sans-serif;
+          font-family: "Outfit", sans-serif;
           position: relative;
           overflow: hidden;
           justify-content: space-between;
@@ -360,7 +360,7 @@ const MobileMenu = React.memo(function MobileMenu() {
           border: 1px solid var(--line);
           border-radius: 12px;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          font-family: "Kumbh Sans", sans-serif;
+          font-family: "Outfit", sans-serif;
           position: relative;
           overflow: hidden;
           will-change: transform, background, box-shadow;
@@ -379,7 +379,7 @@ const MobileMenu = React.memo(function MobileMenu() {
           border: 1px solid var(--line);
           border-radius: 12px;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          font-family: "Kumbh Sans", sans-serif;
+          font-family: "Outfit", sans-serif;
           position: relative;
           overflow: hidden;
           justify-content: space-between;
@@ -488,7 +488,7 @@ const MobileMenu = React.memo(function MobileMenu() {
           border: 1px solid var(--line);
           border-radius: 12px;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          font-family: "Kumbh Sans", sans-serif;
+          font-family: "Outfit", sans-serif;
           position: relative;
           overflow: hidden;
           width: 100%;
@@ -520,7 +520,7 @@ const MobileMenu = React.memo(function MobileMenu() {
           border: 1px solid #feb2b2;
           border-radius: 12px;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          font-family: "Kumbh Sans", sans-serif;
+          font-family: "Outfit", sans-serif;
           position: relative;
           overflow: hidden;
           cursor: pointer;
@@ -568,7 +568,7 @@ const MobileMenu = React.memo(function MobileMenu() {
           border: 1px solid var(--line);
           border-radius: 12px;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          font-family: "Kumbh Sans", sans-serif;
+          font-family: "Outfit", sans-serif;
           position: relative;
           overflow: hidden;
         }
@@ -737,7 +737,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                       border: '1px solid var(--line)',
                       borderRadius: '12px',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      fontFamily: '"Kumbh Sans", sans-serif',
+                      fontFamily: '"Outfit", sans-serif',
                       position: 'relative',
                       overflow: 'hidden'
                     }}
@@ -769,7 +769,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                         border: '1px solid var(--line)',
                         borderRadius: '12px',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        fontFamily: '"Kumbh Sans", sans-serif',
+                        fontFamily: '"Outfit", sans-serif',
                         position: 'relative',
                         overflow: 'hidden'
                       }}
@@ -830,7 +830,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                         border: '1px solid var(--line)',
                         borderRadius: '12px',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        fontFamily: '"Kumbh Sans", sans-serif',
+                        fontFamily: '"Outfit", sans-serif',
                         position: 'relative',
                         overflow: 'hidden',
                         width: '100%',
@@ -889,7 +889,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                         border: '1px solid #feb2b2',
                         borderRadius: '12px',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        fontFamily: '"Kumbh Sans", sans-serif',
+                        fontFamily: '"Outfit", sans-serif',
                         position: 'relative',
                         overflow: 'hidden',
                         cursor: 'pointer',
@@ -969,7 +969,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                       border: '1px solid var(--line)',
                       borderRadius: '12px',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      fontFamily: '"Kumbh Sans", sans-serif',
+                      fontFamily: '"Outfit", sans-serif',
                       position: 'relative',
                       overflow: 'hidden'
                     }}

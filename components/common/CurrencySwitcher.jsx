@@ -96,9 +96,6 @@ export default function CurrencySwitcher({ className = "" }) {
       >
         <span className="currency-flag">{currentCurrency.flag}</span>
         <span className="currency-code">{currentCurrency.code}</span>
-        <span className={`currency-arrow ${isOpen ? 'open' : ''}`}>
-          <i className="icon icon-arrow-down"></i>
-        </span>
       </div>
       
       {isOpen && (

@@ -4,7 +4,6 @@ import React from "react"
 import { MoonIcon, SunIcon } from "lucide-react"
 import { useTheme } from "next-themes"
 
-import { Button } from "./button"
 
 import {
   AnimationStart,
@@ -12,7 +11,7 @@ import {
   createAnimation,
 } from "./theme-animations"
 
-interface ThemeToggleAnimationProps {
+interface ThemeToggleAnimationProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: AnimationVariant
   start?: AnimationStart
   showLabel?: boolean
@@ -24,6 +23,9 @@ export default function ThemeToggleButton({
   start = "top-left",
   showLabel = false,
   url = "",
+  className,
+  style,
+  ...props
 }: ThemeToggleAnimationProps) {
   const { theme, setTheme } = useTheme()
 
@@ -65,19 +67,31 @@ export default function ThemeToggleButton({
     }
 
     document.startViewTransition(switchTheme)
-  }, [theme, setTheme])
+  }, [theme, setTheme, variant, start, url, updateStyles])
 
   return (
-    <Button
+    <button
       onClick={toggleTheme}
-      variant="ghost"
-      size="icon"
-      className="w-9 p-0 h-9 relative group"
+      className={className || "w-9 h-9 relative group"}
+      style={{
+        background: 'none',
+        border: 'none',
+        padding: 0,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        outline: 'none',
+        ...style
+      }}
       name="Theme Toggle Button"
+      aria-label="Toggle Theme"
+      {...props}
     >
-      <SunIcon className="size-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <MoonIcon className="absolute size-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-      <span className="sr-only">Theme Toggle </span>
+      <SunIcon size={20} className="theme-toggle-sun" />
+      <MoonIcon size={20} className="theme-toggle-moon" />
+      <span className="sr-only" style={{ display: 'none' }}>Theme Toggle </span>
       {showLabel && (
         <>
           <span className="hidden group-hover:block border rounded-full px-2 absolute -top-10">
@@ -90,6 +104,6 @@ export default function ThemeToggleButton({
           </span>
         </>
       )}
-    </Button>
+    </button>
   )
 }
