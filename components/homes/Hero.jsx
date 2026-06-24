@@ -325,7 +325,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
     opacity: !imageLoaded ? 0.8 : 1, // Only fade based on image load, not loading state
     position: 'absolute',
     top: isMobile ? 'auto' : '50%',
-    bottom: isMobile ? '80px' : 'auto',
+    bottom: isMobile ? '40px' : 'auto',
     transform: isMobile ? 'none' : 'translateY(-50%)',
     transition: 'opacity 0.3s ease' // Faster transition
   };
@@ -1027,8 +1027,8 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding-top: 80px;
-            padding-bottom: 80px;
+            padding-top: 50px;
+            padding-bottom: 30px;
           }
           .teaser-middle-group {
             display: flex;
