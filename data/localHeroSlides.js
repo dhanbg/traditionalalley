@@ -6,19 +6,19 @@ export const localHeroSlides = [
     id: "local-1",
     documentId: "local-1",
     media: {
-      url: "https://4k3pbkj0o1.ucarecd.net/9bad426f-937c-4e8d-b2c6-612bed1d980c/ChatGPTImageJun23202602_38_43AM.png",
+      url: "https://4k3pbkj0o1.ucarecd.net/ad7c08bf-69c9-4653-9c1a-84cb04d1cf57/ChatGPTImageJun23202602_38_43AM11.png",
       mime: "image/png",
       ext: ".png",
       name: "jersey_release.png",
     },
     mobileMedia: {
-      url: "https://4k3pbkj0o1.ucarecd.net/d5acb57b-63d3-41c6-a7f7-c4cd71f2ceb3/mobile.png",
+      url: "https://4k3pbkj0o1.ucarecd.net/003d6a53-0c71-42c5-909c-c537e1767002/mobile.png",
       mime: "image/png",
       ext: ".png",
       name: "jersey_release_mobile.png",
     },
     poster: {
-      url: "https://4k3pbkj0o1.ucarecd.net/9bad426f-937c-4e8d-b2c6-612bed1d980c/ChatGPTImageJun23202602_38_43AM.png",
+      url: "https://4k3pbkj0o1.ucarecd.net/ad7c08bf-69c9-4653-9c1a-84cb04d1cf57/ChatGPTImageJun23202602_38_43AM11.png",
     },
     alt: "World Cup Corset Jersey Release",
     subheading: "A NEW MATCHDAY ERA",

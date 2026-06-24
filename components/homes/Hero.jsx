@@ -376,7 +376,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
           >
             <Image
               alt={"hero-intro"}
-              src={isMobile ? 'https://4k3pbkj0o1.ucarecd.net/d5acb57b-63d3-41c6-a7f7-c4cd71f2ceb3/mobile.png' : '/images/tafall.jpg'}
+              src={isMobile ? 'https://4k3pbkj0o1.ucarecd.net/003d6a53-0c71-42c5-909c-c537e1767002/mobile.png' : 'https://4k3pbkj0o1.ucarecd.net/ad7c08bf-69c9-4653-9c1a-84cb04d1cf57/ChatGPTImageJun23202602_38_43AM11.png'}
               width={1920}
               height={803}
               priority
@@ -430,7 +430,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                         disableRemotePlayback
                         webkit-playsinline="true"
                         preload={loadedVideos.has(index) || index === activeSlideIndex ? "auto" : "none"}
-                        poster={index === 0 ? (isMobile ? 'https://4k3pbkj0o1.ucarecd.net/d5acb57b-63d3-41c6-a7f7-c4cd71f2ceb3/mobile.png' : '/images/tafall.jpg') : (slide.poster || slide.imgSrc)}
+                        poster={index === 0 ? (isMobile ? 'https://4k3pbkj0o1.ucarecd.net/003d6a53-0c71-42c5-909c-c537e1767002/mobile.png' : 'https://4k3pbkj0o1.ucarecd.net/ad7c08bf-69c9-4653-9c1a-84cb04d1cf57/ChatGPTImageJun23202602_38_43AM11.png') : (slide.poster || slide.imgSrc)}
                         style={{
                           width: '100%',
 

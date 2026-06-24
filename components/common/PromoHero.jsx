@@ -183,7 +183,7 @@ export default function PromoHero() {
         onCanPlay={() => attemptPlay(mobileVideoRef)}
         onEnded={handleMobileVideoEnd}
         onLoadStart={() => attemptPlay(mobileVideoRef)}
-        poster={mobileVideoIndex === 0 ? "https://4k3pbkj0o1.ucarecd.net/d5acb57b-63d3-41c6-a7f7-c4cd71f2ceb3/mobile.png" : undefined}
+        poster={mobileVideoIndex === 0 ? "https://4k3pbkj0o1.ucarecd.net/003d6a53-0c71-42c5-909c-c537e1767002/mobile.png" : undefined}
         key={`mobile-${mobileVideoIndex}`}
 
       >
