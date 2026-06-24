@@ -387,9 +387,10 @@ export const processPostPaymentStockAndCart = async (selectedProducts, user, cle
       results.cartClear.success = true;
     }
 
-    // Step 3: Send Email
+    // Step 3: Send Email (Disabled per user preference to send manually)
     if (paymentData) {
-      results.emailSend = await sendAutomaticInvoiceEmail(paymentData);
+      console.log('📤 [CLIENT-POST-PAYMENT] Automatic email disabled per user preference. Marking emailSend as success: true (skipped).');
+      results.emailSend = { success: true, message: "Automatic email skipped per user preference" };
     }
 
     return results;

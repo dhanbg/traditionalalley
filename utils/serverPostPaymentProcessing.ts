@@ -418,12 +418,10 @@ export const processServerPostPayment = async (selectedProducts: any[], user: an
             results.cartClear.success = true;
         }
 
-        // Step 2: Email
+        // Step 2: Email (Disabled per user preference to send manually)
         if (paymentData) {
-            // Ensure paymentData has necessary structure or try to enhance it if possible
-            // But we trust caller (route.ts) to provide full object
-            const emailRes = await sendAutomaticInvoiceEmail(paymentData);
-            results.emailSend = emailRes;
+            console.log('📤 [SERVER-POST-PAYMENT] Automatic email disabled per user preference. Marking emailSend as success: true (skipped).');
+            results.emailSend = { success: true, message: "Automatic email skipped per user preference" } as any;
         }
 
         return results;
