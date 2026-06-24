@@ -85,6 +85,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
   }, []);
 
   useEffect(() => {
+    checkMobile(); // Run on mount to set correct mobile flag based on actual window size
     window.addEventListener('resize', checkMobile);
     return () => {
       window.removeEventListener('resize', checkMobile);
@@ -333,8 +334,9 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
   const heroWrapperStyle = {
     marginBottom: isMobile ? '0px' : '0px', // Remove any default margins
     paddingBottom: '0px', // Ensure no bottom padding
-    height: isMobile ? '70vh' : '90vh', // Increased height to prevent cutting top content
-    minHeight: isMobile ? '500px' : '700px', // Increased minimum height
+    height: isMobile ? 'auto' : '90vh', // Use auto height on mobile to allow aspectRatio to control it
+    minHeight: isMobile ? 'auto' : '700px', // Remove minHeight constraint on mobile
+    aspectRatio: isMobile ? '2/3' : 'auto', // Keep aspect ratio proportional on mobile (matches mobile.png)
     position: 'relative',
     overflow: 'visible' // Changed from hidden to visible to prevent cutting content
   };
@@ -384,7 +386,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
-                objectPosition: isMobile ? 'center bottom' : 'center center'
+                objectPosition: 'center center'
               }}
               onLoad={() => {
                 setImageLoaded(true);
@@ -435,7 +437,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
 
                           height: '100%',
                           objectFit: 'cover',
-                          objectPosition: isMobile ? 'center bottom' : 'center center',
+                          objectPosition: 'center center',
                           backgroundColor: 'transparent',
                         }}
                         onLoadedData={() => {
@@ -571,7 +573,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover',
-                        objectPosition: isMobile ? 'center bottom' : 'center center'
+                        objectPosition: 'center center'
                       }}
                       onLoad={() => {
                         setImageLoaded(true);
