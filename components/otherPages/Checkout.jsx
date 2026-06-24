@@ -1621,11 +1621,10 @@ export default function Checkout() {
                   }}
                   onReceiverChange={setReceiverDetails}
                 />
-              {/* Discount Coupons Section */}
                 <div className="checkout-combined-card" style={{
-                  background: '#ffffff',
+                  background: 'var(--checkout-card-bg, #ffffff)',
                   borderRadius: '8px',
-                  border: '1px solid #e0e0e0',
+                  border: '1px solid var(--checkout-border-color, #e0e0e0)',
                   boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                   marginTop: '20px',
                   overflow: 'hidden'
@@ -1635,7 +1634,7 @@ export default function Checkout() {
                   paddingBottom: '0'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                    <h5 className="title" style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#424242' }}>
+                    <h5 className="title" style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: 'var(--checkout-text-color, #424242)' }}>
                       Discount Coupons
                     </h5>
                   </div>
@@ -1691,7 +1690,7 @@ export default function Checkout() {
                       </SwiperSlide>
                     ))}
                   </Swiper> */}
-                    <div className="coupon-card" style={{ marginTop: '0px', marginBottom: '10px', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '12px', backgroundColor: '#fff' }}>
+                    <div className="coupon-card" style={{ marginTop: '0px', marginBottom: '10px', border: '1px solid var(--checkout-border-color, #e0e0e0)', borderRadius: '8px', padding: '12px', backgroundColor: 'var(--checkout-card-bg, #fff)' }}>
                       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                         <input
                           type="text"
@@ -1704,13 +1703,14 @@ export default function Checkout() {
                           style={{
                             flex: 1,
                             borderRadius: '8px',
-                            border: `1px solid ${couponError ? '#d32f2f' : '#e0e0e0'}`,
+                            border: `1px solid ${couponError ? '#d32f2f' : 'var(--checkout-border-color, #e0e0e0)'}`,
                             padding: '10px 12px',
                             fontWeight: 600,
                             textTransform: 'uppercase',
                             letterSpacing: '0.04em',
                             fontSize: '12px',
-                            backgroundColor: appliedCoupon ? '#f8f9fa' : 'white'
+                            backgroundColor: appliedCoupon ? 'var(--checkout-applied-coupon-bg, #f8f9fa)' : 'var(--checkout-input-bg, white)',
+                            color: 'var(--checkout-text-dark, #1f2937)'
                           }}
                         />
                         {!appliedCoupon ? (
@@ -1817,28 +1817,28 @@ export default function Checkout() {
                   </div>
 
                   {/* Order Summary */}
-                  <div className="order-summary-section" style={{ marginTop: '16px', marginBottom: '0px', borderTop: '1px solid #e0e0e0', paddingTop: '12px' }}>
-                    <h5 className="title" style={{ marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#424242' }}>Order Summary</h5>
+                  <div className="order-summary-section" style={{ marginTop: '16px', marginBottom: '0px', borderTop: '1px solid var(--checkout-border-color, #e0e0e0)', paddingTop: '12px' }}>
+                    <h5 className="title" style={{ marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: 'var(--checkout-text-color, #424242)' }}>Order Summary</h5>
                     <div className="sec-total-price">
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                         <tbody>
-                          <tr style={{ borderBottom: '1px solid #e0e0e0' }}>
-                            <td style={{ padding: '6px 0', color: '#424242' }}>Subtotal</td>
+                          <tr style={{ borderBottom: '1px solid var(--checkout-border-color, #e0e0e0)' }}>
+                            <td style={{ padding: '6px 0', color: 'var(--checkout-text-color, #424242)' }}>Subtotal</td>
                             <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 600 }}>
                               <PriceDisplay price={subtotal} size="normal" />
                             </td>
                           </tr>
                           {totalDiscounts > 0.01 && (
-                            <tr style={{ borderBottom: '1px solid #e0e0e0' }}>
-                              <td style={{ padding: '6px 0', color: '#424242' }}>Product Discounts</td>
+                            <tr style={{ borderBottom: '1px solid var(--checkout-border-color, #e0e0e0)' }}>
+                              <td style={{ padding: '6px 0', color: 'var(--checkout-text-color, #424242)' }}>Product Discounts</td>
                               <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 600, color: '#28a745' }}>
                                 <PriceDisplay price={-totalDiscounts} size="normal" />
                               </td>
                             </tr>
                           )}
                           {couponDiscount > 0 && (
-                            <tr style={{ borderBottom: '1px solid #e0e0e0' }}>
-                              <td style={{ padding: '6px 0', color: '#424242' }}>
+                            <tr style={{ borderBottom: '1px solid var(--checkout-border-color, #e0e0e0)' }}>
+                              <td style={{ padding: '6px 0', color: 'var(--checkout-text-color, #424242)' }}>
                                 Coupon Discount ({appliedCoupon?.code})
                               </td>
                               <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 600, color: '#28a745' }}>
@@ -1846,16 +1846,16 @@ export default function Checkout() {
                               </td>
                             </tr>
                           )}
-                          <tr style={{ borderBottom: '1px solid #e0e0e0' }}>
-                            <td style={{ padding: '6px 0', color: '#424242' }}>
+                          <tr style={{ borderBottom: '1px solid var(--checkout-border-color, #e0e0e0)' }}>
+                            <td style={{ padding: '6px 0', color: 'var(--checkout-text-color, #424242)' }}>
                               Total (Without Shipping)
                             </td>
                             <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 600 }}>
                               <PriceDisplay price={finalTotal} size="normal" />
                             </td>
                           </tr>
-                          <tr style={{ borderBottom: '1px solid #e0e0e0' }}>
-                            <td style={{ padding: '6px 0', color: '#424242' }}>Shipping</td>
+                          <tr style={{ borderBottom: '1px solid var(--checkout-border-color, #e0e0e0)' }}>
+                            <td style={{ padding: '6px 0', color: 'var(--checkout-text-color, #424242)' }}>Shipping</td>
                             <td style={{ padding: '6px 0', textAlign: 'right', fontWeight: 600 }}>
                               {shippingCost > 0 ? (
                                 <PriceDisplay
@@ -1865,14 +1865,14 @@ export default function Checkout() {
                                 />
                               ) : (
                                 <PriceDisplay size="normal">
-                                  <span style={{ fontSize: '13px', color: '#757575' }}>Get Shipping Rates</span>
+                                  <span style={{ fontSize: '13px', color: 'var(--checkout-text-color, #757575)' }}>Get Shipping Rates</span>
                                 </PriceDisplay>
                               )}
                             </td>
                           </tr>
                           <tr>
-                            <td style={{ padding: '10px 0', fontWeight: 700, fontSize: '14px', color: '#1f2937' }}>Grand Total</td>
-                            <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 700, fontSize: '16px', color: '#1f2937' }}>
+                            <td style={{ padding: '10px 0', fontWeight: 700, fontSize: '14px', color: 'var(--checkout-text-dark, #1f2937)' }}>Grand Total</td>
+                            <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 700, fontSize: '16px', color: 'var(--checkout-text-dark, #1f2937)' }}>
                               {(user?.role === "admin" || user?.email === "gurungvaaiii@gmail.com" || user?.email === "traditionalley2050@gmail.com") ? (
                                 <PriceDisplay
                                   price={10}
@@ -1889,7 +1889,7 @@ export default function Checkout() {
                                 <PriceDisplay
                                   price={finalTotal + shippingCost}
                                   size="normal"
-                                />
+                                  />
                               )}
                             </td>
                           </tr>
@@ -1904,7 +1904,7 @@ export default function Checkout() {
                   padding: '14px',
                   marginBottom: '0px'
                 }}>
-                  <h5 className="title" style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600', color: '#424242' }}>
+                  <h5 className="title" style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600', color: 'var(--checkout-text-color, #424242)' }}>
                     Payment Method
                   </h5>
 
@@ -2020,8 +2020,8 @@ export default function Checkout() {
                     alignItems: 'center',
                     gap: '6px',
                     marginBottom: '0',
-                    background: '#f5f5f5',
-                    color: '#424242',
+                    background: 'var(--checkout-applied-coupon-bg, #f5f5f5)',
+                    color: 'var(--checkout-text-color, #424242)',
                     padding: '6px 12px',
                     borderRadius: '8px',
                     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
@@ -2050,17 +2050,17 @@ export default function Checkout() {
                 <div className="checkout-product-table">
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid #e0e0e0', color: '#757575', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      <tr style={{ borderBottom: '1px solid var(--checkout-border-color, #e0e0e0)', color: 'var(--checkout-text-color, #757575)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         <th style={{ textAlign: 'left', padding: '8px 4px', fontWeight: 600 }}>Product</th>
                         <th style={{ textAlign: 'right', padding: '8px 4px', fontWeight: 600 }}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {selectedProducts.map((elm, i) => (
-                        <tr key={i} style={{ borderBottom: i < selectedProducts.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+                        <tr key={i} style={{ borderBottom: i < selectedProducts.length - 1 ? '1px solid var(--checkout-border-color, #f5f5f5)' : 'none' }}>
                           <td style={{ padding: '12px 4px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                              <div style={{ position: 'relative', width: '80px', height: '106px', flexShrink: 0, border: '1px solid #f0f0f0', borderRadius: '4px', overflow: 'hidden' }}>
+                              <div style={{ position: 'relative', width: '80px', height: '106px', flexShrink: 0, border: '1px solid var(--checkout-border-color, #f0f0f0)', borderRadius: '4px', overflow: 'hidden' }}>
                                 <Image
                                   alt="img-product"
                                   src={getBestImageUrl(elm.variantInfo?.imgSrc || elm.imgSrc, 'small') || '/images/products/default-product.svg'}
@@ -2070,7 +2070,7 @@ export default function Checkout() {
                                 />
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <div style={{ fontWeight: 600, color: '#1f2937', fontSize: '12px', lineHeight: '1.3' }}>
+                                <div style={{ fontWeight: 600, color: 'var(--checkout-text-dark, #1f2937)', fontSize: '12px', lineHeight: '1.3' }}>
                                   {getVariantAwareTitle(elm)}
                                 </div>
                                 {(elm.selectedSize || (elm.variantInfo && elm.variantInfo.isVariant)) && (
@@ -2086,7 +2086,7 @@ export default function Checkout() {
                               </div>
                             </div>
                           </td>
-                          <td style={{ textAlign: 'right', padding: '12px 4px', verticalAlign: 'middle', fontWeight: 600, color: '#1f2937' }}>
+                          <td style={{ textAlign: 'right', padding: '12px 4px', verticalAlign: 'middle', fontWeight: 600, color: 'var(--checkout-text-dark, #1f2937)' }}>
                             <PriceDisplay
                               price={elm.price * elm.quantity}
                               size="small"

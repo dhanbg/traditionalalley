@@ -888,14 +888,14 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         
         label {
           font-size: 12px !important;
-          color: #757575 !important;
+          color: var(--checkout-text-color, #757575) !important;
           margin-bottom: 6px !important;
         }
         
         h2, h3, h4 {
           font-size: 13px !important;
           font-weight: 600 !important;
-          color: #424242 !important;
+          color: var(--checkout-text-dark, #424242) !important;
           margin-bottom: 10px !important;
         }
         
@@ -905,11 +905,11 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
         }
       `}</style>
       <div style={{
-        background: '#ffffff',
+        background: 'var(--checkout-card-bg, #ffffff)',
         padding: '8px',
         borderRadius: '8px',
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
-        border: '1px solid #e0e0e0',
+        border: '1px solid var(--checkout-border-color, #e0e0e0)',
         position: 'relative'
       }}>
         <div style={{ position: 'relative' }}>
@@ -1003,16 +1003,17 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                       style={{
                         width: '100%',
                         padding: '1rem',
-                        border: '2px solid #e5e7eb',
+                        border: '2px solid var(--checkout-border-color, #e5e7eb)',
                         borderRadius: '0.75rem',
                         fontSize: '1rem',
-                        background: 'white',
+                        background: 'var(--checkout-input-bg, white)',
+                        color: 'var(--checkout-text-dark, #1f2937)',
                         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
                         transition: 'all 0.2s'
                       }}
                       required
                       onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                      onBlur={(e) => e.target.style.borderColor = 'var(--checkout-border-color, #e5e7eb)'}
                     >
                       <option value="">Select Country</option>
                       {loadingCountries ? (
@@ -1042,7 +1043,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                         display: 'block',
                         fontSize: '12px',
                         fontWeight: 600,
-                        color: '#757575',
+                        color: 'var(--checkout-text-color, #757575)',
                         marginBottom: '6px'
                       }}>
                         Service Type *
@@ -1053,17 +1054,18 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                         style={{
                           width: '100%',
                           padding: '10px 12px',
-                          border: '1px solid #e0e0e0',
+                          border: '1px solid var(--checkout-border-color, #e0e0e0)',
                           borderRadius: '8px',
                           fontSize: '13px',
-                          background: 'white',
+                          background: 'var(--checkout-input-bg, white)',
+                          color: 'var(--checkout-text-dark, #1f2937)',
                           height: '42px',
                           boxSizing: 'border-box'
                         }}
                         required
                         disabled={loadingServiceTypes || availableServiceTypes.length === 1}
                         onFocus={(e) => e.target.style.borderColor = '#eab308'}
-                        onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                        onBlur={(e) => e.target.style.borderColor = 'var(--checkout-border-color, #e5e7eb)'}
                       >
                         {loadingServiceTypes ? (
                           <option value="">Loading service types...</option>
@@ -1124,8 +1126,8 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                           top: '100%',
                           left: 0,
                           right: 0,
-                          background: 'white',
-                          border: '2px solid #e5e7eb',
+                          background: 'var(--checkout-card-bg, white)',
+                          border: '2px solid var(--checkout-border-color, #e5e7eb)',
                           borderTop: 'none',
                           borderRadius: '0 0 0.75rem 0.75rem',
                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
@@ -1143,15 +1145,15 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                               style={{
                                 padding: '10px 12px',
                                 cursor: 'pointer',
-                                borderBottom: index < filteredBranches.length - 1 ? '1px solid #f3f4f6' : 'none',
+                                borderBottom: index < filteredBranches.length - 1 ? '1px solid var(--checkout-border-color, #f3f4f6)' : 'none',
                                 transition: 'background-color 0.2s',
                                 fontSize: '13px'
                               }}
-                              onMouseEnter={(e) => e.target.style.backgroundColor = '#f9fafb'}
-                              onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
+                              onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--checkout-applied-coupon-bg, #f9fafb)'}
+                              onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--checkout-card-bg, white)'}
                             >
-                              <div style={{ fontWeight: 600, color: '#1f2937' }}>{branch.name}</div>
-                              <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                              <div style={{ fontWeight: 600, color: 'var(--checkout-text-dark, #1f2937)' }}>{branch.name}</div>
+                              <div style={{ fontSize: '12px', color: 'var(--checkout-text-color, #6b7280)' }}>
                                 {branch.district}, {branch.region.split(' - ')[1] || branch.region}
                               </div>
                             </div>
@@ -1165,14 +1167,14 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                           top: '100%',
                           left: 0,
                           right: 0,
-                          background: 'white',
-                          border: '2px solid #e5e7eb',
+                          background: 'var(--checkout-card-bg, white)',
+                          border: '2px solid var(--checkout-border-color, #e5e7eb)',
                           borderTop: 'none',
                           borderRadius: '0 0 0.75rem 0.75rem',
                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                           padding: '1rem',
                           textAlign: 'center',
-                          color: '#6b7280',
+                          color: 'var(--checkout-text-color, #6b7280)',
                           fontSize: '0.875rem',
                           zIndex: 1000
                         }}>
@@ -1564,9 +1566,9 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                 <div style={{
                   marginTop: '16px',
                   padding: '14px',
-                  background: '#f9f9f9',
+                  background: 'var(--checkout-applied-coupon-bg, #f9f9f9)',
                   borderRadius: '8px',
-                  border: '1px solid #e0e0e0',
+                  border: '1px solid var(--checkout-border-color, #e0e0e0)',
                   boxShadow: 'none'
                 }}>
                   <div style={{
@@ -1578,7 +1580,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                     <h3 style={{
                       fontSize: '14px',
                       fontWeight: 600,
-                      color: '#424242',
+                      color: 'var(--checkout-text-color, #424242)',
                       margin: 0
                     }}>
                       Available Shipping Rates
@@ -1594,9 +1596,9 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                     return (
                       <div key={index} style={{
                         padding: '1rem',
-                        background: 'white',
+                        background: 'var(--checkout-card-bg, white)',
                         borderRadius: '0.75rem',
-                        border: '1px solid #e0f2fe',
+                        border: '1px solid var(--checkout-border-color, #e0f2fe)',
                         marginBottom: index < shippingRates.length - 1 ? '1rem' : '0',
                         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
                       }}>
@@ -1610,14 +1612,14 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
                             <h4 style={{
                               fontSize: '1.125rem',
                               fontWeight: 600,
-                              color: '#0c4a6e',
+                              color: 'var(--checkout-text-dark, #0c4a6e)',
                               margin: '0 0 0.25rem 0'
                             }}>
                               {rate.service_type}
                             </h4>
                             <p style={{
                               fontSize: '0.875rem',
-                              color: '#64748b',
+                              color: 'var(--checkout-text-color, #64748b)',
                               margin: 0
                             }}>
                               Weight: {totalWeight}kg • Country: {rate.country_code}
@@ -1639,7 +1641,7 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
 
                             <div style={{
                               fontSize: '0.75rem',
-                              color: '#64748b'
+                              color: 'var(--checkout-text-color, #64748b)'
                             }}>
                               Weight limit: {rate.weight_limit}kg
                             </div>

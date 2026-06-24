@@ -758,7 +758,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
 
                         <button
                           onClick={() => setShowCustomOrderForm(true)}
-                          className="btn-style-1 text-btn-uppercase fw-6"
+                          className="btn-style-1 text-btn-uppercase fw-6 btn-custom-order"
                           style={{
                             height: "46px",
                             display: "flex",
@@ -769,9 +769,6 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                             padding: "0 25px",
                             whiteSpace: "nowrap",
                             marginLeft: "10px",
-                            backgroundColor: "var(--main)",
-                            color: "var(--white)",
-                            border: "1px solid var(--main)",
                             fontWeight: "600",
                             position: "relative",
                             overflow: "visible"

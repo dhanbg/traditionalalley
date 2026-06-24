@@ -1348,6 +1348,116 @@ html.dark .widget-menu-tab .item-title.active .inner {
     margin-top: -6px !important;
 }
 
+/* ================= CHECKOUT & DETAILS DARK MODE CSS VARIABLES ================= */
+:root {
+  --checkout-card-bg: #ffffff;
+  --checkout-text-color: #424242;
+  --checkout-text-dark: #1f2937;
+  --checkout-input-bg: #ffffff;
+  --checkout-applied-coupon-bg: #f8f9fa;
+  --checkout-border-color: #e0e0e0;
+}
+
+html.dark {
+  --checkout-card-bg: #1a1d26;
+  --checkout-text-color: #e2e8f0;
+  --checkout-text-dark: #ffffff;
+  --checkout-input-bg: #12141c;
+  --checkout-applied-coupon-bg: #12141c;
+  --checkout-border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Dark Mode Size Button Overrides */
+html.dark .size-btn {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border: 2px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 50% !important;
+}
+
+html.dark .size-btn span {
+  color: #e2e8f0 !important;
+}
+
+html.dark .size-btn:hover {
+  border-color: #e5c158 !important;
+}
+
+html.dark .size-btn:hover span {
+  color: #e5c158 !important;
+}
+
+/* Selected sizes */
+html.dark input[type="radio"]:checked + .size-btn {
+  background-color: #e5c158 !important;
+  background-image: linear-gradient(135deg, #b8860b 0%, #d4af37 100%) !important;
+  border-color: #e5c158 !important;
+}
+
+html.dark input[type="radio"]:checked + .size-btn span {
+  color: #000000 !important;
+}
+
+/* Disabled/out-of-stock sizes */
+html.dark .size-btn.type-disable {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  opacity: 0.3 !important;
+}
+
+html.dark .size-btn.type-disable span {
+  color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Dark Mode Product Action Buttons */
+html.dark .btn-add-to-cart {
+  background-color: #e5c158 !important;
+  background-image: linear-gradient(135deg, #b8860b 0%, #d4af37 100%) !important;
+  border-color: #e5c158 !important;
+  color: #000000 !important;
+}
+
+html.dark .btn-add-to-cart span {
+  color: #000000 !important;
+}
+
+html.dark .btn-add-to-cart:hover {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  border-color: #ffffff !important;
+  color: #000000 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1);
+}
+
+html.dark .btn-add-to-cart:hover span {
+  color: #000000 !important;
+}
+
+/* Custom Order button in dark mode */
+html.dark .btn-custom-order {
+  background-color: transparent !important;
+  border: 2px solid #e5c158 !important;
+  color: #e5c158 !important;
+}
+
+html.dark .btn-custom-order span {
+  color: #e5c158 !important;
+}
+
+html.dark .btn-custom-order:hover {
+  background-color: #e5c158 !important;
+  background-image: linear-gradient(135deg, #b8860b 0%, #d4af37 100%) !important;
+  border-color: #e5c158 !important;
+  color: #000000 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.2);
+}
+
+html.dark .btn-custom-order:hover span {
+  color: #000000 !important;
+}
+
+
 
 
 
