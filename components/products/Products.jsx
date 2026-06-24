@@ -694,8 +694,23 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
             />
 
             {loading && loadedItems.length === 0 ? (
-              <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '300px' }}>
-                <div className="loader"></div>
+              <div
+                className={activeLayout == 1 
+                  ? "tf-list-layout wrapper-shop" 
+                  : `tf-grid-layout wrapper-shop tf-col-${activeLayout}`
+                }
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                  <div key={i} className="card-product skeleton-card">
+                    <div className="card-product-wrapper skeleton-media">
+                      <div className="shimmer-effect" />
+                    </div>
+                    <div className="card-product-info">
+                      <div className="skeleton-title shimmer-effect" />
+                      <div className="skeleton-price shimmer-effect" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : activeLayout == 1 ? (
               <div className="tf-list-layout wrapper-shop" id="listLayout">
@@ -737,6 +752,86 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
             )}
 
             <style jsx>{`
+              /* ───── Skeleton Loading Styles ───── */
+              .skeleton-card {
+                pointer-events: none;
+                box-shadow: none !important;
+                background: transparent !important;
+              }
+
+              .skeleton-media {
+                background: #f0f2f5 !important;
+                position: relative;
+                overflow: hidden;
+                aspect-ratio: 3/4;
+                border-radius: 12px;
+              }
+
+              :global(html.dark) .skeleton-media {
+                background: #1a1d26 !important;
+              }
+
+              .skeleton-title {
+                height: 18px;
+                width: 70%;
+                background: #f0f2f5;
+                border-radius: 4px;
+                margin-top: 12px;
+                margin-bottom: 8px;
+              }
+
+              :global(html.dark) .skeleton-title {
+                background: #1a1d26;
+              }
+
+              .skeleton-price {
+                height: 14px;
+                width: 40%;
+                background: #f0f2f5;
+                border-radius: 4px;
+              }
+
+              :global(html.dark) .skeleton-price {
+                background: #1a1d26;
+              }
+
+              .shimmer-effect {
+                position: relative;
+                overflow: hidden;
+                width: 100%;
+                height: 100%;
+              }
+
+              .shimmer-effect::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(
+                  90deg,
+                  rgba(255, 255, 255, 0) 0%,
+                  rgba(255, 255, 255, 0.6) 50%,
+                  rgba(255, 255, 255, 0) 100%
+                );
+                animation: shimmer 1.5s infinite;
+              }
+
+              :global(html.dark) .shimmer-effect::after {
+                background: linear-gradient(
+                  90deg,
+                  rgba(255, 255, 255, 0) 0%,
+                  rgba(255, 255, 255, 0.06) 50%,
+                  rgba(255, 255, 255, 0) 100%
+                );
+              }
+
+              @keyframes shimmer {
+                0% { transform: translateX(-100%); }
+                100% { transform: translateX(100%); }
+              }
+
               .loader {
                 width: 50px;
                 aspect-ratio: 1;
