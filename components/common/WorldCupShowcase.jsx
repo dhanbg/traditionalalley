@@ -95,7 +95,7 @@ const WORLDCUP_PRODUCTS = [
 
 export default function WorldCupShowcase() {
   const [hoveredCard, setHoveredCard] = useState(null);
-  const [products, setProducts] = useState(WORLDCUP_PRODUCTS);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const { addProductToCart } = useContextElement();
@@ -156,8 +156,8 @@ export default function WorldCupShowcase() {
                 dbItem: matchingItem
               };
             }
-            return staticProd;
-          });
+            return null;
+          }).filter(p => p !== null);
           setProducts(updatedProducts);
         }
       } catch (error) {
@@ -248,7 +248,38 @@ export default function WorldCupShowcase() {
           <div className="title-underline"></div>
         </div>
 
-        {isMobile ? (
+        {loading ? (
+          <div className={isMobile ? "mobile-grid-showcase" : "products-grid"}>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={i}
+                className={isMobile ? "mobile-card skeleton-card" : "product-card-wc skeleton-card"}
+                style={{
+                  animationDelay: `${i * 0.05}s`
+                }}
+              >
+                {isMobile && <div className="mobile-card-accent" style={{ background: '#e1e5eb' }} />}
+                <div className={isMobile ? "mobile-card-img-wrap skeleton-media" : "card-media-wrapper skeleton-media"}>
+                  <div className="shimmer-effect" />
+                </div>
+                <div className={isMobile ? "mobile-card-body" : "card-info"}>
+                  <div className="skeleton-title shimmer-effect" />
+                  <div className="skeleton-price shimmer-effect" />
+                  {!isMobile && (
+                    <div className="skeleton-footer-wrap">
+                      <div className="skeleton-status shimmer-effect" />
+                      <div className="skeleton-button shimmer-effect" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : products.length === 0 ? (
+          <div className="no-products-message">
+            <p>Our premium collection is currently loading or temporarily unavailable. Please check back soon!</p>
+          </div>
+        ) : isMobile ? (
           <div className="mobile-grid-showcase">
             {products.map((prod, idx) => (
               <div
@@ -395,6 +426,145 @@ export default function WorldCupShowcase() {
       </div>
 
       <style jsx>{`
+        /* ───── Skeleton Loading Styles ───── */
+        .skeleton-card {
+          border-color: rgba(0, 0, 0, 0.04) !important;
+          pointer-events: none;
+          box-shadow: none !important;
+          background: #ffffff !important;
+        }
+
+        :global(html.dark) .skeleton-card {
+          background: #1a1d26 !important;
+          border-color: rgba(255, 255, 255, 0.04) !important;
+        }
+
+        .skeleton-media {
+          background: #f0f2f5 !important;
+          position: relative;
+          overflow: hidden;
+        }
+
+        :global(html.dark) .skeleton-media {
+          background: #151821 !important;
+        }
+
+        .skeleton-title {
+          height: 20px;
+          width: 75%;
+          background: #f0f2f5;
+          border-radius: 4px;
+          margin-bottom: 12px;
+        }
+
+        :global(html.dark) .skeleton-title {
+          background: #12141c;
+        }
+
+        .skeleton-price {
+          height: 16px;
+          width: 35%;
+          background: #f0f2f5;
+          border-radius: 4px;
+          margin-bottom: 8px;
+        }
+
+        :global(html.dark) .skeleton-price {
+          background: #12141c;
+        }
+
+        .skeleton-footer-wrap {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-top: 1px solid rgba(0, 0, 0, 0.04);
+          padding-top: 15px;
+          margin-top: 15px;
+        }
+
+        :global(html.dark) .skeleton-footer-wrap {
+          border-top-color: rgba(255, 255, 255, 0.04);
+        }
+
+        .skeleton-status {
+          height: 12px;
+          width: 30%;
+          background: #f0f2f5;
+          border-radius: 4px;
+        }
+
+        :global(html.dark) .skeleton-status {
+          background: #12141c;
+        }
+
+        .skeleton-button {
+          height: 32px;
+          width: 35%;
+          background: #f0f2f5;
+          border-radius: 40px;
+        }
+
+        :global(html.dark) .skeleton-button {
+          background: #12141c;
+        }
+
+        .shimmer-effect {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .shimmer-effect::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.6) 50%,
+            rgba(255, 255, 255, 0) 100%
+          );
+          animation: shimmer 1.5s infinite;
+        }
+
+        :global(html.dark) .shimmer-effect::after {
+          background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.06) 50%,
+            rgba(255, 255, 255, 0) 100%
+          );
+        }
+
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+
+        .no-products-message {
+          text-align: center;
+          padding: 40px 20px;
+          background: rgba(0, 0, 0, 0.02);
+          border-radius: 12px;
+          border: 1px dashed rgba(0, 0, 0, 0.1);
+          margin: 0 auto;
+          max-width: 500px;
+          grid-column: 1 / -1;
+        }
+
+        :global(html.dark) .no-products-message {
+          background: rgba(255, 255, 255, 0.02);
+          border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .no-products-message p {
+          color: #6c7281;
+          font-size: 0.95rem;
+          margin: 0;
+        }
+
         .worldcup-section {
           padding: 100px 0;
           background: linear-gradient(to bottom, #f4f6fa 0%, #ffffff 100%);
