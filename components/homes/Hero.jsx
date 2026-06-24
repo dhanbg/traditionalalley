@@ -332,11 +332,10 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
 
   // Force consistent spacing and height from Hero component side
   const heroWrapperStyle = {
-    marginBottom: isMobile ? '0px' : '0px', // Remove any default margins
+    marginBottom: '0px', // Remove any default margins
     paddingBottom: '0px', // Ensure no bottom padding
-    height: isMobile ? 'auto' : '90vh', // Use auto height on mobile to allow aspectRatio to control it
-    minHeight: isMobile ? 'auto' : '700px', // Remove minHeight constraint on mobile
-    aspectRatio: isMobile ? '2/3' : 'auto', // Keep aspect ratio proportional on mobile (matches mobile.png)
+    height: '100vh', // Fit to screen height in both laptop and mobile
+    minHeight: 'auto',
     position: 'relative',
     overflow: 'visible' // Changed from hidden to visible to prevent cutting content
   };
@@ -1040,7 +1039,10 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
             margin-bottom: 1.0rem;
           }
           .teaser-badge {
-            margin-bottom: 0;
+            display: none;
+          }
+          .tf-slideshow .subheading {
+            display: none !important;
           }
           .teaser-headline {
             font-size: 3.2rem;
