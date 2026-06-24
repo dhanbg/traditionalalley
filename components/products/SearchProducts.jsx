@@ -1,12 +1,31 @@
 "use client";
-import { products } from "@/data/productsWomen";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import ProductCard1 from "../productCards/ProductCard1";
 import Link from "next/link";
+import { fetchProductsWithVariants } from "@/utils/productVariantUtils";
+import { PRODUCT_POPULATE } from "@/utils/urls";
 
 export default function SearchProducts() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRecentProducts = async () => {
+      try {
+        const apiEndpoint = `/api/products?sort[0]=createdAt:desc&pagination[limit]=4&${PRODUCT_POPULATE}`;
+        const data = await fetchProductsWithVariants(apiEndpoint);
+        setProducts(data.slice(0, 4));
+      } catch (error) {
+        console.error("Error fetching recent products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRecentProducts();
+  }, []);
+
   return (
     <>
       {/* search */}
@@ -98,16 +117,120 @@ export default function SearchProducts() {
               el: ".spd4",
             }}
           >
-            {products.slice(0, 4).map((product, i) => (
-              <SwiperSlide key={i} className="swiper-slide">
-                <ProductCard1 product={product} />
-              </SwiperSlide>
-            ))}
+            {loading ? (
+              [1, 2, 3, 4].map((i) => (
+                <SwiperSlide key={`skeleton-${i}`} className="swiper-slide">
+                  <div className="card-product skeleton-card">
+                    <div className="card-product-wrapper skeleton-media">
+                      <div className="shimmer-effect" />
+                    </div>
+                    <div className="card-product-info">
+                      <div className="skeleton-title shimmer-effect" />
+                      <div className="skeleton-price shimmer-effect" />
+                    </div>
+                  </div>
+                </SwiperSlide>
+              ))
+            ) : products.length > 0 ? (
+              products.map((product, i) => (
+                <SwiperSlide key={i} className="swiper-slide">
+                  <ProductCard1 product={product} />
+                </SwiperSlide>
+              ))
+            ) : (
+              <div className="w-100 text-center py-4">
+                <p className="text-secondary">No recent products found.</p>
+              </div>
+            )}
 
             <div className="sw-pagination-latest spd4  sw-dots type-circle justify-content-center" />
           </Swiper>
         </div>
       </section>
+
+      <style jsx>{`
+        /* ───── Skeleton Loading Styles ───── */
+        .skeleton-card {
+          pointer-events: none;
+          box-shadow: none !important;
+          background: transparent !important;
+        }
+
+        .skeleton-media {
+          background: #f0f2f5 !important;
+          position: relative;
+          overflow: hidden;
+          aspect-ratio: 3/4;
+          border-radius: 12px;
+        }
+
+        :global(html.dark) .skeleton-media {
+          background: #1a1d26 !important;
+        }
+
+        .skeleton-title {
+          height: 18px;
+          width: 70%;
+          background: #f0f2f5;
+          border-radius: 4px;
+          margin-top: 12px;
+          margin-bottom: 8px;
+        }
+
+        :global(html.dark) .skeleton-title {
+          background: #1a1d26;
+        }
+
+        .skeleton-price {
+          height: 14px;
+          width: 40%;
+          background: #f0f2f5;
+          border-radius: 4px;
+        }
+
+        :global(html.dark) .skeleton-price {
+          background: #1a1d26;
+        }
+
+        .shimmer-effect {
+          position: relative;
+          overflow: hidden;
+          width: 100%;
+          height: 100%;
+        }
+
+        .shimmer-effect::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.4),
+            transparent
+          );
+          transform: translateX(-100%);
+          animation: shimmer-anim 1.5s infinite;
+        }
+
+        :global(html.dark) .shimmer-effect::after {
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.1),
+            transparent
+          );
+        }
+
+        @keyframes shimmer-anim {
+          100% {
+            transform: translateX(100%);
+          }
+        }
+      `}</style>
     </>
   );
 }
