@@ -17,7 +17,7 @@ const WORLDCUP_PRODUCTS = [
     image: "/images/worldcup/argentina.png",
     accentColor: "#75AADB",
     badgeBg: "linear-gradient(135deg, #75AADB 0%, #FFFFFF 50%, #75AADB 100%)",
-    badgeColor: "#003870",
+    badgeColor: "#000000",
     tag: "Championship Edition",
     link: "/product-detail/h2mjo6wvr5al30akjd2ckq0g"
   },
@@ -31,7 +31,7 @@ const WORLDCUP_PRODUCTS = [
     image: "/images/worldcup/brasil.png",
     accentColor: "#009B3A",
     badgeBg: "linear-gradient(135deg, #FFDF00 0%, #009B3A 100%)",
-    badgeColor: "#000000",
+    badgeColor: "#FFFFFF",
     tag: "Samba Spirit",
     link: "/product-detail/h2mjo6wvr5al30akjd2ckq0g?variant=pzquel57xs9fwyh2em5mwdp1"
   },
@@ -59,7 +59,7 @@ const WORLDCUP_PRODUCTS = [
     image: "/images/worldcup/france.png",
     accentColor: "#002395",
     badgeBg: "linear-gradient(135deg, #002395 0%, #FFFFFF 50%, #ED2939 100%)",
-    badgeColor: "#FFFFFF",
+    badgeColor: "#000000",
     tag: "Royale Fit",
     link: "/product-detail/h2mjo6wvr5al30akjd2ckq0g?variant=jthas50lwnxmnpf6c5bgamst"
   },
@@ -87,7 +87,7 @@ const WORLDCUP_PRODUCTS = [
     image: "/images/worldcup/spain.png",
     accentColor: "#C10E1F",
     badgeBg: "linear-gradient(135deg, #C10E1F 0%, #F1BF00 100%)",
-    badgeColor: "#000000",
+    badgeColor: "#FFFFFF",
     tag: "Scarlet Passion",
     link: "/product-detail/h2mjo6wvr5al30akjd2ckq0g?variant=ellw39kn89wtyjqtytep638k"
   }
@@ -301,8 +301,8 @@ export default function WorldCupShowcase() {
                     <Image
                       src={prod.image}
                       alt={prod.title}
-                      width={300}
-                      height={375}
+                      width={400}
+                      height={400}
                       className="mobile-card-img"
                       priority={idx < 4}
                     />
@@ -358,7 +358,9 @@ export default function WorldCupShowcase() {
                   onMouseLeave={() => setHoveredCard(null)}
                   style={{
                     '--accent-color': prod.accentColor,
-                    '--card-glow': isHovered ? `0 15px 35px ${prod.accentColor}25` : '0 10px 30px rgba(0, 0, 0, 0.03)'
+                    '--card-glow': isHovered ? `0 15px 35px ${prod.accentColor}25` : '0 10px 30px rgba(0, 0, 0, 0.03)',
+                    '--badge-bg': prod.badgeBg,
+                    '--badge-color': prod.badgeColor
                   }}
                 >
                   <div className="card-media-wrapper">
@@ -370,7 +372,7 @@ export default function WorldCupShowcase() {
                         <Image 
                           src={prod.image} 
                           alt={prod.title}
-                          width={400}
+                          width={500}
                           height={500}
                           className="product-image main-img"
                           priority={idx < 3}
@@ -379,7 +381,7 @@ export default function WorldCupShowcase() {
                           <Image 
                             src={prod.imgHover} 
                             alt={prod.title}
-                            width={400}
+                            width={500}
                             height={500}
                             className="product-image hover-img"
                           />
@@ -659,12 +661,21 @@ export default function WorldCupShowcase() {
 
         .card-media-wrapper {
           position: relative;
-          aspect-ratio: 4/5;
+          aspect-ratio: 2/3;
           overflow: hidden;
-          background: #f5f6fa;
+          background: transparent;
         }
 
         .image-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+        }
+
+        .image-container :global(a) {
+          display: block;
           width: 100%;
           height: 100%;
           position: relative;
@@ -672,23 +683,19 @@ export default function WorldCupShowcase() {
 
         :global(.product-image) {
           object-fit: contain !important;
-          width: 100%;
-          height: 100%;
+          width: 100% !important;
+          height: 100% !important;
+          position: absolute;
+          top: 0;
+          left: 0;
         }
 
         :global(.main-img) {
-          position: relative;
           z-index: 1;
           transition: opacity 0.4s ease, transform 0.6s ease;
         }
 
         :global(.hover-img) {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: contain !important;
           opacity: 0;
           z-index: 2;
           transition: opacity 0.4s ease, transform 0.6s ease;
@@ -716,7 +723,14 @@ export default function WorldCupShowcase() {
           padding: 6px 14px;
           border-radius: 4px;
           box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+          background: var(--badge-bg) !important;
+          color: var(--badge-color) !important;
+          text-shadow: none !important;
+        }
+
+        :global(html.dark) div.country-badge {
+          color: var(--badge-color) !important;
+          background: var(--badge-bg) !important;
         }
 
 
@@ -867,8 +881,9 @@ export default function WorldCupShowcase() {
         .mobile-grid-showcase {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
-          gap: 14px;
-          padding: 0 12px;
+          gap: 12px;
+          padding: 0 8px;
+          margin: 0;
         }
 
         @keyframes mobileCardIn {
@@ -879,10 +894,10 @@ export default function WorldCupShowcase() {
         .mobile-card {
           position: relative;
           background: #ffffff;
-          border-radius: 14px;
+          border-radius: 12px;
           overflow: hidden;
           border: 1px solid rgba(0,0,0,0.06);
-          box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.03);
           animation: mobileCardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
           display: flex;
           flex-direction: column;
@@ -896,7 +911,7 @@ export default function WorldCupShowcase() {
           width: 4px;
           height: 100%;
           background: var(--accent);
-          border-radius: 14px 0 0 14px;
+          border-radius: 12px 0 0 12px;
           z-index: 5;
         }
 
@@ -904,13 +919,15 @@ export default function WorldCupShowcase() {
         .mobile-card-img-wrap {
           display: block;
           position: relative;
-          aspect-ratio: 4/5;
-          background: #f5f6fa;
+          aspect-ratio: 2/3;
+          background: transparent;
           overflow: hidden;
         }
 
         .mobile-card-img-link {
-          display: block;
+          position: absolute;
+          top: 0;
+          left: 0;
           width: 100%;
           height: 100%;
         }
@@ -919,6 +936,9 @@ export default function WorldCupShowcase() {
           object-fit: contain !important;
           width: 100% !important;
           height: 100% !important;
+          position: absolute;
+          top: 0;
+          left: 0;
           transition: transform 0.4s ease;
         }
 
@@ -941,7 +961,14 @@ export default function WorldCupShowcase() {
           box-shadow: 0 2px 6px rgba(0,0,0,0.12);
           backdrop-filter: blur(4px);
           -webkit-backdrop-filter: blur(4px);
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+          background: var(--badge-bg) !important;
+          color: var(--badge-color) !important;
+          text-shadow: none !important;
+        }
+
+        :global(html.dark) span.mobile-country-tag {
+          color: var(--badge-color) !important;
+          background: var(--badge-bg) !important;
         }
 
         /* Quick-add bag button */
@@ -998,10 +1025,11 @@ export default function WorldCupShowcase() {
         .mobile-card-footer {
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          justify-content: center;
           margin-top: auto;
           padding-top: 6px;
           border-top: 1px solid rgba(0,0,0,0.04);
+          position: relative;
         }
 
         .mobile-pulse-dot {
@@ -1010,7 +1038,10 @@ export default function WorldCupShowcase() {
           background: var(--accent);
           border-radius: 50%;
           display: inline-block;
-          position: relative;
+          position: absolute;
+          left: 12px;
+          top: 50%;
+          transform: translateY(-50%);
         }
 
         .mobile-pulse-dot::after {
@@ -1047,12 +1078,12 @@ export default function WorldCupShowcase() {
         /* ───── Dark Mode for Mobile Cards ───── */
         :global(html.dark) .mobile-card {
           background: #1a1d26;
-          border-color: rgba(255,255,255,0.06);
-          box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+          border: 1px solid rgba(255,255,255,0.06);
+          box-shadow: none;
         }
 
         :global(html.dark) .mobile-card-img-wrap {
-          background: #12141c;
+          background: transparent;
         }
 
         :global(html.dark) .mobile-card-title {

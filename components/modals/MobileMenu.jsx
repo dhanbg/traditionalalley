@@ -136,10 +136,34 @@ const MobileMenu = React.memo(function MobileMenu() {
         
         /* CSS Classes for better performance */
         .mobile-menu-container {
-          background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+          --menu-bg: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+          --menu-item-bg: #F8FAFC;
+          --menu-item-grad: linear-gradient(135deg, #F8FAFC 0%, #EDF2F7 100%);
+          --menu-submenu-bg: #F1F5F9;
+          --menu-text: var(--main);
+          --menu-text-sec: var(--secondary);
+          --menu-border: var(--line);
+          --menu-logout-bg: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+          --menu-logout-border: #feb2b2;
+          --menu-logout-text: #dc3545;
+
+          background: var(--menu-bg);
           box-shadow: 0 25px 50px -12px rgba(24, 24, 24, 0.25);
           border-radius: 0 20px 20px 0;
           animation: slideInLeft 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        :global(.dark) .mobile-menu-container {
+          --menu-bg: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+          --menu-item-bg: #1f2937;
+          --menu-item-grad: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+          --menu-submenu-bg: #111827;
+          --menu-text: #f3f4f6;
+          --menu-text-sec: #9ca3af;
+          --menu-border: #374151;
+          --menu-logout-bg: linear-gradient(135deg, #451a1a 0%, #2d1212 100%);
+          --menu-logout-border: #742a2a;
+          --menu-logout-text: #f87171;
         }
         
         .close-button {
@@ -189,13 +213,13 @@ const MobileMenu = React.memo(function MobileMenu() {
           margin-bottom: 32px;
           text-align: center;
           padding-bottom: 24px;
-          border-bottom: 2px solid var(--line);
+          border-bottom: 2px solid var(--menu-border);
         }
         
         .menu-title {
           font-size: 24px;
           font-weight: 600;
-          color: var(--main);
+          color: var(--menu-text);
           margin: 0;
           font-family: "Kumbh Sans", sans-serif;
         }
@@ -219,10 +243,10 @@ const MobileMenu = React.memo(function MobileMenu() {
           padding: 18px 24px;
           font-size: 16px;
           font-weight: 500;
-          color: var(--main);
+          color: var(--menu-text);
           text-decoration: none;
-          background: #F8FAFC;
-          border: 1px solid var(--line);
+          background: var(--menu-item-bg);
+          border: 1px solid var(--menu-border);
           border-radius: 12px;
           transition: all 0.2s ease;
           font-family: "Outfit", sans-serif;
@@ -243,9 +267,9 @@ const MobileMenu = React.memo(function MobileMenu() {
           padding: 18px 24px;
           font-size: 16px;
           font-weight: 500;
-          color: var(--main);
-          background: #F8FAFC;
-          border: 1px solid var(--line);
+          color: var(--menu-text);
+          background: var(--menu-item-bg);
+          border: 1px solid var(--menu-border);
           border-radius: 12px;
           transition: all 0.2s ease;
           font-family: "Outfit", sans-serif;
@@ -279,9 +303,9 @@ const MobileMenu = React.memo(function MobileMenu() {
         }
         
         .submenu {
-          background: #F1F5F9;
+          background: var(--menu-submenu-bg);
           border-radius: 8px;
-          border: 1px solid var(--line);
+          border: 1px solid var(--menu-border);
           margin: 12px 0 0 0;
           padding: 12px;
           list-style: none;
@@ -307,7 +331,7 @@ const MobileMenu = React.memo(function MobileMenu() {
           padding: 12px 16px;
           font-size: 14px;
           font-weight: 400;
-          color: var(--secondary);
+          color: var(--menu-text-sec);
           text-decoration: none;
           background: transparent;
           border-radius: 8px;
@@ -354,10 +378,10 @@ const MobileMenu = React.memo(function MobileMenu() {
           padding: 16px 20px;
           font-size: 16px;
           font-weight: 500;
-          color: var(--main);
+          color: var(--menu-text);
           text-decoration: none;
-          background: #F8FAFC;
-          border: 1px solid var(--line);
+          background: var(--menu-item-bg);
+          border: 1px solid var(--menu-border);
           border-radius: 12px;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           font-family: "Outfit", sans-serif;
@@ -366,17 +390,15 @@ const MobileMenu = React.memo(function MobileMenu() {
           will-change: transform, background, box-shadow;
         }
 
-
-
         .category-container {
           display: flex;
           align-items: center;
           padding: 16px 20px;
           font-size: 16px;
           font-weight: 500;
-          color: var(--main);
-          background: #F8FAFC;
-          border: 1px solid var(--line);
+          color: var(--menu-text);
+          background: var(--menu-item-bg);
+          border: 1px solid var(--menu-border);
           border-radius: 12px;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           font-family: "Outfit", sans-serif;
@@ -385,8 +407,6 @@ const MobileMenu = React.memo(function MobileMenu() {
           justify-content: space-between;
           will-change: transform, background, box-shadow;
         }
-
-
 
         .category-link {
           display: flex;
@@ -406,9 +426,9 @@ const MobileMenu = React.memo(function MobileMenu() {
         }
 
         .submenu {
-          background: #F1F5F9;
+          background: var(--menu-submenu-bg);
           border-radius: 8px;
-          border: 1px solid var(--line);
+          border: 1px solid var(--menu-border);
           margin: 8px 0 0 0;
           padding: 8px;
           list-style: none;
@@ -437,8 +457,6 @@ const MobileMenu = React.memo(function MobileMenu() {
           transform: rotate(45deg);
         }
 
-        /* Smooth category container transitions - already defined above */
-
         .submenu-item {
           margin-bottom: 4px;
         }
@@ -449,7 +467,7 @@ const MobileMenu = React.memo(function MobileMenu() {
           padding: 8px 12px;
           font-size: 14px;
           font-weight: 400;
-          color: var(--secondary);
+          color: var(--menu-text-sec);
           text-decoration: none;
           background: transparent;
           border-radius: 6px;
@@ -482,10 +500,10 @@ const MobileMenu = React.memo(function MobileMenu() {
           padding: 16px 20px;
           font-size: 16px;
           font-weight: 500;
-          color: var(--main);
+          color: var(--menu-text);
           text-decoration: none;
-          background: linear-gradient(135deg, #F8FAFC 0%, #EDF2F7 100%);
-          border: 1px solid var(--line);
+          background: var(--menu-item-grad);
+          border: 1px solid var(--menu-border);
           border-radius: 12px;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           font-family: "Outfit", sans-serif;
@@ -494,8 +512,6 @@ const MobileMenu = React.memo(function MobileMenu() {
           width: 100%;
           cursor: pointer;
         }
-        
-
         
         .auth-menu-icon {
           margin-right: 12px;
@@ -515,9 +531,9 @@ const MobileMenu = React.memo(function MobileMenu() {
           padding: 16px 20px;
           font-size: 16px;
           font-weight: 500;
-          color: #dc3545;
-          background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
-          border: 1px solid #feb2b2;
+          color: var(--menu-logout-text);
+          background: var(--menu-logout-bg);
+          border: 1px solid var(--menu-logout-border);
           border-radius: 12px;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           font-family: "Outfit", sans-serif;
@@ -526,8 +542,6 @@ const MobileMenu = React.memo(function MobileMenu() {
           cursor: pointer;
           width: 100%;
         }
-        
-
         
         .logout-icon {
           display: inline-block;
@@ -562,18 +576,16 @@ const MobileMenu = React.memo(function MobileMenu() {
           padding: 16px 20px;
           font-size: 16px;
           font-weight: 500;
-          color: var(--main);
+          color: var(--menu-text);
           text-decoration: none;
-          background: linear-gradient(135deg, #F8FAFC 0%, #EDF2F7 100%);
-          border: 1px solid var(--line);
+          background: var(--menu-item-grad);
+          border: 1px solid var(--menu-border);
           border-radius: 12px;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           font-family: "Outfit", sans-serif;
           position: relative;
           overflow: hidden;
         }
-        
-
         
         .help-emoji {
           margin-right: 12px;
@@ -731,10 +743,10 @@ const MobileMenu = React.memo(function MobileMenu() {
                       padding: '16px 20px',
                       fontSize: '16px',
                       fontWeight: '500',
-                      color: 'var(--main)',
+                      color: 'var(--menu-text)',
                       textDecoration: 'none',
-                      background: 'linear-gradient(135deg, #F8FAFC 0%, #EDF2F7 100%)',
-                      border: '1px solid var(--line)',
+                      background: 'var(--menu-item-grad)',
+                      border: '1px solid var(--menu-border)',
                       borderRadius: '12px',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       fontFamily: '"Outfit", sans-serif',
@@ -763,10 +775,10 @@ const MobileMenu = React.memo(function MobileMenu() {
                         padding: '16px 20px',
                         fontSize: '16px',
                         fontWeight: '500',
-                        color: 'var(--main)',
+                        color: 'var(--menu-text)',
                         textDecoration: 'none',
-                        background: 'linear-gradient(135deg, #F8FAFC 0%, #EDF2F7 100%)',
-                        border: '1px solid var(--line)',
+                        background: 'var(--menu-item-grad)',
+                        border: '1px solid var(--menu-border)',
                         borderRadius: '12px',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         fontFamily: '"Outfit", sans-serif',
@@ -824,10 +836,10 @@ const MobileMenu = React.memo(function MobileMenu() {
                         padding: '16px 20px',
                         fontSize: '16px',
                         fontWeight: '500',
-                        color: 'var(--main)',
+                        color: 'var(--menu-text)',
                         textDecoration: 'none',
-                        background: 'linear-gradient(135deg, #F8FAFC 0%, #EDF2F7 100%)',
-                        border: '1px solid var(--line)',
+                        background: 'var(--menu-item-grad)',
+                        border: '1px solid var(--menu-border)',
                         borderRadius: '12px',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         fontFamily: '"Outfit", sans-serif',
@@ -884,9 +896,9 @@ const MobileMenu = React.memo(function MobileMenu() {
                         padding: '16px 20px',
                         fontSize: '16px',
                         fontWeight: '500',
-                        color: '#dc3545',
-                        background: 'linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%)',
-                        border: '1px solid #feb2b2',
+                        color: 'var(--menu-logout-text)',
+                        background: 'var(--menu-logout-bg)',
+                        border: '1px solid var(--menu-logout-border)',
                         borderRadius: '12px',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         fontFamily: '"Outfit", sans-serif',
@@ -963,10 +975,10 @@ const MobileMenu = React.memo(function MobileMenu() {
                       padding: '16px 20px',
                       fontSize: '16px',
                       fontWeight: '500',
-                      color: 'var(--main)',
+                      color: 'var(--menu-text)',
                       textDecoration: 'none',
-                      background: 'linear-gradient(135deg, #F8FAFC 0%, #EDF2F7 100%)',
-                      border: '1px solid var(--line)',
+                      background: 'var(--menu-item-grad)',
+                      border: '1px solid var(--menu-border)',
                       borderRadius: '12px',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       fontFamily: '"Outfit", sans-serif',
@@ -988,20 +1000,20 @@ const MobileMenu = React.memo(function MobileMenu() {
             <div className="mb-other-content" style={{
               marginTop: '32px',
               paddingTop: '24px',
-              borderTop: '2px solid var(--line)'
+              borderTop: '2px solid var(--menu-border)'
             }}>
               {/* Visit Us Section */}
               <div style={{
-                background: 'linear-gradient(135deg, #F8FAFC 0%, #EDF2F7 100%)',
+                background: 'var(--menu-item-grad)',
                 borderRadius: '16px',
                 padding: '20px',
-                border: '1px solid var(--line)',
+                border: '1px solid var(--menu-border)',
                 marginBottom: '20px'
               }}>
                 <h4 style={{
                   fontSize: '16px',
                   fontWeight: '600',
-                  color: 'var(--main)',
+                  color: 'var(--menu-text)',
                   marginBottom: '16px',
                   fontFamily: '"Kumbh Sans", sans-serif',
                   display: 'flex',
@@ -1022,7 +1034,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                     display: 'flex',
                     alignItems: 'center',
                     fontSize: '14px',
-                    color: 'var(--secondary)',
+                    color: 'var(--menu-text-sec)',
                     fontFamily: '"Kumbh Sans", sans-serif'
                   }}>
                     <span style={{
@@ -1057,16 +1069,16 @@ const MobileMenu = React.memo(function MobileMenu() {
 
               {/* Contact Us Section */}
               <div style={{
-                background: 'linear-gradient(135deg, #F8FAFC 0%, #EDF2F7 100%)',
+                background: 'var(--menu-item-grad)',
                 borderRadius: '16px',
                 padding: '20px',
-                border: '1px solid var(--line)',
+                border: '1px solid var(--menu-border)',
                 marginBottom: '20px'
               }}>
                 <h4 style={{
                   fontSize: '16px',
                   fontWeight: '600',
-                  color: 'var(--main)',
+                  color: 'var(--menu-text)',
                   marginBottom: '16px',
                   fontFamily: '"Kumbh Sans", sans-serif',
                   display: 'flex',
@@ -1087,7 +1099,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                     display: 'flex',
                     alignItems: 'center',
                     fontSize: '14px',
-                    color: 'var(--secondary)',
+                    color: 'var(--menu-text-sec)',
                     fontFamily: '"Kumbh Sans", sans-serif'
                   }}>
                     <span style={{
@@ -1104,7 +1116,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                     display: 'flex',
                     alignItems: 'center',
                     fontSize: '14px',
-                    color: 'var(--secondary)',
+                    color: 'var(--menu-text-sec)',
                     fontFamily: '"Kumbh Sans", sans-serif'
                   }}>
                     <span style={{
@@ -1122,15 +1134,15 @@ const MobileMenu = React.memo(function MobileMenu() {
 
               {/* Social Media Section */}
               <div style={{
-                background: 'linear-gradient(135deg, #F8FAFC 0%, #EDF2F7 100%)',
+                background: 'var(--menu-item-grad)',
                 borderRadius: '16px',
                 padding: '20px',
-                border: '1px solid var(--line)'
+                border: '1px solid var(--menu-border)'
               }}>
                 <h4 style={{
                   fontSize: '16px',
                   fontWeight: '600',
-                  color: 'var(--main)',
+                  color: 'var(--menu-text)',
                   marginBottom: '16px',
                   fontFamily: '"Kumbh Sans", sans-serif',
                   display: 'flex',
@@ -1153,9 +1165,9 @@ const MobileMenu = React.memo(function MobileMenu() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      border: '1px solid var(--main)',
+                      border: '1px solid var(--menu-text)',
                       borderRadius: '50%',
-                      color: 'var(--main)',
+                      color: 'var(--menu-text)',
                       transition: 'all 0.3s ease'
                     }}>
                       <i className="icon icon-fb" />
@@ -1169,9 +1181,9 @@ const MobileMenu = React.memo(function MobileMenu() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      border: '1px solid var(--main)',
+                      border: '1px solid var(--menu-text)',
                       borderRadius: '50%',
-                      color: 'var(--main)',
+                      color: 'var(--menu-text)',
                       transition: 'all 0.3s ease'
                     }}>
                       <i className="icon icon-instagram" />
@@ -1185,9 +1197,9 @@ const MobileMenu = React.memo(function MobileMenu() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      border: '1px solid var(--main)',
+                      border: '1px solid var(--menu-text)',
                       borderRadius: '50%',
-                      color: 'var(--main)',
+                      color: 'var(--menu-text)',
                       transition: 'all 0.3s ease'
                     }}>
                       <i className="icon icon-tiktok" />
@@ -1201,9 +1213,9 @@ const MobileMenu = React.memo(function MobileMenu() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      border: '1px solid var(--main)',
+                      border: '1px solid var(--menu-text)',
                       borderRadius: '50%',
-                      color: 'var(--main)',
+                      color: 'var(--menu-text)',
                       transition: 'all 0.3s ease'
                     }}>
                       <i className="icon icon-pinterest" />

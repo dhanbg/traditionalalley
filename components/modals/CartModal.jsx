@@ -307,7 +307,7 @@ export default function CartModal() {
                               {elm.selectedSize && (
                                 <div className="size-info" style={{
                                   fontSize: '12px',
-                                  color: '#666',
+                                  color: 'var(--cart-text-secondary)',
                                   marginTop: '4px',
                                   textAlign: 'center'
                                 }}>
@@ -423,6 +423,17 @@ export default function CartModal() {
           --cart-text-color: #333;
           --cart-text-secondary: #666;
           --cart-bg-light: #f8f9fa;
+          --cart-bg-main: #ffffff;
+          --cart-bg-bottom: #ffffff;
+        }
+        
+        :global(.dark) .modal-shopping-cart {
+          --cart-border-color: #374151;
+          --cart-text-color: #f3f4f6;
+          --cart-text-secondary: #9ca3af;
+          --cart-bg-light: #1f2937;
+          --cart-bg-main: #111827;
+          --cart-bg-bottom: #1f2937;
         }
         
         .modal-shopping-cart .modal-content {
@@ -430,6 +441,7 @@ export default function CartModal() {
           border-radius: 0;
           border: none;
           box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+          background: var(--cart-bg-main);
         }
         
         .modal-shopping-cart .wrap {
@@ -661,7 +673,7 @@ export default function CartModal() {
         
         .tf-mini-cart-bottom {
           border-top: 1px solid var(--cart-border-color);
-          background: white;
+          background: var(--cart-bg-bottom);
           flex-shrink: 0;
         }
         
