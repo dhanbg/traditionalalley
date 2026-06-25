@@ -102,13 +102,15 @@ export async function POST(request: NextRequest) {
         if (!isSuccessInDb) {
             console.log('📝 [PROCESS-SUCCESS] Updating database status to SUCCESS...');
             try {
+                const mergedOrderData = paymentData?.orderData || existingPayment?.orderData || null;
                 const finalPaymentData = {
                     provider: "nps",
                     merchantTxnId,
                     status: "Success",
                     amount: paymentData?.amount || existingPayment?.amount || bagData.orderData?.orderSummary?.totalAmount || 0,
                     timestamp: paymentData?.timestamp || new Date().toISOString(),
-                    ...paymentData
+                    ...paymentData,
+                    orderData: mergedOrderData
                 };
                 
                 await updateUserBagWithPayment(targetBagId, finalPaymentData);
@@ -213,7 +215,12 @@ export async function POST(request: NextRequest) {
                     const updatedPayments = existingPayments.map((p: any) =>
                         p.merchantTxnId === merchantTxnId ? { ...p, emailSent: true } : p
                     );
-                    await updateUserBagWithPayment(targetBagId, { ...paymentData, emailSent: true });
+                    const existingOrderData = existingPayment?.orderData || paymentData?.orderData || null;
+                    await updateUserBagWithPayment(targetBagId, { 
+                        ...paymentData, 
+                        orderData: existingOrderData,
+                        emailSent: true 
+                    });
                 }
 
                 return NextResponse.json({
@@ -283,8 +290,10 @@ export async function POST(request: NextRequest) {
             const updatedPayments = existingPayments.map((p: any) =>
                 p.merchantTxnId === merchantTxnId ? { ...p, emailSent: true } : p
             );
+            const existingOrderData = existingPayment?.orderData || paymentData?.orderData || null;
             await updateUserBagWithPayment(targetBagId, {
                 ...paymentData,
+                orderData: existingOrderData,
                 emailSent: true
             });
         }

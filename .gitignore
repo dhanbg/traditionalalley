@@ -66,3 +66,5 @@ next-env.d.ts
 # deployment archives
 /deploy.zip
 /deploy_auto.zip
+
+.vercel

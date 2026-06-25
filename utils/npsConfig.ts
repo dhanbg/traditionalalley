@@ -30,20 +30,10 @@ export const npsConfig = {
     ? (process.env.NPS_API_PASSWORD || 'D9v@eX#2LmZ!q')
     : (process.env.NPS_API_PASSWORD || 'Alley@111'),
   
-  // Secret key based on environment (with automatic cleaning of backslashes or incorrect variable expansions)
-  secretKey: (() => {
-    const rawKey = process.env.NODE_ENV === 'production'
-      ? (process.env.NPS_SECRET_KEY || 'T$5nLz#o1Xp@')
-      : (process.env.NPS_SECRET_KEY || 'Key@123');
-    
-    if (rawKey === 'T#o1Xp@' || rawKey === 'T\\$5nLz#o1Xp@') {
-      return 'T$5nLz#o1Xp@';
-    }
-    if (rawKey.startsWith('T\\$5nLz')) {
-      return rawKey.replace('T\\$5nLz', 'T$5nLz');
-    }
-    return rawKey;
-  })(),
+  // Secret key based on environment
+  secretKey: process.env.NODE_ENV === 'production'
+    ? (process.env.NPS_SECRET_KEY || 'T$5nLz#o1Xp@')
+    : (process.env.NPS_SECRET_KEY || 'Key@123'),
   
   // Test bank credentials (for testing purposes only)
   testBank: {

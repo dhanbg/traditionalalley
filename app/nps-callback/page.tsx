@@ -360,7 +360,7 @@ const NPSCallbackContent = () => {
           amount: finalAmount,
           ...(finalInstrument && { instrument: finalInstrument }),
           ...(finalInstitution && { institution: finalInstitution }),
-          orderData: orderData,
+          ...(orderData && { orderData: orderData }),
           recoveredUserBagId: targetBagId, // Explicitly pass for internal use
           timestamp: generateLocalTimestamp()
         };
