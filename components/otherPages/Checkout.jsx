@@ -1898,111 +1898,54 @@ export default function Checkout() {
                     </div>
                   </div>
                 </div>
-              <div className="wrap" style={{ marginTop: '0px' }}>
-                {/* Payment Method Selection */}
+              <div className="wrap" style={{
+                padding: '30px 20px',
+                textAlign: 'center',
+                background: 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)',
+                borderTop: '1px solid #fde68a',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '15px'
+              }}>
                 <div style={{
-                  padding: '14px',
-                  marginBottom: '0px'
+                  fontSize: '50px',
+                  lineHeight: '1',
+                  animation: 'pulse 2s infinite'
+                }}>🛠️</div>
+                <h4 style={{
+                  margin: 0,
+                  color: '#92400e',
+                  fontWeight: '700',
+                  fontSize: '22px',
+                  letterSpacing: '-0.02em'
                 }}>
-                  <h5 className="title" style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600', color: 'var(--checkout-text-color, #424242)' }}>
-                    Payment Method
-                  </h5>
-
-                  <div className={styles.paymentMethods}>
-                    {/* NPS Online Payment */}
-                    <div className={`${styles.paymentMethodCard} ${selectedPaymentMethod === 'nps' ? styles.selected : ''}`}>
-                      <input
-                        type="radio"
-                        id="nps-payment"
-                        name="paymentMethod"
-                        value="nps"
-                        checked={selectedPaymentMethod === 'nps'}
-                        onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                      />
-                      <label htmlFor="nps-payment">
-                        <div className={styles.paymentMethodHeader}>
-                          <div className={styles.paymentIcon}>💳</div>
-                          <span>Online Payment (NPS)</span>
-                        </div>
-                      </label>
-                    </div>
-
-                    {/* Cash on Delivery */}
-                    <div className={`${styles.paymentMethodCard} ${selectedPaymentMethod === 'cod' ? styles.selected : ''}`}>
-                      <input
-                        type="radio"
-                        id="cod-payment"
-                        name="paymentMethod"
-                        value="cod"
-                        checked={selectedPaymentMethod === 'cod'}
-                        onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                      />
-                      <label htmlFor="cod-payment">
-                        <div className={styles.paymentMethodHeader}>
-                          <div className={styles.paymentIcon}>💵</div>
-                          <span>Cash on Delivery</span>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Payment Form Section */}
-                <div style={{
-                  padding: '14px'
+                  System Maintenance
+                </h4>
+                <p style={{
+                  margin: 0,
+                  color: '#b45309',
+                  fontSize: '14px',
+                  lineHeight: '1.6',
+                  maxWidth: '380px',
+                  fontWeight: '500'
                 }}>
-                  {selectedPaymentMethod === 'nps' ? (
-                    <NPSPaymentForm
-                      amount={nprAmount}
-                      onSuccess={handleNPSPaymentSuccess}
-                      onError={handleNPSPaymentError}
-                      orderData={constructOrderData()}
-                      transactionRemarks={`Payment for ${selectedProducts.length} items`}
-                      shippingRatesObtained={shippingRatesObtained}
-                      getUserBagDocumentId={getUserBagDocumentId}
-                    />
-                  ) : (
-                    <div>
-                      <h5 className="title" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '20px' }}>💵</span>
-                        Cash on Delivery
-                      </h5>
-
-                      <button
-                        className="tf-btn btn-fill animate-hover-btn radius-3 w-100 justify-content-center"
-                        onClick={handleCashPaymentOrder}
-                        disabled={isProcessingOrder || !shippingRatesObtained || selectedProducts.length === 0}
-                        style={{
-                          padding: '12px 24px',
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          opacity: (isProcessingOrder || !shippingRatesObtained || selectedProducts.length === 0) ? 0.6 : 1,
-                          cursor: (isProcessingOrder || !shippingRatesObtained || selectedProducts.length === 0) ? 'not-allowed' : 'pointer'
-                        }}
-                      >
-                        {isProcessingOrder ? (
-                          <span className="text">Processing Order...</span>
-                        ) : (
-                          <span className="text">Place Order</span>
-                        )}
-                      </button>
-
-                      {!shippingRatesObtained && (
-                        <div style={{
-                          marginTop: '12px',
-                          padding: '12px',
-                          background: '#f8d7da',
-                          color: '#721c24',
-                          borderRadius: '6px',
-                          fontSize: '14px',
-                          textAlign: 'center'
-                        }}>
-                          Please get shipping rates first before placing your order
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                  Our checkout and payment systems are temporarily undergoing scheduled maintenance to serve you better. We apologize for any inconvenience.
+                </p>
+                <span style={{
+                  fontSize: '12px',
+                  color: '#d97706',
+                  fontWeight: '600',
+                  background: '#fef3c7',
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  border: '1px solid #fcd34d',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>
+                  We will be back online shortly
+                </span>
               </div>
               </div>
             </div>
