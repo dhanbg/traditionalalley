@@ -824,13 +824,13 @@ export default function Context({ children }) {
           
           // Add user_bag if available
           if (userBag) {
-            // Extract the ID based on structure
-            let userBagId = null;
-            
-            if (userBag.id) {
-              userBagId = userBag.id;
-            } else if (userBag.data && userBag.data.id) {
-              userBagId = userBag.data.id;
+            // Extract the documentId or ID based on structure
+            let userBagId = userBag.documentId || userBag.attributes?.documentId;
+            if (!userBagId && userBag.data) {
+              userBagId = userBag.data.documentId || userBag.data.attributes?.documentId;
+            }
+            if (!userBagId) {
+              userBagId = userBag.id || (userBag.data && userBag.data.id);
             }
             
             if (userBagId) {
@@ -841,19 +841,16 @@ export default function Context({ children }) {
           // Add product to payload - use base product documentId for backend
           const productDocumentIdForBackend = productToAdd.baseProductId || productToAdd.documentId || productToAdd.id;
           
-          // Find product by documentId to get the numeric ID for backend
+          // Find product by documentId to get the document ID for backend relation
           try {
             const productResponse = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${productDocumentIdForBackend}&populate=*`);
             if (productResponse?.data && productResponse.data.length > 0) {
-              completeCartPayload.data.product = productResponse.data[0].id;
-            } else if (!isNaN(parseInt(productDocumentIdForBackend))) {
-              // Fallback to numeric ID if documentId lookup fails
-              completeCartPayload.data.product = parseInt(productDocumentIdForBackend);
+              completeCartPayload.data.product = productResponse.data[0].documentId || productResponse.data[0].id;
+            } else {
+              completeCartPayload.data.product = productDocumentIdForBackend;
             }
           } catch (error) {
-            if (!isNaN(parseInt(productDocumentIdForBackend))) {
-              completeCartPayload.data.product = parseInt(productDocumentIdForBackend);
-            }
+            completeCartPayload.data.product = productDocumentIdForBackend;
           }
           
           // Add variant information to the cart payload if available
@@ -864,6 +861,11 @@ export default function Context({ children }) {
             } else {
               // If it's already a string, use it as is
               completeCartPayload.data.variantInfo = productToAdd.variantInfo;
+            }
+            
+            // Also link the variant relation in Strapi 5 using documentId (variantId)
+            if (productToAdd.variantInfo.variantId) {
+              completeCartPayload.data.product_variant = productToAdd.variantInfo.variantId;
             }
           }
           
@@ -878,7 +880,7 @@ export default function Context({ children }) {
           // Add cartId and cartDocumentId to the product object
           if (cartResponse?.data) {
             productToAdd.cartId = cartResponse.data.id;
-            productToAdd.cartDocumentId = cartResponse.data.attributes?.documentId;
+            productToAdd.cartDocumentId = cartResponse.data.documentId || cartResponse.data.attributes?.documentId;
           }
           
           // Add to local state
@@ -1046,11 +1048,11 @@ export default function Context({ children }) {
         // Try to match based on product ID or documentId AND user_datum
         for (const cartItem of cartResponse.data) {
           // Skip cart items without product data
-          if (!cartItem.attributes?.product?.data) continue;
+          if (!cartItem.product) continue;
           
-          const productData = cartItem.attributes.product.data;
+          const productData = cartItem.product;
           const productId = productData.id;
-          const productDocId = productData.attributes?.documentId;
+          const productDocId = productData.documentId;
           
           // Check if this cart item matches the product we're looking for
           const matchesProductId = productId == id;
@@ -1059,21 +1061,21 @@ export default function Context({ children }) {
           // If we have the cartId stored, prioritize exact cart item match
           if (matchingItem.cartId && cartItem.id == matchingItem.cartId) {
             foundCartItem = cartItem;
-            cartDocumentId = cartItem.attributes.documentId;
+            cartDocumentId = cartItem.documentId;
             break; // Exact match found, no need to look further
           }
           
           // If we have the cartDocumentId stored, prioritize exact match
-          if (matchingItem.cartDocumentId && cartItem.attributes.documentId === matchingItem.cartDocumentId) {
+          if (matchingItem.cartDocumentId && cartItem.documentId === matchingItem.cartDocumentId) {
             foundCartItem = cartItem;
-            cartDocumentId = cartItem.attributes.documentId;
+            cartDocumentId = cartItem.documentId;
             break; // Exact match found, no need to look further
           }
           
           // Otherwise use product matching as a fallback
           if ((matchesProductId || matchesDocumentId) && !foundCartItem) {
             foundCartItem = cartItem;
-            cartDocumentId = cartItem.attributes.documentId;
+            cartDocumentId = cartItem.documentId;
           }
         }
         
@@ -1093,18 +1095,16 @@ export default function Context({ children }) {
               }
             };
             
-            // Find product by documentId to get numeric ID for backend
+            // Find product by documentId to get the document ID for backend relation
             try {
               const productResponse = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${productDocumentIdForBackend}&populate=*`);
               if (productResponse?.data && productResponse.data.length > 0) {
-                createPayload.data.product = productResponse.data[0].id;
-              } else if (!isNaN(parseInt(productDocumentIdForBackend))) {
-                createPayload.data.product = parseInt(productDocumentIdForBackend);
+                createPayload.data.product = productResponse.data[0].documentId || productResponse.data[0].id;
+              } else {
+                createPayload.data.product = productDocumentIdForBackend;
               }
             } catch (error) {
-              if (!isNaN(parseInt(productDocumentIdForBackend))) {
-                createPayload.data.product = parseInt(productDocumentIdForBackend);
-              }
+              createPayload.data.product = productDocumentIdForBackend;
             }
             
             // Add variant information if available
@@ -1132,7 +1132,7 @@ export default function Context({ children }) {
                 
                 if (userBagResponse?.data && userBagResponse.data.length > 0) {
                   const userBag = userBagResponse.data[0];
-                  createPayload.data.user_bag = userBag.id;
+                  createPayload.data.user_bag = userBag.documentId || userBag.id;
                 }
               }
             }
@@ -1142,7 +1142,7 @@ export default function Context({ children }) {
             // Update local state with the new cart ID and document ID
             if (createResponse?.data) {
               const newCartId = createResponse.data.id;
-              const newCartDocumentId = createResponse.data.attributes?.documentId;
+              const newCartDocumentId = createResponse.data.documentId || createResponse.data.attributes?.documentId;
               
               setCartProducts(prev => prev.map(item => {
                 if (item.id == id || (item.documentId && item.documentId === matchingItem.documentId)) {
@@ -1906,22 +1906,16 @@ export default function Context({ children }) {
         let foundCartItem = null;
         
         for (const item of cartResponse.data) {
-          if (!item.attributes?.product?.data) continue;
+          if (!item.product) continue;
           
-          const productData = item.attributes.product.data;
+          const productData = item.product;
           
-          // Match by product ID
-          if (productData.id == id) {
-            foundCartItem = item;
-            break;
-          }
-          
-          // Match by product documentId
-          const productAttrs = productData.attributes || {};
-          const backendDocumentId = productAttrs.documentId;
-          const productDocumentId = cartItem.documentId;
-          
-          if (productDocumentId && backendDocumentId && productDocumentId === backendDocumentId) {
+          // Match by product ID, product documentId, or direct cart documentId
+          if (
+            productData.id == id ||
+            productData.documentId === id ||
+            (directCartDocumentId && item.documentId === directCartDocumentId)
+          ) {
             foundCartItem = item;
             break;
           }
@@ -1929,7 +1923,7 @@ export default function Context({ children }) {
         
         if (foundCartItem) {
           // We found the cart item - try to delete by documentId first if available
-          const cartDocumentId = foundCartItem.attributes.documentId;
+          const cartDocumentId = foundCartItem.documentId;
           
           if (cartDocumentId) {
             try {

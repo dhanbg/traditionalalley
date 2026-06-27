@@ -671,14 +671,14 @@ export const updateProductStock = async (purchasedProducts) => {
       };
       
       // Prepare the update data
-      const updateData = {
+      const stockUpdatePayload = {
         data: {
           size_stocks: updatedSizeStocks
         }
       };
       
       // Update the product or variant
-      const updateResponse = await updateData(updateEndpoint, updateData);
+      const updateResponse = await updateData(updateEndpoint, stockUpdatePayload);
       
       if (updateResponse && updateResponse.data) {
         updateResults.push({ 
