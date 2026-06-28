@@ -1035,8 +1035,6 @@ export default function Context({ children }) {
       return;
     }
     
-    const finalQuantity = matchingItem.quantity;
-    
     // Backend update function
     const updateBackend = async () => {
       try {
