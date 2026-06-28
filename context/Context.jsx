@@ -555,9 +555,7 @@ export default function Context({ children }) {
       else if (variantInfo.imgSrc) imgSrc = typeof variantInfo.imgSrc === 'string' ? variantInfo.imgSrc : getOptimizedImageUrl(variantInfo.imgSrc);
       else if (productInfo?.imgSrc) imgSrc = typeof productInfo.imgSrc === 'string' ? productInfo.imgSrc : getOptimizedImageUrl(productInfo.imgSrc);
       
-      if (variantInfo.title && productInfo?.title && !productInfo.title.includes(variantInfo.title)) {
-        title = `${productInfo.title} - ${variantInfo.title}`;
-      } else if (variantInfo.title) {
+      if (variantInfo.title) {
         title = variantInfo.title;
       }
     } else if (productInfo) {
@@ -1340,8 +1338,8 @@ export default function Context({ children }) {
                 }
                 
                 // Use variant-specific title and image
-                if (variantInfo.title && variantInfo.isVariant && productAttrs.title && !productAttrs.title.includes(variantInfo.title)) {
-                  title = `${productAttrs.title} - ${variantInfo.title}`;
+                if (variantInfo.title) {
+                  title = variantInfo.title;
                 }
                 
                 if (variantInfo.imgSrcObject) {
