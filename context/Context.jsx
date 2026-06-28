@@ -1239,11 +1239,11 @@ export default function Context({ children }) {
           const userDocumentId = userData.documentId || userData.attributes?.documentId;
           
           // First, let's check what cart items exist in total
-          const allCartsResponse = await fetchDataFromApi(`/api/carts?populate=*`);
+          const allCartsResponse = await fetchDataFromApi(`/api/carts?populate[product][populate]=*&populate[product_variant][populate]=*`);
           
           // Fetch user-specific carts from backend using documentId (more reliable than numeric ID)
           const cartResponse = await fetchDataFromApi(
-            `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
+            `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate[product][populate]=*&populate[product_variant][populate]=*`
           );
           
           // AUTO-FIX: If no cart items found for user, check for orphaned items and link them
@@ -1268,7 +1268,7 @@ export default function Context({ children }) {
               
               // Re-fetch cart data after linking
               const updatedCartResponse = await fetchDataFromApi(
-                `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
+                `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate[product][populate]=*&populate[product_variant][populate]=*`
               );
               
               if (updatedCartResponse?.data?.length > 0) {
@@ -1357,6 +1357,10 @@ export default function Context({ children }) {
                 cartItemId = `${cartItemId}-size-${cartItem.size}`;
               }
               
+              const fallbackProduct = allProducts.find(p => p.documentId === (productAttrs.documentId || productId) || p.id === productId || p.id === productAttrs.id) || {};
+              let rawPrice = productVariantRelation?.price || productAttrs.price || fallbackProduct.price || 0;
+              let rawOldPrice = productAttrs.oldPrice || productVariantRelation?.oldPrice || fallbackProduct.oldPrice || null;
+
               const productCart = {
                 id: cartItemId, // Use variant and size-specific ID
                 baseProductId: productAttrs.documentId || productId, // Keep reference to base product documentId
@@ -1364,11 +1368,11 @@ export default function Context({ children }) {
                 cartDocumentId: cartItem.documentId,
                 documentId: productAttrs.documentId || productId,
                 title: title,
-                price: parseFloat(productVariantRelation?.price || productAttrs.price || 0),
-                oldPrice: productAttrs.oldPrice ? parseFloat(productAttrs.oldPrice) : null,
+                price: parseFloat(rawPrice),
+                oldPrice: rawOldPrice ? parseFloat(rawOldPrice) : null,
                 quantity: cartItem.quantity || 1,
-                colors: productAttrs.colors || [],
-                sizes: productAttrs.sizes || [],
+                colors: productAttrs.colors || fallbackProduct.colors || [],
+                sizes: productAttrs.sizes || fallbackProduct.sizes || [],
                 selectedSize: cartItem.size || null, // Include selected size from backend
                 imgSrc: imgSrc,
                 variantInfo: variantInfo, // Include variant info

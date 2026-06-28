@@ -429,7 +429,7 @@ export default function ShopCart() {
                             <div className="cart-price text-button price-on-sale">
                               <PriceDisplay 
                                 price={elm.price}
-                                oldPrice={productsWithOldPrice[elm.id]?.oldPrice}
+                                oldPrice={productsWithOldPrice[elm.id]?.oldPrice || elm.oldPrice}
                                 className="text-button"
                                 size="normal"
                               />
