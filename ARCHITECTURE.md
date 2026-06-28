@@ -4,7 +4,7 @@
 > **STRICT INFRASTRUCTURE & LOGGING POLICY**:
 > 1. **Frontend Hosting & Logs (`traditionalalley.com.np`)**: Hosted **EXCLUSIVELY** on **Vercel**. All frontend deployments occur automatically via GitHub `main` branch pushes. Always check Vercel dashboard / Vercel CLI for frontend logs and debugging. NEVER attempt to build or deploy the Next.js frontend on the VPS.
 > 2. **Production VPS (`82.25.105.70`)**: Dedicated **EXCLUSIVELY** to Strapi CMS (`strapi-alley-production`) and PostgreSQL database (`postgres-alley-production`).
-> 3. **Deployment Approval**: **ALWAYS** ask for explicit user confirmation before executing `git push origin main`.
+> 3. **Deployment Approval**: **ALWAYS** ask for explicit user confirmation before executing `git push origin main` directly at the end of the response prompt to save tokens.
 
 ## Component Responsibilities
 
