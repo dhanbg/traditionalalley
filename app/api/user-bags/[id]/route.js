@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server';
 import { getStrapiInternalUrl } from '@/utils/urls';
 
 const getStrapiUrl = () => getStrapiInternalUrl();
+const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN || "53a5a13bf33757eb9d5d8fea2d721742ecc5ff24562b0858f073feb6818a2a9c3ba8d052e6c143222c01d504cdfd85500c307502f01655929a8c4a6b2ed84b6096e0539d71b920e84551459e3049b1f452647911330b6de4bcbcc655e727f38ace8d0802a010c75628f1d792fcf047c77efeced311b1248fc09b32e2614da62a";
 
 export async function GET(request, { params }) {
-  const { id } = params;
+  const resolvedParams = await params;
+  const id = resolvedParams?.id;
   let strapiUrl;
   
   try {
@@ -18,7 +20,7 @@ export async function GET(request, { params }) {
     // Fetch user bag from Strapi
     const response = await fetch(strapiUrl, {
       headers: {
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`
+        'Authorization': `Bearer ${STRAPI_TOKEN}`
       }
     });
 
@@ -45,7 +47,8 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
-  const { id } = params;
+  const resolvedParams = await params;
+  const id = resolvedParams?.id;
   let strapiUrl;
   
   try {
@@ -66,7 +69,7 @@ export async function PUT(request, { params }) {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`
+        'Authorization': `Bearer ${STRAPI_TOKEN}`
       },
       body: payloadToSend
     });
@@ -100,7 +103,8 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  const { id } = params;
+  const resolvedParams = await params;
+  const id = resolvedParams?.id;
   let strapiUrl;
   
   try {
@@ -111,7 +115,7 @@ export async function DELETE(request, { params }) {
     const response = await fetch(strapiUrl, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`
+        'Authorization': `Bearer ${STRAPI_TOKEN}`
       }
     });
 
