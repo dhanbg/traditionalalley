@@ -1,50 +1,29 @@
 "use client";
 import ProductCard1 from "@/components/productCards/ProductCard1";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { fetchProductsWithVariantsForTabs } from "@/utils/productVariantUtils";
+import { useQuery } from "@tanstack/react-query";
 
 const tabItems = ["Boss Lady", "Juvenile", "Events", "Gown", "Kurtha"];
 const DEFAULT_IMAGE = '/logo.png';
 
 export default function Products({ parentClass = "flat-spacing-3 pt-0" }) {
-  const [activeItem, setActiveItem] = useState(tabItems[0]); // Default the first item as active
+  const [activeItem, setActiveItem] = useState(tabItems[0]);
   const [selectedItems, setSelectedItems] = useState([]);
-  const [allProducts, setAllProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  // Fetch products with variants from the backend
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
+  // React Query for client-side caching (5 minutes stale time)
+  const { data: rawProducts = [], isLoading: loading, isError, error: queryErr } = useQuery({
+    queryKey: ['productsForTabs', 'Women'],
+    queryFn: () => fetchProductsWithVariantsForTabs("Women"),
+    staleTime: 5 * 60 * 1000,
+  });
 
-        // Use the new utility to fetch products with their variants as separate items
-        const productsWithVariants = await fetchProductsWithVariantsForTabs("Women");
+  const allProducts = useMemo(() => {
+    return Array.isArray(rawProducts) ? rawProducts.filter(item => item.isActive !== false) : [];
+  }, [rawProducts]);
 
-        if (productsWithVariants && productsWithVariants.length > 0) {
-          // Filter out inactive products and variants
-          const activeItems = productsWithVariants.filter(item => item.isActive !== false);
-
-          setAllProducts(activeItems);
-          setError(null);
-        } else {
-          // Set an error if no products were found
-          setError("No women's products found in API response");
-          setAllProducts([]);
-        }
-
-        setLoading(false);
-      } catch (error) {
-        setError(`Error fetching products with variants: ${error.message || "Unknown error"}`);
-        setAllProducts([]);
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, []);
+  const error = isError ? (queryErr?.message || "Error fetching products") : (allProducts.length === 0 && !loading ? "No products found" : null);
 
   useEffect(() => {
     const newArrivalsElement = document.getElementById("newArrivals2");
@@ -54,11 +33,11 @@ export default function Products({ parentClass = "flat-spacing-3 pt-0" }) {
       setTimeout(() => {
         const filtered = allProducts.filter(product =>
           product.tabFilterOptions && product.tabFilterOptions.includes(activeItem) &&
-          product.isActive === true // Hide products that are inactive
+          product.isActive === true
         );
         setSelectedItems(filtered);
         newArrivalsElement.classList.add("filtered");
-      }, 300);
+      }, 100);
     }
   }, [activeItem, allProducts]);
 

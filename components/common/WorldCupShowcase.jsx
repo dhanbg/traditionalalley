@@ -5,6 +5,7 @@ import Link from "next/link";
 import { fetchProductsWithVariantsByCollection } from "@/utils/productVariantUtils";
 import { useContextElement } from "@/context/Context";
 import PriceDisplay from "@/components/common/PriceDisplay";
+import { useQuery } from "@tanstack/react-query";
 
 const WORLDCUP_PRODUCTS = [
   {
@@ -95,8 +96,6 @@ const WORLDCUP_PRODUCTS = [
 
 export default function WorldCupShowcase() {
   const [hoveredCard, setHoveredCard] = useState(null);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const { addProductToCart } = useContextElement();
 
@@ -109,66 +108,57 @@ export default function WorldCupShowcase() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  useEffect(() => {
-    const loadBackendData = async () => {
-      try {
-        const backendItems = await fetchProductsWithVariantsByCollection("worldcup");
-        
-        if (backendItems.length > 0) {
-          const updatedProducts = WORLDCUP_PRODUCTS.map(staticProd => {
-            const matchingItem = backendItems.find(item => {
-              const itemTitle = (item.title || "").toLowerCase();
-              const country = staticProd.country.toLowerCase();
-              if (country === 'brasil') {
-                return itemTitle.includes('brasil') || itemTitle.includes('brazil');
-              }
-              return itemTitle.includes(country);
-            });
+  const { data: products = [], isLoading: loading } = useQuery({
+    queryKey: ['worldcupShowcase'],
+    queryFn: async () => {
+      const backendItems = await fetchProductsWithVariantsByCollection("worldcup");
+      if (!backendItems || backendItems.length === 0) return [];
+      
+      return WORLDCUP_PRODUCTS.map(staticProd => {
+        const matchingItem = backendItems.find(item => {
+          const itemTitle = (item.title || "").toLowerCase();
+          const country = staticProd.country.toLowerCase();
+          if (country === 'brasil') {
+            return itemTitle.includes('brasil') || itemTitle.includes('brazil');
+          }
+          return itemTitle.includes(country);
+        });
 
-            if (matchingItem) {
-              const mainProductId = matchingItem.isMainProduct 
-                ? matchingItem.documentId 
-                : matchingItem.parentProductId;
-              
-              const link = matchingItem.isMainProduct 
-                ? `/product-detail/${mainProductId}` 
-                : `/product-detail/${mainProductId}?variant=${matchingItem.documentId}`;
+        if (matchingItem) {
+          const mainProductId = matchingItem.isMainProduct 
+            ? matchingItem.documentId 
+            : matchingItem.parentProductId;
+          
+          const link = matchingItem.isMainProduct 
+            ? `/product-detail/${mainProductId}` 
+            : `/product-detail/${mainProductId}?variant=${matchingItem.documentId}`;
 
-              // Map static item overlaying backend values
-              const priceVal = typeof matchingItem.price === 'string'
-                ? parseFloat(matchingItem.price)
-                : matchingItem.price;
+          const priceVal = typeof matchingItem.price === 'string'
+            ? parseFloat(matchingItem.price)
+            : matchingItem.price;
 
-              const oldPriceVal = matchingItem.oldPrice
-                ? (typeof matchingItem.oldPrice === 'string'
-                  ? parseFloat(matchingItem.oldPrice)
-                  : matchingItem.oldPrice)
-                : null;
+          const oldPriceVal = matchingItem.oldPrice
+            ? (typeof matchingItem.oldPrice === 'string'
+              ? parseFloat(matchingItem.oldPrice)
+              : matchingItem.oldPrice)
+            : null;
 
-              return {
-                ...staticProd,
-                title: matchingItem.title,
-                price: priceVal,
-                oldPrice: oldPriceVal,
-                image: matchingItem.imgSrc || staticProd.image,
-                imgHover: matchingItem.imgHover || matchingItem.imgSrc || staticProd.image,
-                link: link,
-                dbItem: matchingItem
-              };
-            }
-            return null;
-          }).filter(p => p !== null);
-          setProducts(updatedProducts);
+          return {
+            ...staticProd,
+            title: matchingItem.title,
+            price: priceVal,
+            oldPrice: oldPriceVal,
+            image: matchingItem.imgSrc || staticProd.image,
+            imgHover: matchingItem.imgHover || matchingItem.imgSrc || staticProd.image,
+            link: link,
+            dbItem: matchingItem
+          };
         }
-      } catch (error) {
-        console.error("Error loading World Cup backend data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadBackendData();
-  }, []);
+        return null;
+      }).filter(p => p !== null);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   const handleAddToCart = (prod) => {
     const matchingItem = prod.dbItem;
