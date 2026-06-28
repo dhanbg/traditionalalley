@@ -5,10 +5,16 @@ export const API_URL = (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBL
   ? process.env.NEXT_PUBLIC_API_URL 
   : "https://admin.traditionalalley.com.np";
 
+// Dedicated internal server-side Docker loopback helper
+export const getStrapiInternalUrl = () => {
+  return process.env['STRAPI_INTERNAL_URL'] || process.env['STRAPI_URL'] || "http://strapi-alley-production:1337";
+};
+
 // Dedicated internal server-side Docker loopback (only used on server)
 export const INTERNAL_API_URL = (typeof window === 'undefined') 
-  ? (process.env['STRAPI_INTERNAL_URL'] || process.env['STRAPI_URL'] || API_URL) 
+  ? (process.env['STRAPI_INTERNAL_URL'] || process.env['STRAPI_URL'] || "http://strapi-alley-production:1337") 
   : API_URL;
+
 
 // Strapi 5 populate helpers - populate=* populates 1st level relations/media. For deep, use strictly valid syntax.
 export const PRODUCT_POPULATE = "populate[imgSrc][populate]=*&populate[imgHover][populate]=*&populate[gallery][populate]=*&populate[collection][populate]=*&populate[product_variants][populate]=*&populate[customer_reviews][populate]=*";

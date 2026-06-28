@@ -1,9 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { getStrapiInternalUrl } from '@/utils/urls';
 
 // Server-side bag ID recovery from Strapi
 async function recoverBagIdFromStrapi(merchantTxnId: string): Promise<string | null> {
   try {
-    const STRAPI_URL = process.env.STRAPI_URL || process.env.NEXT_PUBLIC_STRAPI_URL || 'http://strapi-alley-production:1337';
+    const STRAPI_URL = getStrapiInternalUrl();
     const STRAPI_TOKEN = process.env.STRAPI_TOKEN || process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
     
     console.log(`🔍 [NPS-RESPONSE] Looking up bagId for merchantTxnId: ${merchantTxnId}`);

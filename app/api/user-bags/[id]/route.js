@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
+import { getStrapiInternalUrl } from '@/utils/urls';
 
-const STRAPI_URL = process.env['STRAPI_INTERNAL_URL'] || process.env['STRAPI_URL'] || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
-
+const getStrapiUrl = () => getStrapiInternalUrl();
 
 export async function GET(request, { params }) {
   const { id } = params;
@@ -13,7 +13,7 @@ export async function GET(request, { params }) {
     const populate = searchParams.get('populate') || '*';
 
     // Construct the URL for the Strapi API - using documentId for Strapi CRUD
-    strapiUrl = `${STRAPI_URL}/api/user-bags/${id}?pagination[pageSize]=1000&populate=${populate}`;
+    strapiUrl = `${getStrapiUrl()}/api/user-bags/${id}?pagination[pageSize]=1000&populate=${populate}`;
 
     // Fetch user bag from Strapi
     const response = await fetch(strapiUrl, {
@@ -53,7 +53,7 @@ export async function PUT(request, { params }) {
     console.log(`Updating user bag ${id} with data:`, JSON.stringify(body, null, 2));
 
     // Construct the URL for the Strapi API - using documentId for Strapi CRUD
-    strapiUrl = `${STRAPI_URL}/api/user-bags/${id}`;
+    strapiUrl = `${getStrapiUrl()}/api/user-bags/${id}`;
 
     // Log the exact payload being sent to Strapi
     const payloadToSend = JSON.stringify(body);
@@ -105,7 +105,7 @@ export async function DELETE(request, { params }) {
   
   try {
     // Construct the URL for the Strapi API - using documentId for Strapi CRUD
-    strapiUrl = `${STRAPI_URL}/api/user-bags/${id}`;
+    strapiUrl = `${getStrapiUrl()}/api/user-bags/${id}`;
 
     // Delete user bag from Strapi
     const response = await fetch(strapiUrl, {

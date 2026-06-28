@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
+import { getStrapiInternalUrl } from '@/utils/urls';
 
-const STRAPI_URL = process.env['STRAPI_INTERNAL_URL'] || process.env['STRAPI_URL'] || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
+const getStrapiUrl = () => getStrapiInternalUrl();
 const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN;
 
 export async function PUT(request, { params }) {
   const { id } = params;
   try {
     const body = await request.json();
-    const apiUrl = `${STRAPI_URL}/api/carts/${id}`;
+    const apiUrl = `${getStrapiUrl()}/api/carts/${id}`;
 
     const response = await fetch(apiUrl, {
       method: 'PUT',
@@ -37,7 +38,7 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   const { id } = params;
   try {
-    const apiUrl = `${STRAPI_URL}/api/carts/${id}`;
+    const apiUrl = `${getStrapiUrl()}/api/carts/${id}`;
 
     const response = await fetch(apiUrl, {
       method: 'DELETE',

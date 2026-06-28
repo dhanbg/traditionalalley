@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
+import { getStrapiInternalUrl } from '@/utils/urls';
 
 export const dynamic = 'force-dynamic';
-const STRAPI_URL = process.env['STRAPI_INTERNAL_URL'] || process.env['STRAPI_URL'] || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
+const getStrapiUrl = () => getStrapiInternalUrl();
 const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN;
 
 export async function GET(request, { params }) {
@@ -9,7 +10,7 @@ export async function GET(request, { params }) {
   try {
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
-    const apiUrl = `${STRAPI_URL}/api/user-data/${id}${queryString ? `?${queryString}` : ''}`;
+    const apiUrl = `${getStrapiUrl()}/api/user-data/${id}${queryString ? `?${queryString}` : ''}`;
 
     console.log(`🔗 [PROXY] Fetching user-data ${id} from:`, apiUrl);
 
@@ -42,7 +43,7 @@ export async function PUT(request, { params }) {
   const { id } = params;
   try {
     const body = await request.json();
-    const apiUrl = `${STRAPI_URL}/api/user-data/${id}`;
+    const apiUrl = `${getStrapiUrl()}/api/user-data/${id}`;
 
     console.log(`🔗 [PROXY] Updating user-data ${id} in Strapi`);
 
@@ -76,7 +77,7 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   const { id } = params;
   try {
-    const apiUrl = `${STRAPI_URL}/api/user-data/${id}`;
+    const apiUrl = `${getStrapiUrl()}/api/user-data/${id}`;
 
     console.log(`🔗 [PROXY] Deleting user-data ${id} in Strapi`);
 

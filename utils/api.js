@@ -1,5 +1,6 @@
-import { API_URL, INTERNAL_API_URL, STRAPI_API_TOKEN, PRODUCTS_API } from "./urls"
+import { API_URL, INTERNAL_API_URL, getStrapiInternalUrl, STRAPI_API_TOKEN, PRODUCTS_API } from "./urls"
 import { generateLocalTimestamp } from './timezone';
+
 
 // Helper function to construct proper image URLs
 export const getImageUrl = (imageObj) => {
@@ -112,12 +113,12 @@ const getFetchUrl = (endpoint) => {
     return endpoint;
   }
   if (typeof window === 'undefined') {
-    return `${INTERNAL_API_URL}${endpoint}`;
+    return `${getStrapiInternalUrl()}${endpoint}`;
   }
   if (isNextApiRoute(endpoint)) {
     return endpoint; // Relative URL for browser
   }
-  return `${INTERNAL_API_URL}${endpoint}`;
+  return `${API_URL}${endpoint}`;
 };
 
 const shouldCacheEndpoint = (endpoint) => {

@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
+import { getStrapiInternalUrl } from '@/utils/urls';
 
 export const dynamic = 'force-dynamic';
-const STRAPI_URL = process.env['STRAPI_INTERNAL_URL'] || process.env['STRAPI_URL'] || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
+const getStrapiUrl = () => getStrapiInternalUrl();
 const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN;
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
-    const apiUrl = `${STRAPI_URL}/api/user-data${queryString ? `?${queryString}` : ''}`;
+    const apiUrl = `${getStrapiUrl()}/api/user-data${queryString ? `?${queryString}` : ''}`;
 
     console.log('🔗 [PROXY] Fetching user-data from:', apiUrl);
 
@@ -40,7 +41,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const apiUrl = `${STRAPI_URL}/api/user-data`;
+    const apiUrl = `${getStrapiUrl()}/api/user-data`;
 
     console.log('🔗 [PROXY] Creating user-data in Strapi');
 

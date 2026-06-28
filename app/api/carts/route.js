@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
+import { getStrapiInternalUrl } from '@/utils/urls';
 
 export const dynamic = 'force-dynamic';
-const STRAPI_URL = process.env['STRAPI_INTERNAL_URL'] || process.env['STRAPI_URL'] || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
+const getStrapiUrl = () => getStrapiInternalUrl();
 const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN;
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
-    const apiUrl = `${STRAPI_URL}/api/carts${queryString ? `?${queryString}` : ''}`;
+    const apiUrl = `${getStrapiUrl()}/api/carts${queryString ? `?${queryString}` : ''}`;
 
     const response = await fetch(apiUrl, {
       headers: {
@@ -36,7 +37,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const apiUrl = `${STRAPI_URL}/api/carts`;
+    const apiUrl = `${getStrapiUrl()}/api/carts`;
 
     const response = await fetch(apiUrl, {
       method: 'POST',

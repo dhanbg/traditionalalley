@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getStrapiInternalUrl } from '@/utils/urls';
 
 export async function GET(request) {
   let strapiUrl;
@@ -17,7 +18,7 @@ export async function GET(request) {
       searchParams.set('pagination[pageSize]', '1000');
     }
 
-    const base = process.env['STRAPI_INTERNAL_URL'] || process.env['STRAPI_URL'] || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
+    const base = getStrapiInternalUrl();
     strapiUrl = `${base}/api/user-bags?${searchParams.toString()}`;
 
     // Fetch user bags from Strapi
@@ -50,3 +51,38 @@ export async function GET(request) {
     }, { status: 500 });
   }
 }
+
+export async function POST(request) {
+  let strapiUrl;
+  try {
+    const body = await request.json();
+    const base = getStrapiInternalUrl();
+    strapiUrl = `${base}/api/user-bags`;
+
+    const response = await fetch(strapiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Strapi POST user-bags error (${response.status}):`, errorText);
+      throw new Error(`Strapi responded with status ${response.status}: ${errorText}`);
+    }
+
+    const newUserBag = await response.json();
+    return NextResponse.json(newUserBag);
+  } catch (error) {
+    console.error('Error creating user bag in Strapi:', error.message);
+    return NextResponse.json({ 
+      error: 'Failed to create user bag', 
+      details: error.message,
+      strapiUrl: strapiUrl || null
+    }, { status: 500 });
+  }
+}
+

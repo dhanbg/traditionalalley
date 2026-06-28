@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
+import { getStrapiInternalUrl } from '@/utils/urls';
 
 export const dynamic = 'force-dynamic';
-const STRAPI_URL = process.env['STRAPI_INTERNAL_URL'] || process.env['STRAPI_URL'] || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
+const getStrapiUrl = () => getStrapiInternalUrl();
 const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN;
 
 export async function GET(request) {
@@ -11,7 +12,7 @@ export async function GET(request) {
 
     // Debug environment variables
     console.log('🔧 Environment check:');
-    console.log('  - STRAPI_URL:', STRAPI_URL);
+    console.log('  - STRAPI_URL:', getStrapiUrl());
     console.log('  - STRAPI_TOKEN exists:', !!STRAPI_TOKEN);
     console.log('  - STRAPI_TOKEN length:', STRAPI_TOKEN?.length || 0);
     console.log('  - userId:', userId);
@@ -20,7 +21,7 @@ export async function GET(request) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    if (!STRAPI_URL) {
+    if (!getStrapiUrl()) {
       console.error('❌ STRAPI_URL is not set');
       return NextResponse.json({ error: 'Server configuration error: STRAPI_URL missing' }, { status: 500 });
     }
@@ -30,7 +31,7 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Server configuration error: STRAPI_TOKEN missing' }, { status: 500 });
     }
 
-    const apiUrl = `${STRAPI_URL}/api/wishlists?populate[product][populate]=*&populate[product_variant][populate]=*&populate[user_datum][populate]=*&filters[user_datum][authUserId][$eq]=${userId}`;
+    const apiUrl = `${getStrapiUrl()}/api/wishlists?populate[product][populate]=*&populate[product_variant][populate]=*&populate[user_datum][populate]=*&filters[user_datum][authUserId][$eq]=${userId}`;
     console.log('🔗 Fetching from:', apiUrl);
 
     // Fetch wishlist items for the specific user
@@ -69,10 +70,10 @@ export async function GET(request) {
       const formatImageUrl = (imageObj) => {
         if (!imageObj) return null;
         if (typeof imageObj === 'string') {
-          return imageObj.startsWith('http') ? imageObj : `${STRAPI_URL}${imageObj}`;
+          return imageObj.startsWith('http') ? imageObj : `${getStrapiUrl()}${imageObj}`;
         }
         if (imageObj.url) {
-          return imageObj.url.startsWith('http') ? imageObj.url : `${STRAPI_URL}${imageObj.url}`;
+          return imageObj.url.startsWith('http') ? imageObj.url : `${getStrapiUrl()}${imageObj.url}`;
         }
         return null;
       };
@@ -149,7 +150,7 @@ export async function POST(request) {
 
     // Find the user-data record by authUserId (since userId is the Google OAuth ID)
     console.log('🔍 Looking for user-data record with authUserId:', userId);
-    const userDataResponse = await fetch(`${STRAPI_URL}/api/user-data?filters[authUserId][$eq]=${userId}`, {
+    const userDataResponse = await fetch(`${getStrapiUrl()}/api/user-data?filters[authUserId][$eq]=${userId}`, {
       headers: {
         'Authorization': `Bearer ${STRAPI_TOKEN}`,
         'Content-Type': 'application/json',
@@ -175,7 +176,7 @@ export async function POST(request) {
 
     // Find the user-bag record for this user
     console.log('🔍 Looking for user-bag record for user-data:', strapiUserId);
-    const userBagResponse = await fetch(`${STRAPI_URL}/api/user-bags?filters[user_datum][documentId][$eq]=${strapiUserId}`, {
+    const userBagResponse = await fetch(`${getStrapiUrl()}/api/user-bags?filters[user_datum][documentId][$eq]=${strapiUserId}`, {
       headers: {
         'Authorization': `Bearer ${STRAPI_TOKEN}`,
         'Content-Type': 'application/json',
@@ -219,7 +220,7 @@ export async function POST(request) {
     
     console.log('📤 Creating wishlist with payload:', wishlistPayload);
     
-    const response = await fetch(`${STRAPI_URL}/api/wishlists`, {
+    const response = await fetch(`${getStrapiUrl()}/api/wishlists`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${STRAPI_TOKEN}`,
@@ -262,7 +263,7 @@ export async function DELETE(request) {
       return NextResponse.json({ error: 'Item ID is required' }, { status: 400 });
     }
 
-    const response = await fetch(`${STRAPI_URL}/api/wishlists/${itemId}`, {
+    const response = await fetch(`${getStrapiUrl()}/api/wishlists/${itemId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${STRAPI_TOKEN}`,
