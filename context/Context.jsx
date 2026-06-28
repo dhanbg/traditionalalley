@@ -990,57 +990,45 @@ export default function Context({ children }) {
     }
     
     // Calculate the new quantity
-    const newQuantity = isIncrement ? itemToUpdate.quantity + amount : amount;
-    
-    // Only validate stock if quantity is increasing and we have size information
-    if (newQuantity > itemToUpdate.quantity && itemToUpdate.selectedSize) {
-      try {
-        const quantityIncrease = newQuantity - itemToUpdate.quantity;
-        
+    const calculatedQuantity = isIncrement ? itemToUpdate.quantity + amount : amount;
+    const finalQuantity = Math.max(1, calculatedQuantity);
+    const oldQuantity = itemToUpdate.quantity;
 
-        
-        const stockValidation = await validateCartStock(
-          itemToUpdate.baseProductId || itemToUpdate.documentId,
-          itemToUpdate.variantInfo?.documentId || null,
-          itemToUpdate.selectedSize,
-          quantityIncrease,
-          itemToUpdate.quantity
-        );
-        
-        if (!stockValidation.success) {
-          showStockError(stockValidation.error, stockValidation.availableStock, itemToUpdate.title);
-          return; // Exit function early
-        }
-        
-      } catch (stockError) {
-        // Continue with update if validation fails (fallback behavior)
-      }
-    }
-    
+    // 1. Update local state immediately for instant UI responsiveness
     const updatedProducts = cartProducts.map((item) => {
-      // Try to match either by ID (including variant IDs) or documentId
       const itemMatches = item.id == id || (item.documentId && item.documentId === id);
-      
-      if (itemMatches) {
-        // For increment mode, add the amount to current quantity
-        // For direct mode, set the quantity to the amount
-        const calculatedQuantity = isIncrement ? item.quantity + amount : amount;
-        
-        // Optional: Enforce minimum quantity of 1
-        const finalQuantity = Math.max(1, calculatedQuantity);
-        
-        // Return updated item for frontend state
-        return { ...item, quantity: finalQuantity };
-      }
-      
-      // Return unchanged item if no match
-      return item;
+      return itemMatches ? { ...item, quantity: finalQuantity } : item;
     });
-    
-    // Update local state immediately
     setCartProducts(updatedProducts);
-    
-    // Then handle the backend update
+
+    // 2. Perform stock validation in background if quantity is increasing
+    if (finalQuantity > oldQuantity && itemToUpdate.selectedSize) {
+      (async () => {
+        try {
+          const quantityIncrease = finalQuantity - oldQuantity;
+          const stockValidation = await validateCartStock(
+            itemToUpdate.baseProductId || itemToUpdate.documentId,
+            itemToUpdate.variantInfo?.documentId || null,
+            itemToUpdate.selectedSize,
+            quantityIncrease,
+            oldQuantity
+          );
+          
+          if (!stockValidation.success) {
+            // Revert to old quantity if out of stock
+            setCartProducts(prev => prev.map(item => {
+              const matches = item.id == id || (item.documentId && item.documentId === id);
+              return matches ? { ...item, quantity: oldQuantity } : item;
+            }));
+            showStockError(stockValidation.error, stockValidation.availableStock, itemToUpdate.title);
+            return;
+          }
+        } catch (stockError) {
+          console.error('Stock validation error during quantity update:', stockError);
+        }
+      })();
+    }
+
     const matchingItem = updatedProducts.find(item => item.id == id || (item.documentId && item.documentId === id));
     
     if (!matchingItem) {
@@ -1736,7 +1724,7 @@ export default function Context({ children }) {
                 selectedSize: cartItem.size || null, // Include selected size from backend
                 imgSrc: imgSrc,
                 variantInfo: variantInfo, // Include variant info
-                isSelected: cartItem.isSelected !== undefined ? cartItem.isSelected : true
+                isSelected: cartItem.isSelected === false ? false : true
               };
               
               // Cart item processed successfully
@@ -1770,7 +1758,7 @@ export default function Context({ children }) {
             // Sync selectedCartItems state from backend relies
             const backendSelectionMap = {};
             backendCarts.forEach(item => {
-              backendSelectionMap[item.id] = item.isSelected;
+              backendSelectionMap[item.id] = item.isSelected === false ? false : true;
             });
             setSelectedCartItems(backendSelectionMap);
             
