@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import CountdownTimer from "../common/Countdown";
 
 import { useContextElement } from "@/context/Context";
@@ -14,6 +15,7 @@ import { useSession, signIn } from "next-auth/react";
 const DEFAULT_IMAGE = '/images/placeholder.jpg';
 
 export default function ProductsCards6({ product }) {
+  const router = useRouter();
   // Ensure product has valid image properties
   const safeProduct = {
     ...product,
@@ -96,14 +98,21 @@ export default function ProductsCards6({ product }) {
     };
   }, []);
 
+  const detailHref = `/product-detail/${safeProduct.id}`;
+
   return (
     <div
       className={`card-product style-list ${!isInStock ? "out-of-stock" : ""}`}
       data-availability={isInStock ? "In stock" : "Out of stock"}
       data-brand="gucci"
+      onMouseEnter={() => {
+        if (router && detailHref) {
+          router.prefetch(detailHref);
+        }
+      }}
     >
       <div className="card-product-wrapper">
-        <Link href={`/product-detail/${safeProduct.id}`} className="product-img">
+        <Link href={detailHref} prefetch={true} className="product-img">
           <Image
             className="lazyload img-product"
             src={currentImage || DEFAULT_IMAGE}
@@ -147,7 +156,7 @@ export default function ProductsCards6({ product }) {
         )}
       </div>
       <div className="card-product-info">
-        <Link href={`/product-detail/${safeProduct.id}`} className="title link">
+        <Link href={detailHref} prefetch={true} className="title link">
           {safeProduct.title}
         </Link>
         <span className="price current-price">

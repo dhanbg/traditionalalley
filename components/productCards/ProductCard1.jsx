@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import CountdownTimer from "../common/Countdown";
 import PriceDisplay from "../common/PriceDisplay";
 import { useContextElement } from "@/context/Context";
@@ -14,6 +15,7 @@ const DEFAULT_IMAGE = '/logo.png';
 
 
 export default function ProductCard1({ product, gridClass = "", index = 0, onRemoveFromWishlist = null }) {
+  const router = useRouter();
 
   // Ensure product has valid image properties
   const safeProduct = {
@@ -251,12 +253,17 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
     addToCompareItem(id);
   };
 
+  const detailHref = `/product-detail/${getMainProductId(safeProduct) || safeProduct.id}${(getMainProductId(safeProduct) !== (safeProduct.documentId || safeProduct.id)) ? `?variant=${safeProduct.documentId || safeProduct.id}` : ''}`;
+
   return (
     <div
       className={`card-product ${gridClass} ${inView ? "animate-in" : ""} ${!isInStock ? "out-of-stock" : ""}`}
       style={{ animationDelay: `${index * 0.12 + 0.1}s` }}
       ref={cardRef}
       onMouseEnter={() => {
+        if (router && detailHref) {
+          router.prefetch(detailHref);
+        }
         if (hasAvailableSizes && !isMobile) {
           setShowSizeSelection(true);
         }
@@ -268,7 +275,8 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
     >
       <div className="card-product-wrapper">
         <Link
-          href={`/product-detail/${getMainProductId(safeProduct) || safeProduct.id}${(getMainProductId(safeProduct) !== (safeProduct.documentId || safeProduct.id)) ? `?variant=${safeProduct.documentId || safeProduct.id}` : ''}`}
+          href={detailHref}
+          prefetch={true}
           className="product-img"
           style={{
             WebkitTapHighlightColor: 'transparent',
@@ -584,7 +592,8 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
       </div>
       <div className="card-product-info">
         <Link
-          href={`/product-detail/${getMainProductId(safeProduct) || safeProduct.id}${(getMainProductId(safeProduct) !== (safeProduct.documentId || safeProduct.id)) ? `?variant=${safeProduct.documentId || safeProduct.id}` : ''}`}
+          href={detailHref}
+          prefetch={true}
           className="title link"
           style={{
             WebkitTapHighlightColor: 'transparent',
