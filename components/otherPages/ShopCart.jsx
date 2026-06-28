@@ -332,12 +332,12 @@ export default function ShopCart() {
                     <thead>
                       <tr>
                         <th style={{ width: "40px" }}>
-                          <label className="modern-checkbox">
+                          <label className="modern-checkbox" onClick={(e) => { e.preventDefault(); selectAllCartItems(!areAllItemsSelected); }}>
                             <input 
                               type="checkbox" 
                               className="tf-check-rounded"
                               checked={areAllItemsSelected}
-                              onChange={handleSelectAll}
+                              readOnly
                               id="select-all-products"
                               style={{ display: 'none' }}
                             />
@@ -355,12 +355,12 @@ export default function ShopCart() {
                       {cartProducts.map((elm, i) => (
                         <tr key={i} className="tf-cart-item file-delete">
                           <td style={{ textAlign: "center" }}>
-                            <label className="modern-checkbox">
+                            <label className="modern-checkbox" onClick={(e) => { e.preventDefault(); toggleCartItemSelection(elm.id); }}>
                               <input 
                                 type="checkbox" 
                                 className="tf-check-rounded"
                                 checked={selectedCartItems[elm.id] !== undefined ? selectedCartItems[elm.id] : (elm.isSelected !== undefined ? elm.isSelected : true)}
-                                onChange={() => toggleCartItemSelection(elm.id)}
+                                readOnly
                                 id={`select-product-${elm.id}`}
                                 style={{ display: 'none' }}
                               />
