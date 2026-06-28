@@ -19,14 +19,15 @@ export const INTERNAL_API_URL = getStrapiInternalUrl();
 
 
 // Strapi 5 populate helpers - populate=* populates 1st level relations/media. For deep, use strictly valid syntax.
+export const PRODUCT_LISTING_POPULATE = "populate[imgSrc][populate]=*&populate[imgHover][populate]=*&populate[collection][populate]=*&populate[product_variants][populate]=*";
 export const PRODUCT_POPULATE = "populate[imgSrc][populate]=*&populate[imgHover][populate]=*&populate[gallery][populate]=*&populate[collection][populate]=*&populate[product_variants][populate]=*&populate[customer_reviews][populate]=*";
 export const COLLECTION_POPULATE = "populate[image][populate]=*&populate[category][populate]=*&populate[products][populate][imgSrc][populate]=*&populate[products][populate][imgHover][populate]=*";
 export const VARIANT_POPULATE = "populate[imgSrc][populate]=*&populate[imgHover][populate]=*&populate[gallery][populate]=*&populate[product][populate][collection][populate]=*";
 export const TOP_PICKS_POPULATE = "populate[products][populate]=*&populate[product_variants][populate]=*";
 
 // Product endpoints
-export const PRODUCTS_API = `/api/products?${PRODUCT_POPULATE}`;
-export const PRODUCTS_BY_CATEGORY_API = (category) => `/api/products?filters[category][$eq]=${category}&${PRODUCT_POPULATE}`;
+export const PRODUCTS_API = `/api/products?${PRODUCT_LISTING_POPULATE}`;
+export const PRODUCTS_BY_CATEGORY_API = (category) => `/api/products?filters[category][$eq]=${category}&${PRODUCT_LISTING_POPULATE}`;
 export const PRODUCT_BY_DOCUMENT_ID_API = (documentId) => `/api/products?filters[documentId][$eq]=${documentId}&${PRODUCT_POPULATE}`;
 
 // Collection endpoints
@@ -47,7 +48,7 @@ export const ORDERS_API = "/api/orders";
 export const USER_BAGS_API = "/api/user-bags";
 
 // Search endpoint
-export const SEARCH_PRODUCTS_API = (query) => `/api/products?filters[title][$containsi]=${encodeURIComponent(query)}&${PRODUCT_POPULATE}`;
+export const SEARCH_PRODUCTS_API = (query) => `/api/products?filters[title][$containsi]=${encodeURIComponent(query)}&${PRODUCT_LISTING_POPULATE}`;
 
 // Hero slides endpoint
 export const HERO_SLIDES_API = "/api/hero-slides?populate=*";

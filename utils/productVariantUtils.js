@@ -1,6 +1,6 @@
 import { fetchDataFromApi } from "./api";
 import { getBestImageUrl } from "./imageUtils";
-import { PRODUCT_POPULATE, VARIANT_POPULATE, TOP_PICKS_POPULATE } from "./urls";
+import { PRODUCT_POPULATE, PRODUCT_LISTING_POPULATE, VARIANT_POPULATE, TOP_PICKS_POPULATE } from "./urls";
 
 /**
  * Check if the logged-in user has used the WELCOMETOTA coupon
@@ -309,56 +309,57 @@ export async function fetchProductsWithVariants(apiEndpoint) {
       return [];
     }
 
-    const allItems = [];
+    // Process each product and fetch variants in parallel
+    const results = await Promise.all(
+      productsResponse.data.map(async (rawProduct) => {
+        if (!rawProduct) return [];
+        const items = [];
 
-    // Process each product
-    for (const rawProduct of productsResponse.data) {
-      if (!rawProduct) continue;
+        // Transform main product
+        const transformedProduct = transformProductForListing(rawProduct);
 
-      // Transform main product
-      const transformedProduct = transformProductForListing(rawProduct);
+        // Only include active products
+        if (transformedProduct && transformedProduct.isActive !== false) {
+          items.push({
+            ...transformedProduct,
+            itemType: 'product', // Mark as main product
+            parentProductId: rawProduct.documentId,
+            isMainProduct: true
+          });
+        }
 
-      // Only include active products
-      if (transformedProduct.isActive !== false) {
-        allItems.push({
-          ...transformedProduct,
-          itemType: 'product', // Mark as main product
-          parentProductId: rawProduct.documentId,
-          isMainProduct: true
-        });
-      }
+        // Fetch variants for this product
+        try {
+          const variantsResponse = await fetchDataFromApi(
+            `/api/product-variants?filters[product][documentId][$eq]=${rawProduct.documentId}&${VARIANT_POPULATE}`
+          );
 
-      // Fetch variants for this product
-      try {
-        const variantsResponse = await fetchDataFromApi(
-          `/api/product-variants?filters[product][documentId][$eq]=${rawProduct.documentId}&${VARIANT_POPULATE}`
-        );
+          if (variantsResponse.data && variantsResponse.data.length > 0) {
+            // Transform each variant as a separate item
+            for (const rawVariant of variantsResponse.data) {
+              const transformedVariant = transformVariantForListing(rawVariant, rawProduct);
 
-        if (variantsResponse.data && variantsResponse.data.length > 0) {
-          // Transform each variant as a separate item
-          for (const rawVariant of variantsResponse.data) {
-            const transformedVariant = transformVariantForListing(rawVariant, rawProduct);
-
-            // Only include active variants
-            if (transformedVariant.isActive !== false) {
-              allItems.push({
-                ...transformedVariant,
-                itemType: 'variant', // Mark as variant
-                parentProductId: rawProduct.documentId,
-                isMainProduct: false
-              });
+              if (transformedVariant && transformedVariant.isActive !== false) {
+                items.push({
+                  ...transformedVariant,
+                  itemType: 'variant', // Mark as variant
+                  parentProductId: rawProduct.documentId,
+                  isMainProduct: false
+                });
+              }
             }
           }
+        } catch (variantError) {
+          if (variantError.status !== 404) {
+            console.error(`Error fetching variants for product ${rawProduct.documentId}:`, variantError);
+          }
         }
-      } catch (variantError) {
-        // Silently handle variants not found - this is expected for products without variants
-        if (variantError.status !== 404) {
-          console.error(`Error fetching variants for product ${rawProduct.documentId}:`, variantError);
-        }
-      }
-    }
 
-    return allItems;
+        return items;
+      })
+    );
+
+    return results.flat();
   } catch (error) {
     console.error('Error fetching products with variants:', error);
     return [];
@@ -510,7 +511,7 @@ function transformVariantForListing(rawVariant, parentProduct) {
  * @returns {Array} Array of products and variants as separate items
  */
 export async function fetchProductsWithVariantsByCategory(categoryTitle) {
-  const apiEndpoint = `/api/products?${PRODUCT_POPULATE}&filters[collection][category][title][$eq]=${categoryTitle}`;
+  const apiEndpoint = `/api/products?${PRODUCT_LISTING_POPULATE}&filters[collection][category][title][$eq]=${categoryTitle}`;
   return fetchProductsWithVariants(apiEndpoint);
 }
 
@@ -520,7 +521,7 @@ export async function fetchProductsWithVariantsByCategory(categoryTitle) {
  * @returns {Array} Array of products and variants as separate items
  */
 export async function fetchProductsWithVariantsForTabs(categoryTitle = "Women") {
-  const apiEndpoint = `/api/products?${PRODUCT_POPULATE}&filters[collection][category][title][$eq]=${categoryTitle}`;
+  const apiEndpoint = `/api/products?${PRODUCT_LISTING_POPULATE}&filters[collection][category][title][$eq]=${categoryTitle}`;
   return fetchProductsWithVariants(apiEndpoint);
 }
 
@@ -536,7 +537,7 @@ export async function searchProductsWithVariants(searchQuery) {
     }
 
     // Search through products
-    const searchEndpoint = `/api/products?${PRODUCT_POPULATE}&filters[$or][0][title][$containsi]=${searchQuery}&filters[$or][1][description][$containsi]=${searchQuery}`;
+    const searchEndpoint = `/api/products?${PRODUCT_LISTING_POPULATE}&filters[$or][0][title][$containsi]=${searchQuery}&filters[$or][1][description][$containsi]=${searchQuery}`;
     const allItems = await fetchProductsWithVariants(searchEndpoint);
 
     // Filter results to only include active items
@@ -573,62 +574,8 @@ export async function fetchSingleProductWithVariants(productId) {
  */
 export async function fetchProductsWithVariantsByCollection(collectionSlug) {
   try {
-    // Rather than recursively populating from the collection down (which Strapi 5's strict API Token RBAC strips), 
-    // simply filter the root products endpoint directly via the collection relational slug!
-    const productResponse = await fetchDataFromApi(`/api/products?filters[collection][slug][$eq]=${collectionSlug}&${PRODUCT_POPULATE}`);
-
-    if (!productResponse.data || productResponse.data.length === 0) return [];
-
-    const allItems = [];
-
-    // Process each product perfectly natively
-    for (const rawProduct of productResponse.data) {
-        if (!rawProduct || !rawProduct.documentId) continue;
-
-        // Transform main product
-        const transformedProduct = transformProductForListing(rawProduct);
-
-        // Only include active products
-        if (transformedProduct.isActive !== false) {
-          allItems.push({
-            ...transformedProduct,
-            itemType: 'product',
-            parentProductId: rawProduct.documentId,
-            isMainProduct: true
-          });
-        }
-
-        // Fetch variants for this product
-        try {
-          const variantsResponse = await fetchDataFromApi(
-            `/api/product-variants?filters[product][documentId][$eq]=${rawProduct.documentId}&${VARIANT_POPULATE}`
-          );
-
-          if (variantsResponse.data && variantsResponse.data.length > 0) {
-            // Transform each variant as a separate item
-            for (const rawVariant of variantsResponse.data) {
-              const transformedVariant = transformVariantForListing(rawVariant, rawProduct);
-
-              // Only include active variants
-              if (transformedVariant.isActive !== false) {
-                allItems.push({
-                  ...transformedVariant,
-                  itemType: 'variant',
-                  parentProductId: rawProduct.documentId,
-                  isMainProduct: false
-                });
-              }
-            }
-          }
-        } catch (variantError) {
-          // Silently handle variants not found
-          if (variantError.status !== 404) {
-            console.error(`Error fetching variants for product ${rawProduct.documentId}:`, variantError);
-          }
-        }
-    }
-
-    return allItems;
+    const apiEndpoint = `/api/products?filters[collection][slug][$eq]=${collectionSlug}&${PRODUCT_LISTING_POPULATE}`;
+    return await fetchProductsWithVariants(apiEndpoint);
   } catch (error) {
     console.error('Error fetching collection products with variants:', error);
     return [];
