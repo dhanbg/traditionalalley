@@ -96,9 +96,9 @@ export default function Context({ children }) {
     const targetProduct = cartProducts.find(p => p.id === id);
     if (!targetProduct) return;
 
-    const currentStatus = selectedCartItems[id] !== undefined 
-      ? selectedCartItems[id] 
-      : (targetProduct.isSelected !== undefined ? targetProduct.isSelected : true);
+    const currentStatus = (selectedCartItems[id] !== undefined && selectedCartItems[id] !== null) 
+      ? Boolean(selectedCartItems[id]) 
+      : ((targetProduct.isSelected !== undefined && targetProduct.isSelected !== null) ? Boolean(targetProduct.isSelected) : true);
       
     const newStatus = !currentStatus;
 
@@ -148,10 +148,14 @@ export default function Context({ children }) {
   // Get only selected cart items for checkout
   const getSelectedCartItems = () => {
     return cartProducts.filter(product => {
-      if (selectedCartItems[product.id] !== undefined) {
-        return selectedCartItems[product.id];
+      const status = selectedCartItems[product.id];
+      if (status !== undefined && status !== null) {
+        return Boolean(status);
       }
-      return product.isSelected !== undefined ? product.isSelected : true;
+      if (product.isSelected !== undefined && product.isSelected !== null) {
+        return Boolean(product.isSelected);
+      }
+      return true;
     });
   };
   
@@ -1367,7 +1371,7 @@ export default function Context({ children }) {
                 selectedSize: cartItem.size || null, // Include selected size from backend
                 imgSrc: imgSrc,
                 variantInfo: variantInfo, // Include variant info
-                isSelected: cartItem.isSelected !== undefined ? cartItem.isSelected : true
+                isSelected: (cartItem.isSelected !== undefined && cartItem.isSelected !== null) ? Boolean(cartItem.isSelected) : true
               };
               
               // Cart item processed successfully
@@ -1401,7 +1405,7 @@ export default function Context({ children }) {
             // Sync selectedCartItems state from backend relies
             const backendSelectionMap = {};
             backendCarts.forEach(item => {
-              backendSelectionMap[item.id] = item.isSelected;
+              backendSelectionMap[item.id] = (item.isSelected !== undefined && item.isSelected !== null) ? Boolean(item.isSelected) : true;
             });
             setSelectedCartItems(backendSelectionMap);
             
