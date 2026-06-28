@@ -553,12 +553,16 @@ export default function Context({ children }) {
     if (variantInfo) {
       if (variantInfo.imgSrcObject) imgSrc = getOptimizedImageUrl(variantInfo.imgSrcObject);
       else if (variantInfo.imgSrc) imgSrc = typeof variantInfo.imgSrc === 'string' ? variantInfo.imgSrc : getOptimizedImageUrl(variantInfo.imgSrc);
-      if (variantInfo.title && variantInfo.isVariant && productInfo?.title && !productInfo.title.includes(variantInfo.title)) {
+      else if (productInfo?.imgSrc) imgSrc = typeof productInfo.imgSrc === 'string' ? productInfo.imgSrc : getOptimizedImageUrl(productInfo.imgSrc);
+      
+      if (variantInfo.title && productInfo?.title && !productInfo.title.includes(variantInfo.title)) {
         title = `${productInfo.title} - ${variantInfo.title}`;
+      } else if (variantInfo.title) {
+        title = variantInfo.title;
       }
     } else if (productInfo) {
       if (productInfo.imgSrc?.formats?.small?.url) imgSrc = getImageUrl(productInfo.imgSrc.formats.small.url);
-      else imgSrc = getImageUrl(productInfo.imgSrc);
+      else imgSrc = typeof productInfo.imgSrc === 'string' ? productInfo.imgSrc : getImageUrl(productInfo.imgSrc);
     }
 
     const productToAdd = {

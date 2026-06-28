@@ -408,7 +408,8 @@ export default function Details1({ product, variants = [], preferredVariantId = 
     const baseId = safeProduct.documentId || safeProduct.id;
 
     if (activeVariant && !activeVariant.isCurrentProduct) {
-      const baseVariantId = `${baseId}-variant-${activeVariant.id}`;
+      const variantIdentifier = activeVariant.documentId || activeVariant.id;
+      const baseVariantId = `${baseId}-variant-${variantIdentifier}`;
       uniqueCartId = selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
     } else {
       uniqueCartId = selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
@@ -419,6 +420,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
       id: activeVariant.id,
       documentId: activeVariant.documentId,
       variantId: activeVariant.documentId, // Add variantId for checkout matching
+      isVariant: true,
       color: activeVariant.color,
       imgSrc: activeVariant.imgSrc,
       imgHover: activeVariant.imgHover,
