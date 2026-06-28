@@ -52,12 +52,12 @@ export async function POST(request: NextRequest) {
         console.log('🔍 Variant ID details:', { variantId, type: typeof variantId, stringified: JSON.stringify(variantId) });
         
         // Try to fetch by documentId first
-        let variantResponse = await fetchDataFromApi(`/api/product-variants?filters[documentId][$eq]=${variantId}&fields=size_stocks,title`);
+        let variantResponse = await fetchDataFromApi(`/api/product-variants?filters[documentId][$eq]=${variantId}&populate=*`);
         
         // If no results and variantId is numeric, try fetching by id
         if (!variantResponse?.data?.length && !isNaN(parseInt(variantId))) {
           console.log(`🔄 Trying to fetch variant by numeric id: ${variantId}`);
-          variantResponse = await fetchDataFromApi(`/api/product-variants?filters[id][$eq]=${variantId}&fields=size_stocks,title`);
+          variantResponse = await fetchDataFromApi(`/api/product-variants?filters[id][$eq]=${variantId}&populate=*`);
         }
         
         if (variantResponse?.data && variantResponse.data.length > 0) {
@@ -74,11 +74,11 @@ export async function POST(request: NextRequest) {
         console.log(`🔍 Checking main product stock - Product ID: ${productId}, Size: ${selectedSize}`);
         
         // Try to fetch by documentId first
-        let productResponse = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${productId}&fields=size_stocks,title`);
+        let productResponse = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${productId}&populate=*`);
         
         // If not found by documentId, try by numeric ID
         if (!productResponse?.data?.length && !isNaN(parseInt(productId))) {
-          productResponse = await fetchDataFromApi(`/api/products/${parseInt(productId)}?fields=size_stocks,title`);
+          productResponse = await fetchDataFromApi(`/api/products/${parseInt(productId)}?populate=*`);
         }
 
         if (productResponse?.data) {
@@ -147,23 +147,23 @@ export async function POST(request: NextRequest) {
         totalQuantityAfterOperation
       });
 
-    } catch (fetchError: any) {
+    } catch (fetchError) {
       console.error('Error fetching product/variant data:', fetchError);
       return NextResponse.json(
         { 
           success: false, 
-          error: fetchError?.message || 'Error fetching product data' 
+          error: 'Error fetching product data' 
         },
         { status: 500 }
       );
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Stock validation error:', error);
     return NextResponse.json(
       { 
         success: false, 
-        error: error?.message || 'Internal server error during stock validation' 
+        error: 'Internal server error during stock validation' 
       },
       { status: 500 }
     );

@@ -44,19 +44,17 @@ export const loadCartFromBackend = createAsyncThunk(
 
             if (!userData?.data || userData.data.length === 0) {
                 console.log('⚠️ No user data found');
-                return { items: [], userDatumDocumentId: null, userBagDocumentId: null };
+                return [];
             }
 
             const userWithBag = userData.data.find(u => u.attributes?.user_bag?.data || u.user_bag);
             const currentUser = userWithBag || userData.data[0];
             const userDocumentId = currentUser.documentId;
-            const userBagData = currentUser?.attributes?.user_bag?.data || currentUser?.user_bag;
-            const userBagDocumentId = userBagData?.documentId || userBagData?.attributes?.documentId || null;
-            console.log('👤 User documentId:', userDocumentId, 'Bag documentId:', userBagDocumentId);
+            console.log('👤 User documentId:', userDocumentId);
 
             // Fetch cart items directly by user_datum
             const cartsResponse = await fetchDataFromApi(
-                `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=product,product_variant`
+                `/api/carts?filters[user_datum][documentId][$eq]${userDocumentId}&populate=product,product_variant`
             );
 
             console.log('🛒 Carts response:', cartsResponse);
@@ -97,7 +95,7 @@ export const loadCartFromBackend = createAsyncThunk(
             });
 
             console.log('✅ Transformed cart items:', transformedCart);
-            return { items: transformedCart, userDatumDocumentId: userDocumentId, userBagDocumentId };
+            return transformedCart;
         } catch (error) {
             console.error('Error loading cart from backend:', error);
             return rejectWithValue(error.message);
@@ -108,84 +106,93 @@ export const loadCartFromBackend = createAsyncThunk(
 // Async thunk for syncing cart item to backend
 export const syncCartItemToBackend = createAsyncThunk(
     'cart/syncItemToBackend',
-    async ({ userId, cartItem }, { getState, rejectWithValue }) => {
+    async ({ userId, cartItem }, { rejectWithValue }) => {
         try {
-            const state = getState().cart;
-            let userDatumDocumentId = state.userDatumDocumentId;
-            let userBagDocumentId = state.userBagDocumentId;
+            // Get user data
+            const userData = await fetchDataFromApi(`/api/user-data?filters[authUserId][$eq]=${userId}&populate=user_bag`);
 
-            // Fetch user data only if not already cached in state
-            if (!userDatumDocumentId || !userBagDocumentId) {
-                const userData = await fetchDataFromApi(`/api/user-data?filters[authUserId][$eq]=${userId}&populate=user_bag`);
-
-                if (!userData?.data || userData.data.length === 0) {
-                    throw new Error('User not found');
-                }
-
-                const userWithBag = userData.data.find(u => u.attributes?.user_bag?.data || u.user_bag);
-                const currentUser = userWithBag || userData.data[0];
-                userDatumDocumentId = currentUser.documentId;
-                let userBagData = currentUser?.attributes?.user_bag?.data || currentUser?.user_bag;
-
-                if (!userBagData) {
-                    console.log('📦 No bag linked, searching for existing bag...');
-                    try {
-                        const existingBagResponse = await fetchDataFromApi(
-                            `/api/user-bags?filters[user_datum][documentId][$eq]=${userDatumDocumentId}`
-                        );
-
-                        if (existingBagResponse?.data && existingBagResponse.data.length > 0) {
-                            console.log('🔗 Found existing bag, linking to user_data...');
-                            userBagData = existingBagResponse.data[0];
-
-                            await updateData(`/api/user-data/${userDatumDocumentId}`, {
-                                data: { user_bag: userBagData.documentId }
-                            });
-                        } else {
-                            console.log('📦 Creating new user bag for user:', userId);
-                            const bagResponse = await createData('/api/user-bags', {
-                                data: { user_datum: userDatumDocumentId }
-                            });
-                            userBagData = bagResponse?.data;
-
-                            if (userBagData?.documentId) {
-                                await updateData(`/api/user-data/${userDatumDocumentId}`, {
-                                    data: { user_bag: userBagData.documentId }
-                                });
-                            }
-                        }
-                    } catch (bagError) {
-                        console.error('Error managing user bag:', bagError);
-                        throw new Error('Failed to manage user bag');
-                    }
-                }
-
-                userBagDocumentId = userBagData.documentId || userBagData.attributes?.documentId;
+            if (!userData?.data || userData.data.length === 0) {
+                throw new Error('User not found');
             }
+
+            const userWithBag = userData.data.find(u => u.attributes?.user_bag?.data || u.user_bag);
+            const currentUser = userWithBag || userData.data[0];
+            let userBagData = currentUser?.attributes?.user_bag?.data || currentUser?.user_bag;
+
+            // If user bag doesn't exist, check if there's an orphaned bag for this user
+            if (!userBagData) {
+                console.log('📦 No bag linked, searching for existing bag...');
+                try {
+                    // Check if a bag exists for this user_datum but isn't linked
+                    const existingBagResponse = await fetchDataFromApi(
+                        `/api/user-bags?filters[user_datum][documentId][$eq]=${currentUser.documentId}`
+                    );
+
+                    if (existingBagResponse?.data && existingBagResponse.data.length > 0) {
+                        // Found an existing bag, link it to user_data
+                        console.log('🔗 Found existing bag, linking to user_data...');
+                        userBagData = existingBagResponse.data[0];
+
+                        await updateData(`/api/user-data/${currentUser.documentId}`, {
+                            data: {
+                                user_bag: userBagData.documentId
+                            }
+                        });
+                        console.log('✅ Existing bag linked to user_data');
+                    } else {
+                        // No bag exists, create a new one
+                        console.log('📦 Creating new user bag for user:', userId);
+                        const bagPayload = {
+                            data: {
+                                user_datum: currentUser.documentId
+                            }
+                        };
+                        const bagResponse = await createData('/api/user-bags', bagPayload);
+                        userBagData = bagResponse?.data;
+                        console.log('✅ User bag created:', userBagData?.documentId);
+
+                        // Link the new bag to user_data
+                        if (userBagData?.documentId) {
+                            console.log('🔗 Linking new bag to user_data...');
+                            await updateData(`/api/user-data/${currentUser.documentId}`, {
+                                data: {
+                                    user_bag: userBagData.documentId
+                                }
+                            });
+                            console.log('✅ User_data updated with bag reference');
+                        }
+                    }
+                } catch (bagError) {
+                    console.error('Error managing user bag:', bagError);
+                    throw new Error('Failed to manage user bag');
+                }
+            }
+
+            const userBagDocumentId = userBagData.documentId || userBagData.attributes?.documentId;
 
             // Create cart item payload matching Strapi cart schema
             const cartPayload = {
                 data: {
-                    product: cartItem.documentId,
+                    product: cartItem.documentId, // Relation to product
                     quantity: cartItem.quantity,
                     size: cartItem.selectedSize,
                     user_bag: userBagDocumentId,
-                    user_datum: userDatumDocumentId,
-                    variantInfo: cartItem.variantInfo,
+                    user_datum: currentUser.documentId,
+                    variantInfo: cartItem.variantInfo, // JSON field
+                    // product_variant will be set if there's a variantId
                     ...(cartItem.variantInfo?.variantId && {
                         product_variant: cartItem.variantInfo.variantId
                     })
                 }
             };
 
+            // Create cart item in backend using /api/carts (not /api/cart-products)
             const response = await createData('/api/carts', cartPayload);
 
             return {
                 ...cartItem,
                 backendId: response?.data?.id,
                 backendDocumentId: response?.data?.documentId || response?.data?.attributes?.documentId,
-                userDatumDocumentId,
-                userBagDocumentId
             };
         } catch (error) {
             console.error('Error syncing cart item to backend:', error);
@@ -231,8 +238,6 @@ const initialState = {
     isLoading: false,
     isCartLoading: true,
     cartLoadedOnce: false,
-    userDatumDocumentId: null,
-    userBagDocumentId: null,
     error: null,
 };
 
@@ -360,16 +365,13 @@ const cartSlice = createSlice({
                 state.isCartLoading = true;
             })
             .addCase(loadCartFromBackend.fulfilled, (state, action) => {
-                const { items, userDatumDocumentId, userBagDocumentId } = action.payload;
-                state.items = items || [];
-                if (userDatumDocumentId) state.userDatumDocumentId = userDatumDocumentId;
-                if (userBagDocumentId) state.userBagDocumentId = userBagDocumentId;
+                state.items = action.payload;
                 state.isLoading = false;
                 state.isCartLoading = false;
                 state.cartLoadedOnce = true;
 
                 // Auto-select all loaded items (preserve existing selections)
-                (items || []).forEach(item => {
+                action.payload.forEach(item => {
                     // Only auto-select if not already in selectedItems
                     if (!(item.id in state.selectedItems)) {
                         state.selectedItems[item.id] = true;
@@ -390,10 +392,6 @@ const cartSlice = createSlice({
 
             // Sync item to backend
             .addCase(syncCartItemToBackend.fulfilled, (state, action) => {
-                const { userDatumDocumentId, userBagDocumentId } = action.payload;
-                if (userDatumDocumentId) state.userDatumDocumentId = userDatumDocumentId;
-                if (userBagDocumentId) state.userBagDocumentId = userBagDocumentId;
-
                 const index = state.items.findIndex(item => item.id === action.payload.id);
                 if (index !== -1) {
                     state.items[index] = action.payload;
