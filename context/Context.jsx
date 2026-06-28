@@ -86,7 +86,13 @@ export default function Context({ children }) {
   
   // Function to toggle selection of cart items
   const toggleCartItemSelection = async (id) => {
-    const currentStatus = selectedCartItems[id] !== undefined ? selectedCartItems[id] : true;
+    const targetProduct = cartProducts.find(p => p.id === id);
+    if (!targetProduct) return;
+
+    const currentStatus = selectedCartItems[id] !== undefined 
+      ? selectedCartItems[id] 
+      : (targetProduct.isSelected !== undefined ? targetProduct.isSelected : true);
+      
     const newStatus = !currentStatus;
 
     setSelectedCartItems(prev => ({
@@ -96,12 +102,13 @@ export default function Context({ children }) {
 
     setCartProducts(prev => prev.map(p => p.id === id ? { ...p, isSelected: newStatus } : p));
 
-    const targetProduct = cartProducts.find(p => p.id === id);
-    if (targetProduct && targetProduct.cartDocumentId) {
+    if (targetProduct.cartDocumentId) {
       try {
-        await updateData(`/api/carts/${targetProduct.cartDocumentId}`, {
+        console.log(`Updating Strapi cart ${targetProduct.cartDocumentId} isSelected to:`, newStatus);
+        const updateRes = await updateData(`/api/carts/${targetProduct.cartDocumentId}`, {
           data: { isSelected: newStatus }
         });
+        console.log("Strapi update success:", updateRes);
       } catch (err) {
         console.error("Failed to update cart selection in Strapi:", err);
       }
