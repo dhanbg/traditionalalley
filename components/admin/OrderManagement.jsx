@@ -218,11 +218,13 @@ const OrderManagement = () => {
   };
 
   const createShipment = async (payment, userBagId) => {
-    const { receiver_details, products } = payment.orderData;
-    const { address } = receiver_details;
+    const orderData = payment?.orderData || {};
+    const receiver_details = orderData.receiver_details || {};
+    const products = orderData.products || [];
+    const address = receiver_details.address || {};
 
-    const product = products[0];
-    const packageInfo = product.packageInfo;
+    const product = products[0] || {};
+    const packageInfo = product.packageInfo || { dimensions: { length: 10, width: 10, height: 10 } };
 
     const formData = {
       plannedShippingDate: new Date().toISOString().split('T')[0],
@@ -1696,7 +1698,7 @@ const OrderManagement = () => {
                   className="border p-2 mb-2 rounded">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
-                      <h3 className="font-bold text-gray-900">{payment.orderData.receiver_details.name || payment.orderData.receiver_details.fullName}</h3>
+                      <h3 className="font-bold text-gray-900">{payment?.orderData?.receiver_details?.name || payment?.orderData?.receiver_details?.fullName || 'Guest / Unnamed Customer'}</h3>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-gray-600">
                         <span>Order Time: {formatTimeAgo(payment.timestamp)}</span>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${payment.computedStatus === 'success' ? 'bg-green-100 text-green-800' :
@@ -1708,7 +1710,7 @@ const OrderManagement = () => {
                         </span>
                       </div>
                       {
-                        payment.orderData.products && payment.orderData.products.length > 0 && (
+                        payment?.orderData?.products && payment.orderData.products.length > 0 && (
                           <div className="mt-1 text-sm text-gray-600">
                             {payment.orderData.products.map((product, index) => (
                               <div key={index} className="mb-1">
