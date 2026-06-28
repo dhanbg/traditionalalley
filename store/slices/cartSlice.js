@@ -172,18 +172,19 @@ export const syncCartItemToBackend = createAsyncThunk(
 
             const userBagDocumentId = userBagData.documentId || userBagData.attributes?.documentId;
 
+            const variantIdentifier = cartItem.variantInfo?.variantId || cartItem.variantInfo?.documentId || cartItem.variantInfo?.id;
+
             // Create cart item payload matching Strapi cart schema
             const cartPayload = {
                 data: {
-                    product: cartItem.documentId, // Relation to product
+                    product: cartItem.baseProductId || cartItem.documentId, // Relation to product
                     quantity: cartItem.quantity,
                     size: cartItem.selectedSize,
                     user_bag: userBagDocumentId,
                     user_datum: currentUser.documentId,
                     variantInfo: cartItem.variantInfo, // JSON field
-                    // product_variant will be set if there's a variantId
-                    ...(cartItem.variantInfo?.variantId && {
-                        product_variant: cartItem.variantInfo.variantId
+                    ...(variantIdentifier && {
+                        product_variant: variantIdentifier
                     })
                 }
             };

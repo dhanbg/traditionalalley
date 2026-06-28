@@ -52,16 +52,18 @@ export const useSyncCartMutation = () => {
 
             const userBagDocumentId = userBagData.documentId || userBagData.attributes?.documentId;
 
+            const variantIdentifier = cartItem.variantInfo?.variantId || cartItem.variantInfo?.documentId || cartItem.variantInfo?.id;
+
             const cartPayload = {
                 data: {
-                    product: cartItem.documentId,
+                    product: cartItem.baseProductId || cartItem.documentId,
                     quantity: cartItem.quantity,
                     size: cartItem.selectedSize,
                     user_bag: userBagDocumentId,
                     user_datum: currentUser.documentId,
                     variantInfo: cartItem.variantInfo,
-                    ...(cartItem.variantInfo?.variantId && {
-                        product_variant: cartItem.variantInfo.variantId
+                    ...(variantIdentifier && {
+                        product_variant: variantIdentifier
                     })
                 }
             };

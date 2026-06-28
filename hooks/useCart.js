@@ -371,9 +371,9 @@ export const useCart = () => {
             const sizeMatches = cartItem.selectedSize === selectedSize;
 
             let variantMatches = true;
-            if (variantId) {
-                if (cartItem.variantInfo?.variantId) {
-                    variantMatches = cartItem.variantInfo.variantId === variantId;
+                const itemVariantId = cartItem.variantInfo?.variantId || cartItem.variantInfo?.documentId || cartItem.variantInfo?.id;
+                if (itemVariantId) {
+                    variantMatches = itemVariantId === variantId;
                 } else {
                     variantMatches = false;
                 }
