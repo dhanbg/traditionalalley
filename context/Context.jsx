@@ -16,6 +16,9 @@ import {
   getSavedCurrencyPreference 
 } from "@/utils/currency";
 import { useCartImagePreloader } from "@/hooks/useCartImagePreloader";
+import { useCartStore } from "@/store/useCartStore";
+import { useWishlistStore } from "@/store/useWishlistStore";
+import { useValidateStockMutation, useSyncCartMutation } from "@/hooks/queries/useCartMutations";
 
 import React, { useContext, useEffect, useState, useCallback } from "react";
 const dataContext = React.createContext();
@@ -27,6 +30,10 @@ export default function Context({ children }) {
   const { data: session } = useSession();
   const user = session?.user;
   const { showStockError, showAddToCartSuccess, showQuantityUpdateSuccess } = useStockNotifications();
+  
+  const validateStockMutation = useValidateStockMutation(showStockError);
+  const syncCartMutation = useSyncCartMutation();
+
   const [cartProducts, setCartProducts] = useState([]);
   const [wishList, setWishList] = useState([]);
   const [isWishlistLoading, setIsWishlistLoading] = useState(false);
@@ -100,6 +107,7 @@ export default function Context({ children }) {
       [id]: newStatus
     }));
 
+    useCartStore.getState().toggleCartItemSelection(id);
     setCartProducts(prev => prev.map(p => p.id === id ? { ...p, isSelected: newStatus } : p));
 
     if (targetProduct.cartDocumentId) {
@@ -522,462 +530,84 @@ export default function Context({ children }) {
     }
     
     return false;
-  };
-  
-  const addProductToCart = async (id, qty, isModal = true, variantInfo = null, selectedSize = null) => {
-    // Log the product ID that was clicked
-    const productIdClicked = id;
-    
-    // Check if product is already in cart by ID
-    if (isAddedToCartProducts(id)) {
-      if (isModal) {
-        // Still open the cart modal to show them the product is already there
-        openCartModal().catch(() => {});
-      }
-      return; // Exit function early
+  };  const addProductToCart = (id, qty, isModal = true, variantInfo = null, selectedSize = null) => {
+    const cartState = useCartStore.getState();
+    if (cartState.isAddedToCartProducts(id)) {
+      if (isModal) openCartModal().catch(() => {});
+      return;
     }
-    
-    // Try to find the product in allProducts to get complete information
-    // For unique cart IDs, extract the base product documentId
+
     let baseProductId = id;
     if (typeof id === 'string') {
-      // Handle size-specific IDs: "productId-size-M" or "productId-variant-X-size-M"
-      if (id.includes('-size-')) {
-        baseProductId = id.split('-size-')[0];
-      }
-      // Handle variant IDs after size extraction
-      if (baseProductId.includes('-variant-')) {
-        baseProductId = baseProductId.split('-variant-')[0];
-      }
+      if (id.includes('-size-')) baseProductId = id.split('-size-')[0];
+      if (baseProductId.includes('-variant-')) baseProductId = baseProductId.split('-variant-')[0];
     }
-    
-    const productInfo = allProducts.find(product => 
-      product.documentId === baseProductId || 
-      product.id === baseProductId || 
-      (product.documentId && product.documentId === baseProductId)
+
+    const productInfo = allProducts.find(product =>
+      product.documentId === baseProductId || product.id === baseProductId
     );
+
     let productToAdd = null;
-    
     if (productInfo) {
       let imgSrc = '/images/placeholder.png';
       let title = productInfo.title;
-      
-      // Use variant info if provided
       if (variantInfo) {
-        if (variantInfo.imgSrcObject) {
-          // Use the original image object to get thumbnail
-          imgSrc = getOptimizedImageUrl(variantInfo.imgSrcObject);
-        } else if (variantInfo.imgSrc) {
-          imgSrc = variantInfo.imgSrc;
-        }
-        if (variantInfo.title && variantInfo.isVariant) {
-          title = `${productInfo.title} - ${variantInfo.title}`;
-        }
+        if (variantInfo.imgSrcObject) imgSrc = getOptimizedImageUrl(variantInfo.imgSrcObject);
+        else if (variantInfo.imgSrc) imgSrc = variantInfo.imgSrc;
+        if (variantInfo.title && variantInfo.isVariant) title = `${productInfo.title} - ${variantInfo.title}`;
       } else {
-        // Use original logic for non-variant products
-        if (productInfo.imgSrc && productInfo.imgSrc.formats && productInfo.imgSrc.formats.small && productInfo.imgSrc.formats.small.url) {
-          imgSrc = getImageUrl(productInfo.imgSrc.formats.small.url);
-        } else {
-          imgSrc = getImageUrl(productInfo.imgSrc);
-        }
+        if (productInfo.imgSrc?.formats?.small?.url) imgSrc = getImageUrl(productInfo.imgSrc.formats.small.url);
+        else imgSrc = getImageUrl(productInfo.imgSrc);
       }
-      
       productToAdd = {
-        id: id, // Use the full variant ID
-        baseProductId: baseProductId, // Keep reference to base product
+        id,
+        baseProductId,
         documentId: productInfo.documentId,
-        title: title,
+        title,
         price: productInfo.price,
         oldPrice: productInfo.oldPrice || null,
         quantity: qty || 1,
         colors: productInfo.colors || [],
         sizes: productInfo.sizes || [],
-        selectedSize: selectedSize, // Add selected size
-        imgSrc: imgSrc,
+        selectedSize,
+        imgSrc,
         weight: productInfo.weight || null,
-        // Add variant information
-        variantInfo: variantInfo
+        variantInfo
       };
-      
-
-      
-      // Validate stock before adding to cart
-      if (selectedSize) {
-        try {
-          const stockValidation = await validateCartStock(
-            baseProductId,
-            variantInfo?.variantId || null,
-            selectedSize,
-            qty || 1,
-            0 // Current cart quantity is 0 since we're adding new item
-          );
-          
-          if (!stockValidation.success) {
-            // Show error message to user
-            showStockError(stockValidation.error, stockValidation.availableStock, productToAdd.title);
-            return; // Exit function early
-          }
-        } catch (stockError) {
-          // Stock validation error
-          // Allow adding to cart if validation fails (fallback behavior)
-        }
-      }
-      
-      // Special case for Redezyyyy Shorts
-      if (productToAdd.title && productToAdd.title.includes("Redezyyyy")) {
-        if (!productToAdd.oldPrice) {
-          productToAdd.oldPrice = 129.99;
-        }
-      }
     } else {
-      // The ID might be a documentId, especially if it's a string that looks like a UUID/hash
-      try {
-        let productResponse = null;
-        
-        // Try both approaches - by numeric ID or by documentId
-        if (!isNaN(parseInt(baseProductId))) {
-          productResponse = await fetchDataFromApi(`/api/products/${parseInt(baseProductId)}?populate=*`);
-        } else {
-          productResponse = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${baseProductId}&populate=*`);
-        }
-        
-
-        
-        // Handle different response formats
-        let fetchedProduct = null;
-        if (productResponse && productResponse.data) {
-          if (Array.isArray(productResponse.data) && productResponse.data.length > 0) {
-            fetchedProduct = productResponse.data[0];
-          } else {
-            fetchedProduct = productResponse.data;
-          }
-        }
-        
-        if (fetchedProduct) {
-          const productData = fetchedProduct.attributes || fetchedProduct;
-          
-
-          
-          // Check if imgSrc is a relation or direct field
-          let imgUrl = '/images/placeholder.png';
-          let title = productData.title || 'Product Item';
-          
-          // Use variant info if provided
-          if (variantInfo) {
-            if (variantInfo.imgSrcObject) {
-              // Use the original image object to get thumbnail
-              imgUrl = getOptimizedImageUrl(variantInfo.imgSrcObject);
-            } else if (variantInfo.imgSrc) {
-              // Check if variantInfo.imgSrc is already a full URL
-              if (typeof variantInfo.imgSrc === 'string' && variantInfo.imgSrc.startsWith('http')) {
-                imgUrl = variantInfo.imgSrc;
-              } else {
-                // If it's an object, use getOptimizedImageUrl
-                imgUrl = getOptimizedImageUrl(variantInfo.imgSrc);
-              }
-            }
-            if (variantInfo.title && variantInfo.isVariant) {
-              title = `${productData.title || 'Product Item'} - ${variantInfo.title}`;
-            }
-          } else {
-            // Use original logic for non-variant products
-            if (productData.imgSrc && productData.imgSrc.formats && productData.imgSrc.formats.small && productData.imgSrc.formats.small.url) {
-              imgUrl = getImageUrl(productData.imgSrc.formats.small.url);
-            } else if (productData.imgSrc?.data?.attributes?.url) {
-              imgUrl = getImageUrl(productData.imgSrc.data.attributes.url);
-            } else if (productData.imgSrc?.url) {
-              imgUrl = getImageUrl(productData.imgSrc.url);
-            } else if (typeof productData.imgSrc === 'string') {
-              imgUrl = productData.imgSrc;
-            } else if (productData.gallery && productData.gallery.length > 0) {
-              // Try to use first gallery image if no main image
-              const galleryImg = productData.gallery[0];
-              imgUrl = getImageUrl(galleryImg.url || galleryImg.formats?.thumbnail?.url || '');
-            }
-          }
-          
-          productToAdd = {
-            id: id, // Use the full variant ID
-            baseProductId: baseProductId, // Keep reference to base product
-            documentId: productData.documentId,
-            title: title,
-            price: parseFloat(productData.price) || 0,
-            oldPrice: productData.oldPrice ? parseFloat(productData.oldPrice) : null,
-            quantity: qty || 1,
-            colors: productData.colors || [],
-            sizes: productData.sizes || [],
-            selectedSize: selectedSize, // Add selected size
-            imgSrc: imgUrl,
-            weight: productData.weight || null,
-            // Add variant information
-            variantInfo: variantInfo
-          };
-          
-          // Special case for Redezyyyy Shorts
-          if (productToAdd.title && productToAdd.title.includes("Redezyyyy")) {
-            if (!productToAdd.oldPrice) {
-              productToAdd.oldPrice = 129.99;
-            }
-          }
-        }
-      } catch (fetchError) {
-        // Error fetching product details
-      }
-    }
-    
-    // If we still don't have complete product info, create a basic dummy product
-    if (!productToAdd) {
-      let title = "Product Item";
-      let imgSrc = '/images/placeholder.png';
-      
-      // Use variant info if provided
-      if (variantInfo) {
-        if (variantInfo.imgSrc) {
-          imgSrc = variantInfo.imgSrc;
-        }
-        if (variantInfo.title) {
-          title = variantInfo.isVariant ? `Product Item - ${variantInfo.title}` : variantInfo.title;
-        }
-      }
-      
       productToAdd = {
-        id: id,
-        baseProductId: baseProductId,
-        documentId: typeof baseProductId === 'string' && baseProductId.length > 20 ? baseProductId : null,
-        title: title,
+        id,
+        baseProductId,
+        title: variantInfo?.title || "Product Item",
         price: 0,
-        oldPrice: null,
         quantity: qty || 1,
-        colors: [],
-        sizes: [],
-        selectedSize: selectedSize, // Add selected size
-        imgSrc: imgSrc,
-        weight: null,
-        variantInfo: variantInfo
+        selectedSize,
+        imgSrc: variantInfo?.imgSrc || '/images/placeholder.png',
+        variantInfo
       };
     }
-    
-    if (user) {
-      try {
-        // Get the current logged-in user data
-        const currentUserData = await fetchDataFromApi(`/api/user-data?filters[authUserId][$eq]=${user.id}&populate=user_bag`);
-        
-        // If the user doesn't exist in our system, they should be created by the user-management API first
-        if (!currentUserData?.data || currentUserData.data.length === 0) {
-          // Add to local cart only and let the user-management API create the user
-          setCartProducts((pre) => [...pre, productToAdd]);
-          
-          if (isModal) {
-            setCartRefreshKey(prev => prev + 1);
-            openCartModal().catch(() => {});
-          }
-          
-          return;
-        }
-        
-        // Extract the current user data
-        const userWithBag = currentUserData?.data?.find(u => u.user_bag?.documentId || u.attributes?.user_bag?.data?.documentId);
-        const currentUser = userWithBag || currentUserData?.data?.[0];
-        const currentUserId = currentUser?.id;
-        const currentUserDocumentId = currentUser?.attributes?.documentId || currentUser?.documentId;
-        const currentUserAttrs = currentUser?.attributes || {};
-        
-        if (!currentUserId) {
-          // Add to local cart only since we couldn't identify the user
-          setCartProducts((pre) => [...pre, productToAdd]);
-          
-          if (isModal) {
-            setCartRefreshKey(prev => prev + 1);
-            openCartModal().catch(() => {});
-          }
-          
-          return;
-        }
-        
-        // Check if user has a user-bag
-        const userBagRelation = currentUserAttrs.user_bag;
-        let userBag = null;
-        
-        // Check for existing user-bag in response
-        if (userBagRelation) {
-          if (userBagRelation.data) {
-            userBag = userBagRelation.data;
-          } else if (userBagRelation.id) {
-            userBag = userBagRelation;
-          }
-        }
-        
-        // Double-check for existing user-bag by querying directly
-        if (!userBag) {
-          try {
-            const existingBags = await fetchDataFromApi(`/api/user-bags?filters[user_datum][documentId][$eq]=${currentUserDocumentId}&populate=*`);
-            
-            if (existingBags.data && existingBags.data.length > 0) {
-              userBag = existingBags.data[0];
-            }
-          } catch (bagCheckError) {
-            // Error checking for existing bags
-          }
-        }
-        
-        // Create a user-bag if none exists (this should be rare since user-management API creates bags)
-        if (!userBag) {
-          // Get user name from current user data
-          const firstName = currentUserAttrs.firstName || user.name?.split(' ')[0] || "User";
-          const lastName = currentUserAttrs.lastName || user.name?.split(' ').slice(1).join(' ') || "";
-          
-          try {
-            const userBagPayload = {
-              data: {
-                Name: `${firstName} ${lastName}`.trim(),
-                user_datum: currentUserDocumentId // Use documentId instead of numeric ID
-              }
-            };
-            
-            const userBagData = await createData("/api/user-bags", userBagPayload);
-            userBag = userBagData.data;
-          } catch (createBagError) {
-            // Error creating user bag
-          }
-        }
-        
-        // Add the product to cart
-        try {
-          // Skip backend for guest users - keep cart local only
-          if (!user) {
-            throw new Error("Guest user - skipping backend cart creation");
-          }
-          // Prepare complete cart payload
-          const completeCartPayload = {
-            data: {
-              quantity: qty || 1,
-              user_datum: currentUserDocumentId // Use documentId instead of numeric ID
-            }
-          };
-          
-          // Add user_bag if available
-          if (userBag) {
-            // Extract the documentId or ID based on structure
-            let userBagId = userBag.documentId || userBag.attributes?.documentId;
-            if (!userBagId && userBag.data) {
-              userBagId = userBag.data.documentId || userBag.data.attributes?.documentId;
-            }
-            if (!userBagId) {
-              userBagId = userBag.id || (userBag.data && userBag.data.id);
-            }
-            
-            if (userBagId) {
-              completeCartPayload.data.user_bag = userBagId;
-            }
-          }
-          
-          // Add product to payload - use base product documentId for backend
-          const productDocumentIdForBackend = productToAdd.baseProductId || productToAdd.documentId || productToAdd.id;
-          
-          // Find product by documentId to get the document ID for backend relation
-          try {
-            const productResponse = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${productDocumentIdForBackend}&populate=*`);
-            if (productResponse?.data && productResponse.data.length > 0) {
-              completeCartPayload.data.product = productResponse.data[0].documentId || productResponse.data[0].id;
-            } else {
-              completeCartPayload.data.product = productDocumentIdForBackend;
-            }
-          } catch (error) {
-            completeCartPayload.data.product = productDocumentIdForBackend;
-          }
-          
-          // Add variant information to the cart payload if available
-          if (productToAdd.variantInfo) {
-            if (typeof productToAdd.variantInfo === 'object') {
-              // If it's an object, stringify it
-              completeCartPayload.data.variantInfo = JSON.stringify(productToAdd.variantInfo);
-            } else {
-              // If it's already a string, use it as is
-              completeCartPayload.data.variantInfo = productToAdd.variantInfo;
-            }
-            
-            // Also link the variant relation in Strapi 5 using documentId (variantId)
-            if (productToAdd.variantInfo.variantId) {
-              completeCartPayload.data.product_variant = productToAdd.variantInfo.variantId;
-            }
-          }
-          
-          // Add selected size to the cart payload if available
-          if (productToAdd.selectedSize) {
-            completeCartPayload.data.size = productToAdd.selectedSize;
-          }
 
-          completeCartPayload.data.isSelected = true;
-          
-          // Create cart entry
-          const cartResponse = await createData("/api/carts", completeCartPayload);
-          
-          // Add cartId and cartDocumentId to the product object
-          if (cartResponse?.data) {
-            productToAdd.cartId = cartResponse.data.id;
-            productToAdd.cartDocumentId = cartResponse.data.documentId || cartResponse.data.attributes?.documentId;
-          }
-          
-          // Add to local state
-          setCartProducts((pre) => [...pre, productToAdd]);
-          
-          // Auto-select the newly added product
-          setSelectedCartItems(prev => ({
-            ...prev,
-            [productToAdd.id]: true
-          }));
-          
-          // Show success notification
-          showAddToCartSuccess(productToAdd.title, qty || 1, selectedSize);
-          
-          if (isModal) {
-            setCartRefreshKey(prev => prev + 1);
-            openCartModal().catch(() => {});
-          }
-        } catch (createCartError) {
-          // Add to local cart even if server operation fails
-          setCartProducts((pre) => [...pre, productToAdd]);
-          
-          // Auto-select the newly added product
-          setSelectedCartItems(prev => ({
-            ...prev,
-            [productToAdd.id]: true
-          }));
-          
-          if (isModal) {
-            setCartRefreshKey(prev => prev + 1);
-            openCartModal().catch(() => {});
-          }
-        }
-      } catch (error) {
-        // Add to local cart even if an error occurs
-        setCartProducts((pre) => [...pre, productToAdd]);
-        
-        // Auto-select the newly added product
-        setSelectedCartItems(prev => ({
-          ...prev,
-          [productToAdd.id]: true
-        }));
-        
-        if (isModal) {
-          setCartRefreshKey(prev => prev + 1);
-          openCartModal().catch(() => {});
-        }
-      }
-    } else {
-      // No user logged in, add to local cart only
-      setCartProducts((pre) => [...pre, productToAdd]);
-      
-      // Auto-select the newly added product
-      setSelectedCartItems(prev => ({
-        ...prev,
-        [productToAdd.id]: true
-      }));
-      
-      if (isModal) {
-        setCartRefreshKey(prev => prev + 1);
-        openCartModal().catch(() => {});
-      }
+    // 1. INSTANT OPTIMISTIC UPDATE (0ms delay)
+    cartState.addProductToCart(productToAdd);
+    setCartProducts((prev) => [...prev.filter(item => item.id !== productToAdd.id), productToAdd]);
+    showAddToCartSuccess(productToAdd.title, qty || 1, selectedSize);
+    if (isModal) {
+      openCartModal().catch(() => {});
+    }
+
+    // 2. NON-BLOCKING BACKGROUND MUTATIONS
+    if (selectedSize) {
+      validateStockMutation.mutate({
+        baseProductId,
+        variantId: variantInfo?.variantId || null,
+        selectedSize,
+        quantity: qty || 1,
+        cartItem: productToAdd
+      });
+    }
+
+    if (user?.id) {
+      syncCartMutation.mutate({ userId: user.id, cartItem: productToAdd });
     }
   };
 
@@ -1039,9 +669,10 @@ export default function Context({ children }) {
     
     // Update local state immediately
     setCartProducts(updatedProducts);
-    
-    // Then handle the backend update
     const matchingItem = updatedProducts.find(item => item.id == id || (item.documentId && item.documentId === id));
+    if (matchingItem) {
+      useCartStore.getState().updateQuantity(matchingItem.id, matchingItem.quantity);
+    }
     
     if (!matchingItem) {
       return;

@@ -20,6 +20,9 @@ import { ThemeProvider } from "@/components/ui/skiper-ui/theme-provider";
 import ThemeToggleButton from "@/components/ui/skiper-ui/theme-toggle-button";
 
 
+import QueryProvider from "@/providers/QueryProvider";
+
+
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
   
@@ -160,27 +163,29 @@ export default function ClientLayout({ children }) {
 
   return (
     <SessionProvider>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-        <ToastProvider>
-          <Context>
-            <NextTopLoader showSpinner={false} />
-            <CenterLoader />
-            <div id="wrapper">{children}</div>
-            <CartModal />
-            <Compare />
-            <MobileMenu />
-            <SearchModal />
-            <SizeGuide />
-            <Wishlist />
-            <DemoModal />
-            <Categories />
-            <ScrollTop />
-            <EnhancedWhatsApp />
-            {/* Floating Dark Mode Toggle Button */}
-            <ThemeToggleButton className="floating-theme-toggle" start="bottom-left" />
-          </Context>
-        </ToastProvider>
-      </ThemeProvider>
+      <QueryProvider>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          <ToastProvider>
+            <Context>
+              <NextTopLoader showSpinner={false} />
+              <CenterLoader />
+              <div id="wrapper">{children}</div>
+              <CartModal />
+              <Compare />
+              <MobileMenu />
+              <SearchModal />
+              <SizeGuide />
+              <Wishlist />
+              <DemoModal />
+              <Categories />
+              <ScrollTop />
+              <EnhancedWhatsApp />
+              {/* Floating Dark Mode Toggle Button */}
+              <ThemeToggleButton className="floating-theme-toggle" start="bottom-left" />
+            </Context>
+          </ToastProvider>
+        </ThemeProvider>
+      </QueryProvider>
     </SessionProvider>
   );
 }
