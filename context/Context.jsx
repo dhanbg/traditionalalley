@@ -86,11 +86,15 @@ export default function Context({ children }) {
   
   // Function to toggle selection of cart items
   const toggleCartItemSelection = async (id) => {
-    const newStatus = !selectedCartItems[id];
+    const currentStatus = selectedCartItems[id] !== undefined ? selectedCartItems[id] : true;
+    const newStatus = !currentStatus;
+
     setSelectedCartItems(prev => ({
       ...prev,
       [id]: newStatus
     }));
+
+    setCartProducts(prev => prev.map(p => p.id === id ? { ...p, isSelected: newStatus } : p));
 
     const targetProduct = cartProducts.find(p => p.id === id);
     if (targetProduct && targetProduct.cartDocumentId) {
@@ -111,6 +115,7 @@ export default function Context({ children }) {
       newSelection[product.id] = selectAll;
     });
     setSelectedCartItems(newSelection);
+    setCartProducts(prev => prev.map(p => ({ ...p, isSelected: selectAll })));
 
     cartProducts.forEach(async (product) => {
       if (product.cartDocumentId) {
@@ -127,7 +132,12 @@ export default function Context({ children }) {
   
   // Get only selected cart items for checkout
   const getSelectedCartItems = () => {
-    return cartProducts.filter(product => selectedCartItems[product.id]);
+    return cartProducts.filter(product => {
+      if (selectedCartItems[product.id] !== undefined) {
+        return selectedCartItems[product.id];
+      }
+      return product.isSelected !== undefined ? product.isSelected : true;
+    });
   };
   
   // Calculate total price of selected items
@@ -380,11 +390,10 @@ export default function Context({ children }) {
     }
   }, [cartProducts]);
   
-  // Separate useEffect to restore selections after cart products are loaded
+  // Separate useEffect to restore selections after cart products are loaded (for guests)
   useEffect(() => {
-    // Only restore selections if we have cart products and haven't restored yet
-    if (cartProducts.length > 0 && !isCartLoading) {
-      // Get saved selections from sessionStorage
+    // Only restore selections for guests from sessionStorage
+    if (cartProducts.length > 0 && !isCartLoading && !user) {
       let savedSelections = {};
       try {
         const saved = typeof window !== 'undefined' ? sessionStorage.getItem('selectedCartItems') : null;
@@ -393,23 +402,16 @@ export default function Context({ children }) {
         return;
       }
       
-      // Filter out selections for items that are no longer in the cart
       const validSelections = {};
-      const currentCartIds = cartProducts.map(p => p.id);
-      
       Object.keys(savedSelections).forEach(itemId => {
         if (cartProducts.some(product => product.id === itemId)) {
           validSelections[itemId] = savedSelections[itemId];
         }
       });
       
-      // Merge valid selections with current selections (preserve auto-selections)
-      setSelectedCartItems(prev => {
-        const merged = { ...prev, ...validSelections };
-        return merged;
-      });
+      setSelectedCartItems(prev => ({ ...prev, ...validSelections }));
     }
-  }, [cartProducts, isCartLoading]);
+  }, [cartProducts, isCartLoading, user]);
 
   // Persist cart selections to sessionStorage whenever they change
   useEffect(() => {

@@ -359,7 +359,7 @@ export default function ShopCart() {
                               <input 
                                 type="checkbox" 
                                 className="tf-check-rounded"
-                                checked={selectedCartItems[elm.id] || false}
+                                checked={selectedCartItems[elm.id] !== undefined ? selectedCartItems[elm.id] : (elm.isSelected !== undefined ? elm.isSelected : true)}
                                 onChange={() => toggleCartItemSelection(elm.id)}
                                 id={`select-product-${elm.id}`}
                                 style={{ display: 'none' }}
