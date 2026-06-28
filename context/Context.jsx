@@ -717,10 +717,9 @@ export default function Context({ children }) {
         
         // Try to match based on product ID or documentId AND user_datum
         for (const cartItem of cartResponse.data) {
-          // Skip cart items without product data
-          if (!cartItem.product) continue;
+          const productData = cartItem.product || cartItem.product_variant?.product || cartItem.product_variant || cartItem.productVariant || {};
+          if (!productData.id && !productData.documentId) continue;
           
-          const productData = cartItem.product;
           const productId = productData.id;
           const productDocId = productData.documentId;
           
@@ -1287,25 +1286,18 @@ export default function Context({ children }) {
                   return null; // Skip this item
                 }
                 
-                // The cart item data is directly on the object, not nested under attributes
-                const productRelation = cartItem.product || {};
-                const productData = productRelation; // Direct access, no .data property
-                const productAttrs = productData; // Direct access, no .attributes property
-                const productId = productData.id;
+                const productVariantRelation = cartItem.product_variant || cartItem.productVariant;
+                const baseProduct = cartItem.product || productVariantRelation?.product || productVariantRelation || {};
+                const productAttrs = baseProduct;
+                const productId = baseProduct.id || baseProduct.documentId || productVariantRelation?.id || productVariantRelation?.documentId;
                 
-                // Processing cart item silently
-                
-                // Skip items without product data
+                // Skip items without product or variant data
                 if (!productId) {
                   return null;
-              }
+                }
               
               // Parse variant information if available
               let variantInfo = null;
-              let cartItemId = productAttrs.documentId || productId;
-              let title = productAttrs.title || "Product Item";
-              let imgSrc = getOptimizedImageUrl(productAttrs.imgSrc) || '/logo.png';
-              
               if (cartItem.variantInfo) {
                 try {
                   // Check if variantInfo is already an object (not a string)
@@ -1319,39 +1311,48 @@ export default function Context({ children }) {
                       variantInfo = null;
                     }
                   }
-                  
-                  if (variantInfo) {
-                    // Reconstruct the variant-specific cart item ID using documentId
-                    if (variantInfo.isVariant && (variantInfo.documentId || variantInfo.variantId)) {
-                      const variantIdentifier = variantInfo.documentId || variantInfo.variantId;
-                      cartItemId = `${productAttrs.documentId || productId}-variant-${variantIdentifier}`;
-                    }
-                    
-                    // Use variant-specific title and image
-                    if (variantInfo.title && variantInfo.isVariant) {
-                      title = `${productAttrs.title || "Product Item"} - ${variantInfo.title}`;
-                    }
-                    
-                    if (variantInfo.imgSrcObject) {
-                      // Use the original image object to get thumbnail
-                      imgSrc = getOptimizedImageUrl(variantInfo.imgSrcObject);
-                    } else if (variantInfo.imgSrc) {
-                      // Check if variantInfo.imgSrc is already a full URL
-                      if (typeof variantInfo.imgSrc === 'string' && variantInfo.imgSrc.startsWith('http')) {
-                        imgSrc = variantInfo.imgSrc;
-                      } else {
-                        // If it's an object, use getOptimizedImageUrl
-                        imgSrc = getOptimizedImageUrl(variantInfo.imgSrc);
-                      }
-                    }
-                  }
                 } catch (parseError) {
                   variantInfo = null;
                 }
               }
 
+              if (!variantInfo && productVariantRelation) {
+                variantInfo = {
+                  isVariant: true,
+                  variantId: productVariantRelation.documentId || productVariantRelation.id,
+                  documentId: productVariantRelation.documentId || productVariantRelation.id,
+                  title: productVariantRelation.title
+                };
+              }
+
+              let cartItemId = productAttrs.documentId || productId;
+              let title = productAttrs.title || productVariantRelation?.title || "Product Item";
+              let imgSrc = getOptimizedImageUrl(productVariantRelation?.imgSrc || productAttrs.imgSrc) || '/logo.png';
+              
+              if (variantInfo) {
+                // Reconstruct the variant-specific cart item ID using documentId
+                if (variantInfo.isVariant && (variantInfo.documentId || variantInfo.variantId)) {
+                  const variantIdentifier = variantInfo.documentId || variantInfo.variantId;
+                  cartItemId = `${productAttrs.documentId || productId}-variant-${variantIdentifier}`;
+                }
+                
+                // Use variant-specific title and image
+                if (variantInfo.title && variantInfo.isVariant && productAttrs.title && !productAttrs.title.includes(variantInfo.title)) {
+                  title = `${productAttrs.title} - ${variantInfo.title}`;
+                }
+                
+                if (variantInfo.imgSrcObject) {
+                  imgSrc = getOptimizedImageUrl(variantInfo.imgSrcObject);
+                } else if (variantInfo.imgSrc) {
+                  if (typeof variantInfo.imgSrc === 'string' && variantInfo.imgSrc.startsWith('http')) {
+                    imgSrc = variantInfo.imgSrc;
+                  } else {
+                    imgSrc = getOptimizedImageUrl(variantInfo.imgSrc);
+                  }
+                }
+              }
+
               // Add size information to cart item ID to match the format used when adding products
-              // This ensures that saved cart selections can be restored properly
               if (cartItem.size) {
                 cartItemId = `${cartItemId}-size-${cartItem.size}`;
               }
@@ -1361,9 +1362,9 @@ export default function Context({ children }) {
                 baseProductId: productAttrs.documentId || productId, // Keep reference to base product documentId
                 cartId: cartItem.id,
                 cartDocumentId: cartItem.documentId,
-                documentId: productAttrs.documentId,
+                documentId: productAttrs.documentId || productId,
                 title: title,
-                price: parseFloat(productAttrs.price || 0),
+                price: parseFloat(productVariantRelation?.price || productAttrs.price || 0),
                 oldPrice: productAttrs.oldPrice ? parseFloat(productAttrs.oldPrice) : null,
                 quantity: cartItem.quantity || 1,
                 colors: productAttrs.colors || [],
