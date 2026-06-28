@@ -32,23 +32,25 @@ class ErrorBoundary extends React.Component {
             </div>
           </div>
           
-          {process.env.NODE_ENV === 'development' && (
-            <details className="mt-4">
-              <summary className="cursor-pointer text-red-700 font-medium">
-                Error Details (Development Mode)
-              </summary>
-              <div className="mt-2 p-3 bg-red-100 rounded text-sm">
-                <p className="font-medium text-red-800">Error:</p>
-                <pre className="text-red-700 whitespace-pre-wrap">
-                  {this.state.error && this.state.error.toString()}
-                </pre>
-                <p className="font-medium text-red-800 mt-2">Stack Trace:</p>
-                <pre className="text-red-700 whitespace-pre-wrap text-xs">
-                  {this.state.errorInfo && this.state.errorInfo.componentStack}
-                </pre>
-              </div>
-            </details>
-          )}
+          <details className="mt-4" open>
+            <summary className="cursor-pointer text-red-700 font-medium">
+              Error Details & Technical Diagnostics
+            </summary>
+            <div className="mt-2 p-3 bg-red-100 rounded text-sm overflow-auto max-h-60">
+              <p className="font-medium text-red-800">Error Message:</p>
+              <pre className="text-red-700 whitespace-pre-wrap font-mono text-xs">
+                {this.state.error && this.state.error.toString()}
+              </pre>
+              {this.state.errorInfo && (
+                <>
+                  <p className="font-medium text-red-800 mt-2">Stack Trace:</p>
+                  <pre className="text-red-700 whitespace-pre-wrap text-xs font-mono">
+                    {this.state.errorInfo.componentStack}
+                  </pre>
+                </>
+              )}
+            </div>
+          </details>
           
           <div className="mt-4 flex space-x-3">
             <button
