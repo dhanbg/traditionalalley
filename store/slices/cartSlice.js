@@ -54,7 +54,7 @@ export const loadCartFromBackend = createAsyncThunk(
 
             // Fetch cart items directly by user_datum
             const cartsResponse = await fetchDataFromApi(
-                `/api/carts?filters[user_datum][documentId][$eq]${userDocumentId}&populate=product,product_variant`
+                `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=product,product_variant`
             );
 
             console.log('🛒 Carts response:', cartsResponse);
@@ -64,31 +64,33 @@ export const loadCartFromBackend = createAsyncThunk(
 
             // Transform cart items to frontend format
             const transformedCart = cartItems.map(cartItem => {
-                const attrs = cartItem.attributes || {};
-                const product = attrs.product?.data?.attributes || {};
-                const productDocumentId = attrs.product?.data?.documentId || product.documentId;
+                const productData = cartItem.product || cartItem.attributes?.product?.data?.attributes || cartItem.attributes?.product || {};
+                const productDocumentId = productData.documentId || cartItem.attributes?.product?.data?.documentId || productData.id;
+                const size = cartItem.size || cartItem.attributes?.size || null;
+                const variantInfo = cartItem.variantInfo || cartItem.attributes?.variantInfo || null;
+                const quantity = cartItem.quantity || cartItem.attributes?.quantity || 1;
 
                 // Build unique ID matching what addProductToCart creates
                 const uniqueId = generateCartItemId(
                     productDocumentId,
-                    attrs.size,
-                    attrs.variantInfo?.variantId
+                    size,
+                    variantInfo?.variantId
                 );
 
                 return {
                     id: uniqueId,
                     documentId: productDocumentId,
                     baseProductId: productDocumentId,
-                    title: product.title || 'Product',
-                    price: parseFloat(product.price || 0),
-                    oldPrice: product.oldPrice ? parseFloat(product.oldPrice) : null,
-                    quantity: parseInt(attrs.quantity || 1),
-                    selectedSize: attrs.size || null,
-                    imgSrc: getOptimizedImageUrl(product.imgSrc),
-                    colors: product.colors || [],
-                    sizes: product.sizes || [],
-                    weight: product.weight || null,
-                    variantInfo: attrs.variantInfo || null,
+                    title: productData.title || 'Product',
+                    price: parseFloat(productData.price || 0),
+                    oldPrice: productData.oldPrice ? parseFloat(productData.oldPrice) : null,
+                    quantity: parseInt(quantity),
+                    selectedSize: size,
+                    imgSrc: getOptimizedImageUrl(productData.imgSrc),
+                    colors: productData.colors || [],
+                    sizes: productData.sizes || [],
+                    weight: productData.weight || null,
+                    variantInfo: variantInfo,
                     backendId: cartItem.id,
                     backendDocumentId: cartItem.documentId,
                 };
