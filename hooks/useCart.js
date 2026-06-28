@@ -246,51 +246,54 @@ export const useCart = () => {
                 weight: productInfo.weight || null,
                 variantInfo: variantInfo
             };
-
-            // Validate stock
-            if (selectedSize) {
-                try {
-                    const stockValidation = await validateCartStock(
-                        baseProductId,
-                        variantInfo?.variantId || null,
-                        selectedSize,
-                        qty || 1,
-                        0
-                    );
-
-                    if (!stockValidation.success) {
-                        showStockError(stockValidation.error, stockValidation.availableStock, productToAdd.title);
-                        return;
-                    }
-                } catch (stockError) {
-                    console.error('Stock validation error:', stockError);
-                }
-            }
         }
 
         if (productToAdd) {
-            // Add to Redux store
+            // 1. Optimistically add to Redux store
             dispatch(addProductAction({ product: productToAdd }));
 
-            // Sync to backend if user is logged in and wait for completion
-            if (user?.id) {
-                try {
-                    await dispatch(syncCartItemToBackend({ userId: user.id, cartItem: productToAdd })).unwrap();
-                } catch (error) {
-                    console.error('Error syncing to backend:', error);
-                    // Continue even if backend sync fails - item is in local state
-                }
-            }
-
-            // Show success message
+            // 2. Instantly show success message and open cart modal
             if (showAddToCartSuccess) {
                 showAddToCartSuccess(productToAdd.title);
             }
 
-            // Open cart modal - now the item should be fully synced
             if (isModal) {
                 openCartModal().catch(() => { });
             }
+
+            // 3. Perform stock validation and backend sync in background
+            (async () => {
+                // Background stock validation
+                if (selectedSize) {
+                    try {
+                        const stockValidation = await validateCartStock(
+                            baseProductId,
+                            variantInfo?.variantId || null,
+                            selectedSize,
+                            qty || 1,
+                            0
+                        );
+
+                        if (!stockValidation.success) {
+                            // Rollback optimistic add if stock validation fails
+                            dispatch(removeProductFromCart({ id: uniqueId }));
+                            showStockError(stockValidation.error, stockValidation.availableStock, productToAdd.title);
+                            return;
+                        }
+                    } catch (stockError) {
+                        console.error('Stock validation error:', stockError);
+                    }
+                }
+
+                // Background sync to backend if user is logged in
+                if (user?.id) {
+                    try {
+                        await dispatch(syncCartItemToBackend({ userId: user.id, cartItem: productToAdd })).unwrap();
+                    } catch (error) {
+                        console.error('Error syncing to backend:', error);
+                    }
+                }
+            })();
         }
     }, [dispatch, user, cartProducts, showStockError, showAddToCartSuccess]);
 
