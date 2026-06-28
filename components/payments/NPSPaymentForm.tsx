@@ -108,11 +108,11 @@ export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, 
       )}
       <button
         onClick={handlePayment}
-        disabled={isLoading || disabled || !shippingRatesObtained}
+        disabled={isLoading || disabled}
         className="tf-btn btn-fill animate-hover-btn radius-3 justify-content-center fw-6"
         style={{
-          opacity: (!shippingRatesObtained || disabled) ? 0.6 : 1,
-          cursor: (!shippingRatesObtained || disabled) ? 'not-allowed' : 'pointer'
+          opacity: disabled ? 0.6 : 1,
+          cursor: disabled ? 'not-allowed' : 'pointer'
         }}
       >
         {isLoading ? "Processing..." : `Pay Rs.${amount}`}
