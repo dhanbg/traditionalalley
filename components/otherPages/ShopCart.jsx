@@ -287,7 +287,7 @@ export default function ShopCart() {
   const totalDiscounts = subtotal > actualTotal ? subtotal - actualTotal : 0;
 
   // Check if all items are selected
-  const areAllItemsSelected = cartProducts.length > 0 && cartProducts.every(product => selectedCartItems[product.id]);
+  const areAllItemsSelected = cartProducts.length > 0 && cartProducts.every(product => selectedCartItems[product.id] !== false);
   
   // Handler for the "select all" checkbox
   const handleSelectAll = (e) => {

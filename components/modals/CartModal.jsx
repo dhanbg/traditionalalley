@@ -175,10 +175,8 @@ export default function CartModal() {
   // Get all cart products first - Context handles merging/switching
   const allCartProducts = cartProducts;
 
-  // Filter to show only selected items in the modal (defaulting to selected if undefined or not explicitly false)
-  const displayProducts = allCartProducts.filter(product => 
-    selectedCartItems[product.id] !== undefined ? selectedCartItems[product.id] : (product.isSelected !== undefined ? product.isSelected : true)
-  );
+  // Filter to show only selected items in the modal
+  const displayProducts = getSelectedCartItems();
 
   // Calculate total price from only the selected displayed products
   const displayTotalPrice = displayProducts.reduce((total, product) => {

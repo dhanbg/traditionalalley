@@ -62,8 +62,8 @@ export default function Checkout() {
 
   // Memoize selected products to prevent infinite re-renders
   const selectedProducts = useMemo(() => {
-    return cartProducts.filter(product => selectedCartItems[product.id]);
-  }, [cartProducts, selectedCartItems]);
+    return getSelectedCartItems();
+  }, [cartProducts, selectedCartItems, getSelectedCartItems]);
 
   // Add state to store products with updated oldPrice values
   const [productsWithOldPrice, setProductsWithOldPrice] = useState({});
