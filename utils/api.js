@@ -161,26 +161,28 @@ export const fetchDataFromApi = async (endpoint) => {
     let processedEndpoint = endpoint;
     if (endpoint.includes('?')) {
       const [basePath, queryString] = endpoint.split('?');
-      const queryParams = queryString.split('&').map(param => {
-        if (!param.includes('=')) return param;
-        const index = param.indexOf('=');
-        const key = param.substring(0, index);
-        const value = param.substring(index + 1);
-        
-        // If the value contains Strapi-style operators/brackets, return as is or encode carefully
-        if (value.includes('[') || value.includes(']')) {
-          return param;
-        } else {
-          return `${key}=${encodeURIComponent(value)}`;
-        }
-      });
-      processedEndpoint = `${basePath}?${queryParams.join('&')}`;
+      const params = new URLSearchParams(queryString);
+      processedEndpoint = `${basePath}?${params.toString()}`;
     }
 
-    const fetchUrl = getFetchUrl(processedEndpoint);
+    let fetchUrl = getFetchUrl(processedEndpoint);
+    // Add cache-busting timestamp to client-side fetches to prevent aggressive Chrome caching
+    if (typeof window !== 'undefined') {
+      const separator = fetchUrl.includes('?') ? '&' : '?';
+      fetchUrl = `${fetchUrl}${separator}_t=${Date.now()}`;
+    }
     const isRoute = isNextApiRoute(processedEndpoint);
     
-    const fetchOptions = (isRoute && typeof window !== 'undefined') ? { method: "GET" } : { ...options };
+    const fetchOptions = (isRoute && typeof window !== 'undefined') 
+      ? { 
+          method: "GET",
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        } 
+      : { ...options };
     if (typeof window === 'undefined' && shouldCacheEndpoint(processedEndpoint)) {
       fetchOptions.next = { revalidate: 60 };
     }

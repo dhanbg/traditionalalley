@@ -34,9 +34,15 @@ export async function POST(request: NextRequest) {
         let targetBagId: string | null = null;
         let bagData: any = null;
 
-        // 1. Try logged-in user
-        if (session?.user?.id) {
-            console.log(`🔍 [PROCESS-SUCCESS] Finding bag for logged-in user: ${session.user.email}`);
+        // 1. Try passed bag ID (recoveredUserBagId) first as it is the exact bag used for payment
+        if (paymentData?.recoveredUserBagId) {
+            targetBagId = paymentData.recoveredUserBagId;
+            console.log(`✅ [PROCESS-SUCCESS] Using passed recoveredUserBagId: ${targetBagId}`);
+        }
+
+        // 2. Fallback to logged-in user session lookup
+        if (!targetBagId && session?.user?.id) {
+            console.log(`🔍 [PROCESS-SUCCESS] Finding bag for logged-in user fallback: ${session.user.email}`);
             try {
                 const userDataResponse = await fetchDataFromApi(
                     `/api/user-data?filters[authUserId][$eq]=${session.user.id}&populate=user_bag`
@@ -45,17 +51,11 @@ export async function POST(request: NextRequest) {
                     const userWithBag = userDataResponse.data.find((u: any) => u.user_bag?.documentId);
                     const userData = userWithBag || userDataResponse.data[0];
                     targetBagId = userData.user_bag?.documentId;
-                    console.log(`✅ [PROCESS-SUCCESS] Found bag ID: ${targetBagId}`);
+                    console.log(`✅ [PROCESS-SUCCESS] Found bag ID via session: ${targetBagId}`);
                 }
             } catch (e) {
-                console.error('❌ [PROCESS-SUCCESS] Error finding user bag:', e);
+                console.error('❌ [PROCESS-SUCCESS] Error finding user bag via session:', e);
             }
-        }
-
-        // 2. Try guest recovery from localStorage (passed in paymentData)
-        if (!targetBagId && paymentData?.recoveredUserBagId) {
-            targetBagId = paymentData.recoveredUserBagId;
-            console.log(`✅ [PROCESS-SUCCESS] Using guest bag ID: ${targetBagId}`);
         }
 
         if (!targetBagId) {
