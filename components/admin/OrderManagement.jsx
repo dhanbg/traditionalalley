@@ -124,33 +124,15 @@ const OrderManagement = () => {
       }
     });
 
-    // Debug: Log timestamp fields for sorting
-    console.log('\n=== PAYMENT TIMESTAMPS FOR SORTING ===');
-    allPayments.forEach((payment, index) => {
-      console.log(`Payment ${index + 1} (${payment.orderData?.receiver_details?.name || payment.orderData?.receiver_details?.fullName}):`);
-      console.log('  timestamp:', payment.timestamp);
-      console.log('  createdAt:', payment.createdAt);
-      console.log('  userBag.createdAt:', payment.userBag.attributes?.createdAt);
-    });
-
     // Sort payments by their individual timestamps (latest first)
     allPayments.sort((a, b) => {
-      const dateA = new Date(
-        a.timestamp || a.createdAt || a.userBag.attributes?.createdAt || a.userBag.createdAt || 0
-      );
-      const dateB = new Date(
-        b.timestamp || b.createdAt || b.userBag.attributes?.createdAt || b.userBag.createdAt || 0
-      );
-      console.log(`Comparing ${a.orderData?.receiver_details?.name || a.orderData?.receiver_details?.fullName} (${dateA.toISOString()}) vs ${b.orderData?.receiver_details?.name || b.orderData?.receiver_details?.fullName} (${dateB.toISOString()})`);
-      return dateB - dateA;
-    });
-
-    console.log('\n=== FINAL SORTED ORDER ===');
-    allPayments.forEach((payment, index) => {
-      const sortDate = new Date(
-        payment.timestamp || payment.createdAt || payment.userBag.attributes?.createdAt || payment.userBag.createdAt || 0
-      );
-      console.log(`${index + 1}. ${payment.orderData?.receiver_details?.name || payment.orderData?.receiver_details?.fullName} - ${sortDate.toISOString()}`);
+      const timeA = a.timestamp || a.createdAt || a.userBag?.attributes?.createdAt || a.userBag?.createdAt || 0;
+      const timeB = b.timestamp || b.createdAt || b.userBag?.attributes?.createdAt || b.userBag?.createdAt || 0;
+      const dateA = new Date(timeA);
+      const dateB = new Date(timeB);
+      const valA = isNaN(dateA.getTime()) ? 0 : dateA.getTime();
+      const valB = isNaN(dateB.getTime()) ? 0 : dateB.getTime();
+      return valB - valA;
     });
 
     return allPayments;
@@ -452,14 +434,7 @@ const OrderManagement = () => {
       const date = new Date(dateString);
       const now = new Date();
 
-      // Debug logging
-      console.log('formatTimeAgo called with:', dateString);
-      console.log('Parsed date:', date.toISOString());
-      console.log('Current time:', now.toISOString());
-
-      // Check if date is valid
       if (isNaN(date.getTime())) {
-        console.log('Invalid date detected');
         return 'Invalid date';
       }
 
