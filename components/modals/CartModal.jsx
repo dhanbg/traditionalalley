@@ -156,7 +156,7 @@ export default function CartModal() {
   const allCartProducts = cartProducts;
 
   // Filter to show all items except explicitly unselected ones
-  const displayProducts = allCartProducts.filter(product => selectedCartItems[product.id] !== false);
+  const displayProducts = allCartProducts.filter(product => selectedCartItems[String(product.id)] !== false);
 
   // Calculate total price from only the selected displayed products
   const displayTotalPrice = displayProducts.reduce((total, product) => {

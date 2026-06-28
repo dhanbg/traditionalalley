@@ -287,7 +287,7 @@ export default function ShopCart() {
   const totalDiscounts = subtotal > actualTotal ? subtotal - actualTotal : 0;
 
   // Check if all items are selected
-  const areAllItemsSelected = cartProducts.length > 0 && cartProducts.every(product => selectedCartItems[product.id]);
+  const areAllItemsSelected = cartProducts.length > 0 && cartProducts.every(product => selectedCartItems[String(product.id)]);
   
   // Handler for the "select all" checkbox
   const handleSelectAll = (e) => {
@@ -359,7 +359,7 @@ export default function ShopCart() {
                               <input 
                                 type="checkbox" 
                                 className="tf-check-rounded"
-                                checked={selectedCartItems[elm.id] !== undefined ? selectedCartItems[elm.id] : (elm.isSelected !== undefined ? elm.isSelected : true)}
+                                checked={selectedCartItems[String(elm.id)] !== undefined ? selectedCartItems[String(elm.id)] : (elm.isSelected !== undefined ? elm.isSelected : true)}
                                 readOnly
                                 id={`select-product-${elm.id}`}
                                 style={{ display: 'none' }}

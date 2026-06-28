@@ -85,34 +85,40 @@ export default function Context({ children }) {
   const [userCreationAttempted, setUserCreationAttempted] = useState(false);
   
   // Function to toggle selection of cart items
-  const toggleCartItemSelection = async (id) => {
-    const targetProduct = cartProducts.find(p => p.id == id || (p.documentId && p.documentId === id));
-    if (!targetProduct) return;
+  const toggleCartItemSelection = (id) => {
+    console.log('[TOGGLE] Called with id:', id, 'type:', typeof id);
+    const targetProduct = cartProducts.find(p => String(p.id) === String(id) || (p.documentId && p.documentId === id));
+    if (!targetProduct) {
+      console.warn('[TOGGLE] No product found for id:', id, 'cartProducts ids:', cartProducts.map(p => p.id));
+      return;
+    }
 
-    const targetId = targetProduct.id;
+    const targetId = String(targetProduct.id);
+    console.log('[TOGGLE] targetId:', targetId, 'selectedCartItems keys:', Object.keys(selectedCartItems));
     const currentStatus = selectedCartItems[targetId] !== undefined 
       ? selectedCartItems[targetId] 
       : (targetProduct.isSelected !== undefined ? targetProduct.isSelected : true);
       
     const newStatus = !currentStatus;
+    console.log('[TOGGLE] currentStatus:', currentStatus, '-> newStatus:', newStatus);
 
-    setSelectedCartItems(prev => ({
-      ...prev,
-      [targetId]: newStatus
-    }));
+    setSelectedCartItems(prev => {
+      const next = { ...prev, [targetId]: newStatus };
+      console.log('[TOGGLE] selectedCartItems updated:', next);
+      return next;
+    });
 
-    setCartProducts(prev => prev.map(p => (p.id == targetId || p.documentId === targetId) ? { ...p, isSelected: newStatus } : p));
+    setCartProducts(prev => prev.map(p => String(p.id) === targetId ? { ...p, isSelected: newStatus } : p));
 
+    // Fire-and-forget backend update
     if (targetProduct.cartDocumentId) {
-      try {
-        console.log(`Updating Strapi cart ${targetProduct.cartDocumentId} isSelected to:`, newStatus);
-        const updateRes = await updateData(`/api/carts/${targetProduct.cartDocumentId}`, {
-          data: { isSelected: newStatus }
-        });
-        console.log("Strapi update success:", updateRes);
-      } catch (err) {
-        console.error("Failed to update cart selection in Strapi:", err);
-      }
+      updateData(`/api/carts/${targetProduct.cartDocumentId}`, {
+        data: { isSelected: newStatus }
+      }).then(res => {
+        console.log('[TOGGLE] Strapi update success:', res);
+      }).catch(err => {
+        console.error('[TOGGLE] Strapi update failed:', err);
+      });
     }
   };
   
@@ -120,7 +126,7 @@ export default function Context({ children }) {
   const selectAllCartItems = async (selectAll = true) => {
     const newSelection = {};
     cartProducts.forEach(product => {
-      newSelection[product.id] = selectAll;
+      newSelection[String(product.id)] = selectAll;
     });
     setSelectedCartItems(newSelection);
     setCartProducts(prev => prev.map(p => ({ ...p, isSelected: selectAll })));
@@ -141,8 +147,9 @@ export default function Context({ children }) {
   // Get only selected cart items for checkout
   const getSelectedCartItems = () => {
     return cartProducts.filter(product => {
-      if (selectedCartItems[product.id] !== undefined) {
-        return selectedCartItems[product.id];
+      const key = String(product.id);
+      if (selectedCartItems[key] !== undefined) {
+        return selectedCartItems[key];
       }
       return product.isSelected !== undefined ? product.isSelected : true;
     });
@@ -379,17 +386,18 @@ export default function Context({ children }) {
     // Clean up selection state for items that no longer exist in cart
     if (cartProducts.length === 0) {
       // Only clear selections if cart has actually loaded and is truly empty
-      // Don't clear during initial load when cart products haven't loaded yet
       if (!isCartLoading && user) {
         setSelectedCartItems({});
       }
     } else {
-      // Remove selections for items that are no longer in the cart
+      // Build a Set of all current cart product IDs (as strings for consistent comparison)
+      const currentCartIds = new Set(cartProducts.map(p => String(p.id)));
+      
       setSelectedCartItems(prev => {
         const newSelection = {};
         Object.keys(prev).forEach(itemId => {
-          // Only keep selections for items that still exist in cart
-          if (cartProducts.some(product => product.id === itemId)) {
+          // Use string comparison - Object.keys always returns strings
+          if (currentCartIds.has(String(itemId))) {
             newSelection[itemId] = prev[itemId];
           }
         });
@@ -410,9 +418,10 @@ export default function Context({ children }) {
         return;
       }
       
+      const currentCartIds = new Set(cartProducts.map(p => String(p.id)));
       const validSelections = {};
       Object.keys(savedSelections).forEach(itemId => {
-        if (cartProducts.some(product => product.id === itemId)) {
+        if (currentCartIds.has(String(itemId))) {
           validSelections[itemId] = savedSelections[itemId];
         }
       });
@@ -983,10 +992,12 @@ export default function Context({ children }) {
   };
 
   const updateQuantity = async (id, amount, isIncrement = false) => {
+    console.log('[UPDATE_QTY] Called with id:', id, 'amount:', amount, 'isIncrement:', isIncrement);
     // First, find the item to validate stock before updating
-    const itemToUpdate = cartProducts.find(item => item.id == id || (item.documentId && item.documentId === id));
+    const itemToUpdate = cartProducts.find(item => String(item.id) === String(id) || (item.documentId && item.documentId === id));
     
     if (!itemToUpdate) {
+      console.warn('[UPDATE_QTY] No item found for id:', id, 'cartProducts ids:', cartProducts.map(i => i.id));
       return;
     }
     
@@ -994,10 +1005,11 @@ export default function Context({ children }) {
     const calculatedQuantity = isIncrement ? itemToUpdate.quantity + amount : amount;
     const finalQuantity = Math.max(1, calculatedQuantity);
     const oldQuantity = itemToUpdate.quantity;
+    console.log('[UPDATE_QTY] oldQuantity:', oldQuantity, '-> finalQuantity:', finalQuantity);
 
     // 1. Update local state immediately for instant UI responsiveness
     const updatedProducts = cartProducts.map((item) => {
-      const itemMatches = item.id == id || (item.documentId && item.documentId === id);
+      const itemMatches = String(item.id) === String(id) || (item.documentId && item.documentId === id);
       return itemMatches ? { ...item, quantity: finalQuantity } : item;
     });
     setCartProducts(updatedProducts);
@@ -1018,7 +1030,7 @@ export default function Context({ children }) {
           if (!stockValidation.success) {
             // Revert to old quantity if out of stock
             setCartProducts(prev => prev.map(item => {
-              const matches = item.id == id || (item.documentId && item.documentId === id);
+              const matches = String(item.id) === String(id) || (item.documentId && item.documentId === id);
               return matches ? { ...item, quantity: oldQuantity } : item;
             }));
             showStockError(stockValidation.error, stockValidation.availableStock, itemToUpdate.title);
@@ -1030,7 +1042,7 @@ export default function Context({ children }) {
       })();
     }
 
-    const matchingItem = updatedProducts.find(item => item.id == id || (item.documentId && item.documentId === id));
+    const matchingItem = updatedProducts.find(item => String(item.id) === String(id) || (item.documentId && item.documentId === id));
     
     if (!matchingItem) {
       return;
@@ -1754,11 +1766,12 @@ export default function Context({ children }) {
             
             setCartProducts(backendCarts);
             
-            // Sync selectedCartItems state from backend relies
+            // Sync selectedCartItems state from backend
             const backendSelectionMap = {};
             backendCarts.forEach(item => {
-              backendSelectionMap[item.id] = item.isSelected === false ? false : true;
+              backendSelectionMap[String(item.id)] = item.isSelected === false ? false : true;
             });
+            console.log('[CART_LOAD] backendSelectionMap:', backendSelectionMap);
             setSelectedCartItems(backendSelectionMap);
             
             // Remove image preloading to prevent interference with initial display
