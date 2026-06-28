@@ -379,7 +379,7 @@ const sendAutomaticInvoiceEmail = async (paymentData: any) => {
         console.log('📤 [AUTO-EMAIL] Calling sendInvoiceEmail utility directly...');
         const emailResult = await sendInvoiceEmail(
             customerEmail,
-            receiverDetails.fullName || 'Valued Customer',
+            receiverDetails.fullName || receiverDetails.name || 'Valued Customer',
             txnId,
             pdfBuffer,
             {}
@@ -418,10 +418,10 @@ export const processServerPostPayment = async (selectedProducts: any[], user: an
             results.cartClear.success = true;
         }
 
-        // Step 2: Email (Disabled per user preference to send manually)
+        // Step 2: Email
         if (paymentData) {
-            console.log('📤 [SERVER-POST-PAYMENT] Automatic email disabled per user preference. Marking emailSend as success: true (skipped).');
-            results.emailSend = { success: true, message: "Automatic email skipped per user preference" } as any;
+            console.log('📤 [SERVER-POST-PAYMENT] Sending automatic invoice email...');
+            results.emailSend = await sendAutomaticInvoiceEmail(paymentData) as any;
         }
 
         return results;
