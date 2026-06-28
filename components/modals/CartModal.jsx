@@ -25,6 +25,7 @@ export default function CartModal() {
     isAddedToCartProducts,
     user,
     removeFromCart,
+    updateQuantity,
     cartRefreshKey,
     isCartClearing,
     cartClearedTimestamp,
@@ -70,10 +71,6 @@ export default function CartModal() {
     );
 
     if (itemToRemove) {
-      // Use the removeFromCart function from Context to handle backend deletion
-      // Context will update cartProducts state
-
-      // Use the removeFromCart function from Context to handle backend deletion
       removeFromCart(id, cartDocumentId);
     }
   };
@@ -82,16 +79,13 @@ export default function CartModal() {
   const closeCartModal = () => {
     const modalElement = document.querySelector('.modal-shopping-cart');
     if (modalElement) {
-      // Remove modal classes
       modalElement.classList.remove('show');
       modalElement.style.display = 'none';
 
-      // Remove body modal classes
       document.body.classList.remove('modal-open');
       document.body.style.removeProperty('overflow');
       document.body.style.removeProperty('padding-right');
 
-      // Remove all backdrop elements
       const backdrops = document.querySelectorAll('.modal-backdrop');
       backdrops.forEach(backdrop => backdrop.remove());
     }
@@ -102,7 +96,6 @@ export default function CartModal() {
     setIsViewCartLoading(true);
     closeCartModal();
     router.push('/shopping-cart');
-    // Reset loading state after a short delay to allow navigation to complete
     setTimeout(() => {
       setIsViewCartLoading(false);
     }, 1500);
@@ -117,7 +110,6 @@ export default function CartModal() {
   // Handle Continue Shopping
   const handleContinueShopping = () => {
     if (allCartProducts.length === 0) {
-      // Show top picks instead of navigating away when cart is empty
       setShowTopPicks(true);
     } else {
       closeCartModal();
@@ -126,18 +118,10 @@ export default function CartModal() {
   };
 
   const handleProductClick = (product) => {
-    // Close modal and navigate to product page
     closeCartModal();
     router.push(`/product-detail/${product.id}`);
   };
 
-
-
-  // Helper function to fetch fresh variant data removed as it's handled in Context
-
-  // Fetch user's carts from API logic removed - handled by Context
-
-  // Handle modal accessibility
   useEffect(() => {
     const modal = document.getElementById('shoppingCart');
 
@@ -145,20 +129,16 @@ export default function CartModal() {
 
     const handleModalShow = () => {
       setIsModalInert(false);
-
-      // Refresh cart data logic removed - handled by Context
     };
 
     const handleModalHide = () => {
       setIsModalInert(true);
     };
 
-    // Listen for Bootstrap modal events
     modal.addEventListener('show.bs.modal', handleModalShow);
     modal.addEventListener('hidden.bs.modal', handleModalHide);
 
     return () => {
-      // Clean up event listeners
       modal.removeEventListener('show.bs.modal', handleModalShow);
       modal.removeEventListener('hidden.bs.modal', handleModalHide);
     };
@@ -175,8 +155,8 @@ export default function CartModal() {
   // Get all cart products first - Context handles merging/switching
   const allCartProducts = cartProducts;
 
-  // Filter to show only selected items in the modal
-  const displayProducts = allCartProducts.filter(product => selectedCartItems[product.id]);
+  // Filter to show all items except explicitly unselected ones
+  const displayProducts = allCartProducts.filter(product => selectedCartItems[product.id] !== false);
 
   // Calculate total price from only the selected displayed products
   const displayTotalPrice = displayProducts.reduce((total, product) => {
@@ -325,9 +305,25 @@ export default function CartModal() {
                                   {getVariantAwareTitle(elm)}
                                 </Link>
                               </div>
-                              <div className="quantity-display-wrapper">
+                              <div className="quantity-display-wrapper d-flex align-items-center gap-2 mt-2">
                                 <span className="quantity-label">Qty:</span>
-                                <span className="quantity-value">{elm.quantity}</span>
+                                <div className="wg-quantity wg-quantity-sm d-inline-flex align-items-center border rounded px-1" style={{ height: '28px' }}>
+                                  <span
+                                    className="btn-quantity btn-decrease px-2 cursor-pointer user-select-none"
+                                    style={{ cursor: 'pointer', fontWeight: 'bold' }}
+                                    onClick={() => updateQuantity(elm.id, elm.quantity - 1)}
+                                  >
+                                    -
+                                  </span>
+                                  <span className="quantity-value px-2 fw-medium">{elm.quantity}</span>
+                                  <span
+                                    className="btn-quantity btn-increase px-2 cursor-pointer user-select-none"
+                                    style={{ cursor: 'pointer', fontWeight: 'bold' }}
+                                    onClick={() => updateQuantity(elm.id, elm.quantity + 1)}
+                                  >
+                                    +
+                                  </span>
+                                </div>
                               </div>
                             </div>
                             <div className="tf-mini-cart-right-section">

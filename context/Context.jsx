@@ -86,21 +86,22 @@ export default function Context({ children }) {
   
   // Function to toggle selection of cart items
   const toggleCartItemSelection = async (id) => {
-    const targetProduct = cartProducts.find(p => p.id === id);
+    const targetProduct = cartProducts.find(p => p.id == id || (p.documentId && p.documentId === id));
     if (!targetProduct) return;
 
-    const currentStatus = selectedCartItems[id] !== undefined 
-      ? selectedCartItems[id] 
+    const targetId = targetProduct.id;
+    const currentStatus = selectedCartItems[targetId] !== undefined 
+      ? selectedCartItems[targetId] 
       : (targetProduct.isSelected !== undefined ? targetProduct.isSelected : true);
       
     const newStatus = !currentStatus;
 
     setSelectedCartItems(prev => ({
       ...prev,
-      [id]: newStatus
+      [targetId]: newStatus
     }));
 
-    setCartProducts(prev => prev.map(p => p.id === id ? { ...p, isSelected: newStatus } : p));
+    setCartProducts(prev => prev.map(p => (p.id == targetId || p.documentId === targetId) ? { ...p, isSelected: newStatus } : p));
 
     if (targetProduct.cartDocumentId) {
       try {
