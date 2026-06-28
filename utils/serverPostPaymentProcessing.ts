@@ -193,8 +193,6 @@ const sendAutomaticInvoiceEmail = async (paymentData: any) => {
             || 'Payment Gateway';
 
         const orderInfo = [
-            `Order ID: ${txnId}`,
-            `Gateway Ref: ${paymentData.gatewayReferenceNo || 'N/A'}`,
             `Date: ${dateStr}`,
             `Status: ${paymentData.status || 'Success'}`,
             `Payment Method: ${paymentMethod}`,
@@ -257,14 +255,16 @@ const sendAutomaticInvoiceEmail = async (paymentData: any) => {
         const { getExchangeRate } = await import('./currency');
         const exchangeRate = isNepal ? await getExchangeRate() : 1;
 
+        let calculatedSubtotal = 0;
+
         products.forEach((item: any) => {
-            let price = item.price || 0;
+            const price = item.price || 0;
             const quantity = item.quantity || 1;
-            let total = item.subtotal || (price * quantity);
+            let lineTotal = price * quantity;
             if (isNepal) {
-                price = price * exchangeRate;
-                total = total * exchangeRate;
+                lineTotal = lineTotal * exchangeRate;
             }
+            calculatedSubtotal += lineTotal;
 
             // Get title logic (Variant Aware - simplified for server)
             const title = item.title || item.name || 'Product';
@@ -274,7 +274,7 @@ const sendAutomaticInvoiceEmail = async (paymentData: any) => {
                 title,
                 size,
                 quantity.toString(),
-                `${currency} ${Number(total).toFixed(2)}`
+                `${currency} ${Number(lineTotal).toFixed(2)}`
             ]);
         });
 
@@ -301,28 +301,16 @@ const sendAutomaticInvoiceEmail = async (paymentData: any) => {
         doc.setFont('helvetica', 'normal');
 
         // Calculate Breakdown Values
-        let displayOriginalSubtotal = 0;
-        products.forEach((item: any) => {
-            const price = item.price || 0;
-            const qty = item.quantity || 1;
-            displayOriginalSubtotal += (price * qty);
-        });
-
-        const productDiscounts = orderSummary.productDiscounts || 0;
         const couponDiscount = orderSummary.couponDiscount || 0;
-        let displayProductDiscounts = productDiscounts;
         let displayCouponDiscount = couponDiscount;
         let displayShippingCost = shippingCostRaw;
 
         if (isNepal) {
-            displayOriginalSubtotal = displayOriginalSubtotal * exchangeRate;
-            if (productDiscounts > 0) displayProductDiscounts = productDiscounts * exchangeRate;
             if (couponDiscount > 0) displayCouponDiscount = couponDiscount * exchangeRate;
         }
 
         const breakdownItems = [
-            { label: 'Subtotal:', value: displayOriginalSubtotal },
-            ...(displayProductDiscounts > 0 ? [{ label: 'Product Discounts:', value: -displayProductDiscounts, isDiscount: true }] : []),
+            { label: 'Subtotal:', value: calculatedSubtotal },
             ...(displayCouponDiscount > 0 ? [{ label: `Coupon Discount (${orderSummary.couponCode || 'N/A'}):`, value: -displayCouponDiscount, isDiscount: true }] : []),
             ...(displayShippingCost > 0 ? [{ label: 'Shipping Cost:', value: displayShippingCost }] : [])
         ];

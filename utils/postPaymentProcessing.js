@@ -142,8 +142,6 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
       || 'Payment Gateway';
 
     const orderInfo = [
-      `Order ID: ${txnId}`,
-      `Gateway Ref: ${paymentData.gatewayReferenceNo || 'N/A'}`,
       `Date: ${dateStr}`,
       `Status: ${paymentData.status || 'Success'}`,
       `Payment Method: ${paymentMethod}`,
@@ -187,7 +185,7 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
 
     const address = receiverDetails.address || {};
     const customerInfo = [
-      `Name: ${receiverDetails.fullName || 'Valued Customer'}`,
+      `Name: ${receiverDetails.fullName || receiverDetails.name || 'Valued Customer'}`,
       `Email: ${receiverDetails.email || 'N/A'}`,
       `Phone: ${receiverDetails.phone || 'N/A'}`,
       `City: ${address.cityName || 'N/A'}`,
@@ -206,14 +204,17 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
     const { getExchangeRate } = await import('./currency');
     const exchangeRate = isNepal ? await getExchangeRate() : 1;
 
+    let calculatedSubtotal = 0;
+
     products.forEach(item => {
-      let price = item.price || 0;
+      const price = item.price || 0;
       const quantity = item.quantity || 1;
-      let total = item.subtotal || (price * quantity);
+      let lineTotal = price * quantity;
       if (isNepal) {
-        price = price * exchangeRate;
-        total = total * exchangeRate;
+        lineTotal = lineTotal * exchangeRate;
       }
+      calculatedSubtotal += lineTotal;
+
       // Variant aware title logic (simplified for client)
       const title = item.title || item.name || 'Product';
       const size = item.selectedSize || item.size || '-';
@@ -222,7 +223,7 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
         title,
         size,
         quantity.toString(),
-        `${currency} ${Number(total).toFixed(2)}`
+        `${currency} ${Number(lineTotal).toFixed(2)}`
       ]);
     });
 
@@ -248,28 +249,16 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
     doc.setFont(undefined, 'normal');
 
     // Calculate Breakdown Values
-    let displayOriginalSubtotal = 0;
-    products.forEach(item => {
-      const price = item.price || 0;
-      const qty = item.quantity || 1;
-      displayOriginalSubtotal += (price * qty);
-    });
-
-    const productDiscounts = orderSummary.productDiscounts || 0;
     const couponDiscount = orderSummary.couponDiscount || 0;
-    let displayProductDiscounts = productDiscounts;
     let displayCouponDiscount = couponDiscount;
     let displayShippingCost = shippingCostRaw;
 
     if (isNepal) {
-      displayOriginalSubtotal = displayOriginalSubtotal * exchangeRate;
-      if (productDiscounts > 0) displayProductDiscounts = productDiscounts * exchangeRate;
       if (couponDiscount > 0) displayCouponDiscount = couponDiscount * exchangeRate;
     }
 
     const breakdownItems = [
-      { label: 'Subtotal:', value: displayOriginalSubtotal },
-      ...(displayProductDiscounts > 0 ? [{ label: 'Product Discounts:', value: -displayProductDiscounts, isDiscount: true }] : []),
+      { label: 'Subtotal:', value: calculatedSubtotal },
       ...(displayCouponDiscount > 0 ? [{ label: `Coupon Discount (${orderSummary.couponCode || 'N/A'}):`, value: -displayCouponDiscount, isDiscount: true }] : []),
       ...(displayShippingCost > 0 ? [{ label: 'Shipping Cost:', value: displayShippingCost }] : [])
     ];

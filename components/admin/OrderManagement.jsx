@@ -731,9 +731,6 @@ const OrderManagement = () => {
       const orderSummary = orderData.orderSummary || {};
 
       const orderInfo = [
-        `Order ID: ${payment.merchantTxnId || 'N/A'}`,
-        `Gateway Reference: ${payment.gatewayReferenceNo || 'N/A'}`,
-        `Process ID: ${payment.processId || 'N/A'}`,
         `Date: ${payment.timestamp ? new Date(payment.timestamp).toLocaleDateString() : 'N/A'}`,
         `Payment Status: ${payment.status || 'N/A'}`,
         `Payment Method: ${payment.instrument || 'N/A'}`,
@@ -1147,9 +1144,6 @@ const OrderManagement = () => {
       doc.setFontSize(10);
 
       const orderInfo = [
-        `Order ID: ${payment.merchantTxnId || 'N/A'}`,
-        `Gateway Reference: ${payment.gatewayReferenceNo || 'N/A'}`,
-        `Process ID: ${payment.processId || 'N/A'}`,
         `Date: ${payment.timestamp ? new Date(payment.timestamp).toLocaleDateString() : new Date().toLocaleDateString()}`,
         `Payment Status: ${payment.status || 'N/A'}`,
         `Payment Method: ${payment.instrument || 'N/A'}`,
