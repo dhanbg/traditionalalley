@@ -85,20 +85,44 @@ export default function Context({ children }) {
   const [userCreationAttempted, setUserCreationAttempted] = useState(false);
   
   // Function to toggle selection of cart items
-  const toggleCartItemSelection = (id) => {
+  const toggleCartItemSelection = async (id) => {
+    const newStatus = !selectedCartItems[id];
     setSelectedCartItems(prev => ({
       ...prev,
-      [id]: !prev[id]
+      [id]: newStatus
     }));
+
+    const targetProduct = cartProducts.find(p => p.id === id);
+    if (targetProduct && targetProduct.cartDocumentId) {
+      try {
+        await updateData(`/api/carts/${targetProduct.cartDocumentId}`, {
+          data: { isSelected: newStatus }
+        });
+      } catch (err) {
+        console.error("Failed to update cart selection in Strapi:", err);
+      }
+    }
   };
   
   // Function to select all cart items
-  const selectAllCartItems = (selectAll = true) => {
+  const selectAllCartItems = async (selectAll = true) => {
     const newSelection = {};
     cartProducts.forEach(product => {
       newSelection[product.id] = selectAll;
     });
     setSelectedCartItems(newSelection);
+
+    cartProducts.forEach(async (product) => {
+      if (product.cartDocumentId) {
+        try {
+          await updateData(`/api/carts/${product.cartDocumentId}`, {
+            data: { isSelected: selectAll }
+          });
+        } catch (err) {
+          console.error("Failed to update select-all in Strapi:", err);
+        }
+      }
+    });
   };
   
   // Get only selected cart items for checkout
@@ -873,6 +897,8 @@ export default function Context({ children }) {
           if (productToAdd.selectedSize) {
             completeCartPayload.data.size = productToAdd.selectedSize;
           }
+
+          completeCartPayload.data.isSelected = true;
           
           // Create cart entry
           const cartResponse = await createData("/api/carts", completeCartPayload);
@@ -1700,7 +1726,8 @@ export default function Context({ children }) {
                 sizes: productAttrs.sizes || [],
                 selectedSize: cartItem.size || null, // Include selected size from backend
                 imgSrc: imgSrc,
-                variantInfo: variantInfo // Include variant info
+                variantInfo: variantInfo, // Include variant info
+                isSelected: cartItem.isSelected !== undefined ? cartItem.isSelected : true
               };
               
               // Cart item processed successfully
@@ -1730,6 +1757,13 @@ export default function Context({ children }) {
             }
             
             setCartProducts(backendCarts);
+            
+            // Sync selectedCartItems state from backend relies
+            const backendSelectionMap = {};
+            backendCarts.forEach(item => {
+              backendSelectionMap[item.id] = item.isSelected;
+            });
+            setSelectedCartItems(backendSelectionMap);
             
             // Remove image preloading to prevent interference with initial display
             // Images will load naturally through the Next.js Image component
