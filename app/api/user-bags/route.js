@@ -5,22 +5,20 @@ export async function GET(request) {
   try {
     // Get query parameters
     const { searchParams } = new URL(request.url);
-    const populate = searchParams.get('populate') || '*';
-    const sort = searchParams.get('sort') || 'updatedAt:desc';
-    const pageSize = searchParams.get('pagination[pageSize]') || '1000';
-    const page = searchParams.get('pagination[page]');
-
-    // Construct the URL for the Strapi API with passthrough pagination params
-    const queryParts = [
-      `pagination[pageSize]=${pageSize}`,
-      `populate=${populate}`,
-      `sort=${sort}`
-    ];
-    if (page) {
-      queryParts.push(`pagination[page]=${page}`);
+    
+    // Set default query parameters if not present
+    if (!searchParams.has('populate')) {
+      searchParams.set('populate', '*');
     }
+    if (!searchParams.has('sort')) {
+      searchParams.set('sort', 'updatedAt:desc');
+    }
+    if (!searchParams.has('pagination[pageSize]')) {
+      searchParams.set('pagination[pageSize]', '1000');
+    }
+
     const base = process.env['STRAPI_INTERNAL_URL'] || process.env['STRAPI_URL'] || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
-    strapiUrl = `${base}/api/user-bags?${queryParts.join('&')}`;
+    strapiUrl = `${base}/api/user-bags?${searchParams.toString()}`;
 
     // Fetch user bags from Strapi
     const response = await fetch(strapiUrl, {
