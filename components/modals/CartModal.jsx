@@ -325,6 +325,11 @@ export default function CartModal() {
                                   {getVariantAwareTitle(elm)}
                                 </Link>
                               </div>
+                              {(elm.variantInfo?.title || elm.variantInfo?.color?.name) && (
+                                <div className="variant-name" style={{ fontSize: '11px', color: '#4b5563', fontWeight: 500, marginTop: '2px', marginBottom: '2px' }}>
+                                  Variant: {elm.variantInfo?.title || elm.variantInfo?.color?.name}
+                                </div>
+                              )}
                               <div className="quantity-display-wrapper">
                                 <span className="quantity-label">Qty:</span>
                                 <span className="quantity-value">{elm.quantity}</span>

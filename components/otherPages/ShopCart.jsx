@@ -415,9 +415,14 @@ export default function ShopCart() {
                                 {getVariantAwareTitle(elm)}
                               </Link>
 
-                              {elm.selectedSize && (
+                              {(elm.selectedSize || elm.variantInfo?.title || elm.variantInfo?.color?.name) && (
                                 <div className="text-caption-2 text-secondary mb-2">
-                                  Size: {elm.selectedSize}
+                                  {elm.selectedSize && <div>Size: {elm.selectedSize}</div>}
+                                  {(elm.variantInfo?.title || elm.variantInfo?.color?.name) && (
+                                    <div style={{ color: '#374151', fontWeight: 500, marginTop: '2px' }}>
+                                      Variant: {elm.variantInfo?.title || elm.variantInfo?.color?.name}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>

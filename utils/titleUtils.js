@@ -1,44 +1,34 @@
 // Utility to build a clean variant-aware product title
-// Format: "BASE : VARIANT" and avoid duplicate base names in variant labels
+// Format: "BASE : VARIANT" or return base title + variant info cleanly
 
 export function getVariantAwareTitle(item) {
   try {
     const baseTitle = (item?.title || item?.name || 'N/A').trim();
-    const baseRoot = (baseTitle.includes(':') ? baseTitle.split(':')[0] : baseTitle).trim();
 
-    const rawCandidates = [
-      item?.variantTitle,
+    const rawVariant = [
       item?.variantInfo?.title,
+      item?.variantTitle,
       item?.selectedVariant?.title,
-      item?.selectedColor,
       item?.selectedVariant?.color,
+      item?.selectedColor,
       item?.design
-    ].filter(Boolean);
+    ].find(Boolean);
 
-    const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-    const cleanCandidate = (c) => {
-      let s = String(c).trim();
-      let lc = s.toLowerCase();
-      if (!s || lc === 'default' || lc === 'variant' || lc === '(variant)') return '';
-      // If the candidate contains a colon/hyphen, prefer the part after the separator
-      if (s.includes(':')) s = s.split(':').pop().trim();
-      else if (/[\-–—]/.test(s)) s = s.split(/[\-–—]/).pop().trim();
-      // Strip leading baseRoot if embedded
-      const baseRe = new RegExp(`^${escapeRegExp(baseRoot)}\s*[:\-]?\s*`, 'i');
-      s = s.replace(baseRe, '').trim();
-      lc = s.toLowerCase();
-      if (!s || lc === 'default' || lc === baseRoot.toLowerCase()) return '';
-      return s;
-    };
-
-    const normalized = rawCandidates.map(cleanCandidate).find(Boolean);
-
-    if (!normalized) {
-      return baseTitle.replace(/\s*-\s*/g, ' : ');
+    if (rawVariant) {
+      const variantStr = String(rawVariant).trim();
+      if (variantStr && variantStr.toLowerCase() !== 'default') {
+        // If baseTitle already contains the variant string, return baseTitle formatted cleanly
+        if (baseTitle.toLowerCase().includes(variantStr.toLowerCase())) {
+          return baseTitle.replace(/\s*-\s*/g, ' : ');
+        }
+        
+        // Extract base product root (part before hyphen or colon)
+        const baseRoot = baseTitle.split(/[\-:]/)[0].trim();
+        return `${baseRoot} : ${variantStr}`;
+      }
     }
 
-    return `${baseRoot} : ${normalized}`;
+    return baseTitle.replace(/\s*-\s*/g, ' : ');
   } catch (e) {
     return item?.title || item?.name || 'N/A';
   }
