@@ -520,7 +520,8 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
 
                   // Check if this exact cart ID is already in cart
                   if (isAddedToCartProducts(uniqueCartIdToCheck)) {
-                    return; // Already in cart, do nothing
+                    handleCartClick();
+                    return;
                   }
                 }
 

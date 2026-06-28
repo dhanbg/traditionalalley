@@ -534,13 +534,7 @@ export default function Context({ children }) {
     }
     
     return false;
-  };  const addProductToCart = (id, qty, isModal = true, variantInfo = null, selectedSize = null) => {
-    const cartState = useCartStore.getState();
-    if (cartState.isAddedToCartProducts(id)) {
-      if (isModal) openCartModal().catch(() => {});
-      return;
-    }
-
+  };  const addProductToCart = (id, qty = 1, isModal = true, variantInfo = null, selectedSize = null, productData = null) => {
     let baseProductId = id;
     if (typeof id === 'string') {
       if (id.includes('-size-')) baseProductId = id.split('-size-')[0];
@@ -549,51 +543,56 @@ export default function Context({ children }) {
 
     const productInfo = allProducts.find(product =>
       product.documentId === baseProductId || product.id === baseProductId
-    );
+    ) || productData;
 
-    let productToAdd = null;
-    if (productInfo) {
-      let imgSrc = '/images/placeholder.png';
-      let title = productInfo.title;
-      if (variantInfo) {
-        if (variantInfo.imgSrcObject) imgSrc = getOptimizedImageUrl(variantInfo.imgSrcObject);
-        else if (variantInfo.imgSrc) imgSrc = variantInfo.imgSrc;
-        if (variantInfo.title && variantInfo.isVariant) title = `${productInfo.title} - ${variantInfo.title}`;
-      } else {
-        if (productInfo.imgSrc?.formats?.small?.url) imgSrc = getImageUrl(productInfo.imgSrc.formats.small.url);
-        else imgSrc = getImageUrl(productInfo.imgSrc);
+    let imgSrc = '/images/placeholder.png';
+    let title = productInfo?.title || variantInfo?.title || "Product Item";
+    let price = parseFloat(variantInfo?.price || productInfo?.price || productData?.price || 0);
+    let oldPrice = productInfo?.oldPrice || variantInfo?.oldPrice || productData?.oldPrice || null;
+
+    if (variantInfo) {
+      if (variantInfo.imgSrcObject) imgSrc = getOptimizedImageUrl(variantInfo.imgSrcObject);
+      else if (variantInfo.imgSrc) imgSrc = typeof variantInfo.imgSrc === 'string' ? variantInfo.imgSrc : getOptimizedImageUrl(variantInfo.imgSrc);
+      if (variantInfo.title && variantInfo.isVariant && productInfo?.title && !productInfo.title.includes(variantInfo.title)) {
+        title = `${productInfo.title} - ${variantInfo.title}`;
       }
-      productToAdd = {
-        id,
-        baseProductId,
-        documentId: productInfo.documentId,
-        title,
-        price: productInfo.price,
-        oldPrice: productInfo.oldPrice || null,
-        quantity: qty || 1,
-        colors: productInfo.colors || [],
-        sizes: productInfo.sizes || [],
-        selectedSize,
-        imgSrc,
-        weight: productInfo.weight || null,
-        variantInfo
-      };
-    } else {
-      productToAdd = {
-        id,
-        baseProductId,
-        title: variantInfo?.title || "Product Item",
-        price: 0,
-        quantity: qty || 1,
-        selectedSize,
-        imgSrc: variantInfo?.imgSrc || '/images/placeholder.png',
-        variantInfo
-      };
+    } else if (productInfo) {
+      if (productInfo.imgSrc?.formats?.small?.url) imgSrc = getImageUrl(productInfo.imgSrc.formats.small.url);
+      else imgSrc = getImageUrl(productInfo.imgSrc);
+    }
+
+    const productToAdd = {
+      id,
+      baseProductId,
+      documentId: productInfo?.documentId || baseProductId,
+      title,
+      price,
+      oldPrice: oldPrice ? parseFloat(oldPrice) : null,
+      quantity: qty || 1,
+      colors: productInfo?.colors || [],
+      sizes: productInfo?.sizes || [],
+      selectedSize,
+      imgSrc,
+      weight: productInfo?.weight || null,
+      variantInfo,
+      isSelected: true
+    };
+
+    const cartState = useCartStore.getState();
+    const isAlreadyInCart = cartProducts.some(item => item.id === id);
+
+    if (isAlreadyInCart) {
+      updateQuantity(id, qty || 1, true);
+      if (isModal) {
+        openCartModal().catch(() => {});
+      }
+      return;
     }
 
     // 1. INSTANT OPTIMISTIC UPDATE (0ms delay)
     cartState.addProductToCart(productToAdd);
     setCartProducts((prev) => [...prev.filter(item => item.id !== productToAdd.id), productToAdd]);
+    setSelectedCartItems(prev => ({ ...prev, [id]: true }));
     showAddToCartSuccess(productToAdd.title, qty || 1, selectedSize);
     if (isModal) {
       openCartModal().catch(() => {});
