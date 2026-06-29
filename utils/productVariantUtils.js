@@ -330,13 +330,20 @@ export async function fetchProductsWithVariants(apiEndpoint) {
 
         // Fetch variants for this product
         try {
-          const variantsResponse = await fetchDataFromApi(
-            `/api/product-variants?filters[product][documentId][$eq]=${rawProduct.documentId}&${VARIANT_POPULATE}`
-          );
+          // Optimization: Check if product_variants is already populated on the rawProduct object
+          let variants = [];
+          if (rawProduct.product_variants && Array.isArray(rawProduct.product_variants) && rawProduct.product_variants.length > 0) {
+            variants = rawProduct.product_variants;
+          } else {
+            const variantsResponse = await fetchDataFromApi(
+              `/api/product-variants?filters[product][documentId][$eq]=${rawProduct.documentId}&${VARIANT_POPULATE}`
+            );
+            variants = variantsResponse.data || [];
+          }
 
-          if (variantsResponse.data && variantsResponse.data.length > 0) {
+          if (variants.length > 0) {
             // Transform each variant as a separate item
-            for (const rawVariant of variantsResponse.data) {
+            for (const rawVariant of variants) {
               const transformedVariant = transformVariantForListing(rawVariant, rawProduct);
 
               if (transformedVariant && transformedVariant.isActive !== false) {
