@@ -293,16 +293,55 @@ export const updateData = async (endpoint, data) => {
 }
 
 export const deleteData = async (endpoint) => {
-  const options = {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${STRAPI_API_TOKEN}`,
-    },
-  };
-  
   let cleanEndpoint = endpoint;
   
   try {
+    // For cart deletions from browser, use POST-based delete to bypass Cloudflare WAF
+    // Cloudflare blocks HTTP DELETE method, causing 403 Forbidden
+    if (typeof window !== 'undefined' && cleanEndpoint.includes('/api/carts/')) {
+      // Extract the cart ID from the endpoint (e.g., /api/carts/abc123 -> abc123)
+      const cartIdMatch = cleanEndpoint.match(/\/api\/carts\/([^?]+)/);
+      if (cartIdMatch && cartIdMatch[1] && cartIdMatch[1] !== 'delete') {
+        const cartId = cartIdMatch[1];
+        console.log(`🗑️ [deleteData] Using POST /api/carts/delete for cart ID: ${cartId}`);
+        
+        const res = await fetch('/api/carts/delete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ id: cartId }),
+        });
+
+        let responseData;
+        try {
+          const responseText = await res.text();
+          if (responseText && responseText.trim().length > 0) {
+            responseData = JSON.parse(responseText);
+          }
+        } catch (e) {
+          // Response is not JSON
+        }
+
+        if (!res.ok) {
+          const error = new Error(`Delete failed: ${res.statusText}`);
+          error.status = res.status;
+          error.detail = responseData;
+          throw error;
+        }
+
+        return responseData || { success: true };
+      }
+    }
+
+    // Standard DELETE for non-cart endpoints or server-side calls
+    const options = {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${STRAPI_API_TOKEN}`,
+      },
+    };
+
     // Send the delete request
     let fetchUrl = getFetchUrl(cleanEndpoint);
     let res = await fetch(fetchUrl, options);

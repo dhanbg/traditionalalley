@@ -1542,7 +1542,10 @@ export default function Context({ children }) {
       const validId = (id !== undefined && id !== null && id !== 'undefined') ? String(id) : null;
       const validCartDocId = (directCartDocumentId !== undefined && directCartDocumentId !== null && directCartDocumentId !== 'undefined') ? String(directCartDocumentId) : null;
 
+      console.log('🗑️ [removeFromCart] Called with:', { id, directCartDocumentId, validId, validCartDocId });
+
       if (!validId && !validCartDocId) {
+        console.warn('🗑️ [removeFromCart] No valid IDs provided, aborting');
         return;
       }
 
@@ -1556,6 +1559,15 @@ export default function Context({ children }) {
         }
         return false;
       });
+
+      console.log('🗑️ [removeFromCart] Target item found:', targetItem ? {
+        id: targetItem.id,
+        cartId: targetItem.cartId,
+        cartDocumentId: targetItem.cartDocumentId,
+        documentId: targetItem.documentId,
+        baseProductId: targetItem.baseProductId,
+        title: targetItem.title,
+      } : 'NOT FOUND');
 
       // 2. Single-item index removal for frontend state (guarantees exactly 1 item removed)
       setCartProducts(prev => {
@@ -1592,35 +1604,44 @@ export default function Context({ children }) {
         } catch (e) {}
       }
 
-      // 4. Backend Deletion in Strapi (Try documentId, numeric cartId, and fallbacks)
+      // 4. Backend Deletion in Strapi
       const docIdToDelete = validCartDocId || targetItem?.cartDocumentId;
       const numericIdToDelete = targetItem?.cartId;
+
+      console.log('🗑️ [removeFromCart] Backend IDs:', { docIdToDelete, numericIdToDelete });
 
       let deletionSuccessful = false;
 
       // Try deleting by documentId first (Strapi v5)
       if (docIdToDelete) {
         try {
-          await deleteData(`/api/carts/${docIdToDelete}`);
+          console.log(`🗑️ [removeFromCart] Attempting DELETE /api/carts/${docIdToDelete}`);
+          const result = await deleteData(`/api/carts/${docIdToDelete}`);
+          console.log(`✅ [removeFromCart] DELETE by documentId succeeded:`, result);
           deletionSuccessful = true;
         } catch (err) {
-          console.warn(`⚠️ Could not delete cart item by documentId ${docIdToDelete}, trying numeric ID fallback...`);
+          console.error(`❌ [removeFromCart] DELETE by documentId ${docIdToDelete} FAILED:`, err.message, 'status:', err.status, 'detail:', err.detail);
         }
       }
 
-      // If documentId deletion failed or was missing, try numeric cartId (Strapi v4)
+      // If documentId deletion failed or was missing, try numeric cartId
       if (!deletionSuccessful && numericIdToDelete) {
         try {
-          await deleteData(`/api/carts/${numericIdToDelete}`);
+          console.log(`🗑️ [removeFromCart] Attempting DELETE /api/carts/${numericIdToDelete} (numeric ID)`);
+          const result = await deleteData(`/api/carts/${numericIdToDelete}`);
+          console.log(`✅ [removeFromCart] DELETE by numeric ID succeeded:`, result);
           deletionSuccessful = true;
         } catch (err) {
-          console.warn(`⚠️ Could not delete cart item by numeric ID ${numericIdToDelete}...`);
+          console.error(`❌ [removeFromCart] DELETE by numeric ID ${numericIdToDelete} FAILED:`, err.message, 'status:', err.status, 'detail:', err.detail);
         }
       }
 
       if (deletionSuccessful) {
+        console.log('✅ [removeFromCart] Backend deletion successful, done.');
         return;
       }
+
+      console.warn('⚠️ [removeFromCart] Direct deletion failed, trying fallback lookup...');
 
       // 5. Fallback backend lookup if user is logged in and direct deletion didn't succeed
       if (user?.id) {
@@ -1629,10 +1650,26 @@ export default function Context({ children }) {
         );
         if (currentUserData?.data?.length > 0) {
           const userDocumentId = currentUserData.data[0].documentId || currentUserData.data[0].attributes?.documentId;
+          console.log(`🗑️ [removeFromCart] User documentId: ${userDocumentId}`);
+          
           const cartResponse = await fetchDataFromApi(
             `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&status=draft&publicationState=preview&populate[product][populate]=*&populate[product_variant][populate]=*`
           );
+          
+          console.log(`🗑️ [removeFromCart] Fallback found ${cartResponse?.data?.length || 0} cart items in backend`);
+          
           if (cartResponse?.data?.length > 0) {
+            // Log all backend cart items for debugging
+            cartResponse.data.forEach((item, idx) => {
+              console.log(`🗑️ [removeFromCart] Backend cart[${idx}]:`, {
+                id: item.id,
+                documentId: item.documentId,
+                productId: item.product?.id,
+                productDocId: item.product?.documentId,
+                productTitle: item.product?.title,
+              });
+            });
+
             const found = cartResponse.data.find(item => {
               const rawCartItem = item.attributes || item;
               const productData = rawCartItem.product?.data || rawCartItem.product || {};
@@ -1653,27 +1690,45 @@ export default function Context({ children }) {
               return false;
             });
 
+            console.log(`🗑️ [removeFromCart] Fallback match found:`, found ? { id: found.id, documentId: found.documentId } : 'NONE');
+
             if (found) {
               const itemDocId = found.documentId || found.attributes?.documentId;
               const itemId = found.id;
               if (itemDocId) {
                 try {
+                  console.log(`🗑️ [removeFromCart] Fallback DELETE /api/carts/${itemDocId}`);
                   await deleteData(`/api/carts/${itemDocId}`);
+                  console.log(`✅ [removeFromCart] Fallback DELETE by documentId succeeded`);
                   return;
-                } catch (e) {}
+                } catch (e) {
+                  console.error(`❌ [removeFromCart] Fallback DELETE by documentId FAILED:`, e.message, e.status, e.detail);
+                }
               }
               if (itemId) {
                 try {
+                  console.log(`🗑️ [removeFromCart] Fallback DELETE /api/carts/${itemId}`);
                   await deleteData(`/api/carts/${itemId}`);
+                  console.log(`✅ [removeFromCart] Fallback DELETE by numeric ID succeeded`);
                   return;
-                } catch (e) {}
+                } catch (e) {
+                  console.error(`❌ [removeFromCart] Fallback DELETE by numeric ID FAILED:`, e.message, e.status, e.detail);
+                }
               }
+            } else {
+              console.warn('⚠️ [removeFromCart] No matching cart item found in backend fallback!');
             }
+          } else {
+            console.warn('⚠️ [removeFromCart] No cart items found in backend for this user!');
           }
         }
+      } else {
+        console.warn('⚠️ [removeFromCart] No user logged in, cannot do fallback lookup');
       }
+
+      console.error('❌ [removeFromCart] ALL deletion attempts failed!');
     } catch (error) {
-      console.error("Error in removeFromCart:", error);
+      console.error("❌ [removeFromCart] Uncaught error:", error);
     }
   };
 
