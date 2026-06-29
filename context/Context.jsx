@@ -595,6 +595,8 @@ export default function Context({ children }) {
     cartState.addProductToCart(productToAdd);
     setCartProducts((prev) => [...prev.filter(item => item.id !== productToAdd.id), productToAdd]);
     setSelectedCartItems(prev => ({ ...prev, [id]: true }));
+    setIsCartLoading(false);
+    setCartLoadedOnce(true);
     showAddToCartSuccess(productToAdd.title, qty || 1, selectedSize);
     if (isModal) {
       openCartModal().catch(() => {});
@@ -1297,167 +1299,162 @@ export default function Context({ children }) {
             }
           }
           
-          if (cartResponse?.data?.length > 0) {
-            // Transform backend cart items into the format expected by the UI
-            const backendCarts = cartResponse.data.map((cartItem, index) => {
-              try {
-                if (!cartItem) {
-                  return null; // Skip this item
-                }
-                
-                // Safely handle Strapi v4 (nested attributes) vs Strapi v5 (flat) formats
-                const rawCartItem = cartItem.attributes || cartItem;
-                const rawProduct = rawCartItem.product?.data || rawCartItem.product;
-                const rawVariant = rawCartItem.product_variant?.data || rawCartItem.product_variant || rawCartItem.productVariant?.data || rawCartItem.productVariant;
-                
-                const productAttrs = rawProduct?.attributes || rawProduct || {};
-                const variantAttrs = rawVariant?.attributes || rawVariant || {};
-                
-                const productId = rawProduct?.documentId || rawProduct?.id || productAttrs.documentId || productAttrs.id || 
-                                  rawVariant?.documentId || rawVariant?.id || variantAttrs.documentId || variantAttrs.id;
-                
-                // Skip items without product or variant data
-                if (!productId) {
-                  return null;
-                }
-              
-              // Parse variant information if available
-              let variantInfo = null;
-              if (rawCartItem.variantInfo) {
-                try {
-                  // Check if variantInfo is already an object (not a string)
-                  if (typeof rawCartItem.variantInfo === 'object' && rawCartItem.variantInfo !== null) {
-                    variantInfo = rawCartItem.variantInfo;
-                  } else if (typeof rawCartItem.variantInfo === 'string') {
-                    // Only try to parse if it's a string and not "[object Object]"
-                    if (rawCartItem.variantInfo !== "[object Object]" && rawCartItem.variantInfo.trim() !== "") {
-                      variantInfo = JSON.parse(rawCartItem.variantInfo);
-                    } else {
-                      variantInfo = null;
-                    }
-                  }
-                } catch (parseError) {
-                  variantInfo = null;
-                }
-              }
-
-              if (!variantInfo && rawVariant) {
-                variantInfo = {
-                  isVariant: true,
-                  variantId: rawVariant.documentId || rawVariant.id || variantAttrs.documentId || variantAttrs.id,
-                  documentId: rawVariant.documentId || rawVariant.id || variantAttrs.documentId || variantAttrs.id,
-                  title: variantAttrs.title || variantAttrs.name
-                };
-              }
-
-              let cartItemId = productAttrs.documentId || productId;
-              let title = productAttrs.title || productAttrs.name || variantAttrs.title || variantAttrs.name || "Product Item";
-              let imgSrc = getBestImageUrl(variantAttrs.imgSrc || productAttrs.imgSrc, 'medium') || '/logo.png';
-              
-              if (variantInfo) {
-                // Reconstruct the variant-specific cart item ID using documentId
-                if (variantInfo.isVariant && (variantInfo.documentId || variantInfo.variantId)) {
-                  const variantIdentifier = variantInfo.documentId || variantInfo.variantId;
-                  cartItemId = `${productAttrs.documentId || productId}-variant-${variantIdentifier}`;
-                }
-                
-                // Use variant-specific title and image
-                if (variantInfo.title) {
-                  title = variantInfo.title;
-                }
-                
-                if (variantInfo.imgSrcObject) {
-                  imgSrc = getBestImageUrl(variantInfo.imgSrcObject, 'medium');
-                } else if (variantInfo.imgSrc) {
-                  if (typeof variantInfo.imgSrc === 'string' && variantInfo.imgSrc.startsWith('http')) {
-                    imgSrc = variantInfo.imgSrc;
-                  } else {
-                    imgSrc = getBestImageUrl(variantInfo.imgSrc, 'medium');
-                  }
-                }
-              }
-
-              // Add size information to cart item ID to match the format used when adding products
-              const cartItemSize = rawCartItem.size || cartItem.size;
-              if (cartItemSize) {
-                cartItemId = `${cartItemId}-size-${cartItemSize}`;
+          const rawBackendData = cartResponse?.data && Array.isArray(cartResponse.data) ? cartResponse.data : [];
+          
+          // Transform backend cart items into the format expected by the UI
+          const backendCarts = rawBackendData.map((cartItem, index) => {
+            try {
+              if (!cartItem) {
+                return null; // Skip this item
               }
               
-              const fallbackProduct = allProducts.find(p => p.documentId === (productAttrs.documentId || productId) || p.id === productId || p.id === productAttrs.id) || {};
-              let rawPrice = variantAttrs.price || productAttrs.price || fallbackProduct.price || 0;
-              let rawOldPrice = productAttrs.oldPrice || variantAttrs.oldPrice || fallbackProduct.oldPrice || null;
-
-              const productCart = {
-                id: cartItemId, // Use variant and size-specific ID
-                baseProductId: productAttrs.documentId || productId, // Keep reference to base product documentId
-                cartId: cartItem.id,
-                cartDocumentId: cartItem.documentId || rawCartItem.documentId,
-                documentId: productAttrs.documentId || productId,
-                title: title,
-                price: parseFloat(rawPrice),
-                oldPrice: rawOldPrice ? parseFloat(rawOldPrice) : null,
-                quantity: rawCartItem.quantity || cartItem.quantity || 1,
-                colors: productAttrs.colors || fallbackProduct.colors || [],
-                sizes: productAttrs.sizes || fallbackProduct.sizes || [],
-                selectedSize: cartItemSize || null, // Include selected size from backend
-                imgSrc: imgSrc,
-                variantInfo: variantInfo, // Include variant info
-                isSelected: (rawCartItem.isSelected !== undefined && rawCartItem.isSelected !== null) 
-                  ? Boolean(rawCartItem.isSelected) 
-                  : ((cartItem.isSelected !== undefined && cartItem.isSelected !== null) ? Boolean(cartItem.isSelected) : true)
-              };
+              // Safely handle Strapi v4 (nested attributes) vs Strapi v5 (flat) formats
+              const rawCartItem = cartItem.attributes || cartItem;
+              const rawProduct = rawCartItem.product?.data || rawCartItem.product;
+              const rawVariant = rawCartItem.product_variant?.data || rawCartItem.product_variant || rawCartItem.productVariant?.data || rawCartItem.productVariant;
               
-              // Cart item processed successfully
+              const productAttrs = rawProduct?.attributes || rawProduct || {};
+              const variantAttrs = rawVariant?.attributes || rawVariant || {};
               
-              // Special handling for Redezyyyy Shorts
-              if (productCart.title && productCart.title.includes("Redezyyyy")) {
-                if (!productCart.oldPrice) {
-                  productCart.oldPrice = 129.00;
-                }
+              const productId = rawProduct?.documentId || rawProduct?.id || productAttrs.documentId || productAttrs.id || 
+                                rawVariant?.documentId || rawVariant?.id || variantAttrs.documentId || variantAttrs.id;
+              
+              // Skip items without product or variant data
+              if (!productId) {
+                return null;
               }
-              
-              return productCart;
-              } catch (error) {
-                return null; // Skip this item if there's an error
-              }
-            })
-            // Filter out null entries (invalid items)
-            .filter(item => item !== null);
             
-            // Final check for Redezyyyy Shorts product
-            const redezyyyyProduct = backendCarts.find(product => 
-              product.title && product.title.includes("Redezyyyy"));
-            if (redezyyyyProduct) {
-              if (!redezyyyyProduct.oldPrice) {
-                redezyyyyProduct.oldPrice = 129.99;
+            // Parse variant information if available
+            let variantInfo = null;
+            if (rawCartItem.variantInfo) {
+              try {
+                // Check if variantInfo is already an object (not a string)
+                if (typeof rawCartItem.variantInfo === 'object' && rawCartItem.variantInfo !== null) {
+                  variantInfo = rawCartItem.variantInfo;
+                } else if (typeof rawCartItem.variantInfo === 'string') {
+                  // Only try to parse if it's a string and not "[object Object]"
+                  if (rawCartItem.variantInfo !== "[object Object]" && rawCartItem.variantInfo.trim() !== "") {
+                    variantInfo = JSON.parse(rawCartItem.variantInfo);
+                  } else {
+                    variantInfo = null;
+                  }
+                }
+              } catch (parseError) {
+                variantInfo = null;
+              }
+            }
+
+            if (!variantInfo && rawVariant) {
+              variantInfo = {
+                isVariant: true,
+                variantId: rawVariant.documentId || rawVariant.id || variantAttrs.documentId || variantAttrs.id,
+                documentId: rawVariant.documentId || rawVariant.id || variantAttrs.documentId || variantAttrs.id,
+                title: variantAttrs.title || variantAttrs.name
+              };
+            }
+
+            let cartItemId = productAttrs.documentId || productId;
+            let title = productAttrs.title || productAttrs.name || variantAttrs.title || variantAttrs.name || "Product Item";
+            let imgSrc = getBestImageUrl(variantAttrs.imgSrc || productAttrs.imgSrc, 'medium') || '/logo.png';
+            
+            if (variantInfo) {
+              // Reconstruct the variant-specific cart item ID using documentId
+              if (variantInfo.isVariant && (variantInfo.documentId || variantInfo.variantId)) {
+                const variantIdentifier = variantInfo.documentId || variantInfo.variantId;
+                cartItemId = `${productAttrs.documentId || productId}-variant-${variantIdentifier}`;
+              }
+              
+              // Use variant-specific title and image
+              if (variantInfo.title) {
+                title = variantInfo.title;
+              }
+              
+              if (variantInfo.imgSrcObject) {
+                imgSrc = getBestImageUrl(variantInfo.imgSrcObject, 'medium');
+              } else if (variantInfo.imgSrc) {
+                if (typeof variantInfo.imgSrc === 'string' && variantInfo.imgSrc.startsWith('http')) {
+                  imgSrc = variantInfo.imgSrc;
+                } else {
+                  imgSrc = getBestImageUrl(variantInfo.imgSrc, 'medium');
+                }
+              }
+            }
+
+            // Add size information to cart item ID to match the format used when adding products
+            const cartItemSize = rawCartItem.size || cartItem.size;
+            if (cartItemSize) {
+              cartItemId = `${cartItemId}-size-${cartItemSize}`;
+            }
+            
+            const fallbackProduct = allProducts.find(p => p.documentId === (productAttrs.documentId || productId) || p.id === productId || p.id === productAttrs.id) || {};
+            let rawPrice = variantAttrs.price || productAttrs.price || fallbackProduct.price || 0;
+            let rawOldPrice = productAttrs.oldPrice || variantAttrs.oldPrice || fallbackProduct.oldPrice || null;
+
+            const productCart = {
+              id: cartItemId, // Use variant and size-specific ID
+              baseProductId: productAttrs.documentId || productId, // Keep reference to base product documentId
+              cartId: cartItem.id,
+              cartDocumentId: cartItem.documentId || rawCartItem.documentId,
+              documentId: productAttrs.documentId || productId,
+              title: title,
+              price: parseFloat(rawPrice),
+              oldPrice: rawOldPrice ? parseFloat(rawOldPrice) : null,
+              quantity: rawCartItem.quantity || cartItem.quantity || 1,
+              colors: productAttrs.colors || fallbackProduct.colors || [],
+              sizes: productAttrs.sizes || fallbackProduct.sizes || [],
+              selectedSize: cartItemSize || null, // Include selected size from backend
+              imgSrc: imgSrc,
+              variantInfo: variantInfo, // Include variant info
+              isSelected: (rawCartItem.isSelected !== undefined && rawCartItem.isSelected !== null) 
+                ? Boolean(rawCartItem.isSelected) 
+                : ((cartItem.isSelected !== undefined && cartItem.isSelected !== null) ? Boolean(cartItem.isSelected) : true)
+            };
+            
+            // Cart item processed successfully
+            
+            // Special handling for Redezyyyy Shorts
+            if (productCart.title && productCart.title.includes("Redezyyyy")) {
+              if (!productCart.oldPrice) {
+                productCart.oldPrice = 129.00;
               }
             }
             
-            // Merge with local optimistic items that are still syncing (don't have cartDocumentId yet)
-            setCartProducts(prev => {
-              const unsyncedItems = prev.filter(localItem => 
-                !localItem.cartDocumentId && 
-                !backendCarts.some(backendItem => backendItem.id === localItem.id)
-              );
-              return [...backendCarts, ...unsyncedItems];
-            });
-            
-            // Sync selectedCartItems state from backend relies
-            const backendSelectionMap = {};
-            backendCarts.forEach(item => {
-              backendSelectionMap[item.id] = (item.isSelected !== undefined && item.isSelected !== null) ? Boolean(item.isSelected) : true;
-            });
-            setSelectedCartItems(backendSelectionMap);
-            
-            // Remove image preloading to prevent interference with initial display
-            // Images will load naturally through the Next.js Image component
-            
-          } else {
-            setCartProducts([]);
+            return productCart;
+            } catch (error) {
+              return null; // Skip this item if there's an error
+            }
+          })
+          // Filter out null entries (invalid items)
+          .filter(item => item !== null);
+          
+          // Final check for Redezyyyy Shorts product
+          const redezyyyyProduct = backendCarts.find(product => 
+            product.title && product.title.includes("Redezyyyy"));
+          if (redezyyyyProduct) {
+            if (!redezyyyyProduct.oldPrice) {
+              redezyyyyProduct.oldPrice = 129.99;
+            }
           }
+          
+          // Merge with local optimistic items that are still syncing (don't have cartDocumentId yet)
+          setCartProducts(prev => {
+            const unsyncedItems = prev.filter(localItem => 
+              !localItem.cartDocumentId && 
+              !backendCarts.some(backendItem => backendItem.id === localItem.id)
+            );
+            return [...backendCarts, ...unsyncedItems];
+          });
+          
+          // Sync selectedCartItems state safely preserving local selections
+          setSelectedCartItems(prev => {
+            const newMap = { ...prev };
+            backendCarts.forEach(item => {
+              newMap[item.id] = (item.isSelected !== undefined && item.isSelected !== null) ? Boolean(item.isSelected) : true;
+            });
+            return newMap;
+          });
         } catch (error) {
-          // Set empty cart on error to avoid UI issues
-          setCartProducts([]);
+          console.error("Error loading cart from backend:", error);
         } finally {
           // Always set loading to false and mark as loaded once
           setIsCartLoading(false);
