@@ -433,7 +433,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
       product_code: activeVariant.product_code // Include variant's product code
     } : null;
 
-    addProductToCart(uniqueCartId, quantity, true, variantInfo, selectedSize);
+    addProductToCart(uniqueCartId, quantity, true, variantInfo, selectedSize, safeProduct);
   };
 
   const handleShare = async (e) => {

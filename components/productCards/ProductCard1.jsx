@@ -246,7 +246,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0, onRem
       });
     }
 
-    addProductToCart(uniqueCartId, 1, true, variantInfo, selectedSize);
+    addProductToCart(uniqueCartId, 1, true, variantInfo, selectedSize, safeProduct);
   };
 
   const handleCompareClick = (id) => {

@@ -59,6 +59,9 @@ test_strapi_populate.js
 # vercel
 .vercel
 
+# scratch files
+/scratch/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

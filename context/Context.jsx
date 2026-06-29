@@ -5,7 +5,7 @@ import { openWistlistModal } from "@/utils/openWishlist";
 import { useSession } from "next-auth/react";
 import { API_URL, STRAPI_API_TOKEN, CARTS_API, USER_CARTS_API, PRODUCT_BY_DOCUMENT_ID_API } from "@/utils/urls";
 import { fetchDataFromApi, createData, updateData, deleteData } from "@/utils/api";
-import { getImageUrl } from "@/utils/imageUtils";
+import { getImageUrl, getBestImageUrl } from "@/utils/imageUtils";
 import { validateCartStock } from "@/utils/stockValidation";
 import { useStockNotifications } from "@/components/common/StockNotification";
 import { 
@@ -1287,10 +1287,16 @@ export default function Context({ children }) {
                   return null; // Skip this item
                 }
                 
-                const productVariantRelation = cartItem.product_variant || cartItem.productVariant;
-                const baseProduct = cartItem.product || productVariantRelation?.product || productVariantRelation || {};
-                const productAttrs = baseProduct;
-                const productId = baseProduct.id || baseProduct.documentId || productVariantRelation?.id || productVariantRelation?.documentId;
+                // Safely handle Strapi v4 (nested attributes) vs Strapi v5 (flat) formats
+                const rawCartItem = cartItem.attributes || cartItem;
+                const rawProduct = rawCartItem.product?.data || rawCartItem.product;
+                const rawVariant = rawCartItem.product_variant?.data || rawCartItem.product_variant || rawCartItem.productVariant?.data || rawCartItem.productVariant;
+                
+                const productAttrs = rawProduct?.attributes || rawProduct || {};
+                const variantAttrs = rawVariant?.attributes || rawVariant || {};
+                
+                const productId = rawProduct?.documentId || rawProduct?.id || productAttrs.documentId || productAttrs.id || 
+                                  rawVariant?.documentId || rawVariant?.id || variantAttrs.documentId || variantAttrs.id;
                 
                 // Skip items without product or variant data
                 if (!productId) {
@@ -1299,15 +1305,15 @@ export default function Context({ children }) {
               
               // Parse variant information if available
               let variantInfo = null;
-              if (cartItem.variantInfo) {
+              if (rawCartItem.variantInfo) {
                 try {
                   // Check if variantInfo is already an object (not a string)
-                  if (typeof cartItem.variantInfo === 'object' && cartItem.variantInfo !== null) {
-                    variantInfo = cartItem.variantInfo;
-                  } else if (typeof cartItem.variantInfo === 'string') {
+                  if (typeof rawCartItem.variantInfo === 'object' && rawCartItem.variantInfo !== null) {
+                    variantInfo = rawCartItem.variantInfo;
+                  } else if (typeof rawCartItem.variantInfo === 'string') {
                     // Only try to parse if it's a string and not "[object Object]"
-                    if (cartItem.variantInfo !== "[object Object]" && cartItem.variantInfo.trim() !== "") {
-                      variantInfo = JSON.parse(cartItem.variantInfo);
+                    if (rawCartItem.variantInfo !== "[object Object]" && rawCartItem.variantInfo.trim() !== "") {
+                      variantInfo = JSON.parse(rawCartItem.variantInfo);
                     } else {
                       variantInfo = null;
                     }
@@ -1317,18 +1323,18 @@ export default function Context({ children }) {
                 }
               }
 
-              if (!variantInfo && productVariantRelation) {
+              if (!variantInfo && rawVariant) {
                 variantInfo = {
                   isVariant: true,
-                  variantId: productVariantRelation.documentId || productVariantRelation.id,
-                  documentId: productVariantRelation.documentId || productVariantRelation.id,
-                  title: productVariantRelation.title
+                  variantId: rawVariant.documentId || rawVariant.id || variantAttrs.documentId || variantAttrs.id,
+                  documentId: rawVariant.documentId || rawVariant.id || variantAttrs.documentId || variantAttrs.id,
+                  title: variantAttrs.title || variantAttrs.name
                 };
               }
 
               let cartItemId = productAttrs.documentId || productId;
-              let title = productAttrs.title || productVariantRelation?.title || "Product Item";
-              let imgSrc = getOptimizedImageUrl(productVariantRelation?.imgSrc || productAttrs.imgSrc) || '/logo.png';
+              let title = productAttrs.title || productAttrs.name || variantAttrs.title || variantAttrs.name || "Product Item";
+              let imgSrc = getBestImageUrl(variantAttrs.imgSrc || productAttrs.imgSrc, 'medium') || '/logo.png';
               
               if (variantInfo) {
                 // Reconstruct the variant-specific cart item ID using documentId
@@ -1343,41 +1349,44 @@ export default function Context({ children }) {
                 }
                 
                 if (variantInfo.imgSrcObject) {
-                  imgSrc = getOptimizedImageUrl(variantInfo.imgSrcObject);
+                  imgSrc = getBestImageUrl(variantInfo.imgSrcObject, 'medium');
                 } else if (variantInfo.imgSrc) {
                   if (typeof variantInfo.imgSrc === 'string' && variantInfo.imgSrc.startsWith('http')) {
                     imgSrc = variantInfo.imgSrc;
                   } else {
-                    imgSrc = getOptimizedImageUrl(variantInfo.imgSrc);
+                    imgSrc = getBestImageUrl(variantInfo.imgSrc, 'medium');
                   }
                 }
               }
 
               // Add size information to cart item ID to match the format used when adding products
-              if (cartItem.size) {
-                cartItemId = `${cartItemId}-size-${cartItem.size}`;
+              const cartItemSize = rawCartItem.size || cartItem.size;
+              if (cartItemSize) {
+                cartItemId = `${cartItemId}-size-${cartItemSize}`;
               }
               
               const fallbackProduct = allProducts.find(p => p.documentId === (productAttrs.documentId || productId) || p.id === productId || p.id === productAttrs.id) || {};
-              let rawPrice = productVariantRelation?.price || productAttrs.price || fallbackProduct.price || 0;
-              let rawOldPrice = productAttrs.oldPrice || productVariantRelation?.oldPrice || fallbackProduct.oldPrice || null;
+              let rawPrice = variantAttrs.price || productAttrs.price || fallbackProduct.price || 0;
+              let rawOldPrice = productAttrs.oldPrice || variantAttrs.oldPrice || fallbackProduct.oldPrice || null;
 
               const productCart = {
                 id: cartItemId, // Use variant and size-specific ID
                 baseProductId: productAttrs.documentId || productId, // Keep reference to base product documentId
                 cartId: cartItem.id,
-                cartDocumentId: cartItem.documentId,
+                cartDocumentId: cartItem.documentId || rawCartItem.documentId,
                 documentId: productAttrs.documentId || productId,
                 title: title,
                 price: parseFloat(rawPrice),
                 oldPrice: rawOldPrice ? parseFloat(rawOldPrice) : null,
-                quantity: cartItem.quantity || 1,
+                quantity: rawCartItem.quantity || cartItem.quantity || 1,
                 colors: productAttrs.colors || fallbackProduct.colors || [],
                 sizes: productAttrs.sizes || fallbackProduct.sizes || [],
-                selectedSize: cartItem.size || null, // Include selected size from backend
+                selectedSize: cartItemSize || null, // Include selected size from backend
                 imgSrc: imgSrc,
                 variantInfo: variantInfo, // Include variant info
-                isSelected: (cartItem.isSelected !== undefined && cartItem.isSelected !== null) ? Boolean(cartItem.isSelected) : true
+                isSelected: (rawCartItem.isSelected !== undefined && rawCartItem.isSelected !== null) 
+                  ? Boolean(rawCartItem.isSelected) 
+                  : ((cartItem.isSelected !== undefined && cartItem.isSelected !== null) ? Boolean(cartItem.isSelected) : true)
               };
               
               // Cart item processed successfully
