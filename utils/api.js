@@ -161,8 +161,12 @@ export const fetchDataFromApi = async (endpoint) => {
     
     // Make sure the endpoint is properly encoded for any special characters
     let processedEndpoint = endpoint;
-    if (endpoint.includes('?')) {
-      const [basePath, queryString] = endpoint.split('?');
+    if (endpoint.startsWith('/api/carts') && !endpoint.includes('status=') && !endpoint.includes('publicationState=')) {
+      const separator = endpoint.includes('?') ? '&' : '?';
+      processedEndpoint = `${endpoint}${separator}status=draft&publicationState=preview`;
+    }
+    if (processedEndpoint.includes('?')) {
+      const [basePath, queryString] = processedEndpoint.split('?');
       const params = new URLSearchParams(queryString);
       processedEndpoint = `${basePath}?${params.toString()}`;
     }
@@ -300,8 +304,19 @@ export const deleteData = async (endpoint) => {
   
   try {
     // Send the delete request
-    const fetchUrl = getFetchUrl(cleanEndpoint);
-    const res = await fetch(fetchUrl, options);
+    let fetchUrl = getFetchUrl(cleanEndpoint);
+    let res = await fetch(fetchUrl, options);
+    
+    // Fallback try with status=draft for Strapi 5 draft entries if 404
+    if (!res.ok && res.status === 404 && cleanEndpoint.includes('/api/carts')) {
+      const separator = cleanEndpoint.includes('?') ? '&' : '?';
+      const draftEndpoint = `${cleanEndpoint}${separator}status=draft`;
+      const draftFetchUrl = getFetchUrl(draftEndpoint);
+      const draftRes = await fetch(draftFetchUrl, options);
+      if (draftRes.ok) {
+        res = draftRes;
+      }
+    }
     
     // Get response text if possible
     let responseText;
@@ -314,7 +329,7 @@ export const deleteData = async (endpoint) => {
     // Try to parse response as JSON
     let responseData;
     try {
-      if (responseText && responseText.length > 0) {
+      if (responseText && responseText.trim().length > 0) {
         responseData = JSON.parse(responseText);
       }
     } catch (parseError) {

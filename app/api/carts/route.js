@@ -8,6 +8,12 @@ const STRAPI_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || process.env.STR
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
+    if (!searchParams.has('status')) {
+      searchParams.set('status', 'draft');
+    }
+    if (!searchParams.has('publicationState')) {
+      searchParams.set('publicationState', 'preview');
+    }
     const queryString = searchParams.toString();
     const apiUrl = `${getStrapiUrl()}/api/carts${queryString ? `?${queryString}` : ''}`;
 
