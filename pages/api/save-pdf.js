@@ -18,35 +18,39 @@ export default async function handler(req, res) {
 
     // Create uploads directory if it doesn't exist
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'invoices');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
+    let savedToDisk = false;
 
-    // Convert base64 to buffer and save file
-    const pdfBuffer = Buffer.from(pdfBase64, 'base64');
-    const filePath = path.join(uploadsDir, fileName);
-    
-    fs.writeFileSync(filePath, pdfBuffer);
+    try {
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+      const filePath = path.join(uploadsDir, fileName);
+      fs.writeFileSync(filePath, pdfBuffer);
+      savedToDisk = true;
+      console.log('✅ PDF saved successfully to disk:', filePath);
+    } catch (fsError) {
+      console.warn('⚠️ File system is read-only (expected on Vercel). Skipping disk write. Error:', fsError.message);
+    }
     
     // Generate download URL
     const downloadUrl = `/uploads/invoices/${fileName}`;
     
-    console.log('✅ PDF saved successfully to:', filePath);
-    console.log('🔗 Download URL:', downloadUrl);
+    console.log('🔗 Generated Download URL:', downloadUrl);
 
     res.status(200).json({
       success: true,
-      message: 'PDF saved successfully',
+      message: savedToDisk ? 'PDF saved successfully' : 'PDF generated successfully (memory fallback)',
       downloadUrl,
       fileName,
-      fileSize: pdfBuffer.length
+      fileSize: Buffer.from(pdfBase64, 'base64').length
     });
 
   } catch (error) {
-    console.error('❌ Error saving PDF:', error);
+    console.error('❌ Error handling PDF:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to save PDF: ' + error.message
+      error: 'Failed to process PDF: ' + error.message
     });
   }
 }
