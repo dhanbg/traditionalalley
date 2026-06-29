@@ -826,14 +826,17 @@ const OrderManagement = () => {
       const exchangeRate = isNepal ? await getExchangeRate() : 1;
 
       products.forEach(item => {
-        let price = item.price || 0;
-        const quantity = item.quantity || 1;
-        let total = item.subtotal || (price * quantity);
+        let price = item.pricing?.currentPrice ?? item.price ?? 0;
+        const quantity = item.pricing?.quantity ?? item.quantity ?? 1;
+        let total = item.pricing?.finalPrice ?? item.subtotal ?? (price * quantity);
 
         // Convert USD prices to NPR for Nepal orders
-        if (isNepal) {
+        if (isNepal && !item.pricing) {
           price = price * exchangeRate;
           total = total * exchangeRate;
+        } else if (isNepal && item.pricing) {
+          price = price * exchangeRate;
+          total = price * quantity;
         }
 
         console.log('Processing item:', { item, originalPrice: item.price, convertedPrice: price, quantity, total, isNepal, exchangeRate });
@@ -874,8 +877,8 @@ const OrderManagement = () => {
 
       // Calculate values for breakdown
       const originalSubtotal = products.reduce((sum, item) => {
-        const price = item.price || 0;
-        const quantity = item.quantity || 1;
+        const price = item.pricing?.currentPrice ?? item.price ?? 0;
+        const quantity = item.pricing?.quantity ?? item.quantity ?? 1;
         return sum + (price * quantity);
       }, 0);
 
@@ -1236,14 +1239,17 @@ const OrderManagement = () => {
       const exchangeRate = isNepal ? await getExchangeRate() : 1;
 
       products.forEach((item) => {
-        let price = item.price || 0;
-        const quantity = item.quantity || 1;
-        let total = item.subtotal || (price * quantity);
+        let price = item.pricing?.currentPrice ?? item.price ?? 0;
+        const quantity = item.pricing?.quantity ?? item.quantity ?? 1;
+        let total = item.pricing?.finalPrice ?? item.subtotal ?? (price * quantity);
 
         // Convert USD prices to NPR for Nepal orders
-        if (isNepal) {
+        if (isNepal && !item.pricing) {
           price = price * exchangeRate;
           total = total * exchangeRate;
+        } else if (isNepal && item.pricing) {
+          price = price * exchangeRate;
+          total = price * quantity;
         }
 
         tableData.push([
@@ -1284,8 +1290,8 @@ const OrderManagement = () => {
 
       // Calculate values for breakdown
       const originalSubtotal = products.reduce((sum, item) => {
-        const price = item.price || 0;
-        const quantity = item.quantity || 1;
+        const price = item.pricing?.currentPrice ?? item.price ?? 0;
+        const quantity = item.pricing?.quantity ?? item.quantity ?? 1;
         return sum + (price * quantity);
       }, 0);
 

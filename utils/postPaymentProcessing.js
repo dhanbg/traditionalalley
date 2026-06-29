@@ -207,11 +207,15 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
     let calculatedSubtotal = 0;
 
     products.forEach(item => {
-      const price = item.price || 0;
-      const quantity = item.quantity || 1;
-      let lineTotal = price * quantity;
-      if (isNepal) {
+      const price = item.pricing?.currentPrice ?? item.price ?? 0;
+      const quantity = item.pricing?.quantity ?? item.quantity ?? 1;
+      let lineTotal = item.pricing?.finalPrice ?? item.subtotal ?? (price * quantity);
+      
+      if (isNepal && !item.pricing) {
         lineTotal = lineTotal * exchangeRate;
+      } else if (isNepal && item.pricing) {
+        // Nested pricing uses original USD prices inside nested object, convert to NPR
+        lineTotal = item.pricing.currentPrice * quantity * exchangeRate;
       }
       calculatedSubtotal += lineTotal;
 
