@@ -52,8 +52,8 @@ export default function WorldCupCountdown() {
             <span className="limited-tag">EXCLUSIVE COUTURE</span>
             <h2 className="title">
               OFFICIAL CHAMPIONSHIP RELEASE{' '}
-              <Image 
-                src="/images/championship_ball.png" 
+              <img 
+                src="/images/championship_ball.png?v=3" 
                 alt="Championship Ball" 
                 width={40} 
                 height={40} 

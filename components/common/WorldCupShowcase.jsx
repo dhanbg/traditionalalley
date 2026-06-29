@@ -13,7 +13,7 @@ import "swiper/css/effect-coverflow";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
 import { Autoplay, EffectCoverflow, Navigation, Pagination } from "swiper/modules";
-import { ShoppingBag, Sparkles, Eye, Trophy, Check } from "lucide-react";
+import { ShoppingBag, Sparkles, Check } from "lucide-react";
 
 const WORLDCUP_PRODUCTS = [
   {
@@ -347,81 +347,71 @@ export default function WorldCupShowcase() {
 
                 return (
                   <SwiperSlide key={prod.id} className="wc-swiper-slide">
-                    <div 
-                      className={`wc-card-inner ${isCurrent ? 'is-active-card' : ''}`}
-                      style={{
-                        '--accent': prod.accentColor,
-                        '--badge-bg': prod.badgeBg,
-                        '--badge-color': prod.badgeColor
-                      }}
-                    >
-                      {/* Floating Country Badge */}
-                      <div className="card-top-header">
-                        <span className="card-country-badge">
-                          <Trophy size={isMobile ? 11 : 12} className="trophy-icon" />
-                          {prod.country}
-                        </span>
-                        <span className="card-edition-tag">{prod.tag}</span>
-                      </div>
-
-                      {/* Product Image Stage */}
-                      <div className="card-media-stage">
-                        <Link href={prod.link} className="image-link-wrapper">
-                          <Image
-                            src={prod.image}
-                            alt={prod.title}
-                            width={500}
-                            height={500}
-                            className="slide-img main-slide-img"
-                            priority={idx < 3}
-                          />
-                          {prod.imgHover && (
+                    <div className="wc-slide-card-group">
+                      <div 
+                        className={`wc-card-inner ${isCurrent ? 'is-active-card' : ''}`}
+                        style={{
+                          '--accent': prod.accentColor,
+                          '--badge-bg': prod.badgeBg,
+                          '--badge-color': prod.badgeColor
+                        }}
+                      >
+                        {/* Product Image Stage */}
+                        <div className="card-media-stage">
+                          <Link href={prod.link} className="image-link-wrapper">
                             <Image
-                              src={prod.imgHover}
+                              src={prod.image}
                               alt={prod.title}
                               width={500}
                               height={500}
-                              className="slide-img hover-slide-img"
+                              className="slide-img main-slide-img"
+                              priority={idx < 3}
                             />
-                          )}
-                        </Link>
-                      </div>
-
-                      {/* Product Info & Action Footer */}
-                      <div className="card-details">
-                        <Link href={prod.link} className="title-link">
-                          <h3 className="card-product-title">{prod.title}</h3>
-                        </Link>
-                        
-                        <div className="price-status-row">
-                          <div className="price-box">
-                            <PriceDisplay price={prod.price} oldPrice={prod.oldPrice} size={isMobile ? "small" : "medium"} />
-                          </div>
-                        </div>
-
-                        <div className="card-actions">
-                          <button
-                            onClick={(e) => handleAddToCart(e, prod)}
-                            className={`modern-cart-btn ${isAdded ? 'added' : ''}`}
-                          >
-                            {isAdded ? (
-                              <>
-                                <Check size={isMobile ? 13 : 16} className="btn-icon" />
-                                <span>{isMobile ? "Added" : "Added to Bag"}</span>
-                              </>
-                            ) : (
-                              <>
-                                <ShoppingBag size={isMobile ? 13 : 16} className="btn-icon" />
-                                <span>Quick Add</span>
-                              </>
+                            {prod.imgHover && (
+                              <Image
+                                src={prod.imgHover}
+                                alt={prod.title}
+                                width={500}
+                                height={500}
+                                className="slide-img hover-slide-img"
+                              />
                             )}
-                          </button>
-
-                          <Link href={prod.link} className="modern-view-btn">
-                            <Eye size={16} />
-                            <span>View</span>
                           </Link>
                         </div>
+
+                        {/* Product Info */}
+                        <div className="card-details">
+                          <Link href={prod.link} className="title-link">
+                            <h3 className="card-product-title">{prod.title}</h3>
+                          </Link>
+                          
+                          <div className="price-status-row">
+                            <div className="price-box">
+                              <PriceDisplay price={prod.price} oldPrice={prod.oldPrice} size={isMobile ? "small" : "medium"} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Quick Add Button Outside Box */}
+                      <div className="outside-action-bar">
+                        <button
+                          onClick={(e) => handleAddToCart(e, prod)}
+                          className={`modern-cart-btn-outside ${isAdded ? 'added' : ''}`}
+                          style={{ '--accent': prod.accentColor }}
+                        >
+                          {isAdded ? (
+                            <>
+                              <Check size={isMobile ? 13 : 16} className="btn-icon" />
+                              <span>{isMobile ? "Added" : "Added to Bag"}</span>
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingBag size={isMobile ? 13 : 16} className="btn-icon" />
+                              <span>Quick Add</span>
+                            </>
+                          )}
+                        </button>
                       </div>
                     </div>
                   </SwiperSlide>
@@ -621,6 +611,13 @@ export default function WorldCupShowcase() {
           transition: transform 0.4s ease;
         }
 
+        .wc-slide-card-group {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          width: 100%;
+        }
+
         .wc-card-inner {
           background: rgba(255, 255, 255, 0.95);
           border-radius: 24px;
@@ -648,47 +645,6 @@ export default function WorldCupShowcase() {
 
         :global(html.dark) .wc-card-inner.is-active-card {
           box-shadow: 0 20px 50px var(--accent) 40, 0 10px 30px rgba(0,0,0,0.6);
-        }
-
-        /* Card Header */
-        .card-top-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 15px;
-          position: relative;
-          z-index: 5;
-        }
-
-        .card-country-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 5px 12px;
-          border-radius: 6px;
-          font-size: 0.75rem;
-          font-weight: 850;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          background: var(--badge-bg) !important;
-          color: var(--badge-color) !important;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-        }
-
-        .trophy-icon {
-          color: currentColor;
-        }
-
-        .card-edition-tag {
-          font-size: 0.7rem;
-          font-weight: 700;
-          color: #6b7280;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-        }
-
-        :global(html.dark) .card-edition-tag {
-          color: #9ca3af;
         }
 
         /* Image Stage */
@@ -743,7 +699,7 @@ export default function WorldCupShowcase() {
         .card-details {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 10px;
         }
 
         .title-link {
@@ -778,80 +734,47 @@ export default function WorldCupShowcase() {
           justify-content: space-between;
         }
 
-        .card-actions {
-          display: grid;
-          grid-template-columns: 1fr auto;
-          gap: 10px;
-          margin-top: 5px;
+        /* ───── Quick Add Outside Box ───── */
+        .outside-action-bar {
+          width: 100%;
+          padding: 0 2px;
         }
 
-        .modern-cart-btn {
+        .modern-cart-btn-outside {
+          width: 100%;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
-          padding: 12px 18px;
+          padding: 13px 20px;
           border-radius: 50px;
-          border: none;
+          border: 1px solid rgba(0, 0, 0, 0.08);
           background: #111827;
           color: #ffffff;
-          font-size: 0.85rem;
+          font-size: 0.88rem;
           font-weight: 750;
-          letter-spacing: 0.03em;
+          letter-spacing: 0.04em;
           cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+          transition: all 0.35s cubic-bezier(0.165, 0.84, 0.44, 1);
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
         }
 
-        :global(html.dark) .modern-cart-btn {
+        :global(html.dark) .modern-cart-btn-outside {
           background: #ffffff;
           color: #111827;
+          border-color: rgba(255, 255, 255, 0.15);
         }
 
-        .modern-cart-btn:hover {
+        .modern-cart-btn-outside:hover {
           background: var(--accent);
           color: #ffffff;
           transform: translateY(-2px);
-          box-shadow: 0 6px 20px var(--accent) 50;
+          box-shadow: 0 8px 25px var(--accent) 50;
         }
 
-        .modern-cart-btn.added {
+        .modern-cart-btn-outside.added {
           background: #10b981 !important;
           color: #ffffff !important;
-        }
-
-        .modern-view-btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 46px;
-          height: 46px;
-          border-radius: 50%;
-          border: 1px solid rgba(0, 0, 0, 0.1);
-          background: transparent;
-          color: #4b5563;
-          text-decoration: none;
-          transition: all 0.3s ease;
-        }
-
-        :global(html.dark) .modern-view-btn {
-          border-color: rgba(255, 255, 255, 0.15);
-          color: #9ca3af;
-        }
-
-        .modern-view-btn span {
-          display: none;
-        }
-
-        .modern-view-btn:hover {
-          background: rgba(0, 0, 0, 0.05);
-          color: #111827;
-          transform: scale(1.05);
-        }
-
-        :global(html.dark) .modern-view-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: #ffffff;
         }
 
         /* Skeleton Loader */
@@ -918,25 +841,14 @@ export default function WorldCupShowcase() {
             width: 155px !important;
           }
 
+          .wc-slide-card-group {
+            gap: 8px;
+          }
+
           .wc-card-inner {
             padding: 10px 8px 12px 8px;
             border-radius: 16px;
             border-width: 1px;
-          }
-
-          .card-top-header {
-            margin-bottom: 8px;
-          }
-
-          .card-country-badge {
-            font-size: 0.62rem;
-            padding: 3px 8px;
-            gap: 4px;
-            border-radius: 5px;
-          }
-
-          .card-edition-tag {
-            display: none;
           }
 
           .card-media-stage {
@@ -946,7 +858,7 @@ export default function WorldCupShowcase() {
           }
 
           .card-details {
-            gap: 6px;
+            gap: 4px;
           }
 
           .card-product-title {
@@ -957,24 +869,14 @@ export default function WorldCupShowcase() {
           }
 
           .price-status-row {
-            margin-bottom: 4px;
+            margin-bottom: 2px;
           }
 
-          .card-actions {
-            display: block;
-            margin-top: 4px;
-          }
-
-          .modern-cart-btn {
-            width: 100%;
-            padding: 8px 6px;
+          .modern-cart-btn-outside {
+            padding: 9px 4px;
             font-size: 0.72rem;
             gap: 4px;
             border-radius: 25px;
-          }
-
-          .modern-view-btn {
-            display: none;
           }
         }
       `}</style>
