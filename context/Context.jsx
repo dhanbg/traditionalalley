@@ -707,7 +707,16 @@ export default function Context({ children }) {
     
     // Backend update function
     const updateBackend = async () => {
+      if (!user) return; // Exit immediately for guest users
+      
       try {
+        // Get user data for the current user
+        const userDataResponse = await fetchDataFromApi(`/api/user-data?filters[authUserId][$eq]=${user.id}`);
+        if (!userDataResponse?.data || userDataResponse.data.length === 0) return;
+        
+        const userData = userDataResponse.data[0];
+        const userDocumentId = userData.attributes?.documentId || userData.documentId;
+        
         // If we already have the cart document ID, use it directly
         if (matchingItem.cartDocumentId) {
           const updatePayload = {
@@ -718,58 +727,19 @@ export default function Context({ children }) {
           
           try {
             // Use the documentId in the URL instead of numeric ID
-            const updateResponse = await updateData(`/api/carts/${matchingItem.cartDocumentId}`, updatePayload);
+            await updateData(`/api/carts/${matchingItem.cartDocumentId}`, updatePayload);
             return;
           } catch (updateError) {
             // Continue to fallback methods
           }
         }
         
-        // Get all cart items to find the correct one
-        const cartResponse = await fetchDataFromApi(`/api/carts?populate=*`);
+        // Get user-specific cart items to find the correct one
+        const cartResponse = await fetchDataFromApi(
+          `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
+        );
         
         if (!cartResponse?.data?.length) {
-          return;
-        }
-        
-        // Find the matching cart item
-        let foundCartItem = null;
-        let cartDocumentId = null;
-        
-        // Try to match based on product ID or documentId AND user_datum
-        for (const cartItem of cartResponse.data) {
-          const productData = cartItem.product || cartItem.product_variant?.product || cartItem.product_variant || cartItem.productVariant || {};
-          if (!productData.id && !productData.documentId) continue;
-          
-          const productId = productData.id;
-          const productDocId = productData.documentId;
-          
-          // Check if this cart item matches the product we're looking for
-          const matchesProductId = productId == id;
-          const matchesDocumentId = productDocId && matchingItem.documentId && productDocId === matchingItem.documentId;
-          
-          // If we have the cartId stored, prioritize exact cart item match
-          if (matchingItem.cartId && cartItem.id == matchingItem.cartId) {
-            foundCartItem = cartItem;
-            cartDocumentId = cartItem.documentId;
-            break; // Exact match found, no need to look further
-          }
-          
-          // If we have the cartDocumentId stored, prioritize exact match
-          if (matchingItem.cartDocumentId && cartItem.documentId === matchingItem.cartDocumentId) {
-            foundCartItem = cartItem;
-            cartDocumentId = cartItem.documentId;
-            break; // Exact match found, no need to look further
-          }
-          
-          // Otherwise use product matching as a fallback
-          if ((matchesProductId || matchesDocumentId) && !foundCartItem) {
-            foundCartItem = cartItem;
-            cartDocumentId = cartItem.documentId;
-          }
-        }
-        
-        if (!foundCartItem || !cartDocumentId) {
           // Check if we should create a new item or just update local state
           if (matchingItem.cartId || matchingItem.cartDocumentId) {
             return;
@@ -781,11 +751,12 @@ export default function Context({ children }) {
             const productDocumentIdForBackend = matchingItem.baseProductId || matchingItem.documentId || matchingItem.id;
             const createPayload = {
               data: {
-                quantity: finalQuantity
+                quantity: finalQuantity,
+                user_datum: userDocumentId
               }
             };
             
-            // Find product by documentId to get the document ID for backend relation
+            // Find product by documentId to get the document ID for relation
             try {
               const productResponse = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${productDocumentIdForBackend}&populate=*`);
               if (productResponse?.data && productResponse.data.length > 0) {
@@ -807,24 +778,11 @@ export default function Context({ children }) {
               createPayload.data.size = matchingItem.selectedSize;
             }
             
-            // Add user_datum if available
-            if (user) {
-              // Get user data for the current user
-              const userDataResponse = await fetchDataFromApi(`/api/user-data?filters[authUserId][$eq]=${user.id}`);
-              
-              if (userDataResponse?.data && userDataResponse.data.length > 0) {
-                const userData = userDataResponse.data[0];
-                const userDocumentId = userData.attributes?.documentId || userData.documentId;
-                createPayload.data.user_datum = userDocumentId; // Use documentId instead of numeric ID
-                
-                // Also check if the user has a bag
-                const userBagResponse = await fetchDataFromApi(`/api/user-bags?filters[user_datum][documentId][$eq]=${userDocumentId}`);
-                
-                if (userBagResponse?.data && userBagResponse.data.length > 0) {
-                  const userBag = userBagResponse.data[0];
-                  createPayload.data.user_bag = userBag.documentId || userBag.id;
-                }
-              }
+            // Also check if the user has a bag
+            const userBagResponse = await fetchDataFromApi(`/api/user-bags?filters[user_datum][documentId][$eq]=${userDocumentId}`);
+            if (userBagResponse?.data && userBagResponse.data.length > 0) {
+              const userBag = userBagResponse.data[0];
+              createPayload.data.user_bag = userBag.documentId || userBag.id;
             }
             
             const createResponse = await createData("/api/carts", createPayload);
@@ -852,6 +810,47 @@ export default function Context({ children }) {
           return;
         }
         
+        // Find the matching cart item from user-specific items
+        let foundCartItem = null;
+        let cartDocumentId = null;
+        
+        // Try to match based on product ID or documentId AND user_datum
+        for (const cartItem of cartResponse.data) {
+          const productData = cartItem.product || cartItem.product_variant?.product || cartItem.product_variant || cartItem.productVariant || {};
+          if (!productData.id && !productData.documentId) continue;
+          
+          const productId = productData.id;
+          const productDocId = productData.documentId;
+          
+          // Check if this cart item matches the product we're looking for
+          const matchesProductId = productId == id;
+          const matchesDocumentId = productDocId && matchingItem.documentId && productDocId === matchingItem.documentId;
+          
+          // If we have the cartId stored, prioritize exact cart item match
+          if (matchingItem.cartId && cartItem.id == matchingItem.cartId) {
+            foundCartItem = cartItem;
+            cartDocumentId = cartItem.documentId;
+            break;
+          }
+          
+          // If we have the cartDocumentId stored, prioritize exact match
+          if (matchingItem.cartDocumentId && cartItem.documentId === matchingItem.cartDocumentId) {
+            foundCartItem = cartItem;
+            cartDocumentId = cartItem.documentId;
+            break;
+          }
+          
+          // Otherwise use product matching as a fallback
+          if ((matchesProductId || matchesDocumentId) && !foundCartItem) {
+            foundCartItem = cartItem;
+            cartDocumentId = cartItem.documentId;
+          }
+        }
+        
+        if (!foundCartItem || !cartDocumentId) {
+          return;
+        }
+        
         // Update the item using the document ID we found
         const updatePayload = {
           data: {
@@ -861,7 +860,7 @@ export default function Context({ children }) {
         
         try {
           // Use the documentId in the URL instead of numeric ID
-          const updateResponse = await updateData(`/api/carts/${cartDocumentId}`, updatePayload);
+          await updateData(`/api/carts/${cartDocumentId}`, updatePayload);
           
           // Store the cart document ID for future use
           setCartProducts(prev => prev.map(item => {
@@ -890,8 +889,6 @@ export default function Context({ children }) {
                 }
                 return item;
               }));
-            } else {
-              const errorText = await directResponse.text();
             }
           } catch (directError) {
             // All update attempts failed
@@ -1259,45 +1256,10 @@ export default function Context({ children }) {
           const userDataId = userData.id;
           const userDocumentId = userData.documentId || userData.attributes?.documentId;
           
-          // First, let's check what cart items exist in total
-          const allCartsResponse = await fetchDataFromApi(`/api/carts?populate[product][populate]=*&populate[product_variant][populate]=*`);
-          
           // Fetch user-specific carts from backend using documentId (more reliable than numeric ID)
           const cartResponse = await fetchDataFromApi(
             `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate[product][populate]=*&populate[product_variant][populate]=*`
           );
-          
-          // AUTO-FIX: If no cart items found for user, check for orphaned items and link them
-          if (cartResponse?.data?.length === 0 && allCartsResponse?.data?.length > 0) {
-            const orphanedCarts = allCartsResponse.data.filter(cart => !cart.user_datum?.id);
-            
-            if (orphanedCarts.length > 0) {
-              // Try to link orphaned carts to current user using documentIds
-              for (const orphanedCart of orphanedCarts) {
-                try {
-                  const linkPayload = {
-                    data: {
-                      user_datum: userDocumentId // Use documentId instead of numeric ID
-                    }
-                  };
-                  
-                  const linkResult = await updateData(`/api/carts/${orphanedCart.documentId}`, linkPayload);
-                } catch (linkError) {
-                  // Failed to link cart
-                }
-              }
-              
-              // Re-fetch cart data after linking
-              const updatedCartResponse = await fetchDataFromApi(
-                `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate[product][populate]=*&populate[product_variant][populate]=*`
-              );
-              
-              if (updatedCartResponse?.data?.length > 0) {
-                // Use the updated response
-                cartResponse.data = updatedCartResponse.data;
-              }
-            }
-          }
           
           const rawBackendData = cartResponse?.data && Array.isArray(cartResponse.data) ? cartResponse.data : [];
           
