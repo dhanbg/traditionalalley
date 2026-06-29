@@ -1539,137 +1539,99 @@ export default function Context({ children }) {
   // Function to remove item from cart (both frontend and backend)
   const removeFromCart = async (id, directCartDocumentId = null) => {
     try {
-      // Find the cart item before state updates
-      const cartItem = cartProducts.find(item => 
-        item.id == id || 
-        (directCartDocumentId && (item.cartDocumentId === directCartDocumentId || item.cartId == directCartDocumentId))
-      );
+      const validId = (id !== undefined && id !== null && id !== 'undefined') ? String(id) : null;
+      const validCartDocId = (directCartDocumentId !== undefined && directCartDocumentId !== null && directCartDocumentId !== 'undefined') ? String(directCartDocumentId) : null;
 
-      // Filter out ONLY the specific target item
-      setCartProducts(prev => prev.filter(item => {
-        if (item.id == id) return false;
-        if (directCartDocumentId && (item.cartDocumentId === directCartDocumentId || item.cartId == directCartDocumentId)) return false;
-        return true;
-      }));
+      if (!validId && !validCartDocId) {
+        return;
+      }
 
-      // Update selectedCartItems
-      setSelectedCartItems(prev => {
-        const newMap = { ...prev };
-        delete newMap[id];
-        if (cartItem?.id) delete newMap[cartItem.id];
-        return newMap;
+      let removedItem = null;
+
+      // 1. Single-item index removal for frontend state (guarantees exactly 1 item removed)
+      setCartProducts(prev => {
+        const targetIndex = prev.findIndex(item => {
+          if (validCartDocId && (String(item.cartDocumentId) === validCartDocId || String(item.cartId) === validCartDocId)) {
+            return true;
+          }
+          if (validId && String(item.id) === validId) {
+            return true;
+          }
+          return false;
+        });
+
+        if (targetIndex !== -1) {
+          removedItem = prev[targetIndex];
+          const updated = [...prev];
+          updated.splice(targetIndex, 1);
+          return updated;
+        }
+        return prev;
       });
 
-      // Keep Zustand store synchronized
-      useCartStore.getState().removeCartItem(id);
-      
-      if (!cartItem) {
-        if (directCartDocumentId) {
-          try {
-            await deleteData(`/api/carts/${directCartDocumentId}`);
-          } catch (e) {}
-        }
-        return;
-      }
-      
-      // If directCartDocumentId was provided directly (first priority)
-      if (directCartDocumentId) {
+      // 2. Cleanup selection state
+      setSelectedCartItems(prev => {
+        const next = { ...prev };
+        if (validId) delete next[validId];
+        if (removedItem?.id) delete next[removedItem.id];
+        return next;
+      });
+
+      // Synchronize Zustand store if present
+      if (validId) {
         try {
-          await deleteData(`/api/carts/${directCartDocumentId}`);
+          useCartStore.getState().removeCartItem(validId);
+        } catch (e) {}
+      }
+
+      // 3. Backend Deletion
+      const docIdToDelete = validCartDocId || removedItem?.cartDocumentId;
+      const numericIdToDelete = removedItem?.cartId;
+
+      if (docIdToDelete) {
+        try {
+          await deleteData(`/api/carts/${docIdToDelete}`);
           return;
-        } catch (directIdError) {
-          // If error mentions document ID not valid, try to delete by numeric ID as fallback
-          if (directIdError.message && directIdError.message.includes("not valid") && cartItem.cartId) {
+        } catch (err) {
+          if (numericIdToDelete) {
             try {
-              await deleteData(`/api/carts/${cartItem.cartId}`);
+              await deleteData(`/api/carts/${numericIdToDelete}`);
               return;
-            } catch (numericIdError) {
+            } catch (err2) {}
+          }
+        }
+      } else if (numericIdToDelete) {
+        try {
+          await deleteData(`/api/carts/${numericIdToDelete}`);
+          return;
+        } catch (err) {}
+      }
+
+      // 4. Fallback backend lookup if user is logged in and IDs were missing
+      if (user?.id) {
+        const currentUserData = await fetchDataFromApi(
+          `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`
+        );
+        if (currentUserData?.data?.length > 0) {
+          const userDocumentId = currentUserData.data[0].documentId || currentUserData.data[0].attributes?.documentId;
+          const cartResponse = await fetchDataFromApi(
+            `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
+          );
+          if (cartResponse?.data?.length > 0) {
+            const found = cartResponse.data.find(item => {
+              const p = item.product || {};
+              return (validId && (String(p.id) === validId || p.documentId === validId)) ||
+                     (validCartDocId && item.documentId === validCartDocId);
+            });
+            if (found) {
+              const targetDoc = found.documentId || found.id;
+              await deleteData(`/api/carts/${targetDoc}`);
             }
           }
         }
-      }
-      
-      // Try with cartDocumentId stored in the cart item object (second priority)
-      if (cartItem.cartDocumentId) {
-        try {
-          await deleteData(`/api/carts/${cartItem.cartDocumentId}`);
-          return;
-        } catch (cartDocumentIdError) {
-        }
-      }
-      
-      // Try with cartId stored in the product object (third priority)
-      if (cartItem.cartId) {
-        try {
-          // Try direct deletion by numeric ID
-          await deleteData(`/api/carts/${cartItem.cartId}`);
-          return;
-        } catch (cartIdError) {
-        }
-      }
-      
-      // If all direct approaches failed, get user-specific carts and find the one with matching product
-      // First, get the user's data to find their user_datum ID
-      const currentUserData = await fetchDataFromApi(
-        `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`
-      );
-
-      if (!currentUserData?.data || currentUserData.data.length === 0) {
-        return;
-      }
-
-      const userData = currentUserData.data[0];
-      const userDocumentId = userData.documentId || userData.attributes?.documentId;
-      
-      const cartResponse = await fetchDataFromApi(
-        `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
-      );
-      
-      if (cartResponse?.data?.length > 0) {
-        // Find the cart item that matches our product
-        let foundCartItem = null;
-        
-        for (const item of cartResponse.data) {
-          if (!item.product) continue;
-          
-          const productData = item.product;
-          
-          // Match by product ID, product documentId, or direct cart documentId
-          if (
-            productData.id == id ||
-            productData.documentId === id ||
-            (directCartDocumentId && item.documentId === directCartDocumentId)
-          ) {
-            foundCartItem = item;
-            break;
-          }
-        }
-        
-        if (foundCartItem) {
-          // We found the cart item - try to delete by documentId first if available
-          const cartDocumentId = foundCartItem.documentId;
-          
-          if (cartDocumentId) {
-            try {
-              await deleteData(`/api/carts/${cartDocumentId}`);
-              return;
-            } catch (documentIdError) {
-              // Continue to fallback method
-            }
-          }
-          
-          // Fallback to ID-based deletion
-          try {
-            await deleteData(`/api/carts/${foundCartItem.id}`);
-          } catch (idError) {
-          }
-        } else {
-        }
-    } else {
-        // No carts found in backend
       }
     } catch (error) {
-      // Error deleting cart item from backend
+      console.error("Error in removeFromCart:", error);
     }
   };
 

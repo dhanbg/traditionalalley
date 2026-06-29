@@ -62,20 +62,7 @@ export default function CartModal() {
   });
 
   const removeItem = (id, cartDocumentId) => {
-    // Find the item in the cart to confirm it exists before removing
-    const itemToRemove = displayProducts.find(item =>
-      item.id == id ||
-      (item.documentId === id) ||
-      (item.cartDocumentId === cartDocumentId)
-    );
-
-    if (itemToRemove) {
-      // Use the removeFromCart function from Context to handle backend deletion
-      // Context will update cartProducts state
-
-      // Use the removeFromCart function from Context to handle backend deletion
-      removeFromCart(id, cartDocumentId);
-    }
+    removeFromCart(id, cartDocumentId);
   };
 
   // Helper function to properly close the modal
