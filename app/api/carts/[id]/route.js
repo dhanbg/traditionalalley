@@ -9,24 +9,45 @@ export async function PUT(request, { params }) {
   const id = resolvedParams?.id;
   try {
     const body = await request.json();
-    const apiUrl = `${getStrapiUrl()}/api/carts/${id}`;
+    const candidateBases = Array.from(new Set([
+      getStrapiUrl(),
+      "http://strapi-alley-production:1337",
+      "http://82.25.105.70:1339",
+      "http://127.0.0.1:1337",
+      "http://localhost:1337"
+    ])).filter(url => url && !url.includes('traditionalalley.com.np'));
 
-    const response = await fetch(apiUrl, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${STRAPI_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
+    let response = null;
+    let lastErrorText = '';
 
-    if (!response.ok) {
-      const errorText = await response.text();
+    for (const base of candidateBases) {
+      try {
+        const apiUrl = `${base}/api/carts/${id}`;
+        let res = await fetch(apiUrl, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${STRAPI_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) {
+          response = res;
+          break;
+        } else {
+          lastErrorText = await res.text();
+        }
+      } catch (err) {
+        // network error trying base
+      }
+    }
+
+    if (!response) {
       return NextResponse.json({
         error: 'Failed to update cart item',
-        details: errorText,
-        status: response.status
-      }, { status: response.status });
+        details: lastErrorText,
+        status: 400
+      }, { status: 400 });
     }
 
     const text = await response.text();
@@ -41,36 +62,57 @@ export async function DELETE(request, { params }) {
   const resolvedParams = await params;
   const id = resolvedParams?.id;
   try {
-    let apiUrl = `${getStrapiUrl()}/api/carts/${id}`;
+    const candidateBases = Array.from(new Set([
+      getStrapiUrl(),
+      "http://strapi-alley-production:1337",
+      "http://82.25.105.70:1339",
+      "http://127.0.0.1:1337",
+      "http://localhost:1337"
+    ])).filter(url => url && !url.includes('traditionalalley.com.np'));
 
-    let response = await fetch(apiUrl, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${STRAPI_TOKEN}`,
-      },
-    });
+    let response = null;
+    let lastErrorText = '';
 
-    // Fallback try with ?status=draft for Strapi 5 draft entries if 404
-    if (!response.ok && response.status === 404) {
-      const draftUrl = `${getStrapiUrl()}/api/carts/${id}?status=draft`;
-      const draftResponse = await fetch(draftUrl, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${STRAPI_TOKEN}`,
-        },
-      });
-      if (draftResponse.ok) {
-        response = draftResponse;
+    for (const base of candidateBases) {
+      try {
+        const apiUrl = `${base}/api/carts/${id}`;
+        let res = await fetch(apiUrl, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${STRAPI_TOKEN}`,
+          },
+        });
+
+        if (!res.ok && res.status === 404) {
+          const draftUrl = `${base}/api/carts/${id}?status=draft`;
+          const draftRes = await fetch(draftUrl, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${STRAPI_TOKEN}`,
+            },
+          });
+          if (draftRes.ok || draftRes.status === 204) {
+            res = draftRes;
+          }
+        }
+
+        if (res.ok || res.status === 204) {
+          response = res;
+          break;
+        } else {
+          lastErrorText = await res.text();
+        }
+      } catch (err) {
+        // network error
       }
     }
 
-    if (!response.ok) {
-      const errorText = await response.text();
+    if (!response) {
       return NextResponse.json({
         error: 'Failed to delete cart item',
-        details: errorText,
-        status: response.status
-      }, { status: response.status });
+        details: lastErrorText,
+        status: 403
+      }, { status: 403 });
     }
 
     const text = await response.text();

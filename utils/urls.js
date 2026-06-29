@@ -12,10 +12,10 @@ export const getStrapiInternalUrl = () => {
   if (process.env.STRAPI_URL && process.env.STRAPI_URL !== "undefined") {
     return process.env.STRAPI_URL;
   }
-  if (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL !== "undefined") {
-    return process.env.NEXT_PUBLIC_API_URL;
+  if (process.env.NODE_ENV === 'production' || (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.includes('traditionalalley.com.np'))) {
+    return "http://82.25.105.70:1339";
   }
-  return "http://82.25.105.70:1339";
+  return "http://localhost:1337";
 };
 
 export const INTERNAL_API_URL = getStrapiInternalUrl();

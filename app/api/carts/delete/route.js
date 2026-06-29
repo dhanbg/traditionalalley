@@ -27,43 +27,66 @@ export async function POST(request) {
 
     console.log(`[cart-delete] Deleting cart item: ${id}`);
 
-    // Try standard DELETE first
-    let apiUrl = `${getStrapiUrl()}/api/carts/${id}`;
-    let response = await fetch(apiUrl, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${STRAPI_TOKEN}`,
-      },
-    });
+    const candidateBases = Array.from(new Set([
+      getStrapiUrl(),
+      "http://strapi-alley-production:1337",
+      "http://82.25.105.70:1339",
+      "http://127.0.0.1:1337",
+      "http://localhost:1337"
+    ])).filter(url => url && !url.includes('traditionalalley.com.np'));
 
-    console.log(`[cart-delete] DELETE ${apiUrl} -> ${response.status}`);
+    let response = null;
+    let lastErrorText = '';
 
-    // If 404, try with ?status=draft for Strapi 5 draft entries
-    if (!response.ok && response.status === 404) {
-      const draftUrl = `${getStrapiUrl()}/api/carts/${id}?status=draft`;
-      console.log(`[cart-delete] Retrying with draft status: ${draftUrl}`);
-      const draftResponse = await fetch(draftUrl, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${STRAPI_TOKEN}`,
-        },
-      });
-      console.log(`[cart-delete] Draft DELETE -> ${draftResponse.status}`);
-      if (draftResponse.ok || draftResponse.status === 204) {
-        response = draftResponse;
+    for (const base of candidateBases) {
+      try {
+        const apiUrl = `${base}/api/carts/${id}`;
+        console.log(`[cart-delete] Attempting DELETE ${apiUrl}`);
+        let res = await fetch(apiUrl, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${STRAPI_TOKEN}`,
+          },
+        });
+
+        console.log(`[cart-delete] DELETE ${apiUrl} -> ${res.status}`);
+
+        if (!res.ok && res.status === 404) {
+          const draftUrl = `${base}/api/carts/${id}?status=draft`;
+          console.log(`[cart-delete] Retrying draft status: ${draftUrl}`);
+          const draftRes = await fetch(draftUrl, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${STRAPI_TOKEN}`,
+            },
+          });
+          console.log(`[cart-delete] Draft DELETE -> ${draftRes.status}`);
+          if (draftRes.ok || draftRes.status === 204) {
+            res = draftRes;
+          }
+        }
+
+        if (res.ok || res.status === 204) {
+          response = res;
+          break;
+        } else {
+          lastErrorText = await res.text();
+          console.warn(`[cart-delete] ${base} returned status ${res.status}`);
+        }
+      } catch (err) {
+        console.warn(`[cart-delete] Network error trying ${base}: ${err.message}`);
       }
     }
 
-    if (!response.ok && response.status !== 204) {
-      const errorText = await response.text();
-      console.error(`[cart-delete] Failed: ${response.status} - ${errorText}`);
+    if (!response) {
+      console.error(`[cart-delete] All candidate endpoints failed. Last error: ${lastErrorText}`);
       return NextResponse.json(
         {
           error: 'Failed to delete cart item',
-          details: errorText,
-          status: response.status,
+          details: lastErrorText,
+          status: 403,
         },
-        { status: response.status }
+        { status: 403 }
       );
     }
 
