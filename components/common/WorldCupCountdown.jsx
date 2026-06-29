@@ -53,11 +53,12 @@ export default function WorldCupCountdown() {
             <h2 className="title">
               OFFICIAL CHAMPIONSHIP RELEASE{' '}
               <img 
-                src="/images/championship_ball.png?v=3" 
+                src="/images/championship_ball.png?v=4" 
                 alt="Championship Ball" 
-                width={40} 
-                height={40} 
+                width={26} 
+                height={26} 
                 className="small-title-icon" 
+                style={{ width: '26px', height: '26px', verticalAlign: 'middle', marginLeft: '8px', marginTop: '-4px' }}
               />
             </h2>
             <p className="description">
