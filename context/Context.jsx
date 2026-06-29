@@ -1546,9 +1546,18 @@ export default function Context({ children }) {
         return;
       }
 
-      let removedItem = null;
+      // 1. Synchronously find target item from current cartProducts state BEFORE updating state
+      const targetItem = cartProducts.find(item => {
+        if (validCartDocId && (String(item.cartDocumentId) === validCartDocId || String(item.cartId) === validCartDocId)) {
+          return true;
+        }
+        if (validId && String(item.id) === validId) {
+          return true;
+        }
+        return false;
+      });
 
-      // 1. Single-item index removal for frontend state (guarantees exactly 1 item removed)
+      // 2. Single-item index removal for frontend state (guarantees exactly 1 item removed)
       setCartProducts(prev => {
         const targetIndex = prev.findIndex(item => {
           if (validCartDocId && (String(item.cartDocumentId) === validCartDocId || String(item.cartId) === validCartDocId)) {
@@ -1561,7 +1570,6 @@ export default function Context({ children }) {
         });
 
         if (targetIndex !== -1) {
-          removedItem = prev[targetIndex];
           const updated = [...prev];
           updated.splice(targetIndex, 1);
           return updated;
@@ -1569,11 +1577,11 @@ export default function Context({ children }) {
         return prev;
       });
 
-      // 2. Cleanup selection state
+      // 3. Cleanup selection state
       setSelectedCartItems(prev => {
         const next = { ...prev };
         if (validId) delete next[validId];
-        if (removedItem?.id) delete next[removedItem.id];
+        if (targetItem?.id) delete next[targetItem.id];
         return next;
       });
 
@@ -1584,30 +1592,37 @@ export default function Context({ children }) {
         } catch (e) {}
       }
 
-      // 3. Backend Deletion
-      const docIdToDelete = validCartDocId || removedItem?.cartDocumentId;
-      const numericIdToDelete = removedItem?.cartId;
+      // 4. Backend Deletion in Strapi (Try documentId, numeric cartId, and fallbacks)
+      const docIdToDelete = validCartDocId || targetItem?.cartDocumentId;
+      const numericIdToDelete = targetItem?.cartId;
 
+      let deletionSuccessful = false;
+
+      // Try deleting by documentId first (Strapi v5)
       if (docIdToDelete) {
         try {
           await deleteData(`/api/carts/${docIdToDelete}`);
-          return;
+          deletionSuccessful = true;
         } catch (err) {
-          if (numericIdToDelete) {
-            try {
-              await deleteData(`/api/carts/${numericIdToDelete}`);
-              return;
-            } catch (err2) {}
-          }
+          console.warn(`⚠️ Could not delete cart item by documentId ${docIdToDelete}, trying numeric ID fallback...`);
         }
-      } else if (numericIdToDelete) {
-        try {
-          await deleteData(`/api/carts/${numericIdToDelete}`);
-          return;
-        } catch (err) {}
       }
 
-      // 4. Fallback backend lookup if user is logged in and IDs were missing
+      // If documentId deletion failed or was missing, try numeric cartId (Strapi v4)
+      if (!deletionSuccessful && numericIdToDelete) {
+        try {
+          await deleteData(`/api/carts/${numericIdToDelete}`);
+          deletionSuccessful = true;
+        } catch (err) {
+          console.warn(`⚠️ Could not delete cart item by numeric ID ${numericIdToDelete}...`);
+        }
+      }
+
+      if (deletionSuccessful) {
+        return;
+      }
+
+      // 5. Fallback backend lookup if user is logged in and direct deletion didn't succeed
       if (user?.id) {
         const currentUserData = await fetchDataFromApi(
           `/api/user-data?filters[authUserId][$eq]=${user.id}&populate=*`
@@ -1615,17 +1630,44 @@ export default function Context({ children }) {
         if (currentUserData?.data?.length > 0) {
           const userDocumentId = currentUserData.data[0].documentId || currentUserData.data[0].attributes?.documentId;
           const cartResponse = await fetchDataFromApi(
-            `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate=*`
+            `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate[product][populate]=*&populate[product_variant][populate]=*`
           );
           if (cartResponse?.data?.length > 0) {
             const found = cartResponse.data.find(item => {
-              const p = item.product || {};
-              return (validId && (String(p.id) === validId || p.documentId === validId)) ||
-                     (validCartDocId && item.documentId === validCartDocId);
+              const rawCartItem = item.attributes || item;
+              const productData = rawCartItem.product?.data || rawCartItem.product || {};
+              const productDocId = productData.documentId || productData.attributes?.documentId || productData.id;
+              
+              if (validCartDocId && (item.documentId === validCartDocId || rawCartItem.documentId === validCartDocId || String(item.id) === validCartDocId)) {
+                return true;
+              }
+              if (targetItem?.cartDocumentId && (item.documentId === targetItem.cartDocumentId || rawCartItem.documentId === targetItem.cartDocumentId)) {
+                return true;
+              }
+              if (targetItem?.cartId && (item.id == targetItem.cartId || rawCartItem.id == targetItem.cartId)) {
+                return true;
+              }
+              if (targetItem?.baseProductId && (productDocId === targetItem.baseProductId || productData.id == targetItem.baseProductId)) {
+                return true;
+              }
+              return false;
             });
+
             if (found) {
-              const targetDoc = found.documentId || found.id;
-              await deleteData(`/api/carts/${targetDoc}`);
+              const itemDocId = found.documentId || found.attributes?.documentId;
+              const itemId = found.id;
+              if (itemDocId) {
+                try {
+                  await deleteData(`/api/carts/${itemDocId}`);
+                  return;
+                } catch (e) {}
+              }
+              if (itemId) {
+                try {
+                  await deleteData(`/api/carts/${itemId}`);
+                  return;
+                } catch (e) {}
+              }
             }
           }
         }
