@@ -29,7 +29,8 @@ export async function PUT(request, { params }) {
       }, { status: response.status });
     }
 
-    const data = await response.json();
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : { success: true };
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
@@ -40,14 +41,28 @@ export async function DELETE(request, { params }) {
   const resolvedParams = await params;
   const id = resolvedParams?.id;
   try {
-    const apiUrl = `${getStrapiUrl()}/api/carts/${id}`;
+    let apiUrl = `${getStrapiUrl()}/api/carts/${id}`;
 
-    const response = await fetch(apiUrl, {
+    let response = await fetch(apiUrl, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${STRAPI_TOKEN}`,
       },
     });
+
+    // Fallback try with ?status=draft for Strapi 5 draft entries if 404
+    if (!response.ok && response.status === 404) {
+      const draftUrl = `${getStrapiUrl()}/api/carts/${id}?status=draft`;
+      const draftResponse = await fetch(draftUrl, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${STRAPI_TOKEN}`,
+        },
+      });
+      if (draftResponse.ok) {
+        response = draftResponse;
+      }
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -58,7 +73,16 @@ export async function DELETE(request, { params }) {
       }, { status: response.status });
     }
 
-    const data = await response.json();
+    const text = await response.text();
+    let data = { success: true };
+    if (text && text.trim().length > 0) {
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        data = { success: true, text };
+      }
+    }
+
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });

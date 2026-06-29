@@ -1630,7 +1630,7 @@ export default function Context({ children }) {
         if (currentUserData?.data?.length > 0) {
           const userDocumentId = currentUserData.data[0].documentId || currentUserData.data[0].attributes?.documentId;
           const cartResponse = await fetchDataFromApi(
-            `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&populate[product][populate]=*&populate[product_variant][populate]=*`
+            `/api/carts?filters[user_datum][documentId][$eq]=${userDocumentId}&status=draft&publicationState=preview&populate[product][populate]=*&populate[product_variant][populate]=*`
           );
           if (cartResponse?.data?.length > 0) {
             const found = cartResponse.data.find(item => {
