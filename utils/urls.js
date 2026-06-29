@@ -12,6 +12,9 @@ export const getStrapiInternalUrl = () => {
   if (process.env.STRAPI_URL && process.env.STRAPI_URL !== "undefined") {
     return process.env.STRAPI_URL;
   }
+  if (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL !== "undefined") {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
   return "http://82.25.105.70:1339";
 };
 
