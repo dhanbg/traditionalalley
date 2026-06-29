@@ -1539,27 +1539,36 @@ export default function Context({ children }) {
   // Function to remove item from cart (both frontend and backend)
   const removeFromCart = async (id, directCartDocumentId = null) => {
     try {
-      // First update the local state to remove the item
-      const updatedCart = cartProducts.filter(item => {
-        // Filter out the item with matching id (including variant IDs)
-        return item.id != id && 
-               // Also check document ID if available
-               (item.documentId !== id) && 
-               // Also ensure we don't have the same product with a different ID format
-               (item.cartDocumentId !== directCartDocumentId);
-      });
-      
-      // Update the UI immediately
-      setCartProducts(updatedCart);
-      
-      // Find the cart item in our state before removing it (for backend deletion)
+      // Find the cart item before state updates
       const cartItem = cartProducts.find(item => 
         item.id == id || 
-        (item.documentId === id) || 
-        (item.cartDocumentId === directCartDocumentId)
+        (directCartDocumentId && (item.cartDocumentId === directCartDocumentId || item.cartId == directCartDocumentId))
       );
+
+      // Filter out ONLY the specific target item
+      setCartProducts(prev => prev.filter(item => {
+        if (item.id == id) return false;
+        if (directCartDocumentId && (item.cartDocumentId === directCartDocumentId || item.cartId == directCartDocumentId)) return false;
+        return true;
+      }));
+
+      // Update selectedCartItems
+      setSelectedCartItems(prev => {
+        const newMap = { ...prev };
+        delete newMap[id];
+        if (cartItem?.id) delete newMap[cartItem.id];
+        return newMap;
+      });
+
+      // Keep Zustand store synchronized
+      useCartStore.getState().removeCartItem(id);
       
       if (!cartItem) {
+        if (directCartDocumentId) {
+          try {
+            await deleteData(`/api/carts/${directCartDocumentId}`);
+          } catch (e) {}
+        }
         return;
       }
       
