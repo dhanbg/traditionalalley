@@ -612,7 +612,25 @@ export default function Context({ children }) {
     }
 
     if (user?.id) {
-      syncCartMutation.mutate({ userId: user.id, cartItem: productToAdd });
+      syncCartMutation.mutate(
+        { userId: user.id, cartItem: productToAdd },
+        {
+          onSuccess: (data) => {
+            const rawData = data?.data?.attributes || data?.data || {};
+            const backendId = data?.data?.id;
+            const backendDocId = data?.data?.documentId || rawData.documentId;
+            if (backendDocId) {
+              setCartProducts((prev) =>
+                prev.map((item) =>
+                  item.id === productToAdd.id
+                    ? { ...item, cartId: backendId, cartDocumentId: backendDocId }
+                    : item
+                )
+              );
+            }
+          },
+        }
+      );
     }
   };
 
@@ -1415,7 +1433,14 @@ export default function Context({ children }) {
               }
             }
             
-            setCartProducts(backendCarts);
+            // Merge with local optimistic items that are still syncing (don't have cartDocumentId yet)
+            setCartProducts(prev => {
+              const unsyncedItems = prev.filter(localItem => 
+                !localItem.cartDocumentId && 
+                !backendCarts.some(backendItem => backendItem.id === localItem.id)
+              );
+              return [...backendCarts, ...unsyncedItems];
+            });
             
             // Sync selectedCartItems state from backend relies
             const backendSelectionMap = {};
