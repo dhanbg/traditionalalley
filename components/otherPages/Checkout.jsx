@@ -96,8 +96,8 @@ export default function Checkout() {
   // Track InitiateCheckout on mount / when selectedProducts is loaded
   const initiatedCheckoutRef = React.useRef(false);
   useEffect(() => {
-    if (typeof window !== 'undefined' && (window as any).fbq && selectedProducts.length > 0 && !initiatedCheckoutRef.current) {
-      (window as any).fbq('track', 'InitiateCheckout', {
+    if (typeof window !== 'undefined' && window.fbq && selectedProducts.length > 0 && !initiatedCheckoutRef.current) {
+      window.fbq('track', 'InitiateCheckout', {
         content_ids: selectedProducts.map(p => p.documentId || p.id),
         content_type: 'product',
         value: totalPrice || 0,

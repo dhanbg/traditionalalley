@@ -273,12 +273,12 @@ export const useCart = () => {
             dispatch(addProductAction({ product: productToAdd }));
 
             // Trigger Facebook Pixel AddToCart event
-            if (typeof window !== 'undefined' && (window as any).fbq) {
-                (window as any).fbq('track', 'AddToCart', {
+            if (typeof window !== 'undefined' && window.fbq) {
+                window.fbq('track', 'AddToCart', {
                     content_name: productToAdd.title,
                     content_ids: [productToAdd.documentId || productToAdd.baseProductId || productToAdd.id],
                     content_type: 'product',
-                    value: parseFloat(productToAdd.price as any) || 0,
+                    value: parseFloat(productToAdd.price) || 0,
                     currency: 'NPR'
                 });
             }
