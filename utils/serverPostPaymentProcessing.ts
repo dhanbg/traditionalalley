@@ -1,6 +1,7 @@
 
 import { fetchDataFromApi, updateData } from './api';
 import { sendInvoiceEmail } from './email';
+import { sendMetaCapiEvent } from './metaCapi';
 
 /**
  * Helper to get logo as base64 in Node environment
@@ -414,6 +415,55 @@ export const processServerPostPayment = async (selectedProducts: any[], user: an
         if (paymentData) {
             console.log('📤 [SERVER-POST-PAYMENT] Sending automatic invoice email...');
             results.emailSend = await sendAutomaticInvoiceEmail(paymentData) as any;
+
+            // Step 3: Meta Conversions API Purchase Event
+            try {
+                const orderData = paymentData.orderData || {};
+                const receiverDetails = orderData.receiver_details || {};
+                const orderSummary = orderData.orderSummary || {};
+
+                const clientIp = paymentData.client_ip || undefined;
+                const clientUserAgent = paymentData.client_user_agent || undefined;
+
+                const email = receiverDetails.email 
+                    || orderData.customer_info?.email 
+                    || user?.email 
+                    || undefined;
+
+                const phone = receiverDetails.phone || undefined;
+                const fullName = receiverDetails.fullName || receiverDetails.name || user?.name || undefined;
+                const address = receiverDetails.address || {};
+
+                const currency = orderSummary.currency || paymentData.currency || 'NPR';
+                const totalAmount = paymentData.amount || orderSummary.totalAmount || 0;
+
+                await sendMetaCapiEvent({
+                    eventName: 'Purchase',
+                    eventId: paymentData.merchantTxnId || `purchase-${Date.now()}`,
+                    clientIp,
+                    clientUserAgent,
+                    userData: {
+                        email,
+                        phone,
+                        fullName,
+                        city: address.cityName || undefined,
+                        zip: address.postalCode || undefined,
+                        countryCode: address.countryCode || undefined,
+                    },
+                    customData: {
+                        currency,
+                        value: typeof totalAmount === 'number' ? totalAmount : parseFloat(totalAmount) || 0,
+                        contentIds: selectedProducts.map(p => p.documentId || p.id),
+                        contents: selectedProducts.map(p => ({
+                            id: p.documentId || p.id,
+                            quantity: p.quantity || 1,
+                            item_price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0
+                        }))
+                    }
+                });
+            } catch (capiError) {
+                console.error('❌ [SERVER-POST-PAYMENT] Failed to track purchase via Meta CAPI:', capiError);
+            }
         }
 
         return results;

@@ -272,6 +272,17 @@ export const useCart = () => {
             // Add to Redux store
             dispatch(addProductAction({ product: productToAdd }));
 
+            // Trigger Facebook Pixel AddToCart event
+            if (typeof window !== 'undefined' && (window as any).fbq) {
+                (window as any).fbq('track', 'AddToCart', {
+                    content_name: productToAdd.title,
+                    content_ids: [productToAdd.documentId || productToAdd.baseProductId || productToAdd.id],
+                    content_type: 'product',
+                    value: parseFloat(productToAdd.price as any) || 0,
+                    currency: 'NPR'
+                });
+            }
+
             // Sync to backend if user is logged in and wait for completion
             if (user?.id) {
                 try {

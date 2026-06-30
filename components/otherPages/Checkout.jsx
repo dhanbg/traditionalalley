@@ -93,6 +93,21 @@ export default function Checkout() {
   // Add state for NPR conversion
   const [nprExchangeRate, setNprExchangeRate] = useState(null);
 
+  // Track InitiateCheckout on mount / when selectedProducts is loaded
+  const initiatedCheckoutRef = React.useRef(false);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).fbq && selectedProducts.length > 0 && !initiatedCheckoutRef.current) {
+      (window as any).fbq('track', 'InitiateCheckout', {
+        content_ids: selectedProducts.map(p => p.documentId || p.id),
+        content_type: 'product',
+        value: totalPrice || 0,
+        currency: userCurrency || 'NPR'
+      });
+      initiatedCheckoutRef.current = true;
+      console.log('📢 [META-PIXEL] Tracked InitiateCheckout event');
+    }
+  }, [selectedProducts, totalPrice, userCurrency]);
+
   // Add state for combined update and delete operation
 
 

@@ -14,13 +14,29 @@ export async function POST(request: NextRequest) {
 
         const session = await auth();
         const body = await request.json();
-        const { merchantTxnId, paymentData } = body;
+        const { merchantTxnId } = body;
+        let { paymentData } = body;
+
+        const userAgent = request.headers.get('user-agent') || '';
+        const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0] || request.headers.get('x-real-ip') || '';
+
+        if (!paymentData) {
+            paymentData = {
+                client_ip: clientIp,
+                client_user_agent: userAgent
+            };
+        } else {
+            paymentData.client_ip = clientIp;
+            paymentData.client_user_agent = userAgent;
+        }
 
         console.log('📋 [PROCESS-SUCCESS] Request data:', {
             merchantTxnId,
             hasPaymentData: !!paymentData,
             hasSession: !!session,
-            userEmail: session?.user?.email
+            userEmail: session?.user?.email,
+            clientIp,
+            userAgent
         });
 
         if (!merchantTxnId) {
