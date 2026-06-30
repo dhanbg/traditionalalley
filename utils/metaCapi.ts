@@ -60,7 +60,7 @@ interface MetaCapiEventOptions {
  * Sends a server-side event to Meta Conversions API (CAPI)
  */
 export async function sendMetaCapiEvent(options: MetaCapiEventOptions) {
-    const pixelId = process.env.META_PIXEL_ID || '882153701609750';
+    const pixelId = process.env.META_PIXEL_ID || '1591009012395571';
     const accessToken = process.env.META_ACCESS_TOKEN;
     const testEventCode = process.env.META_TEST_EVENT_CODE;
 
