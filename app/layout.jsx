@@ -38,7 +38,7 @@ n.queue=[];t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '1591009012395571');
+fbq('init', '882153701609750');
 fbq('track', 'PageView');`
         }} />
         {/* End Meta Pixel Code */}
@@ -62,7 +62,7 @@ fbq('track', 'PageView');`
             height="1"
             width="1"
             style={{ display: 'none' }}
-            src="https://www.facebook.com/tr?id=1591009012395571&ev=PageView&noscript=1"
+            src="https://www.facebook.com/tr?id=882153701609750&ev=PageView&noscript=1"
             alt=""
           />
         </noscript>
