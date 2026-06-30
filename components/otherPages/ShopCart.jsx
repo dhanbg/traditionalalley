@@ -317,44 +317,47 @@ export default function ShopCart() {
             </div>
           )}
           
-          <div className="row">
+          <div className="row g-4">
             <div className="col-xl-8">
               {isCartLoading ? (
-                <div className="cart-loading text-center">
-                  <div className="spinner-border" role="status">
+                <div className="cart-loading text-center py-5 bg-white rounded-4 shadow-sm">
+                  <div className="spinner-border text-dark" role="status">
                     <span className="visually-hidden">Loading cart...</span>
                   </div>
-                  <p className="mt-3">Loading your cart...</p>
+                  <p className="mt-3 text-secondary fw-500">Loading your cart...</p>
                 </div>
               ) : cartProducts.length ? (
                 <form onSubmit={(e) => e.preventDefault()}>
-                  <table className="tf-table-page-cart">
-                    <thead>
-                      <tr>
-                        <th style={{ width: "40px" }}>
-                          <label className="modern-checkbox" onClick={(e) => { e.preventDefault(); selectAllCartItems(!areAllItemsSelected); }}>
-                            <input 
-                              type="checkbox" 
-                              className="tf-check-rounded"
-                              checked={areAllItemsSelected}
-                              readOnly
-                              id="select-all-products"
-                              style={{ display: 'none' }}
-                            />
-                            <span className="custom-checkmark"></span>
-                          </label>
-                        </th>
-                        <th>Products</th>
-                        <th>Price</th>
-                        <th>Quantity</th>
-                        <th>Total Price</th>
-                        <th />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {cartProducts.map((elm, i) => (
-                        <tr key={i} className="tf-cart-item file-delete">
-                          <td style={{ textAlign: "center" }}>
+                  {/* Minimal Select All Top Bar */}
+                  <div className="minimal-cart-header d-flex justify-content-between align-items-center mb-3 p-3 bg-white rounded-4 shadow-sm">
+                    <label className="d-flex align-items-center gap-3 cursor-pointer m-0 select-all-label">
+                      <div className="modern-checkbox" onClick={(e) => { e.preventDefault(); selectAllCartItems(!areAllItemsSelected); }}>
+                        <input 
+                          type="checkbox" 
+                          className="tf-check-rounded"
+                          checked={areAllItemsSelected}
+                          readOnly
+                          id="select-all-products"
+                          style={{ display: 'none' }}
+                        />
+                        <span className="custom-checkmark"></span>
+                      </div>
+                      <span className="fw-600 text-dark" style={{ fontSize: '15px' }}>
+                        Select All Items ({selectedItemsCount}/{cartProducts.length})
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Minimal Cart Item Cards List */}
+                  <div className="minimal-cart-list d-flex flex-column gap-3">
+                    {cartProducts.map((elm, i) => {
+                      const categoryName = elm.category || elm.productType || elm.variantInfo?.category || "Traditional Alley";
+                      const variantSpecs = [elm.selectedSize || elm.variantInfo?.size, elm.selectedColor || elm.variantInfo?.color].filter(Boolean).join(' ');
+
+                      return (
+                        <div key={elm.id || i} className="minimal-cart-card p-3 p-md-4 bg-white rounded-4 shadow-sm position-relative d-flex align-items-center gap-3 gap-md-4">
+                          {/* Selection Checkbox */}
+                          <div className="cart-item-checkbox flex-shrink-0">
                             <label className="modern-checkbox" onClick={(e) => { e.preventDefault(); toggleCartItemSelection(elm.id); }}>
                               <input 
                                 type="checkbox" 
@@ -366,185 +369,130 @@ export default function ShopCart() {
                               />
                               <span className="custom-checkmark"></span>
                             </label>
-                          </td>
-                          <td className="tf-cart-item_product">
-                            <Link
-                              href={buildProductDetailHref(elm)}
-                              className="img-box"
-                            >
-                              {!isCartLoading && (elm.variantInfo?.imgSrc || elm.imgSrc) ? (
-                                <Image
-                                  alt="product"
-                                  src={getThumbnailImageUrl(elm.variantInfo?.imgSrc || elm.imgSrc) || '/images/products/default-product.jpg'}
-                                  width={600}
-                                  height={800}
-                                  priority={true}
-                                  loading="eager"
-                                  style={{ objectFit: 'cover' }}
-                                  unoptimized={false}
-                                  placeholder="empty"
-                                  onError={(e) => {
-                                    console.log('Image failed to load:', e.target.src);
-                                    e.target.src = '/images/products/default-product.jpg';
-                                  }}
-                                />
-                              ) : (
-                                <div 
-                                  style={{ 
-                                    width: '100%', 
-                                    height: '200px', 
-                                    backgroundColor: '#f8f9fa',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    border: '1px solid #dee2e6',
-                                    borderRadius: '4px'
-                                  }}
-                                >
-                                  <div className="spinner-border spinner-border-sm" role="status">
-                                    <span className="visually-hidden">Loading image...</span>
-                                  </div>
-                                </div>
-                              )}
-                            </Link>
-                            <div className="cart-info">
-                              <Link
-                                href={buildProductDetailHref(elm)}
-                                className="cart-title link"
-                              >
-                                {getVariantAwareTitle(elm)}
-                              </Link>
+                          </div>
 
-                              {elm.selectedSize && (
-                                <div className="text-caption-2 text-secondary mb-2">
-                                  Size: {elm.selectedSize}
-                                </div>
+                          {/* Product Image */}
+                          <Link href={buildProductDetailHref(elm)} className="minimal-cart-img-wrapper flex-shrink-0">
+                            {!isCartLoading && (elm.variantInfo?.imgSrc || elm.imgSrc) ? (
+                              <Image
+                                alt={getVariantAwareTitle(elm)}
+                                src={getThumbnailImageUrl(elm.variantInfo?.imgSrc || elm.imgSrc) || '/images/products/default-product.jpg'}
+                                width={120}
+                                height={120}
+                                priority={true}
+                                loading="eager"
+                                className="minimal-cart-img rounded-3"
+                                style={{ objectFit: 'cover' }}
+                                unoptimized={false}
+                                onError={(e) => {
+                                  e.target.src = '/images/products/default-product.jpg';
+                                }}
+                              />
+                            ) : (
+                              <div className="minimal-cart-img-placeholder rounded-3 bg-light d-flex align-items-center justify-content-center">
+                                <div className="spinner-border spinner-border-sm text-secondary" role="status" />
+                              </div>
+                            )}
+                          </Link>
+
+                          {/* Details & Actions Content */}
+                          <div className="minimal-cart-details flex-grow-1 min-w-0 d-flex flex-column gap-2">
+                            {/* Top row: Category & Variant specs */}
+                            <div className="d-flex justify-content-between align-items-start gap-2">
+                              <span className="minimal-category text-uppercase text-muted fw-500" style={{ fontSize: '12px', letterSpacing: '0.5px' }}>
+                                {categoryName}
+                              </span>
+                              {variantSpecs && (
+                                <span className="minimal-variant text-muted text-end fw-500" style={{ fontSize: '13px' }}>
+                                  {variantSpecs}
+                                </span>
                               )}
                             </div>
-                          </td>
-                          <td
-                            data-cart-title="Price"
-                            className="tf-cart-item_price text-center"
-                          >
-                            <div className="cart-price text-button price-on-sale">
-                              <PriceDisplay 
-                                price={elm.price}
-                                oldPrice={productsWithOldPrice[elm.id]?.oldPrice || elm.oldPrice}
-                                className="text-button"
-                                size="normal"
-                              />
+
+                            {/* Middle row: Title */}
+                            <Link href={buildProductDetailHref(elm)} className="minimal-title text-dark fw-600 text-decoration-none text-truncate" style={{ fontSize: '16px', lineHeight: '1.3' }}>
+                              {getVariantAwareTitle(elm)}
+                            </Link>
+
+                            {/* Bottom row: Price & Controls */}
+                            <div className="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
+                              <div className="minimal-price text-dark fw-700" style={{ fontSize: '18px' }}>
+                                <PriceDisplay 
+                                  price={elm.price * elm.quantity}
+                                  oldPrice={productsWithOldPrice[elm.id]?.oldPrice ? productsWithOldPrice[elm.id].oldPrice * elm.quantity : (elm.oldPrice ? elm.oldPrice * elm.quantity : null)}
+                                  className="text-dark fw-700"
+                                  size="normal"
+                                />
+                              </div>
+
+                              <div className="d-flex align-items-center gap-3">
+                                {/* Quantity Pill */}
+                                <div className="minimal-qty-pill d-flex align-items-center bg-light px-3 py-1 rounded-3">
+                                  <button 
+                                    type="button" 
+                                    className="qty-btn border-0 bg-transparent text-secondary p-0 fw-600 fs-5"
+                                    onClick={() => setQuantity(elm.id, elm.quantity - 1)}
+                                    style={{ width: '24px', lineHeight: '1', cursor: 'pointer' }}
+                                  >
+                                    -
+                                  </button>
+                                  <span className="qty-val px-2 fw-600 text-dark" style={{ minWidth: '24px', textAlign: 'center', fontSize: '14px' }}>
+                                    {elm.quantity}
+                                  </span>
+                                  <button 
+                                    type="button" 
+                                    className="qty-btn border-0 bg-transparent text-secondary p-0 fw-600 fs-5"
+                                    onClick={() => setQuantity(elm.id, elm.quantity + 1)}
+                                    style={{ width: '24px', lineHeight: '1', cursor: 'pointer' }}
+                                  >
+                                    +
+                                  </button>
+                                </div>
+
+                                {/* Trash Delete Button */}
+                                <button 
+                                  type="button" 
+                                  className="minimal-delete-btn border-0 d-flex align-items-center justify-content-center rounded-circle"
+                                  onClick={() => removeItem(elm.id, elm.cartDocumentId)}
+                                  aria-label="Remove item"
+                                >
+                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                  </svg>
+                                </button>
+                              </div>
                             </div>
-                          </td>
-                          <td
-                            data-cart-title="Quantity"
-                            className="tf-cart-item_quantity"
-                          >
-                            <div className="wg-quantity mx-md-auto">
-                              <span
-                                className="btn-quantity btn-decrease"
-                                onClick={() =>
-                                  setQuantity(elm.id, elm.quantity - 1)
-                                }
-                              >
-                                -
-                              </span>
-                              <input
-                                type="text"
-                                className="quantity-product"
-                                name="number"
-                                value={elm.quantity}
-                                readOnly
-                              />
-                              <span
-                                className="btn-quantity btn-increase"
-                                onClick={() =>
-                                  setQuantity(elm.id, elm.quantity + 1)
-                                }
-                              >
-                                +
-                              </span>
-                            </div>
-                          </td>
-                          <td
-                            data-cart-title="Total"
-                            className="tf-cart-item_total text-center"
-                          >
-                            <div className="cart-total text-button total-price">
-                              <PriceDisplay 
-                                price={elm.price * elm.quantity}
-                                className="text-button"
-                                size="normal"
-                              />
-                            </div>
-                          </td>
-                          <td
-                            data-cart-title="Remove"
-                            className="remove-cart"
-                            onClick={() => removeItem(elm.id, elm.cartDocumentId)}
-                          >
-                            <span className="remove icon icon-close" />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {/* <div className="ip-discount-code">
-                    <input type="text" placeholder="Add voucher discount" />
-                    <button className="tf-btn">
-                      <span className="text">Apply Code</span>
-                    </button>
-                  </div> */}
-                  {/* <div className="group-discount">
-                    {discounts.map((item, index) => (
-                      <div
-                        key={index}
-                        className={`box-discount ${
-                          activeDiscountIndex === index ? "active" : ""
-                        }`}
-                        onClick={() => setActiveDiscountIndex(index)}
-                      >
-                        <div className="discount-top">
-                          <div className="discount-off">
-                            <div className="text-caption-1">Discount</div>
-                            <span className="sale-off text-btn-uppercase">
-                              {item.discount}
-                            </span>
-                          </div>
-                          <div className="discount-from">
-                            <p className="text-caption-1">{item.details}</p>
                           </div>
                         </div>
-                        <div className="discount-bot">
-                          <span className="text-btn-uppercase">
-                            {item.code}
-                          </span>
-                          <button className="tf-btn">
-                            <span className="text">Apply Code</span>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div> */}
+                      );
+                    })}
+                  </div>
                 </form>
               ) : (
-                <div className="empty-cart-section">
+                <div className="empty-cart-section bg-white p-5 rounded-4 shadow-sm text-center">
                   {!showTopPicks ? (
-                    <div className="empty-cart text-center">
-                      <h3 className="mt-5 mb-3">Your cart is empty</h3>
-                      <p className="mb-5">Add some products to your cart to continue shopping</p>
+                    <div className="empty-cart text-center py-4">
+                      <div className="empty-cart-icon mb-3 text-muted" style={{ fontSize: '48px' }}>
+                        🛒
+                      </div>
+                      <h3 className="mb-2 fw-600">Your cart is empty</h3>
+                      <p className="text-secondary mb-4">Add some products to your cart to continue shopping</p>
                       <button 
-                        className="tf-btn"
+                        className="tf-btn rounded-3 px-4 py-2"
                         onClick={() => setShowTopPicks(true)}
                       >
                         <span className="text">Shop Now</span>
                       </button>
                     </div>
                   ) : (
-                    <div className="top-picks-section">
+                    <div className="top-picks-section text-start">
                       <div className="d-flex justify-content-between align-items-center mb-4">
-                        <h3 className="mb-0">Top Picks for You</h3>
+                        <h3 className="mb-0 fw-600">Top Picks for You</h3>
                         <button 
-                          className="btn btn-outline-secondary btn-sm"
+                          className="btn btn-outline-secondary btn-sm rounded-3"
                           onClick={() => setShowTopPicks(false)}
                         >
                           Back to Cart
@@ -558,130 +506,192 @@ export default function ShopCart() {
             </div>
             <div className="col-xl-4">
               {isCartLoading ? (
-                <div className="cart-summary-loading text-center">
-                  <div className="spinner-border spinner-border-sm" role="status">
+                <div className="cart-summary-loading text-center p-4 bg-white rounded-4 shadow-sm">
+                  <div className="spinner-border spinner-border-sm text-dark" role="status">
                     <span className="visually-hidden">Loading...</span>
                   </div>
-                  <p className="mt-2">Loading cart summary...</p>
+                  <p className="mt-2 text-secondary">Loading cart summary...</p>
                 </div>
               ) : (
-                <div className="fl-sidebar-cart">
-                  <div className="box-order bg-surface">
-                    <h5 className="title">Order Summary</h5>
-                    <div className="subtotal text-button d-flex justify-content-between align-items-center">
-                      <span>Selected Items ({selectedItemsCount}/{cartProducts.length})</span>
+                <div className="fl-sidebar-cart sticky-top" style={{ top: '20px' }}>
+                  <div className="box-order bg-white p-4 rounded-4 shadow-sm border-0">
+                    <h5 className="title fw-700 text-dark mb-4" style={{ fontSize: '18px' }}>Order Summary</h5>
+                    <div className="subtotal text-button d-flex justify-content-between align-items-center py-2 border-bottom border-light">
+                      <span className="text-secondary fw-500">Selected Items</span>
+                      <span className="fw-600 text-dark">{selectedItemsCount}/{cartProducts.length}</span>
                     </div>
-                    <div className="subtotal text-button d-flex justify-content-between align-items-center">
-                      <span>Subtotal</span>
-                      <span className="total">
+                    <div className="subtotal text-button d-flex justify-content-between align-items-center py-2 border-bottom border-light">
+                      <span className="text-secondary fw-500">Subtotal</span>
+                      <span className="total fw-600 text-dark">
                         <PriceDisplay 
                           price={getSelectedItemsTotal()}
-                        className="text-button"
-                        size="normal"
-                      />
-                    </span>
-                  </div>
-                  <div className="discount text-button d-flex justify-content-between align-items-center">
-                    <span>Total Discounts</span>
-                    <span className="total">$0.00</span>
-                  </div>
-                  <h5 className="total-order d-flex justify-content-between align-items-center">
-                    <span>Total<br />(Without Shipping Charges)</span>
-                    <span className="total">
-                      <PriceDisplay 
-                        price={getSelectedItemsTotal()}
-                        className="text-button"
-                        size="normal"
-                      />
-                    </span>
-                  </h5>
-                  <div className="box-progress-checkout">
-                    <fieldset className="check-agree">
-                      <input
-                        type="checkbox"
-                        id="check-agree"
-                        className="tf-check-rounded"
-                        checked={isAgreed}
-                        onChange={e => setIsAgreed(e.target.checked)}
-                      />
-                      <label htmlFor="check-agree">
-                        I agree with the&nbsp;
-                        <Link href={`/term-of-use`}>terms and conditions</Link>
-                      </label>
-                    </fieldset>
-                    <Link 
-                      href={isAgreed && selectedItemsCount > 0 ? "/checkout" : "#"} 
-                      className="tf-btn btn-reset" 
-                      style={{ 
-                        pointerEvents: (isAgreed && selectedItemsCount > 0) ? 'auto' : 'none', 
-                        opacity: (isAgreed && selectedItemsCount > 0) ? 1 : 0.5 
-                      }}
-                    >
-                      Process To Checkout
-                    </Link>
-                    {selectedItemsCount === 0 && (
-                      <div className="text-warning mt-2 text-center">
-                        Please select at least one product
+                          className="text-button fw-600"
+                          size="normal"
+                        />
+                      </span>
+                    </div>
+                    <div className="discount text-button d-flex justify-content-between align-items-center py-2 border-bottom border-light">
+                      <span className="text-secondary fw-500">Total Discounts</span>
+                      <span className="total text-success fw-600">$0.00</span>
+                    </div>
+                    <div className="total-order d-flex justify-content-between align-items-center py-3 my-2">
+                      <div>
+                        <span className="fw-700 text-dark d-block" style={{ fontSize: '16px' }}>Total</span>
+                        <span className="text-muted" style={{ fontSize: '12px' }}>(Without Shipping Charges)</span>
                       </div>
-                    )}
-                    <p className="text-button text-center">
-                      Or continue shopping
-                    </p>
+                      <span className="total fw-700 text-dark" style={{ fontSize: '20px' }}>
+                        <PriceDisplay 
+                          price={getSelectedItemsTotal()}
+                          className="text-button fw-700"
+                          size="normal"
+                        />
+                      </span>
+                    </div>
+                    <div className="box-progress-checkout mt-3">
+                      <fieldset className="check-agree mb-3 d-flex align-items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="check-agree"
+                          className="tf-check-rounded"
+                          checked={isAgreed}
+                          onChange={e => setIsAgreed(e.target.checked)}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        <label htmlFor="check-agree" className="m-0 text-secondary" style={{ fontSize: '13px', cursor: 'pointer' }}>
+                          I agree with the&nbsp;
+                          <Link href={`/term-of-use`} className="text-dark fw-600 text-underline">terms and conditions</Link>
+                        </label>
+                      </fieldset>
+                      <Link 
+                        href={isAgreed && selectedItemsCount > 0 ? "/checkout" : "#"} 
+                        className="tf-btn w-100 py-3 rounded-3 fw-600 justify-content-center" 
+                        style={{ 
+                          pointerEvents: (isAgreed && selectedItemsCount > 0) ? 'auto' : 'none', 
+                          opacity: (isAgreed && selectedItemsCount > 0) ? 1 : 0.5,
+                          backgroundColor: '#1c1c1e',
+                          color: '#ffffff',
+                          fontSize: '15px',
+                          border: 'none',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        Process To Checkout
+                      </Link>
+                      {selectedItemsCount === 0 && (
+                        <div className="text-warning mt-2 text-center" style={{ fontSize: '13px' }}>
+                          Please select at least one product
+                        </div>
+                      )}
+                      <p className="text-center mt-3 mb-0">
+                        <Link href="/shop-default-grid" className="text-secondary fw-500 text-decoration-none hover-dark" style={{ fontSize: '13px' }}>
+                          Or continue shopping →
+                        </Link>
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
             </div>
           </div>
         </div>
       </section>
       <style jsx>{`
+        .minimal-cart-card {
+          border: 1px solid #f0f0f4;
+          transition: all 0.2s ease;
+        }
+        .minimal-cart-card:hover {
+          border-color: #e2e2e8;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.05) !important;
+        }
+        .minimal-cart-img-wrapper {
+          width: 84px;
+          height: 84px;
+          overflow: hidden;
+          position: relative;
+          background-color: #f8f9fa;
+          border-radius: 12px;
+        }
+        .minimal-cart-img {
+          width: 100%;
+          height: 100%;
+          transition: transform 0.3s ease;
+        }
+        .minimal-cart-card:hover .minimal-cart-img {
+          transform: scale(1.04);
+        }
+        .minimal-cart-img-placeholder {
+          width: 100%;
+          height: 100%;
+        }
+        .minimal-qty-pill {
+          background-color: #f2f2f7;
+          border: 1px solid #e5e5ea;
+          border-radius: 10px;
+        }
+        .qty-btn:hover {
+          color: #000 !important;
+        }
+        .minimal-delete-btn {
+          width: 38px;
+          height: 38px;
+          background-color: #fdeded;
+          color: #e53935;
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
+        .minimal-delete-btn:hover {
+          background-color: #fcc;
+          color: #d32f2f;
+          transform: scale(1.05);
+        }
         .modern-checkbox {
           display: inline-block;
           position: relative;
           cursor: pointer;
-          width: 24px;
-          height: 24px;
+          width: 22px;
+          height: 22px;
         }
         .modern-checkbox input[type="checkbox"]:checked + .custom-checkmark {
-          background: #fff;
-          border-color: #22c55e;
+          background: #1c1c1e;
+          border-color: #1c1c1e;
         }
         .custom-checkmark {
           display: block;
-          width: 24px;
-          height: 24px;
-          border-radius: 8px;
-          border: 2px solid #bbb;
+          width: 22px;
+          height: 22px;
+          border-radius: 6px;
+          border: 2px solid #ccc;
           background: #fff;
-          transition: all 0.2s cubic-bezier(.4,2,.6,1);
+          transition: all 0.2s ease;
           position: relative;
         }
         .modern-checkbox input[type="checkbox"]:checked + .custom-checkmark:after {
           content: '';
           position: absolute;
-          left: 7px;
-          top: 3px;
+          left: 6px;
+          top: 2px;
           width: 6px;
-          height: 12px;
-          border: solid #22c55e;
-          border-width: 0 3px 3px 0;
-          border-radius: 2px;
+          height: 11px;
+          border: solid #fff;
+          border-width: 0 2.5px 2.5px 0;
+          border-radius: 1px;
           transform: rotate(45deg);
-          transition: border-color 0.2s;
         }
-        .custom-checkmark:after {
-          content: '';
-          position: absolute;
-          left: 7px;
-          top: 3px;
-          width: 6px;
-          height: 12px;
-          border: solid transparent;
-          border-width: 0 3px 3px 0;
-          border-radius: 2px;
-          transform: rotate(45deg);
-          transition: border-color 0.2s;
+        @media (max-width: 576px) {
+          .minimal-cart-card {
+            padding: 12px !important;
+          }
+          .minimal-cart-img-wrapper {
+            width: 70px;
+            height: 70px;
+          }
+          .minimal-title {
+            font-size: 14px !important;
+          }
+          .minimal-price {
+            font-size: 16px !important;
+          }
         }
       `}</style>
     </>

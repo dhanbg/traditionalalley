@@ -3,15 +3,15 @@ const URL = "https://traditionalalley.com.np/api/nps-process-success";
 async function run() {
   try {
     const payload = {
-      merchantTxnId: "TXN-1780551762085-qhnoug45b",
+      merchantTxnId: "TXN-1782258781379-lxg33pubh",
       paymentData: {
         provider: "nps",
-        merchantTxnId: "TXN-1780551762085-qhnoug45b",
+        merchantTxnId: "TXN-1782258781379-lxg33pubh",
         processId: "100010522164",
         status: "Success",
         amount: 10,
-        recoveredUserBagId: "ei7z170bfkv6ag9h2gwe0uu7",
-        timestamp: "2026-06-04T05:43:04.047Z"
+        recoveredUserBagId: "uenzdhr6orpj67y7s5kuqs5t",
+        timestamp: "2026-06-24T05:39:20.528Z"
       }
     };
 

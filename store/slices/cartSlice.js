@@ -171,26 +171,41 @@ export const syncCartItemToBackend = createAsyncThunk(
             }
 
             const userBagDocumentId = userBagData.documentId || userBagData.attributes?.documentId;
+            const variantIdentifier = cartItem.variantInfo?.documentId || (cartItem.variantInfo?.isVariant ? cartItem.variantInfo?.variantId : null);
+            const initialProductDocId = cartItem.baseProductId || cartItem.documentId;
 
-            const variantIdentifier = cartItem.variantInfo?.variantId || cartItem.variantInfo?.documentId || cartItem.variantInfo?.id;
-
-            // Create cart item payload matching Strapi cart schema
-            const cartPayload = {
-                data: {
-                    product: cartItem.baseProductId || cartItem.documentId, // Relation to product
-                    quantity: cartItem.quantity,
-                    size: cartItem.selectedSize,
-                    user_bag: userBagDocumentId,
-                    user_datum: currentUser.documentId,
-                    variantInfo: cartItem.variantInfo, // JSON field
-                    ...(variantIdentifier && {
-                        product_variant: variantIdentifier
-                    })
-                }
+            const basePayload = {
+                ...(initialProductDocId && { product: initialProductDocId }),
+                quantity: cartItem.quantity,
+                size: cartItem.selectedSize,
+                user_bag: userBagDocumentId,
+                user_datum: currentUser.documentId,
+                variantInfo: cartItem.variantInfo,
             };
 
-            // Create cart item in backend using /api/carts (not /api/cart-products)
-            const response = await createData('/api/carts', cartPayload);
+            let response;
+            try {
+                response = await createData('/api/carts', {
+                    data: {
+                        ...basePayload,
+                        ...(variantIdentifier && { product_variant: variantIdentifier })
+                    }
+                });
+            } catch (err1) {
+                if (variantIdentifier && initialProductDocId) {
+                    try {
+                        response = await createData('/api/carts', { data: basePayload });
+                    } catch (err2) {
+                        const safePayload = { ...basePayload };
+                        delete safePayload.product;
+                        response = await createData('/api/carts', { data: safePayload });
+                    }
+                } else {
+                    const safePayload = { ...basePayload };
+                    delete safePayload.product;
+                    response = await createData('/api/carts', { data: safePayload });
+                }
+            }
 
             return {
                 ...cartItem,
