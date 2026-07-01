@@ -203,8 +203,14 @@ const sendAutomaticInvoiceEmail = async (paymentData: any) => {
 
         // --- LEFT COLUMN: Shipping Information ---
         const shippingCostRaw = orderSummary.shippingCost || 0;
+        let displayShippingCostVal = shippingCostRaw;
+        if (!isNepal && shippingCostRaw > 200) {
+            const { getExchangeRate } = await import('./currency');
+            const nprToUsdRate = await getExchangeRate();
+            displayShippingCostVal = shippingCostRaw / nprToUsdRate;
+        }
         const shippingCostText = shippingCostRaw > 0
-            ? `${currency} ${Number(shippingCostRaw).toFixed(2)}`
+            ? `${currency} ${Number(displayShippingCostVal).toFixed(2)}`
             : 'Not set';
 
         let estimatedDelivery = shippingInfo.estimatedDelivery || 'N/A';
@@ -309,6 +315,11 @@ const sendAutomaticInvoiceEmail = async (paymentData: any) => {
         const couponDiscount = orderSummary.couponDiscount || 0;
         let displayCouponDiscount = couponDiscount;
         let displayShippingCost = shippingCostRaw;
+        if (!isNepal && shippingCostRaw > 200) {
+            const { getExchangeRate } = await import('./currency');
+            const nprToUsdRate = await getExchangeRate();
+            displayShippingCost = shippingCostRaw / nprToUsdRate;
+        }
 
         if (isNepal) {
             if (couponDiscount > 0) displayCouponDiscount = couponDiscount * exchangeRate;

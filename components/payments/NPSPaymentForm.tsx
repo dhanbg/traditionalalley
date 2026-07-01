@@ -34,11 +34,12 @@ export default function NPSPaymentForm({ amount, onSuccess, onError, orderData, 
   });
 
   const handlePayment = async () => {
-    // Removed session check for guest checkout
-    // if (!session?.user) {
-    //   onError({ message: "Please sign in to continue with payment" });
-    //   return;
-    // }
+    // Check if user is admin to bypass shipping rate validation
+    const isAdmin = session?.user?.role === "admin" || session?.user?.email === "gurungvaaiii@gmail.com" || session?.user?.email === "traditionalley2050@gmail.com";
+    if (!shippingRatesObtained && !isAdmin) {
+      onError({ message: "Please calculate shipping rates before initiating payment." });
+      return;
+    }
 
     setIsLoading(true);
     try {

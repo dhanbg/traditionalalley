@@ -745,9 +745,15 @@ const OrderManagement = () => {
       // Shipping Information (Left Column under Order Info)
       const shippingInfo = orderData.shipping || {};
       const shippingCostRaw = orderSummary.shippingCost || 0;
+      let displayShippingCostVal = shippingCostRaw;
+      if (!isNepal && shippingCostRaw > 200) {
+        const { getExchangeRate } = await import('../../utils/currency');
+        const nprToUsdRate = await getExchangeRate();
+        displayShippingCostVal = shippingCostRaw / nprToUsdRate;
+      }
       // Use same currency symbol as invoice
       const shippingCostText = shippingCostRaw > 0
-        ? `${currency} ${Number(shippingCostRaw).toFixed(2)}`
+        ? `${currency} ${Number(displayShippingCostVal).toFixed(2)}`
         : 'Not set';
 
       doc.setFontSize(12);
@@ -892,6 +898,11 @@ const OrderManagement = () => {
       let displayProductDiscounts = productDiscounts;
       let displayCouponDiscount = couponDiscount;
       let displayShippingCost = shippingCost;
+      if (!isNepal && shippingCost > 200) {
+        const { getExchangeRate } = await import('../../utils/currency');
+        const nprToUsdRate = await getExchangeRate();
+        displayShippingCost = shippingCost / nprToUsdRate;
+      }
 
       if (isNepal) {
         displayOriginalSubtotal = originalSubtotal * exchangeRate;
@@ -1162,8 +1173,14 @@ const OrderManagement = () => {
       // Shipping Information (Left Column under Order Info)
       const shippingInfo = orderData.shipping || {};
       const shippingCostRaw = (orderData.orderSummary?.shippingCost) || 0;
+      let displayShippingCostVal = shippingCostRaw;
+      if (!isNepal && shippingCostRaw > 200) {
+        const { getExchangeRate } = await import('../../utils/currency');
+        const nprToUsdRate = await getExchangeRate();
+        displayShippingCostVal = shippingCostRaw / nprToUsdRate;
+      }
       const shippingCostText = shippingCostRaw > 0
-        ? `${currency} ${Number(shippingCostRaw).toFixed(2)}`
+        ? `${currency} ${Number(displayShippingCostVal).toFixed(2)}`
         : 'Not set';
 
       doc.setFontSize(12);
@@ -1304,6 +1321,11 @@ const OrderManagement = () => {
       let displayProductDiscounts = productDiscounts;
       let displayCouponDiscount = couponDiscount;
       let displayShippingCost = shippingCost;
+      if (!isNepal && shippingCost > 200) {
+        const { getExchangeRate } = await import('../../utils/currency');
+        const nprToUsdRate = await getExchangeRate();
+        displayShippingCost = shippingCost / nprToUsdRate;
+      }
 
       if (isNepal) {
         displayOriginalSubtotal = originalSubtotal * exchangeRate;

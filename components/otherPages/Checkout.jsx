@@ -826,11 +826,10 @@ export default function Checkout() {
       return;
     }
 
-    // Temporarily removed shipping cost validation since we're using fixed Rs. 10
-    // if (shippingCost === 0) {
-    //   alert('Please get shipping rates first by filling out the shipping form and clicking "Get Shipping Rates"');
-    //   return;
-    // }
+    if (!shippingRatesObtained && !isAdmin) {
+      alert('Please get shipping rates first by filling out the shipping form and clicking "Get Shipping Rates"');
+      return;
+    }
 
     setIsProcessingOrder(true);
 
@@ -1805,6 +1804,10 @@ export default function Checkout() {
                                   size="large"
                                   isNPR={true}
                                 />
+                              ) : !shippingRatesObtained ? (
+                                <span style={{ fontSize: '13px', color: '#dc2626', fontWeight: '500' }}>
+                                  Pending shipping calculation
+                                </span>
                               ) : userCurrency === 'NPR' ? (
                                 <PriceDisplay
                                   price={nprAmount}
@@ -1815,7 +1818,7 @@ export default function Checkout() {
                                 <PriceDisplay
                                   price={finalTotal + shippingCost}
                                   size="normal"
-                                  />
+                                />
                               )}
                             </td>
                           </tr>
@@ -1825,6 +1828,29 @@ export default function Checkout() {
                   </div>
                 </div>
                 <div className="wrap" style={{ marginTop: '0px' }}>
+                  {/* Warning message if shipping rates not obtained */}
+                  {!shippingRatesObtained && !isAdmin && (
+                    <div style={{
+                      margin: '14px',
+                      padding: '14px',
+                      backgroundColor: '#fff9db',
+                      border: '1px solid #ffe066',
+                      borderRadius: '8px',
+                      color: '#f08c00',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '10px',
+                      lineHeight: '1.4'
+                    }}>
+                      <span style={{ fontSize: '16px', lineHeight: '1' }}>⚠️</span>
+                      <div>
+                        <strong>Shipping Rate Required:</strong> Please fill in your shipping details in the form above and click <strong>&quot;Get Shipping Rates&quot;</strong> before completing your purchase.
+                      </div>
+                    </div>
+                  )}
+
                   {/* Payment Method Selection */}
                   <div style={{
                     padding: '14px',
@@ -1884,7 +1910,8 @@ export default function Checkout() {
                         onError={handleNPSPaymentError}
                         orderData={constructOrderData()}
                         transactionRemarks={`Payment for ${selectedProducts.length} items`}
-                        shippingRatesObtained={true}
+                        shippingRatesObtained={shippingRatesObtained}
+                        disabled={!shippingRatesObtained && !isAdmin}
                         getUserBagDocumentId={getUserBagDocumentId}
                       />
                     ) : (
@@ -1897,13 +1924,13 @@ export default function Checkout() {
                         <button
                           className="tf-btn btn-fill animate-hover-btn radius-3 w-100 justify-content-center"
                           onClick={handleCashPaymentOrder}
-                          disabled={isProcessingOrder || selectedProducts.length === 0}
+                          disabled={isProcessingOrder || selectedProducts.length === 0 || (!shippingRatesObtained && !isAdmin)}
                           style={{
                             padding: '12px 24px',
                             fontSize: '16px',
                             fontWeight: '600',
-                            opacity: (isProcessingOrder || selectedProducts.length === 0) ? 0.6 : 1,
-                            cursor: (isProcessingOrder || selectedProducts.length === 0) ? 'not-allowed' : 'pointer'
+                            opacity: (isProcessingOrder || selectedProducts.length === 0 || (!shippingRatesObtained && !isAdmin)) ? 0.6 : 1,
+                            cursor: (isProcessingOrder || selectedProducts.length === 0 || (!shippingRatesObtained && !isAdmin)) ? 'not-allowed' : 'pointer'
                           }}
                         >
                           {isProcessingOrder ? (
