@@ -88,6 +88,43 @@ const OrderManagement = () => {
     return dateB - dateA; // Descending order (latest first, oldest at bottom)
   });
 
+  const getCorrectPaymentDate = (payment, userBag) => {
+    const timeStr = payment?.timestamp || payment?.createdAt || userBag?.attributes?.createdAt || userBag?.createdAt;
+    if (!timeStr) return new Date(0);
+
+    const rawDate = new Date(timeStr);
+    
+    // 1. Try to extract from transaction ID
+    if (payment?.merchantTxnId) {
+      const match = String(payment.merchantTxnId).match(/\b(\d{13})\b/);
+      if (match) {
+        const epoch = parseInt(match[1], 10);
+        const txnDate = new Date(epoch);
+        // If rawDate is in the future compared to txnDate by more than 4 hours (14400000 ms)
+        if (rawDate.getTime() - txnDate.getTime() > 14400000) {
+          return new Date(rawDate.getTime() - 20700000); // Shift back by 5 hours 45 minutes
+        }
+        return rawDate;
+      }
+    }
+
+    // 2. Fallback to updatedAt/now comparison
+    const bagUpdatedAtStr = userBag?.attributes?.updatedAt || userBag?.updatedAt;
+    if (bagUpdatedAtStr) {
+      const bagUpdatedAt = new Date(bagUpdatedAtStr);
+      if (rawDate.getTime() - bagUpdatedAt.getTime() > 3600000) {
+        return new Date(rawDate.getTime() - 20700000);
+      }
+    } else {
+      const now = new Date();
+      if (rawDate.getTime() - now.getTime() > 3600000) {
+        return new Date(rawDate.getTime() - 20700000);
+      }
+    }
+    
+    return rawDate;
+  };
+
   // Get all payments with their status
   const getAllPayments = () => {
     const allPayments = [];
@@ -100,13 +137,9 @@ const OrderManagement = () => {
       if (Array.isArray(paymentsRaw)) {
         // Sort payments within each bag by latest timestamp/createdAt
         const paymentsSorted = [...paymentsRaw].sort((a, b) => {
-          const dateA = new Date(
-            a.timestamp || a.createdAt || userBag.attributes?.createdAt || userBag.createdAt || 0
-          );
-          const dateB = new Date(
-            b.timestamp || b.createdAt || userBag.attributes?.createdAt || userBag.createdAt || 0
-          );
-          return dateB - dateA; // latest first
+          const dateA = getCorrectPaymentDate(a, userBag);
+          const dateB = getCorrectPaymentDate(b, userBag);
+          return dateB.getTime() - dateA.getTime(); // latest first
         });
 
         // Limit to latest 10 payments per bag
@@ -126,13 +159,9 @@ const OrderManagement = () => {
 
     // Sort payments by their individual timestamps (latest first)
     allPayments.sort((a, b) => {
-      const timeA = a.timestamp || a.createdAt || a.userBag?.attributes?.createdAt || a.userBag?.createdAt || 0;
-      const timeB = b.timestamp || b.createdAt || b.userBag?.attributes?.createdAt || b.userBag?.createdAt || 0;
-      const dateA = new Date(timeA);
-      const dateB = new Date(timeB);
-      const valA = isNaN(dateA.getTime()) ? 0 : dateA.getTime();
-      const valB = isNaN(dateB.getTime()) ? 0 : dateB.getTime();
-      return valB - valA;
+      const dateA = getCorrectPaymentDate(a, a.userBag);
+      const dateB = getCorrectPaymentDate(b, b.userBag);
+      return dateB.getTime() - dateA.getTime();
     });
 
     return allPayments;
@@ -731,7 +760,7 @@ const OrderManagement = () => {
       const orderSummary = orderData.orderSummary || {};
 
       const orderInfo = [
-        `Date: ${payment.timestamp ? new Date(payment.timestamp).toLocaleDateString() : 'N/A'}`,
+        `Date: ${payment.timestamp ? getCorrectPaymentDate(payment, payment.userBag).toLocaleDateString() : 'N/A'}`,
         `Payment Status: ${payment.status || 'N/A'}`,
         `Payment Method: ${payment.instrument || 'N/A'}`,
         `Institution: ${payment.institution || 'N/A'}`
@@ -1158,7 +1187,7 @@ const OrderManagement = () => {
       doc.setFontSize(10);
 
       const orderInfo = [
-        `Date: ${payment.timestamp ? new Date(payment.timestamp).toLocaleDateString() : new Date().toLocaleDateString()}`,
+        `Date: ${payment.timestamp ? getCorrectPaymentDate(payment, payment.userBag).toLocaleDateString() : new Date().toLocaleDateString()}`,
         `Payment Status: ${payment.status || 'N/A'}`,
         `Payment Method: ${payment.instrument || 'N/A'}`,
         `Institution: ${payment.institution || 'N/A'}`,
@@ -1722,7 +1751,7 @@ const OrderManagement = () => {
                     <div>
                       <h3 className="font-bold text-gray-900">{payment?.orderData?.receiver_details?.name || payment?.orderData?.receiver_details?.fullName || 'Guest / Unnamed Customer'}</h3>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-gray-600">
-                        <span>Order Time: {formatTimeAgo(payment.timestamp)}</span>
+                        <span>Order Time: {formatTimeAgo(getCorrectPaymentDate(payment, payment.userBag))}</span>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${payment.computedStatus === 'success' ? 'bg-green-100 text-green-800' :
                           payment.computedStatus === 'failed' ? 'bg-red-100 text-red-800' :
                             payment.computedStatus === 'shipped' ? 'bg-purple-100 text-purple-800' :

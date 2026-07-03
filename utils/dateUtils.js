@@ -56,15 +56,7 @@ export const getLocalDateComponents = (utcTimestamp, timezone = 'Asia/Katmandu')
  * @returns {string} - ISO timestamp adjusted for local timezone
  */
 export const generateLocalTimestamp = (timezone = 'Asia/Katmandu') => {
-  const now = new Date();
-  // Get the timezone offset in minutes
-  const localTime = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
-  const utcTime = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const offset = localTime.getTime() - utcTime.getTime();
-  
-  // Create a new date with the offset applied
-  const adjustedDate = new Date(now.getTime() + offset);
-  return adjustedDate.toISOString();
+  return new Date().toISOString();
 };
 
 /**

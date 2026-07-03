@@ -8,12 +8,7 @@ const DEFAULT_TIMEZONE = 'Asia/Katmandu';
  * @returns {string} - ISO timestamp adjusted for local timezone
  */
 const generateLocalTimestamp = (timezone = DEFAULT_TIMEZONE) => {
-  const now = new Date();
-  const localTime = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
-  const utcTime = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const offset = localTime.getTime() - utcTime.getTime();
-  
-  return new Date(now.getTime() + offset).toISOString();
+  return new Date().toISOString();
 };
 
 /**
