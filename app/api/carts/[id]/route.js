@@ -15,7 +15,7 @@ export async function PUT(request, { params }) {
       "http://82.25.105.70:1339",
       "http://127.0.0.1:1337",
       "http://localhost:1337"
-    ])).filter(url => url && !url.includes('traditionalalley.com.np'));
+    ])).filter(url => url && (!url.includes('traditionalalley.com.np') || url.includes('admin.traditionalalley.com.np')));
 
     let response = null;
     let lastErrorText = '';
@@ -68,7 +68,7 @@ export async function DELETE(request, { params }) {
       "http://82.25.105.70:1339",
       "http://127.0.0.1:1337",
       "http://localhost:1337"
-    ])).filter(url => url && !url.includes('traditionalalley.com.np'));
+    ])).filter(url => url && (!url.includes('traditionalalley.com.np') || url.includes('admin.traditionalalley.com.np')));
 
     let response = null;
     let lastErrorText = '';
