@@ -121,6 +121,48 @@ export default function ShopCart() {
   const [selectedColors, setSelectedColors] = useState({});
   const [selectedSizes, setSelectedSizes] = useState({});
   const [isAgreed, setIsAgreed] = useState(false);
+
+  // State for mobile swipe-to-delete interactions
+  const [swipedItemId, setSwipedItemId] = useState(null);
+  const [touchStart, setTouchStart] = useState({ x: 0, y: 0 });
+
+  const handleTouchStart = (e, id) => {
+    e.stopPropagation();
+    const touch = e.touches[0];
+    setTouchStart({ x: touch.clientX, y: touch.clientY });
+  };
+
+  const handleTouchEnd = (e, id) => {
+    const touch = e.changedTouches[0];
+    const diffX = touchStart.x - touch.clientX;
+    const diffY = touchStart.y - touch.clientY;
+
+    // Check if horizontal swipe gesture
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 40) {
+      if (diffX > 0) {
+        // Swipe left -> open delete button
+        setSwipedItemId(id);
+      } else {
+        // Swipe right -> close delete button
+        setSwipedItemId(null);
+      }
+    }
+  };
+
+  // Document listener to auto-close any swipe menu when tapping elsewhere
+  useEffect(() => {
+    const handleDocumentTouch = () => {
+      setSwipedItemId(null);
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('touchstart', handleDocumentTouch);
+    }
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('touchstart', handleDocumentTouch);
+      }
+    };
+  }, []);
   
   // State for tracking oldPrice update status
   const [updateStatus, setUpdateStatus] = useState({
@@ -355,114 +397,148 @@ export default function ShopCart() {
                       const variantSpecs = [elm.selectedSize || elm.variantInfo?.size, elm.selectedColor || elm.variantInfo?.color].filter(Boolean).join(' ');
 
                       return (
-                        <div key={elm.id || i} className="minimal-cart-card p-3 p-md-4 bg-white rounded-4 shadow-sm position-relative d-flex align-items-center gap-3 gap-md-4">
-                          {/* Selection Checkbox */}
-                          <div className="cart-item-checkbox flex-shrink-0">
-                            <label className="modern-checkbox" onClick={(e) => { e.preventDefault(); toggleCartItemSelection(elm.id); }}>
-                              <input 
-                                type="checkbox" 
-                                className="tf-check-rounded"
-                                checked={selectedCartItems[elm.id] !== undefined ? selectedCartItems[elm.id] : (elm.isSelected !== undefined ? elm.isSelected : true)}
-                                readOnly
-                                id={`select-product-${elm.id}`}
-                                style={{ display: 'none' }}
-                              />
-                              <span className="custom-checkmark"></span>
-                            </label>
+                        <div key={elm.id || i} className="swipe-container position-relative overflow-hidden rounded-4">
+                          {/* Swipe Background Delete Action */}
+                          <div 
+                            className="swipe-delete-action position-absolute top-0 end-0 h-100 d-flex align-items-center justify-content-center bg-danger text-white cursor-pointer"
+                            style={{ 
+                              width: '80px', 
+                              borderRadius: '0 16px 16px 0',
+                              zIndex: 1,
+                              transition: 'opacity 0.2s ease',
+                              opacity: swipedItemId === elm.id ? 1 : 0
+                            }}
+                            onClick={() => removeItem(elm.id, elm.cartDocumentId)}
+                          >
+                            <div className="d-flex flex-column align-items-center gap-1">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                              </svg>
+                              <span className="fw-600" style={{ fontSize: '12px' }}>Delete</span>
+                            </div>
                           </div>
 
-                          {/* Product Image */}
-                          <Link href={buildProductDetailHref(elm)} className="minimal-cart-img-wrapper flex-shrink-0">
-                            {!isCartLoading && (elm.variantInfo?.imgSrc || elm.imgSrc) ? (
-                              <Image
-                                alt={getVariantAwareTitle(elm)}
-                                src={getThumbnailImageUrl(elm.variantInfo?.imgSrc || elm.imgSrc) || '/images/products/default-product.jpg'}
-                                width={120}
-                                height={120}
-                                priority={true}
-                                loading="eager"
-                                className="minimal-cart-img rounded-3"
-                                style={{ objectFit: 'cover' }}
-                                unoptimized={false}
-                                onError={(e) => {
-                                  e.target.src = '/images/products/default-product.jpg';
-                                }}
-                              />
-                            ) : (
-                              <div className="minimal-cart-img-placeholder rounded-3 bg-light d-flex align-items-center justify-content-center">
-                                <div className="spinner-border spinner-border-sm text-secondary" role="status" />
-                              </div>
-                            )}
-                          </Link>
-
-                          {/* Details & Actions Content */}
-                          <div className="minimal-cart-details flex-grow-1 min-w-0 d-flex flex-column gap-2">
-                            {/* Top row: Category & Variant specs */}
-                            <div className="d-flex justify-content-between align-items-start gap-2">
-                              <span className="minimal-category text-uppercase text-muted fw-500" style={{ fontSize: '12px', letterSpacing: '0.5px' }}>
-                                {categoryName}
-                              </span>
-                              {variantSpecs && (
-                                <span className="minimal-variant text-muted text-end fw-500" style={{ fontSize: '13px' }}>
-                                  {variantSpecs}
-                                </span>
-                              )}
+                          {/* Main Card */}
+                          <div 
+                            className="minimal-cart-card p-3 p-md-4 bg-white rounded-4 shadow-sm position-relative d-flex align-items-center gap-3 gap-md-4"
+                            style={{
+                              transform: swipedItemId === elm.id ? 'translateX(-80px)' : 'translateX(0)',
+                              transition: 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                              zIndex: 2,
+                              position: 'relative'
+                            }}
+                            onTouchStart={(e) => handleTouchStart(e, elm.id)}
+                            onTouchEnd={(e) => handleTouchEnd(e, elm.id)}
+                          >
+                            {/* Selection Checkbox */}
+                            <div className="cart-item-checkbox flex-shrink-0">
+                              <label className="modern-checkbox" onClick={(e) => { e.preventDefault(); toggleCartItemSelection(elm.id); }}>
+                                <input 
+                                  type="checkbox" 
+                                  className="tf-check-rounded"
+                                  checked={selectedCartItems[elm.id] !== undefined ? selectedCartItems[elm.id] : (elm.isSelected !== undefined ? elm.isSelected : true)}
+                                  readOnly
+                                  id={`select-product-${elm.id}`}
+                                  style={{ display: 'none' }}
+                                />
+                                <span className="custom-checkmark"></span>
+                              </label>
                             </div>
 
-                            {/* Middle row: Title */}
-                            <Link href={buildProductDetailHref(elm)} className="minimal-title text-dark fw-600 text-decoration-none text-truncate" style={{ fontSize: '16px', lineHeight: '1.3' }}>
-                              {getVariantAwareTitle(elm)}
+                            {/* Product Image */}
+                            <Link href={buildProductDetailHref(elm)} className="minimal-cart-img-wrapper flex-shrink-0">
+                              {!isCartLoading && (elm.variantInfo?.imgSrc || elm.imgSrc) ? (
+                                <Image
+                                  alt={getVariantAwareTitle(elm)}
+                                  src={getThumbnailImageUrl(elm.variantInfo?.imgSrc || elm.imgSrc) || '/images/products/default-product.jpg'}
+                                  width={120}
+                                  height={120}
+                                  priority={true}
+                                  loading="eager"
+                                  className="minimal-cart-img rounded-3"
+                                  style={{ objectFit: 'cover' }}
+                                  unoptimized={false}
+                                  onError={(e) => {
+                                    e.target.src = '/images/products/default-product.jpg';
+                                  }}
+                                />
+                              ) : (
+                                <div className="minimal-cart-img-placeholder rounded-3 bg-light d-flex align-items-center justify-content-center">
+                                  <div className="spinner-border spinner-border-sm text-secondary" role="status" />
+                                </div>
+                              )}
                             </Link>
 
-                            {/* Bottom row: Price & Controls */}
-                            <div className="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
-                              <div className="minimal-price text-dark fw-700" style={{ fontSize: '18px' }}>
-                                <PriceDisplay 
-                                  price={elm.price * elm.quantity}
-                                  oldPrice={productsWithOldPrice[elm.id]?.oldPrice ? productsWithOldPrice[elm.id].oldPrice * elm.quantity : (elm.oldPrice ? elm.oldPrice * elm.quantity : null)}
-                                  className="text-dark fw-700"
-                                  size="normal"
-                                />
+                            {/* Details & Actions Content */}
+                            <div className="minimal-cart-details flex-grow-1 min-w-0 d-flex flex-column gap-2">
+                              {/* Top row: Category & Variant specs */}
+                              <div className="d-flex justify-content-between align-items-start gap-2">
+                                <span className="minimal-category text-uppercase text-muted fw-500" style={{ fontSize: '12px', letterSpacing: '0.5px' }}>
+                                  {categoryName}
+                                </span>
+                                {variantSpecs && (
+                                  <span className="minimal-variant text-muted text-end fw-500" style={{ fontSize: '13px' }}>
+                                    {variantSpecs}
+                                  </span>
+                                )}
                               </div>
 
-                              <div className="d-flex align-items-center gap-3">
-                                {/* Quantity Pill */}
-                                <div className="minimal-qty-pill d-flex align-items-center bg-light px-3 py-1 rounded-3">
-                                  <button 
-                                    type="button" 
-                                    className="qty-btn border-0 bg-transparent text-secondary p-0 fw-600 fs-5"
-                                    onClick={() => setQuantity(elm.id, elm.quantity - 1)}
-                                    style={{ width: '24px', lineHeight: '1', cursor: 'pointer' }}
-                                  >
-                                    -
-                                  </button>
-                                  <span className="qty-val px-2 fw-600 text-dark" style={{ minWidth: '24px', textAlign: 'center', fontSize: '14px' }}>
-                                    {elm.quantity}
-                                  </span>
-                                  <button 
-                                    type="button" 
-                                    className="qty-btn border-0 bg-transparent text-secondary p-0 fw-600 fs-5"
-                                    onClick={() => setQuantity(elm.id, elm.quantity + 1)}
-                                    style={{ width: '24px', lineHeight: '1', cursor: 'pointer' }}
-                                  >
-                                    +
-                                  </button>
+                              {/* Middle row: Title */}
+                              <Link href={buildProductDetailHref(elm)} className="minimal-title text-dark fw-600 text-decoration-none text-truncate" style={{ fontSize: '16px', lineHeight: '1.3' }}>
+                                {getVariantAwareTitle(elm)}
+                              </Link>
+
+                              {/* Bottom row: Price & Controls */}
+                              <div className="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
+                                <div className="minimal-price text-dark fw-700" style={{ fontSize: '18px' }}>
+                                  <PriceDisplay 
+                                    price={elm.price * elm.quantity}
+                                    oldPrice={productsWithOldPrice[elm.id]?.oldPrice ? productsWithOldPrice[elm.id].oldPrice * elm.quantity : (elm.oldPrice ? elm.oldPrice * elm.quantity : null)}
+                                    className="text-dark fw-700"
+                                    size="normal"
+                                  />
                                 </div>
 
-                                {/* Trash Delete Button */}
-                                <button 
-                                  type="button" 
-                                  className="minimal-delete-btn border-0 d-flex align-items-center justify-content-center rounded-circle"
-                                  onClick={() => removeItem(elm.id, elm.cartDocumentId)}
-                                  aria-label="Remove item"
-                                >
-                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                                    <line x1="14" y1="11" x2="14" y2="17"></line>
-                                  </svg>
-                                </button>
+                                <div className="d-flex align-items-center gap-3">
+                                  {/* Quantity Pill */}
+                                  <div className="minimal-qty-pill d-flex align-items-center bg-light px-3 py-1 rounded-3">
+                                    <button 
+                                      type="button" 
+                                      className="qty-btn border-0 bg-transparent text-secondary p-0 fw-600 fs-5"
+                                      onClick={() => setQuantity(elm.id, elm.quantity - 1)}
+                                      style={{ width: '24px', lineHeight: '1', cursor: 'pointer' }}
+                                    >
+                                      -
+                                    </button>
+                                    <span className="qty-val px-2 fw-600 text-dark" style={{ minWidth: '24px', textAlign: 'center', fontSize: '14px' }}>
+                                      {elm.quantity}
+                                    </span>
+                                    <button 
+                                      type="button" 
+                                      className="qty-btn border-0 bg-transparent text-secondary p-0 fw-600 fs-5"
+                                      onClick={() => setQuantity(elm.id, elm.quantity + 1)}
+                                      style={{ width: '24px', lineHeight: '1', cursor: 'pointer' }}
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+
+                                  {/* Trash Delete Button */}
+                                  <button 
+                                    type="button" 
+                                    className="minimal-delete-btn border-0 d-flex align-items-center justify-content-center rounded-circle"
+                                    onClick={() => removeItem(elm.id, elm.cartDocumentId)}
+                                    aria-label="Remove item"
+                                  >
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <polyline points="3 6 5 6 21 6"></polyline>
+                                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                      <line x1="10" y1="11" x2="10" y2="17"></line>
+                                      <line x1="14" y1="11" x2="14" y2="17"></line>
+                                    </svg>
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -492,7 +568,7 @@ export default function ShopCart() {
                       <div className="d-flex justify-content-between align-items-center mb-4">
                         <h3 className="mb-0 fw-600">Top Picks for You</h3>
                         <button 
-                          className="btn btn-outline-secondary btn-sm rounded-3"
+                          className="btn btn-outline-secondary btn-sm rounded-3 cart-back-btn"
                           onClick={() => setShowTopPicks(false)}
                         >
                           Back to Cart
@@ -629,21 +705,40 @@ export default function ShopCart() {
           border: 1px solid #e5e5ea;
           border-radius: 10px;
         }
+        .qty-btn {
+          padding: 0 !important;
+          width: 24px !important;
+          height: 24px !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          line-height: 1 !important;
+          background: transparent !important;
+        }
         .qty-btn:hover {
           color: #000 !important;
         }
         .minimal-delete-btn {
-          width: 38px;
-          height: 38px;
+          width: 38px !important;
+          height: 38px !important;
+          padding: 0 !important;
+          flex-shrink: 0 !important;
           background-color: #fdeded;
           color: #e53935;
           transition: all 0.2s ease;
           cursor: pointer;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          border-radius: 50% !important;
         }
         .minimal-delete-btn:hover {
           background-color: #fcc;
           color: #d32f2f;
           transform: scale(1.05);
+        }
+        .cart-back-btn {
+          padding: 6px 12px !important;
         }
         .modern-checkbox {
           display: inline-block;

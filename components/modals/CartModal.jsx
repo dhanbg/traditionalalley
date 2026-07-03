@@ -465,9 +465,15 @@ export default function CartModal() {
           font-size: 18px;
           color: var(--cart-text-secondary);
           cursor: pointer;
-          padding: 8px;
+          padding: 8px !important;
           border-radius: 50%;
           transition: all 0.3s ease;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          width: 34px !important;
+          height: 34px !important;
+          flex-shrink: 0 !important;
         }
         
         .modal-shopping-cart .close-cart:hover {
@@ -648,10 +654,16 @@ export default function CartModal() {
           border: none;
           color: #dc3545;
           cursor: pointer;
-          padding: 8px;
+          padding: 8px !important;
           border-radius: 50%;
           transition: all 0.3s ease;
           font-size: 14px;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          width: 32px !important;
+          height: 32px !important;
+          flex-shrink: 0 !important;
         }
         
         .remove-btn:hover {
@@ -700,7 +712,7 @@ export default function CartModal() {
         }
         
         .tf-button-2 {
-          padding: 12px 24px;
+          padding: 12px 24px !important;
           border-radius: 6px;
           font-weight: 500;
           text-align: center;
@@ -761,7 +773,7 @@ export default function CartModal() {
           color: var(--cart-text-secondary);
           font-size: 14px;
           cursor: pointer;
-          padding: 8px 12px;
+          padding: 8px 12px !important;
           border-radius: 6px;
           transition: all 0.3s ease;
           display: flex;
