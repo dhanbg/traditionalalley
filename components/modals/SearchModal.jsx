@@ -69,10 +69,25 @@ export default function SearchModal() {
     }
   }, []);
 
-  // Handle search submission (now just prevents default form behavior)
+  // Handle search submission
   const handleSearch = (e) => {
     e.preventDefault();
-    // Search is now handled by handleInputChange as user types
+    if (searchQuery.trim()) {
+      router.push(`/search-result?query=${encodeURIComponent(searchQuery.trim())}`);
+      // Close the modal
+      const modal = document.getElementById('search');
+      if (modal) {
+        const bootstrapModal = window.bootstrap && window.bootstrap.Modal.getInstance(modal);
+        if (bootstrapModal) {
+          bootstrapModal.hide();
+        } else {
+          modal.classList.remove('show');
+          document.body.classList.remove('modal-open');
+          const backdrop = document.querySelector('.modal-backdrop');
+          if (backdrop) backdrop.remove();
+        }
+      }
+    }
   };
 
   // Debounce timer for search

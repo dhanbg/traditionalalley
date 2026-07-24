@@ -3,10 +3,19 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
+import BannerCountdown from "@/components/homes/BannerCountdown";
+import Blogs from "@/components/homes/Blogs";
+import Collections from "@/components/homes/Categories";
+import Features from "@/components/common/Features";
 import Hero from "@/components/homes/Hero";
-import WorldCupShowcase from "@/components/common/WorldCupShowcase";
-import WorldCupMarquee from "@/components/common/WorldCupMarquee";
-import WorldCupCountdown from "@/components/common/WorldCupCountdown";
+import Products from "@/components/common/Products3";
+import InstagramVideoCards from "@/components/common/InstagramVideoCards";
+import TopPicks from "@/components/common/TopPicks";
+import PromoHero from "@/components/common/PromoHero";
+
+import Testimonials3 from "@/components/common/Testimonials3";
+import MarqueeSection from "@/components/common/MarqueeSection";
+import CouponPopup from "@/components/common/CouponPopup";
 
 function PaymentMessageHandler() {
     const searchParams = useSearchParams();
@@ -117,7 +126,7 @@ export default function Home({
     isMobileInitial = false
 }) {
     return (
-        <div className="worldcup-page-wrapper">
+        <>
             {/* Payment Status Message */}
             <Suspense fallback={<div style={{ display: 'none' }}>Loading payment status...</div>}>
                 <PaymentMessageHandler />
@@ -125,17 +134,35 @@ export default function Home({
 
             {/* Header and Marquee */}
             <Header1 />
-            <WorldCupMarquee />
-            
+            <MarqueeSection />
+
             {/* Hero Section */}
             <Hero initialSlidesRaw={initialHeroSlidesRaw} isMobileInitial={isMobileInitial} />
-            
-            {/* World Cup Event Offer & Showcase */}
-            <WorldCupCountdown />
-            <WorldCupShowcase />
+
+            {/* Promo Hero & Collections */}
+            <PromoHero />
+            <Collections />
+
+            {/* Banner Countdown & Top Picks */}
+            <BannerCountdown initialOfferData={initialOfferData} />
+            <TopPicks initialProducts={initialTopPicks} initialMeta={initialTopPicksMeta} />
 
             {/* Footer */}
             <Footer1 hasPaddingBottom />
-        </div>
+
+            {/* CSS for animation */}
+            <style jsx>{`
+        @keyframes slideInRight {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
+        </>
     );
 }

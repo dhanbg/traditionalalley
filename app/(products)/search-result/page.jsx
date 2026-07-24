@@ -2,7 +2,7 @@ import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import Topbar6 from "@/components/headers/Topbar6";
 import SearchProducts from "@/components/products/SearchProducts";
-import React from "react";
+import React, { Suspense } from "react";
 
 export const metadata = {
   title: "Search Results | Traditional Alley",
@@ -26,7 +26,15 @@ export default function page() {
           </div>
         </div>
       </div>
-      <SearchProducts />
+      <Suspense fallback={
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      }>
+        <SearchProducts />
+      </Suspense>
 
       <Footer1 />
     </>
