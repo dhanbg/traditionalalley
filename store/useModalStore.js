@@ -10,7 +10,7 @@ export const useModalStore = create((set) => ({
     closeCartModal: () => set({ isCartModalOpen: false }),
     toggleCartModal: () => set((state) => ({ isCartModalOpen: !state.isCartModalOpen })),
 
-    openWishlistModal: () => set({ isWishlistModalOpen: true }),
-    closeWishlistModal: () => set({ isWishlistModalOpen: false }),
-    toggleWishlistModal: () => set((state) => ({ isWishlistModalOpen: !state.isWishlistModalOpen })),
+    openWishlistModal: () => {},
+    closeWishlistModal: () => {},
+    toggleWishlistModal: () => {},
 }));

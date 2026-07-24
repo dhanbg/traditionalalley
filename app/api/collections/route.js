@@ -28,7 +28,8 @@ export async function GET(request) {
   try {
     // Parse the URL
     const url = new URL(request.url);
-    const searchParams = url.searchParams;
+    const searchParams = new URLSearchParams(url.searchParams);
+    searchParams.delete('_t');
     
     // Ensure defaults if not passed
     const hasPopulate = Array.from(searchParams.keys()).some(key => key.startsWith('populate'));
@@ -50,25 +51,16 @@ export async function GET(request) {
     });
 
     if (!response.ok) {
-      throw new Error(`Strapi responded with status ${response.status}`);
+      const errorText = await response.text();
+      console.error(`Strapi responded with status ${response.status} for collections:`, errorText);
+      return NextResponse.json({ data: [], meta: { error: `Strapi returned ${response.status}`, detail: errorText } });
     }
 
     const collections = await response.json();
 
     return NextResponse.json(rewriteImageUrls(collections));
   } catch (error) {
-    // Log the error and the Strapi URL (without token) for debugging
     console.error('Error fetching collections from Strapi:', error.message);
-    if (strapiUrl) {
-      console.error('Strapi URL:', strapiUrl);
-    } else {
-      console.error('Strapi URL not set');
-    }
-
-    return NextResponse.json({ 
-      error: 'Failed to fetch collections', 
-      details: error.message,
-      strapiUrl: strapiUrl || null
-    }, { status: 500 });
+    return NextResponse.json({ data: [], meta: { error: error.message } });
   }
 }

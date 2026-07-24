@@ -362,37 +362,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
       `}</style>
 
       <section className="tf-slideshow slider-default slider-position slider-effect-fade" style={heroWrapperStyle}>
-        {/* Intro overlay image shown instantly before videos are ready */}
-        {showIntroImage && slides.some(s => s.mediaType === 'video') && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              zIndex: 5
-            }}
-          >
-            <Image
-              alt={"hero-intro"}
-              src={isMobile ? 'https://4k3pbkj0o1.ucarecd.net/003d6a53-0c71-42c5-909c-c537e1767002/mobile.png' : 'https://4k3pbkj0o1.ucarecd.net/ad7c08bf-69c9-4653-9c1a-84cb04d1cf57/ChatGPTImageJun23202602_38_43AM11.png'}
-              width={1920}
-              height={803}
-              priority
 
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center center'
-              }}
-              onLoad={() => {
-                setImageLoaded(true);
-              }}
-            />
-          </div>
-        )}
         <Swiper
           effect="fade"
           spaceBetween={0}
@@ -430,7 +400,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                         disableRemotePlayback
                         webkit-playsinline="true"
                         preload={loadedVideos.has(index) || index === activeSlideIndex ? "auto" : "none"}
-                        poster={index === 0 ? (isMobile ? 'https://4k3pbkj0o1.ucarecd.net/003d6a53-0c71-42c5-909c-c537e1767002/mobile.png' : 'https://4k3pbkj0o1.ucarecd.net/ad7c08bf-69c9-4653-9c1a-84cb04d1cf57/ChatGPTImageJun23202602_38_43AM11.png') : (slide.poster || slide.imgSrc)}
+                        poster={index === 0 ? (isMobile ? 'https://www.image2url.com/r2/default/images/1784894592927-1225a295-9c8e-416b-9fad-fd6954d7869e.jpg' : 'https://www.image2url.com/r2/default/images/1784894579658-80104e75-d617-4a30-919d-51cc8ec04b13.jpg') : (slide.poster || slide.imgSrc)}
                         style={{
                           width: '100%',
 
@@ -561,24 +531,48 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                       </div>
                     </div>
                   ) : (
-                    <Image
-                      alt={slide.alt}
-                      src={slide.imgSrc}
-                      width={1920}
-                      height={803}
-                      quality={100}
-                      priority={index === 0}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        objectPosition: 'center center'
-                      }}
-                      onLoad={() => {
-                        setImageLoaded(true);
-                        if (index === 0) setFirstMediaReady(true);
-                      }}
-                    />
+                    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                      {/* Laptop / Desktop Image */}
+                      <Image
+                        alt={slide.alt || "Hero Laptop"}
+                        src={slide.imgSrc || "https://www.image2url.com/r2/default/images/1784894579658-80104e75-d617-4a30-919d-51cc8ec04b13.jpg"}
+                        width={1920}
+                        height={803}
+                        quality={100}
+                        priority={index === 0}
+                        className="d-none d-md-block"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          objectPosition: 'center center'
+                        }}
+                        onLoad={() => {
+                          setImageLoaded(true);
+                          if (index === 0) setFirstMediaReady(true);
+                        }}
+                      />
+                      {/* Mobile Image */}
+                      <Image
+                        alt={slide.alt || "Hero Mobile"}
+                        src={slide.mobileMedia?.url || "https://www.image2url.com/r2/default/images/1784894592927-1225a295-9c8e-416b-9fad-fd6954d7869e.jpg"}
+                        width={768}
+                        height={1024}
+                        quality={100}
+                        priority={index === 0}
+                        className="d-block d-md-none"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          objectPosition: 'center center'
+                        }}
+                        onLoad={() => {
+                          setImageLoaded(true);
+                          if (index === 0) setFirstMediaReady(true);
+                        }}
+                      />
+                    </div>
                   )}
                   {slide.isTeaser ? (
                     <div className="teaser-content-container">

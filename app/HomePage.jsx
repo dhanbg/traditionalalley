@@ -5,7 +5,6 @@ import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import BannerCountdown from "@/components/homes/BannerCountdown";
 import Blogs from "@/components/homes/Blogs";
-import Collections from "@/components/homes/Categories";
 import Features from "@/components/common/Features";
 import Hero from "@/components/homes/Hero";
 import Products from "@/components/common/Products3";
@@ -138,10 +137,6 @@ export default function Home({
 
             {/* Hero Section */}
             <Hero initialSlidesRaw={initialHeroSlidesRaw} isMobileInitial={isMobileInitial} />
-
-            {/* Promo Hero & Collections */}
-            <PromoHero />
-            <Collections />
 
             {/* Banner Countdown & Top Picks */}
             <BannerCountdown initialOfferData={initialOfferData} />

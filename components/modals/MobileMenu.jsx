@@ -728,36 +728,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                   )}
                 </li>
 
-                {/* Wishlist */}
-                <li className="menu-item-enter" style={{
-                  marginBottom: '8px',
-                  borderRadius: '12px',
-                  overflow: 'hidden',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}>
-                  <Link 
-                    href="/wishlist" 
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '16px 20px',
-                      fontSize: '16px',
-                      fontWeight: '500',
-                      color: 'var(--menu-text)',
-                      textDecoration: 'none',
-                      background: 'var(--menu-item-grad)',
-                      border: '1px solid var(--menu-border)',
-                      borderRadius: '12px',
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      fontFamily: '"Outfit", sans-serif',
-                      position: 'relative',
-                      overflow: 'hidden'
-                    }}
-                  >
 
-                    <span>Wishlist</span>
-                  </Link>
-                </li>
 
                 {/* My Account */}
                 {session && (

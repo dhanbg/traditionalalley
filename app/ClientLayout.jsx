@@ -8,7 +8,6 @@ import Compare from "@/components/modals/Compare";
 import MobileMenu from "@/components/modals/MobileMenu";
 import SearchModal from "@/components/modals/SearchModal";
 import SizeGuide from "@/components/modals/SizeGuide";
-import Wishlist from "@/components/modals/Wishlist";
 import DemoModal from "@/components/modals/DemoModal";
 import Categories from "@/components/modals/Categories";
 import ScrollTop from "@/components/common/ScrollTop";
@@ -175,7 +174,6 @@ export default function ClientLayout({ children }) {
               <MobileMenu />
               <SearchModal />
               <SizeGuide />
-              <Wishlist />
               <DemoModal />
               <Categories />
               <ScrollTop />

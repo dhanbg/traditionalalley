@@ -22,7 +22,9 @@ function rewriteImageUrls(obj: any): any {
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const url = new URL(request.url);
+    const searchParams = new URLSearchParams(url.searchParams);
+    searchParams.delete('_t');
     
     // Ensure default population if not passed, but preserve all incoming params
     const hasPopulate = Array.from(searchParams.keys()).some(key => key.startsWith('populate'));

@@ -198,8 +198,6 @@ export default function Details1({ product, variants = [], preferredVariantId = 
     addProductToCart,
     isAddedToCartProducts,
     isProductSizeInCart, // Add the new function
-    addToWishlist,
-    isAddedtoWishlist,
     isAddedtoCompareItem,
     addToCompareItem,
     cartProducts,
@@ -253,9 +251,6 @@ export default function Details1({ product, variants = [], preferredVariantId = 
     }
   }, []);
 
-  // Add state for wishlist operations
-  const [wishlistLoading, setWishlistLoading] = useState(false);
-
   useEffect(() => {
     if (activeVariant && safeProduct) {
       setCurrentProduct({
@@ -271,48 +266,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
     }
   }, [activeVariant?.documentId, activeVariant?.id, safeProduct.documentId, safeProduct.id]);
 
-  // Check if current product is in wishlist using Context
   const currentProductId = safeProduct.documentId || safeProduct.id;
-  // Create unique wishlist ID that matches cart ID pattern
-  const wishlistId = useMemo(() => {
-    const baseId = safeProduct.documentId || safeProduct.id;
-
-    if (activeVariant && !activeVariant.isCurrentProduct) {
-      // For variants: include variant documentId and size for consistency with cart
-      const variantIdentifier = activeVariant.documentId || activeVariant.id;
-      const baseVariantId = `${baseId}-variant-${variantIdentifier}`;
-      return selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
-    } else {
-      // For main products: use documentId for consistency and include size in ID
-      return selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
-    }
-  }, [safeProduct, activeVariant, selectedSize]);
-
-  // Create variant info for wishlist checking (same as cart)
-  const variantInfoForWishlist = useMemo(() => {
-    if (activeVariant && !activeVariant.isCurrentProduct) {
-      return {
-        isVariant: true,
-        documentId: activeVariant.documentId || activeVariant.id,
-        title: activeVariant.title,
-        variantId: activeVariant.id
-      };
-    }
-    return null;
-  }, [activeVariant]);
-
-  const isInWishlist = isAddedtoWishlist(wishlistId, variantInfoForWishlist, selectedSize);
-
-  // Debug log for wishlist checking
-  console.log('🔍 Details1 wishlist check:', {
-    productTitle: safeProduct.title,
-    wishlistId,
-    variantInfoForWishlist,
-    selectedSize,
-    activeVariant: activeVariant?.title,
-    isInWishlist,
-    baseProductId: safeProduct.documentId || safeProduct.id
-  });
 
   // Memoized check if product is out of stock (all sizes have zero quantity)
   const isOutOfStock = useMemo(() => {
@@ -346,51 +300,6 @@ export default function Details1({ product, variants = [], preferredVariantId = 
 
     return false;
   }, [activeVariant, currentProduct.size_stocks, safeProduct.size_stocks, safeProduct.isActive]);
-
-  const handleWishlistClick = async () => {
-    if (!user) {
-      signIn();
-      return;
-    }
-
-    if (!isOutOfStock) {
-      setSizeSelectionError("This item is currently in stock. Add to cart instead!");
-      return;
-    }
-
-    if (isInWishlist) {
-      setSizeSelectionError("This item is already in your wishlist.");
-      return;
-    }
-
-    setWishlistLoading(true);
-    setSizeSelectionError(null);
-
-    try {
-      console.log('🚀 Details1 adding to wishlist:', {
-        wishlistId,
-        variantInfoForWishlist,
-        selectedSize,
-        productTitle: safeProduct.title,
-        activeVariantTitle: activeVariant?.title
-      });
-
-      // Use Context's addToWishlist function with variant and size info
-      await addToWishlist(wishlistId, variantInfoForWishlist, selectedSize);
-
-      // Show success message
-      setSizeSelectionError("✓ Added to wishlist successfully!");
-
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSizeSelectionError(null);
-      }, 3000);
-    } catch (error) {
-      setSizeSelectionError('Failed to add to wishlist. Please try again.');
-    } finally {
-      setWishlistLoading(false);
-    }
-  };
 
   const handleCartClick = () => {
     // Check if product has sizes and require size selection
@@ -680,82 +589,44 @@ export default function Details1({ product, variants = [], preferredVariantId = 
 
                     <div className="tf-product-action-btns" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                       <div className="tf-product-info-by-btn mb_10" style={{ display: "flex", alignItems: "center" }}>
-                        {/* Show either Add to Cart OR Add to Wishlist based on stock */}
-                        {isOutOfStock ? (
-                          // Add to Wishlist button (when out of stock)
-                          <a
-                            onClick={wishlistLoading ? null : handleWishlistClick}
-                            className={`btn-style-2 fw-6 btn-add-to-wishlist ${isInWishlist ? 'added' : ''
-                              } ${wishlistLoading ? 'loading' : ''
-                              }`}
-                            style={{
-                              height: "46px",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              padding: "0 15px",
-                              minWidth: "120px",
-                              opacity: wishlistLoading ? 0.6 : 1,
-                              cursor: wishlistLoading ? 'not-allowed' : 'pointer',
-                              backgroundColor: isInWishlist ? '#dc3545' : '#28a745',
-                              color: 'white',
-                              border: 'none'
-                            }}
-                          >
-                            {wishlistLoading ? (
-                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style={{ width: '16px', height: '16px' }} />
-                            ) : (
-                              <span className={`icon ${isInWishlist ? 'icon-heart-fill' : 'icon-heart'} me-2`} />
-                            )}
-                            <span>
-                              {(() => {
-                                if (wishlistLoading) return "Adding...";
-                                if (!user) return "Login to add to wishlist";
-                                if (isInWishlist) return "In Wishlist";
-                                return "Add to Wishlist";
-                              })()}
-                            </span>
-                          </a>
-                        ) : (
-                          // Add to Cart button (when in stock)
-                          <a
-                            onClick={safeProduct.isActive === false ? null : handleCartClick}
-                            className={`btn-style-2 fw-6 btn-add-to-cart ${safeProduct.isActive === false ? 'disabled' : ''}`}
-                            style={{
-                              height: "46px",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              padding: "0 15px",
-                              minWidth: "140px",
-                              whiteSpace: "nowrap",
-                              opacity: safeProduct.isActive === false ? 0.6 : 1,
-                              cursor: safeProduct.isActive === false ? 'not-allowed' : 'pointer',
-                              backgroundColor: safeProduct.isActive === false ? '#6c757d' : ''
-                            }}
-                          >
-                            <span>
-                              {user && (() => {
-                                // Check if current product+size combination is in cart using same logic as handleCartClick
-                                const baseId = safeProduct.documentId || safeProduct.id;
-                                let uniqueCartIdToCheck;
+                        {/* Add to Cart button */}
+                        <a
+                          onClick={(isOutOfStock || safeProduct.isActive === false) ? null : handleCartClick}
+                          className={`btn-style-2 fw-6 btn-add-to-cart ${(isOutOfStock || safeProduct.isActive === false) ? 'disabled' : ''}`}
+                          style={{
+                            height: "46px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "0 15px",
+                            minWidth: "140px",
+                            whiteSpace: "nowrap",
+                            opacity: (isOutOfStock || safeProduct.isActive === false) ? 0.6 : 1,
+                            cursor: (isOutOfStock || safeProduct.isActive === false) ? 'not-allowed' : 'pointer',
+                            backgroundColor: (isOutOfStock || safeProduct.isActive === false) ? '#6c757d' : ''
+                          }}
+                        >
+                          <span>
+                            {isOutOfStock ? "Out of Stock" : (user && (() => {
+                              // Check if current product+size combination is in cart using same logic as handleCartClick
+                              const baseId = safeProduct.documentId || safeProduct.id;
+                              let uniqueCartIdToCheck;
 
-                                if (activeVariant && !activeVariant.isCurrentProduct) {
-                                  // For variants: include variant documentId and size for consistency
-                                  const variantIdentifier = activeVariant.documentId || activeVariant.id;
-                                  const baseVariantId = `${baseId}-variant-${variantIdentifier}`;
-                                  uniqueCartIdToCheck = selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
-                                } else {
-                                  // For main products: use documentId for consistency and include size in ID
-                                  uniqueCartIdToCheck = selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
-                                }
+                              if (activeVariant && !activeVariant.isCurrentProduct) {
+                                // For variants: include variant documentId and size for consistency
+                                const variantIdentifier = activeVariant.documentId || activeVariant.id;
+                                const baseVariantId = `${baseId}-variant-${variantIdentifier}`;
+                                uniqueCartIdToCheck = selectedSize ? `${baseVariantId}-size-${selectedSize}` : baseVariantId;
+                              } else {
+                                // For main products: use documentId for consistency and include size in ID
+                                uniqueCartIdToCheck = selectedSize ? `${baseId}-size-${selectedSize}` : baseId;
+                              }
 
-                                const isInCart = isAddedToCartProducts(uniqueCartIdToCheck);
-                                return isInCart ? "Added" : "Add to cart";
-                              })() || "Add to cart"}
-                            </span>
-                          </a>
-                        )}
+                              const isInCart = isAddedToCartProducts(uniqueCartIdToCheck);
+                              return isInCart ? "Added" : "Add to cart";
+                            })() || "Add to cart")}
+                          </span>
+                        </a>
 
 
                         <button
