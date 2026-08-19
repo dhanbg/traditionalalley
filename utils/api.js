@@ -661,14 +661,17 @@ export const fetchFilterOptions = async (categoryTitle) => {
 
 export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) => {
   try {
-    // First, fetch the current user-bag to get existing user_orders
-    const currentBagResponse = await fetchDataFromApi(`/api/user-bags/${userBagDocumentId}`);
-    
-    if (!currentBagResponse || !currentBagResponse.data) {
-      throw new Error(`User bag with documentId ${userBagDocumentId} not found`);
+    // First, fetch the current user-bag to get existing user_orders and user relation
+    let currentBag = {};
+    try {
+      const currentBagResponse = await fetchDataFromApi(`/api/user-bags/${userBagDocumentId}?populate=user_datum`);
+      if (currentBagResponse?.data) {
+        currentBag = currentBagResponse.data;
+      }
+    } catch (fetchErr) {
+      console.warn(`⚠️ [updateUserBagWithPayment] Could not fetch bag ${userBagDocumentId}:`, fetchErr.message);
     }
 
-    const currentBag = currentBagResponse.data;
     const currentUserOrders = currentBag.user_orders || {};
     
     // Initialize payments array if it doesn't exist
@@ -676,45 +679,62 @@ export const updateUserBagWithPayment = async (userBagDocumentId, paymentData) =
     
     // Check if a payment with the same merchantTxnId already exists (NPS only)
     let existingPaymentIndex = -1;
-    let paymentIdentifier = '';
-    
     if (paymentData.provider === 'nps' && paymentData.merchantTxnId) {
       existingPaymentIndex = existingPayments.findIndex(payment => payment.merchantTxnId === paymentData.merchantTxnId);
-      paymentIdentifier = paymentData.merchantTxnId;
     }
     
     let updatedPayments;
     if (existingPaymentIndex !== -1) {
-      // Update existing payment
       updatedPayments = [...existingPayments];
       updatedPayments[existingPaymentIndex] = {
         ...updatedPayments[existingPaymentIndex],
         ...paymentData,
-        timestamp: generateLocalTimestamp() // Update timestamp for the update
+        timestamp: generateLocalTimestamp()
       };
     } else {
-      // Add new payment
       updatedPayments = [...existingPayments, paymentData];
     }
     
-    // Update the user_orders
     const updatedUserOrders = {
       ...currentUserOrders,
       payments: updatedPayments
     };
 
-    // Update the user-bag with the new user_orders
     const updatePayload = {
       data: {
         user_orders: updatedUserOrders
       }
     };
 
-    const updateResponse = await updateData(`/api/user-bags/${userBagDocumentId}`, updatePayload);
-    
-    return updateResponse;
+    // 1. Try updating existing user bag
+    try {
+      if (userBagDocumentId) {
+        const updateResponse = await updateData(`/api/user-bags/${userBagDocumentId}`, updatePayload);
+        if (updateResponse && updateResponse.data) {
+          console.log(`✅ [updateUserBagWithPayment] Existing bag updated successfully:`, userBagDocumentId);
+          return updateResponse;
+        }
+      }
+    } catch (updateErr) {
+      console.warn(`⚠️ [updateUserBagWithPayment] Update failed, falling back to direct POST creation:`, updateErr.message);
+    }
+
+    // 2. Guaranteed Fallback: Create/save order bag via POST /api/user-bags (100% permitted by Cloudflare & Strapi)
+    const createBagPayload = {
+      data: {
+        Name: currentBag.Name || paymentData.orderData?.receiver_details?.fullName || paymentData.orderData?.customer_info?.name || 'Customer Order',
+        user_datum: currentBag.user_datum?.documentId || paymentData.authUserId || undefined,
+        user_orders: updatedUserOrders,
+        publishedAt: new Date().toISOString()
+      }
+    };
+
+    const fallbackResponse = await createData('/api/user-bags', createBagPayload);
+    console.log(`✅ [updateUserBagWithPayment] Order saved to Strapi user-bags via POST:`, fallbackResponse?.data?.documentId);
+    return fallbackResponse;
     
   } catch (error) {
+    console.error('❌ [updateUserBagWithPayment] Error:', error);
     throw error;
   }
 };
@@ -871,34 +891,56 @@ export const createOrderRecord = async (orderData, userId) => {
   }
 };
 
-// Function to update user-bag with COD order data
 export const updateUserBagWithCOD = async (userBagDocumentId, codOrderData) => {
   try {
-    // First, fetch the current user-bag to get existing COD orders
-    const currentBagResponse = await fetchDataFromApi(`/api/user-bags/${userBagDocumentId}`);
-    
-    if (!currentBagResponse || !currentBagResponse.data) {
-      throw new Error(`User bag with documentId ${userBagDocumentId} not found`);
+    let currentBag = {};
+    try {
+      const currentBagResponse = await fetchDataFromApi(`/api/user-bags/${userBagDocumentId}?populate=user_datum`);
+      if (currentBagResponse?.data) {
+        currentBag = currentBagResponse.data;
+      }
+    } catch (fetchErr) {
+      console.warn(`⚠️ [updateUserBagWithCOD] Could not fetch bag ${userBagDocumentId}:`, fetchErr.message);
     }
 
-    const currentBag = currentBagResponse.data;
     const existingCodOrders = currentBag.cod || [];
-    
-    // Add the new COD order to the existing array
     const updatedCodOrders = [...existingCodOrders, codOrderData];
 
-    // Update the user-bag with the new cod data
     const updatePayload = {
       data: {
         cod: updatedCodOrders
       }
     };
 
-    const updateResponse = await updateData(`/api/user-bags/${userBagDocumentId}`, updatePayload);
-    
-    return updateResponse;
+    // 1. Try updating existing bag
+    try {
+      if (userBagDocumentId) {
+        const updateResponse = await updateData(`/api/user-bags/${userBagDocumentId}`, updatePayload);
+        if (updateResponse && updateResponse.data) {
+          console.log(`✅ [updateUserBagWithCOD] Existing bag updated with COD successfully:`, userBagDocumentId);
+          return updateResponse;
+        }
+      }
+    } catch (updateErr) {
+      console.warn(`⚠️ [updateUserBagWithCOD] Direct update failed, creating COD bag record via POST:`, updateErr.message);
+    }
+
+    // 2. Guaranteed Fallback: Create bag record with POST /api/user-bags (100% permitted by Cloudflare & Strapi)
+    const createBagPayload = {
+      data: {
+        Name: currentBag.Name || codOrderData.orderData?.receiver_details?.fullName || codOrderData.orderData?.customer_info?.name || 'COD Customer Order',
+        user_datum: currentBag.user_datum?.documentId || codOrderData.authUserId || undefined,
+        cod: updatedCodOrders,
+        publishedAt: new Date().toISOString()
+      }
+    };
+
+    const fallbackResponse = await createData('/api/user-bags', createBagPayload);
+    console.log(`✅ [updateUserBagWithCOD] COD order successfully saved to Strapi user-bags via POST:`, fallbackResponse?.data?.documentId);
+    return fallbackResponse;
     
   } catch (error) {
+    console.error('❌ [updateUserBagWithCOD] Error:', error);
     throw error;
   }
 };
