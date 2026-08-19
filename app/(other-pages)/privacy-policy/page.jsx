@@ -18,7 +18,7 @@ export default function page() {
         <div className="container-full">
           <div className="row">
             <div className="col-12">
-              <h3 className="heading text-center">Privacy Policy</h3>
+              <h1 className="heading text-center">Privacy Policy</h1>
             </div>
           </div>
         </div>

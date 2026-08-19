@@ -626,14 +626,14 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                           <p className="fade-item fade-item-1 subheading text-btn-uppercase text-white">
                             {slide.subheading}
                           </p>
-                          <div className="fade-item fade-item-2 heading text-white title-display">
+                          <h1 className="fade-item fade-item-2 heading text-white title-display">
                             {slide.heading.split("\n").map((line, idx) => (
                               <span key={idx}>
                                 {line}
                                 <br />
                               </span>
                             ))}
-                          </div>
+                          </h1>
                         </div>
                         <div className="fade-item fade-item-3 box-btn-slider">
                           <Link

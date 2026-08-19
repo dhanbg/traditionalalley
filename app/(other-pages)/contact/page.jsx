@@ -5,8 +5,18 @@ import Contact2 from "@/components/otherPages/Contact2";
 import React from "react";
 
 export const metadata = {
-  title: "Contact || Traditional Alley",
-  description: "Traditional Alley",
+  title: "Contact Us | Traditional Alley - Customer Support & Inquiries",
+  description: "Get in touch with Traditional Alley. Reach out for custom sizing inquiries, order support, and wholesale questions. Located in Lalitpur, Nepal with worldwide delivery.",
+  alternates: {
+    canonical: "/contact",
+  },
+  openGraph: {
+    title: "Contact Us | Traditional Alley - Customer Support & Inquiries",
+    description: "Get in touch with Traditional Alley. Reach out for custom sizing inquiries, order support, and wholesale questions.",
+    url: "https://traditionalalley.com.np/contact",
+    siteName: "Traditional Alley",
+    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Traditional Alley" }],
+  },
 };
 
 export default function page() {
@@ -21,6 +31,7 @@ export default function page() {
         style={{ border: 0, width: "100%" }}
         allowFullScreen=""
         loading="lazy"
+        title="Traditional Alley Store Location"
       />
       <Contact2 />
       <Footer1 />

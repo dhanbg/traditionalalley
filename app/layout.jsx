@@ -9,6 +9,54 @@ import { metadata as globalMetadata } from "./metadata";
 
 export const metadata = globalMetadata;
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#ffffff',
+};
+
+const jsonLdGlobal = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://traditionalalley.com.np/#organization",
+      "name": "Traditional Alley",
+      "url": "https://traditionalalley.com.np",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://traditionalalley.com.np/logo.png",
+        "width": "600",
+        "height": "150"
+      },
+      "sameAs": [
+        "https://www.facebook.com/traditionalalley",
+        "https://www.instagram.com/traditionalalley"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "Customer Support",
+        "areaServed": ["NP", "US", "AU", "GB", "CA"]
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://traditionalalley.com.np/#website",
+      "url": "https://traditionalalley.com.np",
+      "name": "Traditional Alley",
+      "description": "Authentic Nepali Traditional Clothing and Modern Fashion",
+      "publisher": {
+        "@id": "https://traditionalalley.com.np/#organization"
+      },
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://traditionalalley.com.np/search-result?query={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+  ]
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning={true}>
@@ -17,6 +65,12 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@400;500;600&display=swap" rel="stylesheet" />
+
+        {/* Global Structured Data (Organization & WebSite) */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdGlobal) }}
+        />
 
         {/* Google Tag Manager */}
         <script dangerouslySetInnerHTML={{
@@ -42,7 +96,6 @@ fbq('init', '882153701609750');
 fbq('track', 'PageView');`
         }} />
         {/* End Meta Pixel Code */}
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </head>
       <body suppressHydrationWarning={true}>
         {/* Google Tag Manager (noscript) */}

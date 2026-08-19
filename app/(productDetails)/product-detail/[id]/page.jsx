@@ -184,8 +184,72 @@ export default async function page({ params, searchParams }) {
     );
   }
   
+  const productImageUrl = product.imgSrc?.url 
+    ? (product.imgSrc.url.startsWith('http') ? product.imgSrc.url : `${API_URL}${product.imgSrc.url}`)
+    : 'https://traditionalalley.com.np/logo.png';
+
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    '@id': `https://traditionalalley.com.np/product-detail/${id}#product`,
+    name: product.title,
+    description: normalizeText(product.description) || `Authentic Nepali ${product.title} from Traditional Alley`,
+    image: [productImageUrl],
+    sku: product.sku || id,
+    brand: {
+      '@type': 'Brand',
+      name: 'Traditional Alley',
+    },
+    offers: {
+      '@type': 'Offer',
+      url: `https://traditionalalley.com.np/product-detail/${id}`,
+      priceCurrency: 'NPR',
+      price: product.price || 0,
+      priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      itemCondition: 'https://schema.org/NewCondition',
+      availability: product.inStock !== false ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      seller: {
+        '@type': 'Organization',
+        name: 'Traditional Alley',
+      },
+    },
+  };
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://traditionalalley.com.np',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Collections',
+        item: 'https://traditionalalley.com.np/collections',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: product.title,
+        item: `https://traditionalalley.com.np/product-detail/${id}`,
+      },
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <Topbar6 bgColor="bg-main" />
       <Header1 />
       <Breadcumb product={product} />

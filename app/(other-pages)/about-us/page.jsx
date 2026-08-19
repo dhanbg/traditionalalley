@@ -8,8 +8,18 @@ import Testimonials from "@/components/otherPages/Testimonials";
 import React from "react";
 
 export const metadata = {
-  title: "About Us || Traditional Alley",
-  description: "Traditional Alley",
+  title: "About Us | Traditional Alley - Authentic Nepali Ethnic Wear",
+  description: "Learn about Traditional Alley, Nepal's premier traditional clothing brand. Discover our heritage, craftsmanship, and commitment to authentic Nepali fashion and worldwide delivery.",
+  alternates: {
+    canonical: "/about-us",
+  },
+  openGraph: {
+    title: "About Us | Traditional Alley - Authentic Nepali Ethnic Wear",
+    description: "Learn about Traditional Alley, Nepal's premier traditional clothing brand. Discover our heritage, craftsmanship, and commitment to authentic Nepali fashion.",
+    url: "https://traditionalalley.com.np/about-us",
+    siteName: "Traditional Alley",
+    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Traditional Alley" }],
+  },
 };
 
 export default function page() {
@@ -37,7 +47,7 @@ export default function page() {
         }}>
           <div className="row">
             <div className="col-12">
-              <h3 className="heading text-center">About Our Store</h3>
+              <h1 className="heading text-center">About Our Store</h1>
               <ul className="breadcrumbs d-flex align-items-center justify-content-center">
                 <li>
                   <Link className="link" href={`/`}>

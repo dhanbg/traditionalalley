@@ -8,16 +8,21 @@ export const metadata = {
   keywords: [
     'Traditional Alley',
     'Nepali fashion',
-    'traditional clothing',
+    'traditional clothing Nepal',
     'ethnic wear',
     'Nepal traditional dress',
     'authentic Nepali clothing',
     'traditional fashion',
     'cultural clothing',
     'handmade clothing Nepal',
-    'traditional alley nepal'
+    'traditional alley nepal',
+    'Dhaka topi',
+    'Daura Suruwal',
+    'Nepali Kurtha',
+    'Nepali bridal lehenga',
+    'Nepali sarees'
   ],
-  authors: [{ name: 'Traditional Alley' }],
+  authors: [{ name: 'Traditional Alley', url: 'https://traditionalalley.com.np' }],
   creator: 'Traditional Alley',
   publisher: 'Traditional Alley',
   formatDetection: {
@@ -62,7 +67,9 @@ export const metadata = {
       'max-snippet': -1,
     },
   },
-  verification: {
-    google: 'your-google-verification-code', // Replace with actual verification code
-  },
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ? {
+    verification: {
+      google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    },
+  } : {}),
 };
