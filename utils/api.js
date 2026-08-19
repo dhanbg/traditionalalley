@@ -252,33 +252,108 @@ export const createData = async (endpoint, data) => {
 }
 
 export const updateData = async (endpoint, data) => {
+  const fetchUrl = getFetchUrl(endpoint);
+  
+  // Cloudflare WAF blocks raw PUT/PATCH requests (403 Forbidden).
+  // We send a POST request with X-HTTP-Method-Override: PUT headers.
   const options = {
-    method: "PUT",
+    method: "POST",
     headers: {
       Authorization: `Bearer ${STRAPI_API_TOKEN}`,
       "Content-Type": "application/json",
+      "X-HTTP-Method-Override": "PUT",
+      "X-Method-Override": "PUT",
+      "X-HTTP-Method": "PUT"
     },
     body: JSON.stringify(data),
   };
   
   try {
-    // Send the request
-    const fetchUrl = getFetchUrl(endpoint);
-    const res = await fetch(fetchUrl, options);
-    
-    // Get the response text for parsing
-    const responseText = await res.text();
-    
-    // Try to parse the response as JSON
+    let res = await fetch(fetchUrl, options);
+    let responseText = await res.text();
     let responseData;
     try {
       responseData = JSON.parse(responseText);
     } catch (parseError) {
       // Response is not JSON
     }
-    
-    // Check if the request was successful
+
+    // If method override was not accepted (405) or blocked, try dedicated endpoints
     if (!res.ok) {
+      console.warn(`⚠️ [updateData] Initial POST override to ${fetchUrl} returned ${res.status}. Attempting dedicated fallback...`);
+
+      // 1. Fallback for user-bags update
+      if (endpoint.includes('/api/user-bags/')) {
+        const bagIdMatch = endpoint.match(/\/api\/user-bags\/([^?]+)/);
+        if (bagIdMatch && bagIdMatch[1]) {
+          const bagDocumentId = bagIdMatch[1];
+          const hasUserOrders = data?.data?.user_orders !== undefined || data?.user_orders !== undefined;
+          const hasCod = data?.data?.cod !== undefined || data?.cod !== undefined;
+
+          if (hasUserOrders) {
+            const fallbackUrl = getFetchUrl('/api/user-bags/update-orders');
+            const fallbackRes = await fetch(fallbackUrl, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${STRAPI_API_TOKEN}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                documentId: bagDocumentId,
+                user_orders: data?.data?.user_orders || data?.user_orders
+              })
+            });
+            if (fallbackRes.ok) {
+              const fbData = await fallbackRes.json();
+              return fbData;
+            }
+          }
+
+          if (hasCod) {
+            const fallbackUrl = getFetchUrl('/api/user-bags/update-cod');
+            const fallbackRes = await fetch(fallbackUrl, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${STRAPI_API_TOKEN}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                documentId: bagDocumentId,
+                cod: data?.data?.cod || data?.cod
+              })
+            });
+            if (fallbackRes.ok) {
+              const fbData = await fallbackRes.json();
+              return fbData;
+            }
+          }
+        }
+      }
+
+      // 2. Fallback for products stock update
+      if (endpoint.includes('/api/products/')) {
+        const prodIdMatch = endpoint.match(/\/api\/products\/([^?]+)/);
+        if (prodIdMatch && prodIdMatch[1] && (data?.data?.size_stocks || data?.size_stocks)) {
+          const prodDocumentId = prodIdMatch[1];
+          const fallbackUrl = getFetchUrl('/api/products/update-stock');
+          const fallbackRes = await fetch(fallbackUrl, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${STRAPI_API_TOKEN}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              documentId: prodDocumentId,
+              size_stocks: data?.data?.size_stocks || data?.size_stocks
+            })
+          });
+          if (fallbackRes.ok) {
+            const fbData = await fallbackRes.json();
+            return fbData;
+          }
+        }
+      }
+
       const error = new Error(`Update failed: ${res.statusText}`);
       error.status = res.status;
       error.detail = responseData || responseText;
@@ -296,57 +371,63 @@ export const deleteData = async (endpoint) => {
   let cleanEndpoint = endpoint;
   
   try {
-    // For cart deletions from browser, use POST-based delete to bypass Cloudflare WAF
-    // Cloudflare blocks HTTP DELETE method, causing 403 Forbidden
-    if (typeof window !== 'undefined' && cleanEndpoint.includes('/api/carts/')) {
-      // Extract the cart ID from the endpoint (e.g., /api/carts/abc123 -> abc123)
+    // For cart deletions, use POST-based delete to bypass Cloudflare WAF
+    if (cleanEndpoint.includes('/api/carts/')) {
       const cartIdMatch = cleanEndpoint.match(/\/api\/carts\/([^?]+)/);
-      if (cartIdMatch && cartIdMatch[1] && cartIdMatch[1] !== 'delete') {
+      if (cartIdMatch && cartIdMatch[1] && cartIdMatch[1] !== 'delete' && cartIdMatch[1] !== 'delete-item') {
         const cartId = cartIdMatch[1];
-        console.log(`🗑️ [deleteData] Using POST /api/carts/delete for cart ID: ${cartId}`);
+        console.log(`🗑️ [deleteData] Using POST cart delete for cart ID: ${cartId}`);
         
-        const res = await fetch('/api/carts/delete', {
+        // Try Next.js internal delete route first if in browser
+        if (typeof window !== 'undefined') {
+          const res = await fetch('/api/carts/delete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ id: cartId }),
+          });
+
+          if (res.ok) {
+            const resData = await res.json().catch(() => ({ success: true }));
+            return resData;
+          }
+        }
+
+        // Try Strapi /api/carts/delete-item
+        const strapiDeleteUrl = getFetchUrl('/api/carts/delete-item');
+        const strapiRes = await fetch(strapiDeleteUrl, {
           method: 'POST',
           headers: {
+            Authorization: `Bearer ${STRAPI_API_TOKEN}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ id: cartId }),
+          body: JSON.stringify({ documentId: cartId }),
         });
 
-        let responseData;
-        try {
-          const responseText = await res.text();
-          if (responseText && responseText.trim().length > 0) {
-            responseData = JSON.parse(responseText);
-          }
-        } catch (e) {
-          // Response is not JSON
+        if (strapiRes.ok) {
+          const sData = await strapiRes.json().catch(() => ({ success: true, deletedId: cartId }));
+          return sData;
         }
-
-        if (!res.ok) {
-          const error = new Error(`Delete failed: ${res.statusText}`);
-          error.status = res.status;
-          error.detail = responseData;
-          throw error;
-        }
-
-        return responseData || { success: true };
       }
     }
 
-    // Standard DELETE for non-cart endpoints or server-side calls
+    // Standard DELETE via POST method override
     const options = {
-      method: "DELETE",
+      method: "POST",
       headers: {
         Authorization: `Bearer ${STRAPI_API_TOKEN}`,
+        "Content-Type": "application/json",
+        "X-HTTP-Method-Override": "DELETE",
+        "X-Method-Override": "DELETE",
+        "X-HTTP-Method": "DELETE"
       },
     };
 
-    // Send the delete request
     let fetchUrl = getFetchUrl(cleanEndpoint);
     let res = await fetch(fetchUrl, options);
     
-    // Fallback try with status=draft for Strapi 5 draft entries if 404
+    // Fallback try with status=draft if 404
     if (!res.ok && res.status === 404 && cleanEndpoint.includes('/api/carts')) {
       const separator = cleanEndpoint.includes('?') ? '&' : '?';
       const draftEndpoint = `${cleanEndpoint}${separator}status=draft`;
@@ -357,25 +438,18 @@ export const deleteData = async (endpoint) => {
       }
     }
     
-    // Get response text if possible
     let responseText;
     try {
       responseText = await res.text();
-    } catch (textError) {
-      // Could not get response text
-    }
+    } catch (textError) {}
     
-    // Try to parse response as JSON
     let responseData;
     try {
       if (responseText && responseText.trim().length > 0) {
         responseData = JSON.parse(responseText);
       }
-    } catch (parseError) {
-      // Response is not JSON
-    }
+    } catch (parseError) {}
     
-    // Check if the request was successful
     if (!res.ok) {
       const error = new Error(`Delete failed: ${res.statusText}`);
       error.status = res.status;

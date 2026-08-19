@@ -9,49 +9,31 @@ export async function PUT(request, { params }) {
   const id = resolvedParams?.id;
   try {
     const body = await request.json();
-    const candidateBases = Array.from(new Set([
-      getStrapiUrl(),
-      "http://strapi-alley-production:1337",
-      "http://82.25.105.70:1339",
-      "http://127.0.0.1:1337",
-      "http://localhost:1337"
-    ])).filter(url => url && (!url.includes('traditionalalley.com.np') || url.includes('admin.traditionalalley.com.np')));
+    const apiUrl = `${getStrapiUrl()}/api/carts/${id}`;
 
-    let response = null;
-    let lastErrorText = '';
+    // Send POST with Method Override for Cloudflare compatibility
+    let res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${STRAPI_TOKEN}`,
+        'Content-Type': 'application/json',
+        'X-HTTP-Method-Override': 'PUT',
+        'X-Method-Override': 'PUT',
+        'X-HTTP-Method': 'PUT'
+      },
+      body: JSON.stringify(body),
+    });
 
-    for (const base of candidateBases) {
-      try {
-        const apiUrl = `${base}/api/carts/${id}`;
-        let res = await fetch(apiUrl, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${STRAPI_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(body),
-        });
-        if (res.ok) {
-          response = res;
-          break;
-        } else {
-          lastErrorText = await res.text();
-        }
-      } catch (err) {
-        // network error trying base
-      }
-    }
-
-    if (!response) {
+    if (!res.ok) {
+      const errorText = await res.text();
       return NextResponse.json({
         error: 'Failed to update cart item',
-        details: lastErrorText,
-        status: 400
-      }, { status: 400 });
+        details: errorText,
+        status: res.status
+      }, { status: res.status });
     }
 
-    const text = await response.text();
-    const data = text ? JSON.parse(text) : { success: true };
+    const data = await res.json().catch(() => ({ success: true }));
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
@@ -62,69 +44,45 @@ export async function DELETE(request, { params }) {
   const resolvedParams = await params;
   const id = resolvedParams?.id;
   try {
-    const candidateBases = Array.from(new Set([
-      getStrapiUrl(),
-      "http://strapi-alley-production:1337",
-      "http://82.25.105.70:1339",
-      "http://127.0.0.1:1337",
-      "http://localhost:1337"
-    ])).filter(url => url && (!url.includes('traditionalalley.com.np') || url.includes('admin.traditionalalley.com.np')));
+    // 1. Try POST with DELETE override
+    const apiUrl = `${getStrapiUrl()}/api/carts/${id}`;
+    let res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${STRAPI_TOKEN}`,
+        'X-HTTP-Method-Override': 'DELETE',
+        'X-Method-Override': 'DELETE',
+        'X-HTTP-Method': 'DELETE'
+      },
+    });
 
-    let response = null;
-    let lastErrorText = '';
+    // 2. If not ok, try dedicated /api/carts/delete-item
+    if (!res.ok) {
+      const dedicatedUrl = `${getStrapiUrl()}/api/carts/delete-item`;
+      const dedicatedRes = await fetch(dedicatedUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${STRAPI_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ documentId: id }),
+      });
 
-    for (const base of candidateBases) {
-      try {
-        const apiUrl = `${base}/api/carts/${id}`;
-        let res = await fetch(apiUrl, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${STRAPI_TOKEN}`,
-          },
-        });
-
-        if (!res.ok && res.status === 404) {
-          const draftUrl = `${base}/api/carts/${id}?status=draft`;
-          const draftRes = await fetch(draftUrl, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${STRAPI_TOKEN}`,
-            },
-          });
-          if (draftRes.ok || draftRes.status === 204) {
-            res = draftRes;
-          }
-        }
-
-        if (res.ok || res.status === 204) {
-          response = res;
-          break;
-        } else {
-          lastErrorText = await res.text();
-        }
-      } catch (err) {
-        // network error
+      if (dedicatedRes.ok) {
+        res = dedicatedRes;
       }
     }
 
-    if (!response) {
+    if (!res.ok) {
+      const errorText = await res.text();
       return NextResponse.json({
         error: 'Failed to delete cart item',
-        details: lastErrorText,
-        status: 403
-      }, { status: 403 });
+        details: errorText,
+        status: res.status
+      }, { status: res.status });
     }
 
-    const text = await response.text();
-    let data = { success: true };
-    if (text && text.trim().length > 0) {
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        data = { success: true, text };
-      }
-    }
-
+    const data = await res.json().catch(() => ({ success: true, deletedId: id }));
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
