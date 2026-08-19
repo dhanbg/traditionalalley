@@ -286,7 +286,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
           <Image
             className="lazyload img-product"
             src={currentImage && currentImage !== "" ? currentImage : DEFAULT_IMAGE}
-            alt={safeProduct.title || "Product"}
+            alt={safeProduct.title ? `${safeProduct.title} - Traditional Alley` : "Authentic Nepali Traditional Clothing"}
             width={600}
             height={800}
             priority={currentImage === "/images/products/womens/women-19.jpg"}
@@ -297,7 +297,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
             src={(safeProduct.imgHover && safeProduct.imgHover !== "") ?
               safeProduct.imgHover :
               (currentImage && currentImage !== "" ? currentImage : DEFAULT_IMAGE)}
-            alt={safeProduct.title || "Product"}
+            alt={safeProduct.title ? `${safeProduct.title} - Traditional Alley` : "Authentic Nepali Traditional Clothing"}
             width={600}
             height={800}
           />

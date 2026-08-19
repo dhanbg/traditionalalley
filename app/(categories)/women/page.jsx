@@ -18,9 +18,33 @@ export const metadata = {
   },
 };
 
+const womenSchema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "CollectionPage",
+      "@id": "https://traditionalalley.com.np/women#webpage",
+      "url": "https://traditionalalley.com.np/women",
+      "name": "Women's Ethnic & Traditional Fashion Collection",
+      "description": "Discover authentic Nepali traditional dresses, lehengas, kurthas, sarees, and modern ethnic outfits for women.",
+      "breadcrumb": {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://traditionalalley.com.np" },
+          { "@type": "ListItem", "position": 2, "name": "Women", "item": "https://traditionalalley.com.np/women" }
+        ]
+      }
+    }
+  ]
+};
+
 export default function page() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(womenSchema) }}
+      />
       <Header1 />
       <Women />
       <Footer1 />

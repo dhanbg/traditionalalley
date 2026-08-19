@@ -18,9 +18,33 @@ export const metadata = {
   },
 };
 
+const kidsSchema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "CollectionPage",
+      "@id": "https://traditionalalley.com.np/kids#webpage",
+      "url": "https://traditionalalley.com.np/kids",
+      "name": "Kids Ethnic & Cultural Clothing Collection",
+      "description": "Browse comfortable and premium Nepali cultural wear, festive outfits, and traditional dresses for children.",
+      "breadcrumb": {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://traditionalalley.com.np" },
+          { "@type": "ListItem", "position": 2, "name": "Kids", "item": "https://traditionalalley.com.np/kids" }
+        ]
+      }
+    }
+  ]
+};
+
 export default function Page() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(kidsSchema) }}
+      />
       <Header1 />
       <Kids />
       <Footer1 />

@@ -116,14 +116,14 @@ export default function ProductsCards6({ product }) {
           <Image
             className="lazyload img-product"
             src={currentImage || DEFAULT_IMAGE}
-            alt={safeProduct.title}
+            alt={safeProduct.title ? `${safeProduct.title} - Traditional Alley` : "Authentic Nepali Traditional Clothing"}
             width={600}
             height={800}
           />
           <Image
             className="lazyload img-hover"
             src={safeProduct.imgHover || currentImage || DEFAULT_IMAGE}
-            alt={safeProduct.title}
+            alt={safeProduct.title ? `${safeProduct.title} - Traditional Alley` : "Authentic Nepali Traditional Clothing"}
             width={600}
             height={800}
           />

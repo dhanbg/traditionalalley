@@ -18,9 +18,33 @@ export const metadata = {
   },
 };
 
+const menSchema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "CollectionPage",
+      "@id": "https://traditionalalley.com.np/men#webpage",
+      "url": "https://traditionalalley.com.np/men",
+      "name": "Men's Nepali Fashion & Traditional Attire",
+      "description": "Explore authentic Nepali Daura Suruwal, Dhaka coats, ethnic blazers, and contemporary styles for men.",
+      "breadcrumb": {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://traditionalalley.com.np" },
+          { "@type": "ListItem", "position": 2, "name": "Men", "item": "https://traditionalalley.com.np/men" }
+        ]
+      }
+    }
+  ]
+};
+
 export default function page() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(menSchema) }}
+      />
       <Header1 />
       <Men />
       <Footer1 />

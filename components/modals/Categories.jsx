@@ -29,7 +29,7 @@ export default function Categories() {
             >
               <Image
                 className="avt"
-                alt="avt"
+                alt="Traditional Alley Fashion Category"
                 src="/images/avatar/women.jpg"
                 width={48}
                 height={48}
@@ -43,7 +43,7 @@ export default function Categories() {
                   <a href="#" className="item link">
                     <Image
                       className="avt"
-                      alt="avt"
+                      alt="Traditional Alley Fashion Category"
                       src="/images/avatar/new-in.jpg"
                       width={48}
                       height={48}
@@ -57,7 +57,7 @@ export default function Categories() {
                   <a href="#" className="item link">
                     <Image
                       className="avt"
-                      alt="avt"
+                      alt="Traditional Alley Fashion Category"
                       src="/images/avatar/promotion.jpg"
                       width={48}
                       height={48}
@@ -71,7 +71,7 @@ export default function Categories() {
                   <a href="#" className="item link">
                     <Image
                       className="avt"
-                      alt="avt"
+                      alt="Traditional Alley Fashion Category"
                       src="/images/avatar/clothing.jpg"
                       width={48}
                       height={48}
@@ -85,7 +85,7 @@ export default function Categories() {
                   <a href="#" className="item link">
                     <Image
                       className="avt"
-                      alt="avt"
+                      alt="Traditional Alley Fashion Category"
                       src="/images/avatar/shoes.jpg"
                       width={48}
                       height={48}
@@ -99,7 +99,7 @@ export default function Categories() {
                   <a href="#" className="item link">
                     <Image
                       className="avt"
-                      alt="avt"
+                      alt="Traditional Alley Fashion Category"
                       src="/images/avatar/bags.jpg"
                       width={48}
                       height={48}
@@ -113,7 +113,7 @@ export default function Categories() {
                   <a href="#" className="item link">
                     <Image
                       className="avt"
-                      alt="avt"
+                      alt="Traditional Alley Fashion Category"
                       src="/images/avatar/accessories.jpg"
                       width={48}
                       height={48}
@@ -127,7 +127,7 @@ export default function Categories() {
                   <a href="#" className="item link">
                     <Image
                       className="avt"
-                      alt="avt"
+                      alt="Traditional Alley Fashion Category"
                       src="/images/avatar/jewelry.jpg"
                       width={48}
                       height={48}
@@ -151,7 +151,7 @@ export default function Categories() {
             >
               <Image
                 className="avt"
-                alt="avt"
+                alt="Traditional Alley Fashion Category"
                 src="/images/avatar/men.jpg"
                 width={48}
                 height={48}
@@ -165,7 +165,7 @@ export default function Categories() {
                   <a href="#" className="item link">
                     <Image
                       className="avt"
-                      alt="avt"
+                      alt="Traditional Alley Fashion Category"
                       src="/images/avatar/men.jpg"
                       width={48}
                       height={48}
@@ -179,7 +179,7 @@ export default function Categories() {
                   <a href="#" className="item link">
                     <Image
                       className="avt"
-                      alt="avt"
+                      alt="Traditional Alley Fashion Category"
                       src="/images/avatar/men.jpg"
                       width={48}
                       height={48}
@@ -203,7 +203,7 @@ export default function Categories() {
             >
               <Image
                 className="avt"
-                alt="avt"
+                alt="Traditional Alley Fashion Category"
                 src="/images/avatar/kid.jpg"
                 width={48}
                 height={48}
@@ -217,7 +217,7 @@ export default function Categories() {
                   <a href="#" className="item link">
                     <Image
                       className="avt"
-                      alt="avt"
+                      alt="Traditional Alley Fashion Category"
                       src="/images/avatar/kid.jpg"
                       width={48}
                       height={48}
@@ -231,7 +231,7 @@ export default function Categories() {
                   <a href="#" className="item link">
                     <Image
                       className="avt"
-                      alt="avt"
+                      alt="Traditional Alley Fashion Category"
                       src="/images/avatar/kid.jpg"
                       width={48}
                       height={48}
@@ -255,7 +255,7 @@ export default function Categories() {
             >
               <Image
                 className="avt"
-                alt="avt"
+                alt="Traditional Alley Fashion Category"
                 src="/images/avatar/accessories.jpg"
                 width={48}
                 height={48}
@@ -269,7 +269,7 @@ export default function Categories() {
                   <a href="#" className="item link">
                     <Image
                       className="avt"
-                      alt="avt"
+                      alt="Traditional Alley Fashion Category"
                       src="/images/avatar/accessories.jpg"
                       width={48}
                       height={48}
@@ -283,7 +283,7 @@ export default function Categories() {
                   <a href="#" className="item link">
                     <Image
                       className="avt"
-                      alt="avt"
+                      alt="Traditional Alley Fashion Category"
                       src="/images/avatar/accessories.jpg"
                       width={48}
                       height={48}

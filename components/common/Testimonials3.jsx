@@ -84,7 +84,7 @@ export default function Testimonials() {
                 <div className="box-avt">
                   <div className="avatar avt-60 round">
                     <Image
-                      alt="avt"
+                      alt={testimonial.name ? `${testimonial.name} - Verified Customer Review` : "Traditional Alley Customer"}
                       src={testimonial.avatar}
                       width={90}
                       height={91}

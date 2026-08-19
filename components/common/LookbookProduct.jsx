@@ -8,7 +8,7 @@ export default function LookbookProduct({ product, styleClass = "style-row" }) {
   return (
     <div className={`loobook-product ${styleClass} `}>
       <div className="img-style">
-        <Image alt="img" src={product.imgSrc} width={151} height={151} />
+        <Image alt={product.title ? `${product.title} - Traditional Alley` : "Authentic Nepali Attire"} src={product.imgSrc} width={151} height={151} />
       </div>
       <div className="content">
         <div className="info">
