@@ -3,7 +3,8 @@ import Header1 from "@/components/headers/Header1";
 import Topbar6 from "@/components/headers/Topbar6";
 import Products from "@/components/products/Products";
 import Link from "next/link";
-import React from "react";
+import React, { Suspense } from "react";
+import { fetchProductsWithVariantsByCollection } from "@/utils/productVariantUtils";
 
 // Cache women collection pages at edge CDN for 5 minutes
 export const revalidate = 300;
@@ -36,7 +37,10 @@ export default async function Page({ params }) {
   const slug = (await params).slug;
   
   // Fetch the collection data from API
-  const collectionData = await getCollectionData(slug);
+  const [collectionData, initialProducts] = await Promise.all([
+    getCollectionData(slug),
+    fetchProductsWithVariantsByCollection(slug).catch(() => []),
+  ]);
 
   // If the collection isn't found, return a "Not Found" message
   if (!collectionData) {
@@ -105,7 +109,9 @@ export default async function Page({ params }) {
         </div>
       </div>
 
-      <Products collection={slug} />
+      <Suspense fallback={<div className="container py-5 text-center">Loading collection...</div>}>
+        <Products collection={slug} initialProducts={initialProducts} />
+      </Suspense>
       <Footer1 />
     </>
   );

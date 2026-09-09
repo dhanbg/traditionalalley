@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { API_URL, INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
 
-export const dynamic = 'force-dynamic';
-
 function rewriteImageUrls(obj) {
   if (!obj || typeof obj !== 'object') return obj;
 

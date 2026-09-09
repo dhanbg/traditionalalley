@@ -3,8 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut, signIn } from "next-auth/react";
-import { fetchDataFromApi } from "@/utils/api";
-import { COLLECTIONS_API } from "@/utils/urls";
+import { fetchCollectionsCached } from "@/utils/api";
 
 const MobileMenu = React.memo(function MobileMenu() {
   const pathname = usePathname();
@@ -13,11 +12,11 @@ const MobileMenu = React.memo(function MobileMenu() {
   const [loading, setLoading] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState({});
 
-  // Fetch collections from backend
+  // Fetch collections from backend (deduplicated & cached in memory)
   useEffect(() => {
     const fetchCollections = async () => {
       try {
-        const data = await fetchDataFromApi(COLLECTIONS_API);
+        const data = await fetchCollectionsCached();
         setCollections(data.data || []);
       } catch (error) {
         console.error('Error fetching collections:', error);

@@ -3,10 +3,31 @@ import Header1 from "@/components/headers/Header1";
 import Topbar6 from "@/components/headers/Topbar6";
 import Products from "@/components/products/Products";
 import Link from "next/link";
-import React from "react";
+import React, { Suspense } from "react";
+import { fetchProductsWithVariantsByCollection } from "@/utils/productVariantUtils";
 
 // Cache collection pages at edge CDN for 5 minutes
 export const revalidate = 300;
+
+export async function generateStaticParams() {
+  return [
+    { slug: 'graduation' },
+    { slug: 'kurtha' },
+    { slug: 'dresses' },
+    { slug: 'sareesets' },
+    { slug: 'corsets' },
+    { slug: 'gown' },
+    { slug: 'bosslady' },
+    { slug: 'lehenga' },
+    { slug: 'tops' },
+    { slug: 'coordinates' },
+    { slug: 'dauracoat' },
+    { slug: 'blazer' },
+    { slug: 'nepalidhaka' },
+    { slug: 'events' },
+    { slug: 'kids' },
+  ];
+}
 
 function formatCollectionName(slug) {
   if (!slug) return "Collection";
@@ -73,6 +94,14 @@ export default async function CollectionPage({ params }) {
   const slug = resolvedParams?.slug || "";
   const formattedName = formatCollectionName(slug);
 
+  // Pre-fetch products on server for instant HTML rendering and zero client API calls
+  let initialProducts = [];
+  try {
+    initialProducts = await fetchProductsWithVariantsByCollection(slug);
+  } catch (error) {
+    // Silently handle fallback
+  }
+
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -137,7 +166,9 @@ export default async function CollectionPage({ params }) {
           </div>
         </div>
       </div>
-      <Products collection={slug} />
+      <Suspense fallback={<div className="container py-5 text-center">Loading collection...</div>}>
+        <Products collection={slug} initialProducts={initialProducts} />
+      </Suspense>
       <Footer1 />
     </>
   );

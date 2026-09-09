@@ -20,14 +20,18 @@ import { fetchProductsWithVariantsByCategory, fetchProductsWithVariantsByCollect
 // Default placeholder image
 const DEFAULT_IMAGE = '/logo.png';
 
-export default function Products({ parentClass = "flat-spacing", collection, categoryId, categoryTitle, collectionId }) {
+export default function Products({ parentClass = "flat-spacing", collection, categoryId, categoryTitle, collectionId, initialProducts = [] }) {
   const searchParams = useSearchParams();
   const [activeLayout, setActiveLayout] = useState(4);
-  const [state, dispatch] = useReducer(reducer, initialState);
-  const [loading, setLoading] = useState(false);
+  const [state, dispatch] = useReducer(reducer, {
+    ...initialState,
+    filtered: initialProducts && initialProducts.length > 0 ? initialProducts : [],
+    sorted: initialProducts && initialProducts.length > 0 ? initialProducts : [],
+  });
+  const [loading, setLoading] = useState(!initialProducts || initialProducts.length === 0);
   const [collectionData, setCollectionData] = useState([]);
   const [collectionProducts, setCollectionProducts] = useState([]);
-  const [productDetails, setProductDetails] = useState([]);
+  const [productDetails, setProductDetails] = useState(initialProducts || []);
 
   const [loadedItems, setLoadedItems] = useState([]);
   const [filterOptions, setFilterOptions] = useState({
@@ -200,6 +204,12 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
 
   // Fetch collection by slug and get its products
   useEffect(() => {
+    // Skip client fetch if initial products were already supplied by Server Component
+    if (initialProducts && initialProducts.length > 0) {
+      setLoading(false);
+      return;
+    }
+
     const fetchCollectionProducts = async () => {
       try {
         setLoading(true);
@@ -226,7 +236,7 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
     if (collection && !categoryId) {
       fetchCollectionProducts();
     }
-  }, [collection, categoryId]);
+  }, [collection, categoryId, initialProducts]);
 
   // Function to fetch product details by document IDs
   const fetchProductsByDocumentIds = async (documentIds) => {

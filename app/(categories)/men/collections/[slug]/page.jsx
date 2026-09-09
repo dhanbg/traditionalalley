@@ -3,8 +3,9 @@ import Header1 from "@/components/headers/Header1";
 import Topbar6 from "@/components/headers/Topbar6";
 import Products from "@/components/products/Products";
 import { fetchDataFromApi } from "@/utils/api";
+import { fetchProductsWithVariantsByCollection } from "@/utils/productVariantUtils";
 import Link from "next/link";
-import React from "react";
+import React, { Suspense } from "react";
 
 // Cache men collection pages at edge CDN for 5 minutes
 export const revalidate = 300;
@@ -12,13 +13,18 @@ export const revalidate = 300;
 export default async function Page({ params }) {
   const slug = (await params).slug;
   
-  // Fetch the collection data from the API
+  // Fetch collection metadata and initial products in parallel
   let collection = null;
+  let initialProducts = [];
   try {
-    const response = await fetchDataFromApi(`/api/collections?filters[slug][$eq]=${slug}&populate=*`);
-    if (response.data && response.data.length > 0) {
-      collection = response.data[0];
+    const [collectionRes, productsRes] = await Promise.all([
+      fetchDataFromApi(`/api/collections?filters[slug][$eq]=${slug}&populate=*`),
+      fetchProductsWithVariantsByCollection(slug).catch(() => []),
+    ]);
+    if (collectionRes.data && collectionRes.data.length > 0) {
+      collection = collectionRes.data[0];
     }
+    initialProducts = productsRes || [];
   } catch (error) {
     console.error("Error fetching collection:", error);
   }
@@ -79,7 +85,9 @@ export default async function Page({ params }) {
         </div>
       </div>
 
-      <Products collection={slug} />
+      <Suspense fallback={<div className="container py-5 text-center">Loading collection...</div>}>
+        <Products collection={slug} initialProducts={initialProducts} />
+      </Suspense>
       <Footer1 />
     </>
   );

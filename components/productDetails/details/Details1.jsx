@@ -9,7 +9,7 @@ import { getBestImageUrl } from "@/utils/imageUtils";
 import { calculateInStock } from "@/utils/stockUtils";
 import Image from "next/image";
 import { useContextElement } from "@/context/Context";
-import { useSession, signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import CustomOrderForm from "../CustomOrderForm";
 import SizeGuideModal from "../SizeGuideModal";
@@ -18,6 +18,8 @@ import { fetchDataFromApi } from "../../../utils/api";
 import PriceDisplay from "@/components/common/PriceDisplay";
 
 export default function Details1({ product, variants = [], preferredVariantId = null }) {
+  const searchParams = useSearchParams();
+  const effectiveVariantId = preferredVariantId || searchParams?.get('variant') || null;
 
   // Set default values for missing properties to prevent errors
   const safeProduct = {
@@ -87,13 +89,13 @@ export default function Details1({ product, variants = [], preferredVariantId = 
 
     // Priority-based variant selection:
     // 1. First, try to find the preferred variant from URL
-    if (preferredVariantId) {
-      console.log('🔍 Looking for preferred variant:', preferredVariantId);
+    if (effectiveVariantId) {
+      console.log('🔍 Looking for preferred variant:', effectiveVariantId);
       const preferredVariant = allOptions.find(v =>
-        v.documentId === preferredVariantId ||
-        v.id === preferredVariantId ||
-        v.id === `current-${preferredVariantId}` ||
-        (typeof v.id === 'string' && v.id.includes(preferredVariantId))
+        v.documentId === effectiveVariantId ||
+        v.id === effectiveVariantId ||
+        v.id === `current-${effectiveVariantId}` ||
+        (typeof v.id === 'string' && v.id.includes(effectiveVariantId))
       );
 
       if (preferredVariant) {
@@ -204,7 +206,6 @@ export default function Details1({ product, variants = [], preferredVariantId = 
     updateQuantity,
     user,
   } = useContextElement();
-  const { data: session } = useSession();
 
   useEffect(() => {
     async function getReviewCount() {

@@ -7,12 +7,28 @@ import Descriptions1 from "@/components/productDetails/descriptions/Descriptions
 import Details1 from "@/components/productDetails/details/Details1";
 import RelatedProducts from "@/components/productDetails/RelatedProducts";
 import { fetchDataFromApi } from "@/utils/api";
+import { fetchProductsWithVariantsByCategory } from "@/utils/productVariantUtils";
 import { API_URL } from "@/utils/urls";
 import { calculateInStock } from "@/utils/stockUtils";
-import React from "react";
+import React, { Suspense } from "react";
 import Link from "next/link";
 
 export const revalidate = 60; // Cache product details for 60 seconds (ISR)
+export const dynamicParams = true; // Allow on-demand generation for unbuilt products
+
+export async function generateStaticParams() {
+  try {
+    const productsRes = await fetchDataFromApi('/api/products?pagination[pageSize]=100&fields[0]=documentId&fields[1]=isActive');
+    if (productsRes?.data && Array.isArray(productsRes.data)) {
+      return productsRes.data
+        .filter(p => p.isActive !== false && p.documentId)
+        .map(p => ({ id: p.documentId }));
+    }
+  } catch (error) {
+    // Fallback to on-demand ISR
+  }
+  return [];
+}
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
@@ -59,10 +75,8 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default async function page({ params, searchParams }) {
+export default async function page({ params }) {
   const { id } = await params;
-  const resolvedSearchParams = await searchParams;
-  const preferredVariantId = resolvedSearchParams?.variant || null;
   
   // Fetch product by documentId with variants (deduplicated with generateMetadata fetch)
   let response = null;
@@ -240,6 +254,19 @@ export default async function page({ params, searchParams }) {
     ],
   };
 
+  // Pre-fetch related products on the server for static rendering and zero client API calls
+  let initialRelatedProducts = [];
+  if (product && product.category && product.category.title) {
+    try {
+      const relatedRes = await fetchProductsWithVariantsByCategory(product.category.title, 10);
+      initialRelatedProducts = (relatedRes || [])
+        .filter(item => item.id !== product.id && item.parentProductId !== product.id && item.isActive !== false)
+        .slice(0, 8);
+    } catch (e) {
+      // Silently handle
+    }
+  }
+
   return (
     <>
       <script
@@ -253,9 +280,13 @@ export default async function page({ params, searchParams }) {
       <Topbar6 bgColor="bg-main" />
       <Header1 />
       <Breadcumb product={product} />
-      {product && <Details1 product={product} variants={variants} preferredVariantId={preferredVariantId} />}
+      {product && (
+        <Suspense fallback={<div className="container py-5 text-center">Loading product details...</div>}>
+          <Details1 product={product} variants={variants} />
+        </Suspense>
+      )}
       <Descriptions1 product={product} />
-      <RelatedProducts product={product} />
+      <RelatedProducts product={product} initialRelatedProducts={initialRelatedProducts} />
       <Footer1 hasPaddingBottom />
     </>
   );

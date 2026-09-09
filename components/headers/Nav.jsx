@@ -3,8 +3,7 @@ import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
-import { fetchDataFromApi } from "@/utils/api";
-import { COLLECTIONS_API } from "@/utils/urls";
+import { fetchCollectionsCached } from "@/utils/api";
 
 export default function Nav() {
   const pathname = usePathname();
@@ -13,11 +12,11 @@ export default function Nav() {
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch collections from backend
+  // Fetch collections from backend (deduplicated & cached in memory)
   useEffect(() => {
     const fetchCollections = async () => {
       try {
-        const data = await fetchDataFromApi(COLLECTIONS_API);
+        const data = await fetchCollectionsCached();
         setCollections(data.data || []);
       } catch (error) {
         console.error('Error fetching collections:', error);

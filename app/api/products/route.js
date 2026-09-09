@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { API_URL, INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
 
-export const dynamic = 'force-dynamic';
-
 /**
  * Recursively rewrites all /uploads/ relative URLs in Strapi JSON to absolute URLs.
  * This ensures images load correctly regardless of the NEXT_PUBLIC_API_URL env var.

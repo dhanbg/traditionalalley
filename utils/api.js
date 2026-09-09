@@ -1,5 +1,34 @@
-import { API_URL, INTERNAL_API_URL, getStrapiInternalUrl, STRAPI_API_TOKEN, PRODUCTS_API } from "./urls"
+import { API_URL, INTERNAL_API_URL, getStrapiInternalUrl, STRAPI_API_TOKEN, PRODUCTS_API, COLLECTIONS_API } from "./urls"
 import { generateLocalTimestamp } from './timezone';
+
+let memoryCollections = null;
+let memoryCollectionsPromise = null;
+
+export const fetchCollectionsCached = async () => {
+  if (memoryCollections) {
+    return memoryCollections;
+  }
+  if (memoryCollectionsPromise) {
+    return memoryCollectionsPromise;
+  }
+
+  memoryCollectionsPromise = (async () => {
+    try {
+      const res = await fetchDataFromApi(COLLECTIONS_API);
+      if (res && res.data) {
+        memoryCollections = res;
+      }
+      return res || { data: [] };
+    } catch (err) {
+      console.error('Error fetching cached collections:', err);
+      return { data: [] };
+    } finally {
+      memoryCollectionsPromise = null;
+    }
+  })();
+
+  return memoryCollectionsPromise;
+};
 
 
 // Helper function to construct proper image URLs
@@ -186,17 +215,23 @@ export const fetchDataFromApi = async (endpoint) => {
     }
     const isRoute = isNextApiRoute(processedEndpoint);
     
-    const fetchOptions = (isRoute && typeof window !== 'undefined' && !isCacheable) 
-      ? { 
-          method: "GET",
-          headers: {
+    const fetchOptions = { ...options };
+    if (typeof window !== 'undefined') {
+      if (isRoute) {
+        if (!isCacheable) {
+          fetchOptions.headers = {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
             'Expires': '0'
-          }
-        } 
-      : { ...options };
-    if (typeof window === 'undefined' && isCacheable) {
+          };
+        } else {
+          // Public cacheable Next.js API route: omit Authorization so Vercel Edge CDN can cache
+          fetchOptions.headers = {};
+        }
+      }
+    } else if (isCacheable) {
+      // Server-side cacheable Strapi fetch: force Next.js 15 Data Cache to cache despite Authorization header
+      fetchOptions.cache = 'force-cache';
       fetchOptions.next = { revalidate: 60 };
     }
     const res = await fetch(fetchUrl, fetchOptions);

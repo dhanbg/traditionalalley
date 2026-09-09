@@ -69,96 +69,87 @@ const transformProduct = (rawProduct) => {
   return productObj;
 };
 
-export default function RelatedProducts({ product }) {
-  const [relatedProducts, setRelatedProducts] = useState([]);
+export default function RelatedProducts({ product, initialRelatedProducts = [] }) {
+  const [relatedProducts, setRelatedProducts] = useState(initialRelatedProducts);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialRelatedProducts || initialRelatedProducts.length === 0);
 
   useEffect(() => {
-    // Function to fetch related products
+    // Function to fetch related products if not already supplied by server
     const fetchRelatedProducts = async () => {
       if (!product) return;
+      if (initialRelatedProducts && initialRelatedProducts.length > 0) {
+        setRelatedProducts(initialRelatedProducts);
+        setLoading(false);
+        return;
+      }
       
       try {
         setLoading(true);
-        
         let productsWithVariants = [];
         
         if (product.category && product.category.title) {
-          // Use category title to fetch products and variants (limit to 10 items to prevent overfetching)
           productsWithVariants = await fetchProductsWithVariantsByCategory(product.category.title, 10);
         } else {
-          // Fallback to general products fetch (you may want to implement a general fetch in utils)
           const response = await fetchDataFromApi(`/api/products?pagination[limit]=4&populate=*`);
           if (response.data) {
             productsWithVariants = response.data.map(transformProduct)
               .filter(Boolean)
-              .filter(product => product.isActive === true);
+              .filter(p => p.isActive === true);
           }
         }
         
-        // Filter out current product and its variants
         const filteredProducts = productsWithVariants.filter(item => 
           item.id !== product.id && item.parentProductId !== product.id
         );
-        
-        // Filter active items only
         const activeItems = filteredProducts.filter(item => item.isActive !== false);
         
-        setRelatedProducts(activeItems.slice(0, 8)); // Limit to 8 items
+        setRelatedProducts(activeItems.slice(0, 8));
         setLoading(false);
       } catch (error) {
-        // Error fetching related products - silently handle
         setLoading(false);
       }
     };
     
-    // Function to get recently viewed products from localStorage
-    const getRecentlyViewedProducts = async () => {
+    // Store preview items in localStorage for instant rendering without extra API calls
+    const getRecentlyViewedProducts = () => {
       try {
-        // Get recently viewed product IDs from localStorage
-        const recentlyViewedIds = JSON.parse(localStorage.getItem('recentlyViewed')) || [];
+        if (!product || !product.id) return;
         
-        // Ensure current product is first in recently viewed
-        if (product && product.id) {
-          // Remove current product if it exists in the array
-          const filteredIds = recentlyViewedIds.filter(id => id !== product.id);
-          
-          // Add current product to the beginning
-          const updatedIds = [product.id, ...filteredIds].slice(0, 10); // Keep only 10 items
-          
-          // Save back to localStorage
-          localStorage.setItem('recentlyViewed', JSON.stringify(updatedIds));
-          
-          // Fetch product data for each ID (excluding current product) using new utility
-          const productPromises = updatedIds
-            .filter(id => id !== product.id) // Exclude current product
-            .slice(0, 8) // Limit to 8 products (since we'll show products and variants)
-            .map(id => fetchSingleProductWithVariants(id));
-          
-          if (productPromises.length > 0) {
-            const responses = await Promise.all(productPromises);
-            
-            // Flatten the responses (each response contains products and variants)
-            const fetchedProducts = responses
-              .filter(Boolean) // Remove any nulls
-              .flat() // Flatten array of arrays
-              .filter(item => item.isActive !== false); // Hide inactive items
-            
-            setRecentlyViewed(fetchedProducts);
-          }
-        }
+        const currentPreview = {
+          id: product.id,
+          documentId: product.documentId || product.id,
+          title: product.title,
+          price: product.price,
+          oldPrice: product.oldPrice,
+          imgSrc: product.imgSrc,
+          imgHover: product.imgHover,
+          isActive: product.isActive !== false,
+          inStock: product.inStock,
+        };
+
+        const stored = JSON.parse(localStorage.getItem('recentlyViewedItems')) || [];
+        const filtered = Array.isArray(stored)
+          ? stored.filter(item => item && item.id && item.id !== product.id && item.documentId !== product.documentId)
+          : [];
+        const updated = [currentPreview, ...filtered].slice(0, 10);
+        localStorage.setItem('recentlyViewedItems', JSON.stringify(updated));
+
+        const displayItems = updated
+          .filter(item => item.id !== product.id && item.isActive !== false)
+          .slice(0, 8);
+        setRecentlyViewed(displayItems);
       } catch (error) {
+        // Silently handle localStorage errors
       }
     };
     
     fetchRelatedProducts();
     
-    // Only run in browser environment since it uses localStorage
     if (typeof window !== 'undefined') {
       getRecentlyViewedProducts();
     }
-  }, [product]);
+  }, [product, initialRelatedProducts]);
 
   return (
     <section className="flat-spacing">
