@@ -167,6 +167,73 @@ const shouldCacheEndpoint = (endpoint) => {
          cleanEndpoint.startsWith('/api/cities');
 };
 
+/**
+ * Detect transient network and socket closure errors (e.g. UND_ERR_SOCKET, ECONNRESET)
+ * caused by stale pooled keep-alive sockets or temporary TLS handshake resets.
+ */
+const isTransientSocketError = (error) => {
+  if (!error) return false;
+  const code = error.cause?.code || error.code;
+  const msg = (error.cause?.message || error.message || '').toLowerCase();
+  
+  return (
+    code === 'ECONNRESET' ||
+    code === 'UND_ERR_SOCKET' ||
+    code === 'ETIMEDOUT' ||
+    code === 'ECONNREFUSED' ||
+    msg.includes('other side closed') ||
+    msg.includes('socket disconnected') ||
+    msg.includes('tls connection was established') ||
+    msg.includes('premature close') ||
+    msg.includes('socket hang up')
+  );
+};
+
+/**
+ * Execute fetch with controlled timeout (10s on server) and transparent 1x retry on transient socket errors.
+ */
+const executeWithRetry = async (fetchUrl, fetchOptions) => {
+  const timeoutMs = 10000;
+  const isServer = typeof window === 'undefined';
+  const maxAttempts = isServer ? 2 : 1; // Strict maximum 1 retry on server for socket resets
+
+  let attempt = 0;
+  while (attempt < maxAttempts) {
+    attempt++;
+    let controller = null;
+    let timeoutId = null;
+
+    try {
+      const currentOptions = { ...fetchOptions };
+
+      // Set up abort timeout on server side if no signal provided
+      if (isServer && !currentOptions.signal && typeof AbortController !== 'undefined') {
+        controller = new AbortController();
+        currentOptions.signal = controller.signal;
+        timeoutId = setTimeout(() => {
+          controller.abort(new Error(`Strapi request timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+      }
+
+      const res = await fetch(fetchUrl, currentOptions);
+      if (timeoutId) clearTimeout(timeoutId);
+      return res;
+    } catch (error) {
+      if (timeoutId) clearTimeout(timeoutId);
+
+      // Check if transient socket error can be retried exactly once on a fresh connection
+      if (attempt < maxAttempts && isTransientSocketError(error)) {
+        console.warn(`[Strapi API] Transient socket error on attempt ${attempt} (${error.cause?.code || error.message}). Retrying once on fresh socket...`);
+        // Short pause (100ms) before retry to let OS TCP stack reset cleanly
+        await new Promise(resolve => setTimeout(resolve, 100));
+        continue;
+      }
+
+      throw error;
+    }
+  }
+};
+
 export const fetchDataFromApi = async (endpoint) => {
   const options = {
     method: "GET",
@@ -234,7 +301,22 @@ export const fetchDataFromApi = async (endpoint) => {
       fetchOptions.cache = 'force-cache';
       fetchOptions.next = { revalidate: 60 };
     }
-    const res = await fetch(fetchUrl, fetchOptions);
+
+    let res;
+    try {
+      res = await executeWithRetry(fetchUrl, fetchOptions);
+    } catch (networkError) {
+      console.error(`[Strapi API] Network fetch failed for ${processedEndpoint}:`, networkError.message);
+      // In server components (SSR/ISR/RSC), return graceful error structure rather than crashing with unhandled 500
+      if (typeof window === 'undefined') {
+        return {
+          data: null,
+          meta: { error: networkError.message },
+          success: false,
+        };
+      }
+      throw networkError;
+    }
     
     if (!res.ok) {
       // Try to read the error response body

@@ -7,7 +7,7 @@ import { Pagination } from "swiper/modules";
 import ProductCard1 from "../productCards/ProductCard1";
 import { fetchDataFromApi } from "@/utils/api";
 import { getBestImageUrl } from "@/utils/imageUtils";
-import { fetchProductsWithVariantsByCategory, fetchSingleProductWithVariants } from "@/utils/productVariantUtils";
+import { fetchProductsWithVariantsByCategory, fetchProductsWithVariantsByCollection, fetchSingleProductWithVariants } from "@/utils/productVariantUtils";
 
 
 // Default placeholder image
@@ -88,11 +88,14 @@ export default function RelatedProducts({ product, initialRelatedProducts = [] }
         setLoading(true);
         let productsWithVariants = [];
         
-        if (product.category && product.category.title) {
+        const collectionSlug = product.collection?.slug;
+        if (collectionSlug) {
+          productsWithVariants = await fetchProductsWithVariantsByCollection(collectionSlug);
+        } else if (product.category && product.category.title) {
           productsWithVariants = await fetchProductsWithVariantsByCategory(product.category.title, 10);
         } else {
           const response = await fetchDataFromApi(`/api/products?pagination[limit]=4&populate=*`);
-          if (response.data) {
+          if (response?.data) {
             productsWithVariants = response.data.map(transformProduct)
               .filter(Boolean)
               .filter(p => p.isActive === true);

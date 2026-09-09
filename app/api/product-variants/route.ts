@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-import { API_URL, INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
+import { API_URL } from '@/utils/urls';
+import { fetchDataFromApi } from '@/utils/api';
 
 function rewriteImageUrls(obj: any): any {
   if (!obj || typeof obj !== 'object') return obj;
@@ -29,39 +29,25 @@ export async function GET(request: NextRequest) {
     if (!hasPopulate) {
         searchParams.set('populate', '*');
     }
-    
-    const strapiUrl = `${INTERNAL_API_URL}/api/product-variants?${searchParams.toString()}`;
-    
-    console.log('Fetching Product Variants from:', strapiUrl);
-    
-    const strapiResponse = await fetch(strapiUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${STRAPI_API_TOKEN}`,
-      },
-      next: { revalidate: 60 },
-    });
 
-    if (!strapiResponse.ok) {
-        const errorText = await strapiResponse.text();
-        console.error(`Strapi API returned ${strapiResponse.status} for Product Variants:`, errorText);
-        return NextResponse.json({
-            data: [],
-            meta: { error: `Strapi returned ${strapiResponse.status}`, detail: errorText }
-        });
+    const data = await fetchDataFromApi(`/api/product-variants?${searchParams.toString()}`);
+
+    if (!data || !data.data) {
+      return NextResponse.json({
+        data: [],
+        meta: { error: data?.meta?.error || 'Failed to fetch product variants' }
+      });
     }
 
-    const data = await strapiResponse.json();
     return NextResponse.json(rewriteImageUrls(data), {
       headers: {
         'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
       },
     });
-  } catch (error) {
-    console.error('Error in product-variants API route:', error);
+  } catch (error: any) {
+    console.error('Error in product-variants API route:', error?.message || error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error?.message || 'Internal server error' },
       { status: 500 }
     );
   }

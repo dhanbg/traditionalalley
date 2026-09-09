@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { API_URL, INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
+import { API_URL } from '@/utils/urls';
+import { fetchDataFromApi } from '@/utils/api';
 
 /**
  * Recursively rewrites all /uploads/ relative URLs in Strapi JSON to absolute URLs.
@@ -26,7 +27,6 @@ function rewriteImageUrls(obj) {
 }
 
 export async function GET(request) {
-  let strapiUrl;
   try {
     // Parse the URL
     const url = new URL(request.url);
@@ -41,24 +41,12 @@ export async function GET(request) {
     if (!searchParams.has('pagination[pageSize]') && !searchParams.has('pagination[limit]')) searchParams.set('pagination[pageSize]', '100');
     searchParams.set('publicationState', 'live');
 
-    // Construct the URL for the Strapi API using the internal docker network to bypass Cloudflare
-    strapiUrl = `${INTERNAL_API_URL}/api/products?${searchParams.toString()}`;
+    // Fetch products from Strapi using the resilient, cached API fetcher
+    const products = await fetchDataFromApi(`/api/products?${searchParams.toString()}`);
 
-    // Fetch products from Strapi
-    const response = await fetch(strapiUrl, {
-      headers: {
-        'Authorization': `Bearer ${STRAPI_API_TOKEN}`
-      },
-      next: { revalidate: 60 }
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Strapi responded with status ${response.status} for products:`, errorText);
-      return NextResponse.json({ data: [], meta: { error: `Strapi returned ${response.status}`, detail: errorText } });
+    if (!products || !products.data) {
+      return NextResponse.json({ data: [], meta: { error: products?.meta?.error || 'Failed to fetch products' } });
     }
-
-    const products = await response.json();
 
     // Rewrite /uploads/ relative image URLs to absolute Strapi URLs
     const rewritten = rewriteImageUrls(products);

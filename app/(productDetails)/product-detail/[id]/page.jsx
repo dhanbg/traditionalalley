@@ -7,14 +7,24 @@ import Descriptions1 from "@/components/productDetails/descriptions/Descriptions
 import Details1 from "@/components/productDetails/details/Details1";
 import RelatedProducts from "@/components/productDetails/RelatedProducts";
 import { fetchDataFromApi } from "@/utils/api";
-import { fetchProductsWithVariantsByCategory } from "@/utils/productVariantUtils";
+import { fetchProductsWithVariantsByCategory, fetchProductsWithVariantsByCollection } from "@/utils/productVariantUtils";
 import { API_URL } from "@/utils/urls";
 import { calculateInStock } from "@/utils/stockUtils";
-import React, { Suspense } from "react";
+import React, { Suspense, cache } from "react";
 import Link from "next/link";
 
 export const revalidate = 60; // Cache product details for 60 seconds (ISR)
 export const dynamicParams = true; // Allow on-demand generation for unbuilt products
+
+// Cache product fetch per-request so generateMetadata and page share the exact same promise
+const getProductByDocumentId = cache(async (id) => {
+  try {
+    return await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*`);
+  } catch (error) {
+    console.error(`Error fetching product ${id}:`, error?.message || error);
+    return { data: null };
+  }
+});
 
 export async function generateStaticParams() {
   try {
@@ -34,10 +44,10 @@ export async function generateMetadata({ params }) {
   const { id } = await params;
   
   try {
-    // Fetch product data for metadata (deduplicated with page fetch)
-    const response = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*`);
+    // Fetch product data for metadata (deduplicated with page fetch via React cache)
+    const response = await getProductByDocumentId(id);
     
-    if (response.data && response.data.length > 0) {
+    if (response?.data && response.data.length > 0) {
       const rawProduct = response.data[0];
       const product = transformProduct(rawProduct);
       
@@ -78,13 +88,8 @@ export async function generateMetadata({ params }) {
 export default async function page({ params }) {
   const { id } = await params;
   
-  // Fetch product by documentId with variants (deduplicated with generateMetadata fetch)
-  let response = null;
-  try {
-    response = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*`);
-  } catch (error) {
-    console.error('Error fetching product:', error);
-  }
+  // Fetch product by documentId with variants (deduplicated with generateMetadata fetch via React cache)
+  const response = await getProductByDocumentId(id);
   let product = null;
   let variants = [];
   
@@ -256,15 +261,21 @@ export default async function page({ params }) {
 
   // Pre-fetch related products on the server for static rendering and zero client API calls
   let initialRelatedProducts = [];
-  if (product && product.category && product.category.title) {
-    try {
+  try {
+    const collectionSlug = product?.collection?.slug;
+    if (collectionSlug) {
+      const relatedRes = await fetchProductsWithVariantsByCollection(collectionSlug);
+      initialRelatedProducts = (relatedRes || [])
+        .filter(item => item.id !== product.id && item.parentProductId !== product.id && item.isActive !== false)
+        .slice(0, 8);
+    } else if (product?.category?.title) {
       const relatedRes = await fetchProductsWithVariantsByCategory(product.category.title, 10);
       initialRelatedProducts = (relatedRes || [])
         .filter(item => item.id !== product.id && item.parentProductId !== product.id && item.isActive !== false)
         .slice(0, 8);
-    } catch (e) {
-      // Silently handle
     }
+  } catch (e) {
+    // Silently handle related products failure - page continues to render cleanly
   }
 
   return (

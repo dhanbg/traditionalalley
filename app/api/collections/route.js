@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { API_URL, INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
+import { API_URL } from '@/utils/urls';
+import { fetchDataFromApi } from '@/utils/api';
 
 function rewriteImageUrls(obj) {
   if (!obj || typeof obj !== 'object') return obj;
@@ -22,7 +23,6 @@ function rewriteImageUrls(obj) {
 }
 
 export async function GET(request) {
-  let strapiUrl;
   try {
     // Parse the URL
     const url = new URL(request.url);
@@ -37,28 +37,16 @@ export async function GET(request) {
     if (!searchParams.has('pagination[pageSize]') && !searchParams.has('pagination[limit]')) searchParams.set('pagination[pageSize]', '100');
     searchParams.set('publicationState', 'live');
 
-    // Construct the URL for the Strapi API using the internal docker network to bypass Cloudflare
-    strapiUrl = `${INTERNAL_API_URL}/api/collections?${searchParams.toString()}`;
+    // Fetch collections from Strapi using the resilient, cached API fetcher
+    const collections = await fetchDataFromApi(`/api/collections?${searchParams.toString()}`);
 
-    // Fetch collections from Strapi
-    const response = await fetch(strapiUrl, {
-      headers: {
-        'Authorization': `Bearer ${STRAPI_API_TOKEN}`
-      },
-      next: { revalidate: 60 }
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Strapi responded with status ${response.status} for collections:`, errorText);
-      return NextResponse.json({ data: [], meta: { error: `Strapi returned ${response.status}`, detail: errorText } });
+    if (!collections || !collections.data) {
+      return NextResponse.json({ data: [], meta: { error: collections?.meta?.error || 'Failed to fetch collections' } });
     }
-
-    const collections = await response.json();
 
     return NextResponse.json(rewriteImageUrls(collections), {
       headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
       },
     });
   } catch (error) {
