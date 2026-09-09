@@ -24,6 +24,10 @@ export async function GET(request) {
       success: true,
       data: result,
       count: Array.isArray(result) ? result.length : Object.keys(result).length
+    }, {
+      headers: {
+        'Cache-Control': 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400',
+      },
     });
 
   } catch (error) {

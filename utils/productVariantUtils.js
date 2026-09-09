@@ -332,9 +332,11 @@ export async function fetchProductsWithVariants(apiEndpoint) {
         try {
           // Optimization: Check if product_variants is already populated on the rawProduct object
           let variants = [];
-          if (rawProduct.product_variants && Array.isArray(rawProduct.product_variants) && rawProduct.product_variants.length > 0) {
+          if (Array.isArray(rawProduct.product_variants)) {
+            // Re-use already populated variants (even if empty, avoiding unnecessary API calls)
             variants = rawProduct.product_variants;
-          } else {
+          } else if (rawProduct.documentId) {
+            // Only fetch if product_variants was not populated in the query
             const variantsResponse = await fetchDataFromApi(
               `/api/product-variants?filters[product][documentId][$eq]=${rawProduct.documentId}&${VARIANT_POPULATE}`
             );
@@ -517,8 +519,8 @@ function transformVariantForListing(rawVariant, parentProduct) {
  * @param {string} categoryTitle - Category title to filter by
  * @returns {Array} Array of products and variants as separate items
  */
-export async function fetchProductsWithVariantsByCategory(categoryTitle) {
-  const apiEndpoint = `/api/products?${PRODUCT_LISTING_POPULATE}&filters[collection][category][title][$eq]=${categoryTitle}`;
+export async function fetchProductsWithVariantsByCategory(categoryTitle, limit = 100) {
+  const apiEndpoint = `/api/products?${PRODUCT_LISTING_POPULATE}&filters[collection][category][title][$eq]=${encodeURIComponent(categoryTitle)}&pagination[pageSize]=${limit}`;
   return fetchProductsWithVariants(apiEndpoint);
 }
 

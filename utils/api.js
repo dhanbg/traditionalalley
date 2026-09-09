@@ -131,7 +131,11 @@ const shouldCacheEndpoint = (endpoint) => {
          cleanEndpoint.startsWith('/api/categories') ||
          cleanEndpoint.startsWith('/api/collections') ||
          cleanEndpoint.startsWith('/api/product-variants') ||
-         cleanEndpoint.startsWith('/api/customer-reviews');
+         cleanEndpoint.startsWith('/api/customer-reviews') ||
+         cleanEndpoint.startsWith('/api/shipping-rates') ||
+         cleanEndpoint.startsWith('/api/ncm/branches') ||
+         cleanEndpoint.startsWith('/api/countries') ||
+         cleanEndpoint.startsWith('/api/cities');
 };
 
 export const fetchDataFromApi = async (endpoint) => {
@@ -172,14 +176,17 @@ export const fetchDataFromApi = async (endpoint) => {
     }
 
     let fetchUrl = getFetchUrl(processedEndpoint);
-    // Add cache-busting timestamp to client-side fetches to prevent aggressive Chrome caching
-    if (typeof window !== 'undefined') {
+    const isCacheable = shouldCacheEndpoint(processedEndpoint);
+
+    // Only add cache-busting timestamp to mutable/user-specific endpoints (cart, bag, user-data, etc.)
+    // NEVER to public catalog endpoints, to allow browser and Vercel CDN caching
+    if (typeof window !== 'undefined' && !isCacheable) {
       const separator = fetchUrl.includes('?') ? '&' : '?';
       fetchUrl = `${fetchUrl}${separator}_t=${Date.now()}`;
     }
     const isRoute = isNextApiRoute(processedEndpoint);
     
-    const fetchOptions = (isRoute && typeof window !== 'undefined') 
+    const fetchOptions = (isRoute && typeof window !== 'undefined' && !isCacheable) 
       ? { 
           method: "GET",
           headers: {
@@ -189,7 +196,7 @@ export const fetchDataFromApi = async (endpoint) => {
           }
         } 
       : { ...options };
-    if (typeof window === 'undefined' && shouldCacheEndpoint(processedEndpoint)) {
+    if (typeof window === 'undefined' && isCacheable) {
       fetchOptions.next = { revalidate: 60 };
     }
     const res = await fetch(fetchUrl, fetchOptions);

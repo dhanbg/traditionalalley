@@ -17,7 +17,8 @@ export async function GET() {
       headers: {
         'Content-Type': 'application/json'
       },
-      signal: controller.signal
+      signal: controller.signal,
+      next: { revalidate: 86400 }
     });
     
     clearTimeout(timeoutId);
@@ -85,6 +86,10 @@ export async function GET() {
       success: true,
       branches: branches,
       count: branches.length
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800',
+      },
     });
 
   } catch (error) {

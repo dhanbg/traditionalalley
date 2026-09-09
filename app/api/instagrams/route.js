@@ -30,6 +30,7 @@ export async function GET(request) {
         'Authorization': `Bearer ${STRAPI_TOKEN}`,
         'Content-Type': 'application/json',
       },
+      next: { revalidate: 300 }
     });
 
     console.log('📡 Strapi response status:', response.status);
@@ -77,7 +78,11 @@ export async function GET(request) {
       });
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      },
+    });
   } catch (error) {
     console.error('❌ Instagram API error:', error);
     return NextResponse.json({ 

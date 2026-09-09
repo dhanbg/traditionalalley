@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import CountdownTimer from "../common/Countdown";
 import PriceDisplay from "../common/PriceDisplay";
 import { useContextElement } from "@/context/Context";
-import { useSession, signIn } from "next-auth/react";
 import { getBestImageUrl } from "@/utils/imageUtils";
 import { calculateInStock } from "@/utils/stockUtils";
 
@@ -112,7 +111,6 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
     isProductSizeInCart,
     user
   } = useContextElement();
-  const { data: session } = useSession();
 
   useEffect(() => {
     // Ensure we never set an empty string as the currentImage

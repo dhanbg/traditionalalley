@@ -37,7 +37,11 @@ export async function GET(request) {
 
     const categories = await response.json();
 
-    return NextResponse.json(categories);
+    return NextResponse.json(categories, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
+      },
+    });
   } catch (error) {
     console.error('Error fetching categories from Strapi:', error.message);
     return NextResponse.json({ data: [], meta: { error: error.message } });

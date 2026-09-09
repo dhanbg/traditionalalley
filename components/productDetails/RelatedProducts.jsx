@@ -85,8 +85,8 @@ export default function RelatedProducts({ product }) {
         let productsWithVariants = [];
         
         if (product.category && product.category.title) {
-          // Use category title to fetch products and variants
-          productsWithVariants = await fetchProductsWithVariantsByCategory(product.category.title);
+          // Use category title to fetch products and variants (limit to 10 items to prevent overfetching)
+          productsWithVariants = await fetchProductsWithVariantsByCategory(product.category.title, 10);
         } else {
           // Fallback to general products fetch (you may want to implement a general fetch in utils)
           const response = await fetchDataFromApi(`/api/products?pagination[limit]=4&populate=*`);

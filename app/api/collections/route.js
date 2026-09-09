@@ -58,7 +58,11 @@ export async function GET(request) {
 
     const collections = await response.json();
 
-    return NextResponse.json(rewriteImageUrls(collections));
+    return NextResponse.json(rewriteImageUrls(collections), {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
+    });
   } catch (error) {
     console.error('Error fetching collections from Strapi:', error.message);
     return NextResponse.json({ data: [], meta: { error: error.message } });

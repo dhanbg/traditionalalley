@@ -5,6 +5,9 @@ import Products from "@/components/products/Products";
 import Link from "next/link";
 import React from "react";
 
+// Cache collection pages at edge CDN for 5 minutes
+export const revalidate = 300;
+
 function formatCollectionName(slug) {
   if (!slug) return "Collection";
   const nameMap = {

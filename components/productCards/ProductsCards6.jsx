@@ -9,7 +9,6 @@ import { useContextElement } from "@/context/Context";
 import { calculateInStock } from "@/utils/stockUtils";
 import PriceDisplay from "@/components/common/PriceDisplay";
 import { getBestImageUrl } from "@/utils/imageUtils";
-import { useSession, signIn } from "next-auth/react";
 
 // Default placeholder image
 const DEFAULT_IMAGE = '/images/placeholder.jpg';
@@ -74,7 +73,6 @@ export default function ProductsCards6({ product }) {
     isProductSizeInCart,
     user
   } = useContextElement();
-  const { data: session } = useSession();
 
   useEffect(() => {
     // Ensure we never set an empty string as the currentImage

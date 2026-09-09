@@ -161,7 +161,7 @@ export default function ClientLayout({ children }) {
   }, [pathname]);
 
   return (
-    <SessionProvider>
+    <SessionProvider refetchOnWindowFocus={false} refetchInterval={0}>
       <QueryProvider>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <ToastProvider>

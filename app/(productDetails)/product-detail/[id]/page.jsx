@@ -12,13 +12,14 @@ import { calculateInStock } from "@/utils/stockUtils";
 import React from "react";
 import Link from "next/link";
 
+export const revalidate = 60; // Cache product details for 60 seconds (ISR)
+
 export async function generateMetadata({ params }) {
   const { id } = await params;
   
   try {
-    // Fetch product data for metadata
-    const timestamp = Date.now();
-    const response = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*&timestamp=${timestamp}`);
+    // Fetch product data for metadata (deduplicated with page fetch)
+    const response = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*`);
     
     if (response.data && response.data.length > 0) {
       const rawProduct = response.data[0];
@@ -63,11 +64,10 @@ export default async function page({ params, searchParams }) {
   const resolvedSearchParams = await searchParams;
   const preferredVariantId = resolvedSearchParams?.variant || null;
   
-  // Fetch product by documentId with variants
-  const timestamp = Date.now();
+  // Fetch product by documentId with variants (deduplicated with generateMetadata fetch)
   let response = null;
   try {
-    response = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*&timestamp=${timestamp}`);
+    response = await fetchDataFromApi(`/api/products?filters[documentId][$eq]=${id}&populate=*`);
   } catch (error) {
     console.error('Error fetching product:', error);
   }

@@ -21,10 +21,8 @@ export default function ProductsMen({ parentClass = "flat-spacing-3 pt-0" }) {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        // Add a random parameter to prevent caching
-        const timestamp = new Date().getTime();
         // Filter to get only men's products
-        const response = await fetchDataFromApi(`${PRODUCTS_API}&filters[collection][category][title][$eq]=Men&timestamp=${timestamp}`);
+        const response = await fetchDataFromApi(`${PRODUCTS_API}&filters[collection][category][title][$eq]=Men`);
         
         if (response && response.data && response.data.length > 0) {
           // Transform the products to the format expected by ProductCard1

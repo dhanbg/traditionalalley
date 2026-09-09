@@ -68,7 +68,11 @@ export async function GET(request) {
       });
     }
     
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
+    });
   } catch (error) {
     console.error('Error fetching hero slides:', error);
     return NextResponse.json(

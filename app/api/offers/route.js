@@ -19,7 +19,8 @@ export async function GET(request) {
     const response = await fetch(strapiUrl, {
       headers: {
         'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`
-      }
+      },
+      next: { revalidate: 60 }
     });
 
     if (!response.ok) {
@@ -27,9 +28,12 @@ export async function GET(request) {
     }
 
     const offers = await response.json();
-    console.log('🎯 Offers data from Strapi:', offers);
 
-    return NextResponse.json(offers);
+    return NextResponse.json(offers, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
+    });
   } catch (error) {
     // Log the error and the Strapi URL (without token) for debugging
     console.error('Error fetching offers from Strapi:', error.message);

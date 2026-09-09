@@ -5,26 +5,24 @@ import Products from "@/components/products/Products";
 import Link from "next/link";
 import React from "react";
 
+// Cache women collection pages at edge CDN for 5 minutes
+export const revalidate = 300;
+
 // Fetch collection data from API
 async function getCollectionData(slug) {
   try {
     const apiUrl = process.env.STRAPI_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     const url = `${apiUrl}/api/collections?filters[slug][$eq]=${slug}&populate=*`;
-    console.log('[DEBUG SSR] Fetching collection via URL:', url);
     const response = await fetch(url, {
-      cache: 'no-store' // Ensure fresh data
+      next: { revalidate: 300 }
     });
     
-    console.log('[DEBUG SSR] Fetch response status:', response.status);
     if (!response.ok) {
       throw new Error(`Failed to fetch collection: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
-    console.log('[DEBUG SSR] Fetch response payload:', JSON.stringify(data).slice(0, 300));
-    
     const collections = data.data || [];
-    console.log('[DEBUG SSR] Total length matching slug:', collections.length);
     
     // Strapi 5 uses flattened data without .attributes wrapper
     return collections.length > 0 ? collections[0] : null;

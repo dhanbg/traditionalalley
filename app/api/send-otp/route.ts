@@ -25,15 +25,7 @@ const generateOTP = (): string => {
 const sendOTPEmail = async (email: string, otp: string, firstName: string) => {
   const transporter = createTransporter();
   
-  // Verify connection first
-  try {
-    await transporter.verify();
-    console.log('✅ Email server connection verified');
-  } catch (error) {
-    console.error('❌ Email server connection failed:', error);
-    throw new Error('Email service is currently unavailable. Please try again later.');
-  }
-  
+  // Transporter created
   const mailOptions = {
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to: email,

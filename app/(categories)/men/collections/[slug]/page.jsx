@@ -6,6 +6,9 @@ import { fetchDataFromApi } from "@/utils/api";
 import Link from "next/link";
 import React from "react";
 
+// Cache men collection pages at edge CDN for 5 minutes
+export const revalidate = 300;
+
 export default async function Page({ params }) {
   const slug = (await params).slug;
   

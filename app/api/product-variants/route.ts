@@ -55,7 +55,11 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await strapiResponse.json();
-    return NextResponse.json(rewriteImageUrls(data));
+    return NextResponse.json(rewriteImageUrls(data), {
+      headers: {
+        'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
+      },
+    });
   } catch (error) {
     console.error('Error in product-variants API route:', error);
     return NextResponse.json(

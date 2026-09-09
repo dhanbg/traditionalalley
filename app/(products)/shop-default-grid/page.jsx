@@ -1,6 +1,9 @@
 import React, { Suspense } from 'react';
 import Products from "@/components/products/Products";
 
+// Cache shop page at edge CDN for 5 minutes
+export const revalidate = 300;
+
 export const metadata = {
   title: "Shop All Authentic Nepali Clothing & Ethnic Wear | Traditional Alley",
   description: "Browse our complete catalog of authentic Nepali dresses, Dhaka tops, Kurthas, bridal lehengas, Daura Suruwal, and contemporary traditional accessories with worldwide shipping.",

@@ -11,13 +11,13 @@ export default auth((req) => {
   }
 
   // Protected routes that require authentication
-  const protectedRoutes = ["/order", "/forum", "/wish-list"]
+  const protectedRoutes = ["/order", "/forum", "/wish-list", "/my-account"]
   const isProtectedRoute = protectedRoutes.some(route =>
     nextUrl.pathname.startsWith(route)
   )
 
   // Admin routes
-  const adminRoutes = ["/dashboard"]
+  const adminRoutes = ["/dashboard", "/admin"]
   const isAdminRoute = adminRoutes.some(route =>
     nextUrl.pathname.startsWith(route)
   )
@@ -52,13 +52,12 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    "/dashboard/:path*",
+    "/admin/:path*",
+    "/order/:path*",
+    "/forum/:path*",
+    "/wish-list/:path*",
+    "/my-account/:path*",
+    "/my-account",
   ],
 }

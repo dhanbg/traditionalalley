@@ -39,7 +39,8 @@ export async function GET(request, { params }) {
     const response = await fetch(strapiUrl, {
       headers: {
         'Authorization': `Bearer ${token}`
-      }
+      },
+      next: { revalidate: 60 }
     });
 
     if (!response.ok) {
@@ -53,7 +54,11 @@ export async function GET(request, { params }) {
 
     const collection = await response.json();
 
-    return NextResponse.json(rewriteImageUrls(collection));
+    return NextResponse.json(rewriteImageUrls(collection), {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
+    });
   } catch (error) {
     // Log the error and the Strapi URL (without token) for debugging
     console.error('Error fetching collection from Strapi:', error.message);

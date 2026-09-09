@@ -1,5 +1,4 @@
 import HomePage from './HomePage';
-import { headers } from 'next/headers';
 import { localHeroSlides } from '@/data/localHeroSlides';
 import { fetchDataFromApi } from '@/utils/api';
 import { fetchTopPicksItems } from '@/utils/productVariantUtils';
@@ -36,10 +35,8 @@ export const metadata = {
 };
 
 export default async function Page() {
-  // Detect mobile from user agent on the server to avoid hydration mismatch
-  const headerList = await headers();
-  const ua = headerList.get('user-agent') || '';
-  const isMobileInitial = /Android|iPhone|iPad|iPod|IEMobile|Opera Mini|Mobile|BlackBerry|webOS/i.test(ua);
+  // Default initial mobile flag (Hero detects client screen size on mount)
+  const isMobileInitial = false;
   // Fetch all homepage content from Strapi before rendering
   // Gate rendering until all requests resolve
   const results = await Promise.allSettled([

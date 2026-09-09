@@ -23,9 +23,7 @@ export default function Products3({ parentClass = "flat-spacing-3" }) {
       try {
         setLoading(true);
         // Fetch all products with tabFilterOptions2 specified
-        // Add a random parameter to prevent caching
-        const timestamp = new Date().getTime();
-        const endpoint = `${PRODUCTS_API}&timestamp=${timestamp}`;
+        const endpoint = PRODUCTS_API;
         
         // Explicitly request only products that have tabFilterOptions2
         const response = await fetchDataFromApi(endpoint);
