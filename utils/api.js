@@ -2,10 +2,13 @@ import { API_URL, INTERNAL_API_URL, getStrapiInternalUrl, STRAPI_API_TOKEN, PROD
 import { generateLocalTimestamp } from './timezone';
 
 let memoryCollections = null;
+let memoryCollectionsTime = 0;
 let memoryCollectionsPromise = null;
+const COLLECTIONS_CACHE_TTL_MS = 5 * 60 * 1000; // 5-minute cache TTL
 
 export const fetchCollectionsCached = async () => {
-  if (memoryCollections) {
+  const now = Date.now();
+  if (memoryCollections && (now - memoryCollectionsTime < COLLECTIONS_CACHE_TTL_MS)) {
     return memoryCollections;
   }
   if (memoryCollectionsPromise) {
@@ -17,10 +20,13 @@ export const fetchCollectionsCached = async () => {
       const res = await fetchDataFromApi(COLLECTIONS_API);
       if (res && res.data) {
         memoryCollections = res;
+        memoryCollectionsTime = Date.now();
       }
       return res || { data: [] };
     } catch (err) {
       console.error('Error fetching cached collections:', err);
+      // Fallback to stale collections cache if network error
+      if (memoryCollections) return memoryCollections;
       return { data: [] };
     } finally {
       memoryCollectionsPromise = null;
