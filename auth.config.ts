@@ -50,7 +50,7 @@ export default {
           const { fetchDataFromApi } = await import("@/utils/api")
           
           console.log('📡 About to call fetchDataFromApi...');
-          const token = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN;
+          const token = process.env.STRAPI_API_TOKEN;
           console.log('🔐 API Token exists:', !!token);
           console.log('🔐 API Token length:', token?.length || 0);
           

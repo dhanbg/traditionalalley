@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getStrapiInternalUrl } from '@/utils/urls';
 
 const STRAPI_URL = getStrapiInternalUrl();
-const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN;
+const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
 
 export async function GET(request) {
   try {

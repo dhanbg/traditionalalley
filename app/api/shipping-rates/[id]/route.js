@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.STRAPI_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'https://admin.traditionalalley.com.np';
-const API_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN;
+const API_TOKEN = process.env.STRAPI_API_TOKEN;
 
 export async function DELETE(request, { params }) {
   try {

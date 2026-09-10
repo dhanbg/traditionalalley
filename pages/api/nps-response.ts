@@ -5,7 +5,7 @@ import { getStrapiInternalUrl } from '@/utils/urls';
 async function recoverBagIdFromStrapi(merchantTxnId: string): Promise<string | null> {
   try {
     const STRAPI_URL = getStrapiInternalUrl();
-    const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN;
+    const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
     
     console.log(`🔍 [NPS-RESPONSE] Looking up bagId for merchantTxnId: ${merchantTxnId}`);
     

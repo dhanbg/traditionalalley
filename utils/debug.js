@@ -12,7 +12,7 @@ const isDebugEnabled = () => {
 export const getEnvironmentDebug = () => {
   const debugInfo = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-    STRAPI_API_TOKEN: (typeof window === 'undefined' ? (process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN) : '') ? '[PRESENT]' : '[NOT_CONFIGURED]',
+    STRAPI_API_TOKEN: (typeof window === 'undefined' ? process.env.STRAPI_API_TOKEN : '') ? '[PRESENT]' : '[NOT_CONFIGURED]',
     NODE_ENV: process.env.NODE_ENV,
     timestamp: new Date().toISOString(),
     userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'Server',
@@ -152,7 +152,7 @@ export const checkProductionReadiness = () => {
     issues.push('NEXT_PUBLIC_API_URL is not set');
   }
   
-  if (typeof window === 'undefined' && !(process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN)) {
+  if (typeof window === 'undefined' && !process.env.STRAPI_API_TOKEN) {
     issues.push('STRAPI_API_TOKEN is not set');
   }
   
