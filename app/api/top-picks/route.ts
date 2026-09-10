@@ -18,13 +18,22 @@ export async function GET(request: NextRequest) {
       searchParams.set('populate[product_variants][populate]', '*');
     }
     
+    const token = STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN;
+    if (!token) {
+      console.error('❌ [top-picks] STRAPI_API_TOKEN is missing in server environment variables.');
+      return NextResponse.json(
+        { error: 'Server authentication configuration missing (STRAPI_API_TOKEN)' },
+        { status: 500 }
+      );
+    }
+
     const strapiUrl = `${INTERNAL_API_URL}/api/top-picks?${searchParams.toString()}`;
     
     const strapiResponse = await fetch(strapiUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${STRAPI_API_TOKEN}`,
+        'Authorization': `Bearer ${token}`,
       },
       next: { revalidate: 60 },
       signal: AbortSignal.timeout(5000),

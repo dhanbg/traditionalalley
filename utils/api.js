@@ -275,10 +275,17 @@ const executeWithRetry = async (fetchUrl, fetchOptions, timeoutMs = 5000) => {
 };
 
 export const fetchDataFromApi = async (endpoint) => {
+  const isServer = typeof window === 'undefined';
+  const serverToken = isServer ? (STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN || '') : '';
+
+  if (isServer && !serverToken) {
+    console.error(`❌ [fetchDataFromApi] Server-side fetch to '${endpoint}' missing STRAPI_API_TOKEN.`);
+  }
+
   const options = {
     method: "GET",
     headers: {
-      ...(STRAPI_API_TOKEN ? { Authorization: `Bearer ${STRAPI_API_TOKEN}` } : {}),
+      ...(serverToken ? { Authorization: `Bearer ${serverToken}` } : {}),
     },
   };
 

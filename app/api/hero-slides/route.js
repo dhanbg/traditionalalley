@@ -1,13 +1,21 @@
 import { NextResponse } from 'next/server';
-import { getStrapiInternalUrl } from '@/utils/urls';
+import { getStrapiInternalUrl, STRAPI_API_TOKEN } from '@/utils/urls';
 
 const STRAPI_URL = getStrapiInternalUrl();
-const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
 
 export const revalidate = 60;
 
 export async function GET(request) {
   try {
+    const token = STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN;
+    if (!token) {
+      console.error('❌ [hero-slides] STRAPI_API_TOKEN is missing in server environment variables.');
+      return NextResponse.json(
+        { error: 'Server authentication configuration missing (STRAPI_API_TOKEN)' },
+        { status: 500 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     searchParams.delete('_t');
     const populate = searchParams.get('populate') || '*';
@@ -35,11 +43,8 @@ export async function GET(request) {
     
     const headers = {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
     };
-    
-    if (STRAPI_TOKEN) {
-      headers['Authorization'] = `Bearer ${STRAPI_TOKEN}`;
-    }
     
     const response = await fetch(url, {
       method: 'GET',

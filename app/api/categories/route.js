@@ -20,13 +20,22 @@ export async function GET(request) {
     if (!searchParams.has('pagination[pageSize]') && !searchParams.has('pagination[limit]')) searchParams.set('pagination[pageSize]', '100');
     searchParams.set('publicationState', 'live');
 
+    const token = STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN;
+    if (!token) {
+      console.error('❌ [categories] STRAPI_API_TOKEN is missing in server environment variables.');
+      return NextResponse.json(
+        { data: [], meta: { error: 'Server authentication configuration missing (STRAPI_API_TOKEN)' } },
+        { status: 500 }
+      );
+    }
+
     // Construct the URL for the Strapi API using the internal docker network to bypass Cloudflare
     strapiUrl = `${INTERNAL_API_URL}/api/categories?${searchParams.toString()}`;
 
     // Fetch categories from Strapi with 5s timeout
     const response = await fetch(strapiUrl, {
       headers: {
-        'Authorization': `Bearer ${STRAPI_API_TOKEN}`
+        'Authorization': `Bearer ${token}`
       },
       next: { revalidate: 120 },
       signal: AbortSignal.timeout(5000),

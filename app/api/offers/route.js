@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getStrapiInternalUrl } from '@/utils/urls';
-
-const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
+import { getStrapiInternalUrl, STRAPI_API_TOKEN } from '@/utils/urls';
 
 // Enable ISR caching at route level (60 seconds)
 export const revalidate = 60;
@@ -9,6 +7,15 @@ export const revalidate = 60;
 export async function GET(request) {
   let strapiUrl;
   try {
+    const token = STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN;
+    if (!token) {
+      console.error('❌ [offers] Missing server environment variable: STRAPI_API_TOKEN.');
+      return NextResponse.json(
+        { error: 'Server authentication configuration missing (STRAPI_API_TOKEN)' },
+        { status: 500 }
+      );
+    }
+
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const populate = searchParams.get('populate') || '*';
@@ -18,10 +25,9 @@ export async function GET(request) {
     const apiUrl = getStrapiInternalUrl();
     strapiUrl = `${apiUrl}/api/offers?publicationState=live&pagination[pageSize]=${pageSize}&populate=${populate}`;
 
-    const headers = {};
-    if (STRAPI_TOKEN) {
-      headers['Authorization'] = `Bearer ${STRAPI_TOKEN}`;
-    }
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+    };
 
     // Fetch offers from Strapi with 5s timeout
     const response = await fetch(strapiUrl, {
