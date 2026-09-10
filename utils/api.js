@@ -182,13 +182,20 @@ const shouldCacheEndpoint = (endpoint) => {
  */
 const isTransientSocketError = (error) => {
   if (!error) return false;
-  // Never retry abort timeouts to prevent doubling Vercel Fluid Active CPU time
-  if (error.name === 'AbortError' || (error.message && error.message.toLowerCase().includes('timed out'))) {
-    return false;
-  }
-  const code = error.cause?.code || error.code;
+  const errorName = error.name || error.cause?.name || '';
   const msg = (error.cause?.message || error.message || '').toLowerCase();
   
+  // Never retry abort or timeout errors to prevent doubling Vercel Fluid Active CPU time
+  if (
+    errorName === 'AbortError' || 
+    errorName === 'TimeoutError' || 
+    msg.includes('timed out') || 
+    msg.includes('timeout')
+  ) {
+    return false;
+  }
+
+  const code = error.cause?.code || error.code;
   return (
     code === 'ECONNRESET' ||
     code === 'UND_ERR_SOCKET' ||

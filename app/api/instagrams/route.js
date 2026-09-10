@@ -24,12 +24,13 @@ export async function GET(request) {
     const apiUrl = `${STRAPI_URL}/api/instagrams?populate=*`;
     console.log('🔗 Fetching Instagram posts from:', apiUrl);
 
-    // Fetch Instagram posts from Strapi
+    // Fetch Instagram posts from Strapi with 5s timeout
     const response = await fetch(apiUrl, {
       headers: {
         'Authorization': `Bearer ${STRAPI_TOKEN}`,
         'Content-Type': 'application/json',
       },
+      signal: AbortSignal.timeout(5000),
       next: { revalidate: 300 }
     });
 

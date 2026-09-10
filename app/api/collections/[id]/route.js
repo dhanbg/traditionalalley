@@ -40,6 +40,7 @@ export async function GET(request, { params }) {
       headers: {
         'Authorization': `Bearer ${token}`
       },
+      signal: AbortSignal.timeout(5000),
       next: { revalidate: 60 }
     });
 
