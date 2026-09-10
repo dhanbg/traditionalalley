@@ -75,11 +75,6 @@ export async function POST(request: NextRequest) {
       }
     };
     
-    console.log(`📤 [${requestId}] Registration: Sending user data to Strapi:`, {
-      ...userData.data,
-      password: '[HIDDEN]'
-    });
-    
     const newUser = await createData("/api/user-data", userData);
     console.log(`✨ [${requestId}] Registration: User created in Strapi with ID: ${newUser?.data?.id}`);
     
@@ -110,17 +105,11 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error(`❌ [${requestId}] Registration error:`, error);
-    console.error(`❌ [${requestId}] Error details:`, error.message);
-    console.error(`❌ [${requestId}] Error stack:`, error.stack);
-    if (error.detail) {
-      console.error(`❌ [${requestId}] Error detail:`, error.detail);
-    }
+    console.error(`❌ [${requestId}] Registration error:`, error.message);
     return NextResponse.json(
       { 
         error: "Failed to register user", 
         detail: error.message,
-        stack: error.stack,
         requestId 
       },
       { status: 500 }

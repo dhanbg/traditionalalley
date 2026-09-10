@@ -35,95 +35,61 @@ export default {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        console.log('🔐 NextAuth authorize starting...');
-        console.log('📧 Email:', credentials?.email);
-        console.log('🔑 Password provided:', !!credentials?.password);
+        console.log("Authentication attempt");
         
         if (!credentials?.email || !credentials?.password) {
-          console.log('❌ Missing credentials');
-          return null
+          console.log("Authentication failed");
+          return null;
         }
 
         try {
           // Import bcrypt and api utils
-          const bcrypt = await import("bcryptjs")
-          const { fetchDataFromApi } = await import("@/utils/api")
-          
-          console.log('📡 About to call fetchDataFromApi...');
-          const token = process.env.STRAPI_API_TOKEN;
-          console.log('🔐 API Token exists:', !!token);
-          console.log('🔐 API Token length:', token?.length || 0);
+          const bcrypt = await import("bcryptjs");
+          const { fetchDataFromApi } = await import("@/utils/api");
           
           // Find user in Strapi (get the most recent one)
           const userResponse = await fetchDataFromApi(
-            `/api/user-data?filters[email][$eq]=${credentials.email}&sort=createdAt:desc`
-          )
-          console.log("User response from Strapi:", userResponse);
+            `/api/user-data?filters[email][$eq]=${encodeURIComponent(credentials.email as string)}&sort=createdAt:desc`
+          );
 
           if (!userResponse?.data || userResponse.data.length === 0) {
-            console.log("No user found for email:", credentials.email);
+            console.log("Authentication failed");
             return null;
           }
 
-          const user = userResponse.data[0]; // Most recent user
-          console.log("User found:", user);
-          
-          // NEW: Log every single field to see what's missing
-          console.log('🔍 Detailed user field analysis:');
-          console.log('  - id:', user.id);
-          console.log('  - documentId:', user.documentId);
-          console.log('  - email:', user.email);
-          console.log('  - firstName:', user.firstName);
-          console.log('  - lastName:', user.lastName);
-          console.log('  - password field exists:', 'password' in user);
-          console.log('  - password value type:', typeof user.password);
-          console.log('  - password value:', user.password);
-          console.log('  - password length:', user.password?.length || 0);
-          console.log('  - authUserId:', user.authUserId);
-          console.log('  - isEmailVerified:', user.isEmailVerified);
-          console.log('  - All user keys:', Object.keys(user));
+          const user = userResponse.data[0];
 
           if (!user.password) {
-            console.log("User has no password set:", user.email);
-            console.log("This might be an OAuth-only user or schema issue");
-            return null; // User might be OAuth-only
+            console.log("Authentication failed");
+            return null;
           }
 
-          console.log('🔒 About to compare passwords...');
-          console.log('  - Stored hash:', user.password);
-          console.log('  - Input password:', credentials.password);
-
           const isPasswordValid = await bcrypt.compare(credentials.password as string, user.password as string);
-          console.log("Password valid?", isPasswordValid);
 
           if (!isPasswordValid) {
-            console.log("Password mismatch for user:", user.email);
+            console.log("Authentication failed");
             return null;
           }
           
-          console.log('✅ Authentication successful! Creating user object...');
+          console.log("Authentication successful");
           
           // Generate a new session ID instead of using the stored authUserId (if missing)
           // Otherwise, prioritize the stable authUserId from the database to keep session query selectors intact
           const sessionId = `credentials_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           const stableId = user.authUserId || sessionId;
-          console.log('🆔 Using session user ID:', stableId, '(database authUserId:', user.authUserId, ')');
           
           const authUser = {
             id: stableId,
             email: user.email,
-            name: `${user.firstName} ${user.lastName}`.trim(),
-            image: user.avatar,
+            name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+            image: user.avatar || '',
             role: "user",
           };
-          console.log('👤 Returning user object:', authUser);
           
           return authUser;
         } catch (error) {
-          console.error("Authorization error:", error)
-          console.error("Error details:", error.message);
-          console.error("Error stack:", error.stack);
-          return null
+          console.log("Authentication failed");
+          return null;
         }
       },
     }),
@@ -143,10 +109,8 @@ export default {
         // Check if user is the authorized admin
         if (user.email === "gurungvaaiii@gmail.com" || user.email === "traditionalley2050@gmail.com") {
           token.role = "admin"
-          console.log("🔑 Admin role assigned to:", user.email)
         } else {
           token.role = user.role || "user"
-          console.log("👤 User role assigned to:", user.email)
         }
       }
       
@@ -167,8 +131,6 @@ export default {
         if (session.user.email === "gurungvaaiii@gmail.com" || session.user.email === "traditionalley2050@gmail.com") {
           session.user.role = "admin"
         }
-        
-        console.log("🎯 Session created for:", session.user.email, "with role:", session.user.role)
       }
       return session
     },
