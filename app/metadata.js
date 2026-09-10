@@ -31,6 +31,10 @@ export const metadata = {
     telephone: false,
   },
   metadataBase: new URL('https://traditionalalley.com.np'),
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
   alternates: {
     canonical: '/',
   },

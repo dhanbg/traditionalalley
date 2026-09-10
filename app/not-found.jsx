@@ -7,7 +7,7 @@ export const metadata = {
   description: "Traditional Alley",
 };
 
-export default function page() {
+export default function NotFound() {
   return (
     <section className="flat-spacing page-404">
       <div className="container">
