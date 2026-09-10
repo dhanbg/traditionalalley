@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server';
 import { getStrapiInternalUrl, getStrapiToken } from '@/utils/urls';
 
 export async function GET() {
-  const token = getStrapiToken();
+  const token = getStrapiToken() || process.env.STRAPI_API_TOKEN || process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '';
 
   try {
     if (!token) {
       return NextResponse.json({
         status: 'error',
+        version: 'v3-token-bridge',
         message: 'STRAPI_API_TOKEN is not configured in server environment variables',
         envPresence: {
           STRAPI_API_TOKEN: Boolean(process.env.STRAPI_API_TOKEN),
