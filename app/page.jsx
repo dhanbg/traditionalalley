@@ -37,16 +37,22 @@ export const metadata = {
 export default async function Page() {
   // Default initial mobile flag (Hero detects client screen size on mount)
   const isMobileInitial = false;
-  // Fetch all homepage content from Strapi before rendering
-  // Gate rendering until all requests resolve
-  const results = await Promise.allSettled([
+  // ✅ PERFORMANCE: Run all 3 homepage backend requests concurrently in parallel
+  // This minimizes serverless function execution time and Active CPU usage.
+  const [offersResult, topPicksMetaResult, topPicksItemsResult] = await Promise.allSettled([
     // Strapi collection: offers
     fetchDataFromApi('/api/offers?populate=*'),
     // Strapi single/collection: top-picks meta
     fetchDataFromApi('/api/top-picks?fields=heading,subheading,isActive'),
+    // Top picks items (products + variants)
+    fetchTopPicksItems(),
   ]);
-  const offersRes = results[0].status === 'fulfilled' ? results[0].value : null;
-  const topPicksMetaRes = results[1].status === 'fulfilled' ? results[1].value : null;
+
+  const offersRes = offersResult.status === 'fulfilled' ? offersResult.value : null;
+  const topPicksMetaRes = topPicksMetaResult.status === 'fulfilled' ? topPicksMetaResult.value : null;
+  const initialTopPicks = topPicksItemsResult.status === 'fulfilled' && Array.isArray(topPicksItemsResult.value)
+    ? topPicksItemsResult.value
+    : [];
 
   // Override hero slides with local static slides using public videos
   const initialHeroSlidesRaw = Array.isArray(localHeroSlides) ? localHeroSlides : [];
@@ -55,9 +61,6 @@ export default async function Page() {
     ? (topPicksMetaRes.data[0]?.isActive === false ? null : { heading: topPicksMetaRes.data[0]?.heading, subheading: topPicksMetaRes.data[0]?.subheading })
     : null;
   const initialInstagramPosts = [];
-
-  // Top picks items (products + variants) require transformation; fetch separately
-  const initialTopPicks = await fetchTopPicksItems();
 
   return (
     <HomePage
