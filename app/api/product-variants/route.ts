@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { API_URL } from '@/utils/urls';
 import { fetchDataFromApi } from '@/utils/api';
 
+export const revalidate = 120;
+
 function rewriteImageUrls(obj: any): any {
   if (!obj || typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map(rewriteImageUrls);

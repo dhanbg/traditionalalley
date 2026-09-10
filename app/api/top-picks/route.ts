@@ -34,8 +34,6 @@ export async function GET(request: NextRequest) {
     
     const strapiUrl = `${INTERNAL_API_URL}/api/top-picks?${searchParams.toString()}`;
     
-    console.log('Fetching Top Picks from:', strapiUrl);
-    
     const strapiResponse = await fetch(strapiUrl, {
       method: 'GET',
       headers: {

@@ -18,8 +18,6 @@ export async function GET(request) {
     const apiUrl = getStrapiInternalUrl();
     strapiUrl = `${apiUrl}/api/offers?publicationState=live&pagination[pageSize]=${pageSize}&populate=${populate}`;
 
-    console.log('🎯 Fetching offers from Strapi:', strapiUrl);
-
     const headers = {};
     if (STRAPI_TOKEN) {
       headers['Authorization'] = `Bearer ${STRAPI_TOKEN}`;
@@ -47,8 +45,7 @@ export async function GET(request) {
     console.error('Error fetching offers from Strapi:', error.message);
     return NextResponse.json({ 
       error: 'Failed to fetch offers', 
-      details: error.message,
-      strapiUrl: strapiUrl || null
+      details: error.message
     }, { status: 500 });
   }
 }

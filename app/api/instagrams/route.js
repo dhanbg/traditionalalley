@@ -3,14 +3,10 @@ import { NextResponse } from 'next/server';
 const STRAPI_URL = process.env['STRAPI_INTERNAL_URL'] || process.env['STRAPI_URL'] || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
 const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
 
+export const revalidate = 300;
+
 export async function GET(request) {
   try {
-    // Debug environment variables
-    console.log('🔧 Instagram API Environment check:');
-    console.log('  - STRAPI_URL:', STRAPI_URL);
-    console.log('  - STRAPI_TOKEN exists:', !!STRAPI_TOKEN);
-    console.log('  - NODE_ENV:', process.env.NODE_ENV);
-
     if (!STRAPI_URL) {
       console.error('❌ STRAPI_URL is not set');
       return NextResponse.json({ error: 'Server configuration error: STRAPI_URL missing' }, { status: 500 });
@@ -22,7 +18,6 @@ export async function GET(request) {
     }
 
     const apiUrl = `${STRAPI_URL}/api/instagrams?populate=*`;
-    console.log('🔗 Fetching Instagram posts from:', apiUrl);
 
     // Fetch Instagram posts from Strapi with 5s timeout
     const response = await fetch(apiUrl, {
@@ -33,8 +28,6 @@ export async function GET(request) {
       signal: AbortSignal.timeout(5000),
       next: { revalidate: 300 }
     });
-
-    console.log('📡 Strapi response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -47,7 +40,6 @@ export async function GET(request) {
     }
 
     const data = await response.json();
-    console.log('✅ Successfully fetched', data.data?.length || 0, 'Instagram posts');
 
 
 

@@ -3,9 +3,12 @@ import { getStrapiInternalUrl } from '@/utils/urls';
 
 const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
 
+export const revalidate = 60;
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
+    searchParams.delete('_t');
     const apiUrl = `${getStrapiInternalUrl()}/api/customer-reviews?${searchParams.toString()}`;
 
     const headers = {

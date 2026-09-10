@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { API_URL } from '@/utils/urls';
 import { fetchDataFromApi } from '@/utils/api';
 
+export const revalidate = 60;
+
 /**
  * Recursively rewrites all /uploads/ relative URLs in Strapi JSON to absolute URLs.
  * This ensures images load correctly regardless of the NEXT_PUBLIC_API_URL env var.

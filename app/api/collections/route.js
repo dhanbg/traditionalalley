@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { API_URL } from '@/utils/urls';
 import { fetchDataFromApi } from '@/utils/api';
 
+export const revalidate = 120;
+
 function rewriteImageUrls(obj) {
   if (!obj || typeof obj !== 'object') return obj;
 

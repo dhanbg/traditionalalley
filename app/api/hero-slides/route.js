@@ -4,9 +4,12 @@ import { getStrapiInternalUrl } from '@/utils/urls';
 const STRAPI_URL = getStrapiInternalUrl();
 const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
 
+export const revalidate = 60;
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
+    searchParams.delete('_t');
     const populate = searchParams.get('populate') || '*';
 
     // Build query string by passing through all query params, expanding populate[media] alias
@@ -30,8 +33,6 @@ export async function GET(request) {
 
     const url = `${STRAPI_URL}/api/hero-slides?${params.toString()}`;
     
-    console.log('🔍 Fetching from Strapi:', url);
-    
     const headers = {
       'Content-Type': 'application/json',
     };
@@ -53,22 +54,6 @@ export async function GET(request) {
     }
     
     const data = await response.json();
-    
-    console.log('🔍 Strapi Response:', JSON.stringify(data, null, 2));
-    
-    // Log each slide to check for mobileMedia
-    if (data.data) {
-      data.data.forEach((slide, index) => {
-        console.log(`🔍 Slide ${index}:`, {
-          id: slide.id,
-          heading: slide.heading,
-          hasMedia: !!slide.media,
-          hasMobileMedia: !!slide.mobileMedia,
-          media: slide.media,
-          mobileMedia: slide.mobileMedia
-        });
-      });
-    }
     
     return NextResponse.json(data, {
       headers: {

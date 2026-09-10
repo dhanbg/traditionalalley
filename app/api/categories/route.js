@@ -1,6 +1,28 @@
 import { NextResponse } from 'next/server';
-import { INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
+import { API_URL, INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
+
 export const revalidate = 120;
+
+function rewriteImageUrls(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+
+  if (Array.isArray(obj)) {
+    return obj.map(rewriteImageUrls);
+  }
+
+  const result = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === 'string' && value.startsWith('/uploads/')) {
+      result[key] = `${API_URL}${value}`;
+    } else if (typeof value === 'object' && value !== null) {
+      result[key] = rewriteImageUrls(value);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 export async function GET(request) {
   let strapiUrl;
   try {
@@ -25,7 +47,7 @@ export async function GET(request) {
       headers: {
         'Authorization': `Bearer ${STRAPI_API_TOKEN}`
       },
-      next: { revalidate: 60 },
+      next: { revalidate: 120 },
       signal: AbortSignal.timeout(5000),
     });
 
@@ -37,7 +59,7 @@ export async function GET(request) {
 
     const categories = await response.json();
 
-    return NextResponse.json(categories, {
+    return NextResponse.json(rewriteImageUrls(categories), {
       headers: {
         'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
       },
