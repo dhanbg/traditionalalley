@@ -1,24 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { API_URL } from '@/utils/urls';
-import { fetchDataFromApi } from '@/utils/api';
+import { INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
+import { rewriteImageUrlsInText } from '@/utils/imageUtils';
 
 export const revalidate = 120;
-
-function rewriteImageUrls(obj: any): any {
-  if (!obj || typeof obj !== 'object') return obj;
-  if (Array.isArray(obj)) return obj.map(rewriteImageUrls);
-  const result: any = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (typeof value === 'string' && value.startsWith('/uploads/')) {
-      result[key] = `${API_URL}${value}`;
-    } else if (typeof value === 'object' && value !== null) {
-      result[key] = rewriteImageUrls(value);
-    } else {
-      result[key] = value;
-    }
-  }
-  return result;
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,17 +16,33 @@ export async function GET(request: NextRequest) {
         searchParams.set('populate', '*');
     }
 
-    const data = await fetchDataFromApi(`/api/product-variants?${searchParams.toString()}`);
+    const strapiUrl = `${INTERNAL_API_URL}/api/product-variants?${searchParams.toString()}`;
 
-    if (!data || !data.data) {
+    // Fetch product variants directly with 5s timeout and 120s ISR caching
+    const response = await fetch(strapiUrl, {
+      headers: {
+        'Authorization': `Bearer ${STRAPI_API_TOKEN}`,
+      },
+      next: { revalidate: 120 },
+      signal: AbortSignal.timeout(5000),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
       return NextResponse.json({
         data: [],
-        meta: { error: data?.meta?.error || 'Failed to fetch product variants' }
+        meta: { error: `Strapi returned ${response.status}`, detail: errorText }
       });
     }
 
-    return NextResponse.json(rewriteImageUrls(data), {
+    // Zero-overhead string replacement on raw JSON text
+    const rawText = await response.text();
+    const rewritten = rewriteImageUrlsInText(rawText);
+
+    return new NextResponse(rewritten, {
+      status: 200,
       headers: {
+        'Content-Type': 'application/json',
         'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
       },
     });

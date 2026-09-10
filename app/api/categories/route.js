@@ -1,27 +1,8 @@
 import { NextResponse } from 'next/server';
-import { API_URL, INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
+import { INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
+import { rewriteImageUrlsInText } from '@/utils/imageUtils';
 
 export const revalidate = 120;
-
-function rewriteImageUrls(obj) {
-  if (!obj || typeof obj !== 'object') return obj;
-
-  if (Array.isArray(obj)) {
-    return obj.map(rewriteImageUrls);
-  }
-
-  const result = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (typeof value === 'string' && value.startsWith('/uploads/')) {
-      result[key] = `${API_URL}${value}`;
-    } else if (typeof value === 'object' && value !== null) {
-      result[key] = rewriteImageUrls(value);
-    } else {
-      result[key] = value;
-    }
-  }
-  return result;
-}
 
 export async function GET(request) {
   let strapiUrl;
@@ -42,7 +23,7 @@ export async function GET(request) {
     // Construct the URL for the Strapi API using the internal docker network to bypass Cloudflare
     strapiUrl = `${INTERNAL_API_URL}/api/categories?${searchParams.toString()}`;
 
-    // Fetch categories from Strapi
+    // Fetch categories from Strapi with 5s timeout
     const response = await fetch(strapiUrl, {
       headers: {
         'Authorization': `Bearer ${STRAPI_API_TOKEN}`
@@ -57,10 +38,14 @@ export async function GET(request) {
       return NextResponse.json({ data: [], meta: { error: `Strapi returned ${response.status}`, detail: errorText } });
     }
 
-    const categories = await response.json();
+    // Zero-overhead string replacement on raw JSON text: avoids JSON.parse + recursion + JSON.stringify
+    const rawText = await response.text();
+    const rewritten = rewriteImageUrlsInText(rawText);
 
-    return NextResponse.json(rewriteImageUrls(categories), {
+    return new NextResponse(rewritten, {
+      status: 200,
       headers: {
+        'Content-Type': 'application/json',
         'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
       },
     });

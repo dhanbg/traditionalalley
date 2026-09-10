@@ -66,3 +66,42 @@ export const getBestImageUrl = (imgSrc, preferredFormat = 'medium') => {
   
   return getImageUrl(imageUrl);
 };
+
+/**
+ * Ultra-fast native C++ string replacement for raw JSON responses.
+ * Avoids JSON.parse(), recursive object tree traversal, and JSON.stringify() entirely.
+ */
+export const rewriteImageUrlsInText = (jsonText) => {
+  if (!jsonText || typeof jsonText !== 'string') return jsonText;
+  return jsonText.replaceAll('"/uploads/', `"${API_URL}/uploads/`);
+};
+
+/**
+ * Fast in-place rewriting of relative /uploads/ URLs to absolute URLs on JS objects.
+ * Mutates in-place without allocating intermediate arrays or clone objects.
+ */
+export const rewriteImageUrls = (obj) => {
+  if (!obj || typeof obj !== 'object') return obj;
+
+  if (Array.isArray(obj)) {
+    for (let i = 0; i < obj.length; i++) {
+      const item = obj[i];
+      if (typeof item === 'string' && item.startsWith('/uploads/')) {
+        obj[i] = `${API_URL}${item}`;
+      } else if (typeof item === 'object' && item !== null) {
+        rewriteImageUrls(item);
+      }
+    }
+    return obj;
+  }
+
+  for (const key in obj) {
+    const value = obj[key];
+    if (typeof value === 'string' && value.startsWith('/uploads/')) {
+      obj[key] = `${API_URL}${value}`;
+    } else if (typeof value === 'object' && value !== null) {
+      rewriteImageUrls(value);
+    }
+  }
+  return obj;
+};

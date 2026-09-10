@@ -1,32 +1,8 @@
 import { NextResponse } from 'next/server';
-import { API_URL } from '@/utils/urls';
-import { fetchDataFromApi } from '@/utils/api';
+import { INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
+import { rewriteImageUrlsInText } from '@/utils/imageUtils';
 
 export const revalidate = 60;
-
-/**
- * Recursively rewrites all /uploads/ relative URLs in Strapi JSON to absolute URLs.
- * This ensures images load correctly regardless of the NEXT_PUBLIC_API_URL env var.
- */
-function rewriteImageUrls(obj) {
-  if (!obj || typeof obj !== 'object') return obj;
-
-  if (Array.isArray(obj)) {
-    return obj.map(rewriteImageUrls);
-  }
-
-  const result = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (typeof value === 'string' && value.startsWith('/uploads/')) {
-      result[key] = `${API_URL}${value}`;
-    } else if (typeof value === 'object' && value !== null) {
-      result[key] = rewriteImageUrls(value);
-    } else {
-      result[key] = value;
-    }
-  }
-  return result;
-}
 
 export async function GET(request) {
   try {
@@ -43,18 +19,30 @@ export async function GET(request) {
     if (!searchParams.has('pagination[pageSize]') && !searchParams.has('pagination[limit]')) searchParams.set('pagination[pageSize]', '100');
     searchParams.set('publicationState', 'live');
 
-    // Fetch products from Strapi using the resilient, cached API fetcher
-    const products = await fetchDataFromApi(`/api/products?${searchParams.toString()}`);
+    const strapiUrl = `${INTERNAL_API_URL}/api/products?${searchParams.toString()}`;
 
-    if (!products || !products.data) {
-      return NextResponse.json({ data: [], meta: { error: products?.meta?.error || 'Failed to fetch products' } });
+    // Fetch products from Strapi directly with 5s timeout and 60s ISR caching
+    const response = await fetch(strapiUrl, {
+      headers: {
+        'Authorization': `Bearer ${STRAPI_API_TOKEN}`,
+      },
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(5000),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return NextResponse.json({ data: [], meta: { error: `Strapi returned ${response.status}`, detail: errorText } });
     }
 
-    // Rewrite /uploads/ relative image URLs to absolute Strapi URLs
-    const rewritten = rewriteImageUrls(products);
+    // Zero-overhead string replacement on raw JSON text
+    const rawText = await response.text();
+    const rewritten = rewriteImageUrlsInText(rawText);
 
-    return NextResponse.json(rewritten, {
+    return new NextResponse(rewritten, {
+      status: 200,
       headers: {
+        'Content-Type': 'application/json',
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
       },
     });

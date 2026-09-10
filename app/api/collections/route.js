@@ -1,28 +1,8 @@
 import { NextResponse } from 'next/server';
-import { API_URL } from '@/utils/urls';
-import { fetchDataFromApi } from '@/utils/api';
+import { INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
+import { rewriteImageUrlsInText } from '@/utils/imageUtils';
 
 export const revalidate = 120;
-
-function rewriteImageUrls(obj) {
-  if (!obj || typeof obj !== 'object') return obj;
-
-  if (Array.isArray(obj)) {
-    return obj.map(rewriteImageUrls);
-  }
-
-  const result = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (typeof value === 'string' && value.startsWith('/uploads/')) {
-      result[key] = `${API_URL}${value}`;
-    } else if (typeof value === 'object' && value !== null) {
-      result[key] = rewriteImageUrls(value);
-    } else {
-      result[key] = value;
-    }
-  }
-  return result;
-}
 
 export async function GET(request) {
   try {
@@ -39,15 +19,30 @@ export async function GET(request) {
     if (!searchParams.has('pagination[pageSize]') && !searchParams.has('pagination[limit]')) searchParams.set('pagination[pageSize]', '100');
     searchParams.set('publicationState', 'live');
 
-    // Fetch collections from Strapi using the resilient, cached API fetcher
-    const collections = await fetchDataFromApi(`/api/collections?${searchParams.toString()}`);
+    const strapiUrl = `${INTERNAL_API_URL}/api/collections?${searchParams.toString()}`;
 
-    if (!collections || !collections.data) {
-      return NextResponse.json({ data: [], meta: { error: collections?.meta?.error || 'Failed to fetch collections' } });
+    // Fetch collections directly with 5s timeout and 120s ISR caching
+    const response = await fetch(strapiUrl, {
+      headers: {
+        'Authorization': `Bearer ${STRAPI_API_TOKEN}`,
+      },
+      next: { revalidate: 120 },
+      signal: AbortSignal.timeout(5000),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return NextResponse.json({ data: [], meta: { error: `Strapi returned ${response.status}`, detail: errorText } });
     }
 
-    return NextResponse.json(rewriteImageUrls(collections), {
+    // Zero-overhead string replacement on raw JSON text
+    const rawText = await response.text();
+    const rewritten = rewriteImageUrlsInText(rawText);
+
+    return new NextResponse(rewritten, {
+      status: 200,
       headers: {
+        'Content-Type': 'application/json',
         'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
       },
     });

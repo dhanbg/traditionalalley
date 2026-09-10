@@ -1,22 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-export const revalidate = 60;
-import { API_URL, INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
+import { INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
+import { rewriteImageUrlsInText } from '@/utils/imageUtils';
 
-function rewriteImageUrls(obj: any): any {
-  if (!obj || typeof obj !== 'object') return obj;
-  if (Array.isArray(obj)) return obj.map(rewriteImageUrls);
-  const result: any = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (typeof value === 'string' && value.startsWith('/uploads/')) {
-      result[key] = `${API_URL}${value}`;
-    } else if (typeof value === 'object' && value !== null) {
-      result[key] = rewriteImageUrls(value);
-    } else {
-      result[key] = value;
-    }
-  }
-  return result;
-}
+export const revalidate = 60;
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,17 +34,20 @@ export async function GET(request: NextRequest) {
         const errorText = await strapiResponse.text();
         console.error(`Strapi API returned ${strapiResponse.status} for Top Picks:`, errorText);
         
-        // Return 200 with error info or mock data to avoid breaking the UI completely, 
-        // but ensure we know it failed.
         return NextResponse.json({
             data: [],
             meta: { error: `Strapi returned ${strapiResponse.status}`, detail: errorText }
         });
     }
 
-    const data = await strapiResponse.json();
-    return NextResponse.json(rewriteImageUrls(data), {
+    // Zero-overhead string replacement on raw JSON text
+    const rawText = await strapiResponse.text();
+    const rewritten = rewriteImageUrlsInText(rawText);
+
+    return new NextResponse(rewritten, {
+      status: 200,
       headers: {
+        'Content-Type': 'application/json',
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
       },
     });

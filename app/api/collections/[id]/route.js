@@ -1,25 +1,6 @@
 import { NextResponse } from 'next/server';
-import { API_URL, INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
-
-function rewriteImageUrls(obj) {
-  if (!obj || typeof obj !== 'object') return obj;
-
-  if (Array.isArray(obj)) {
-    return obj.map(rewriteImageUrls);
-  }
-
-  const result = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (typeof value === 'string' && value.startsWith('/uploads/')) {
-      result[key] = `${API_URL}${value}`;
-    } else if (typeof value === 'object' && value !== null) {
-      result[key] = rewriteImageUrls(value);
-    } else {
-      result[key] = value;
-    }
-  }
-  return result;
-}
+import { INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
+import { rewriteImageUrlsInText } from '@/utils/imageUtils';
 
 export async function GET(request, { params }) {
   let strapiUrl;
@@ -53,10 +34,14 @@ export async function GET(request, { params }) {
       throw new Error(`Strapi responded with status ${response.status}`);
     }
 
-    const collection = await response.json();
+    // Zero-overhead string replacement on raw JSON text
+    const rawText = await response.text();
+    const rewritten = rewriteImageUrlsInText(rawText);
 
-    return NextResponse.json(rewriteImageUrls(collection), {
+    return new NextResponse(rewritten, {
+      status: 200,
       headers: {
+        'Content-Type': 'application/json',
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
       },
     });
