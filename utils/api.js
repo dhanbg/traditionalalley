@@ -117,63 +117,78 @@ export const getOptimizedImageUrl = (imgObj) => {
   return imageUrl;
 };
 
-const isNextApiRoute = (endpoint) => {
-  const cleanEndpoint = endpoint.split('?')[0];
-  return cleanEndpoint.startsWith('/api/ncm/') || 
-         cleanEndpoint.startsWith('/api/auth/') || 
-         cleanEndpoint.startsWith('/api/webhook/') || 
-         cleanEndpoint.startsWith('/api/instagrams') || 
-         cleanEndpoint.startsWith('/api/categories') || 
-         cleanEndpoint.startsWith('/api/products') || 
-         cleanEndpoint.startsWith('/api/collections') || 
-         cleanEndpoint.startsWith('/api/product-variants') || 
-         cleanEndpoint.startsWith('/api/top-picks') ||
-         cleanEndpoint.startsWith('/api/user-bags') ||
-         cleanEndpoint.startsWith('/api/user-orders') ||
-         cleanEndpoint.startsWith('/api/wishlists') ||
-         cleanEndpoint.startsWith('/api/shipping-rates') ||
-         cleanEndpoint.startsWith('/api/coupons') ||
-         cleanEndpoint.startsWith('/api/carts') ||
-         cleanEndpoint.startsWith('/api/user-data') ||
-         cleanEndpoint.startsWith('/api/hero-slides') ||
-         cleanEndpoint.startsWith('/api/offers') ||
-         cleanEndpoint.startsWith('/api/customer-reviews') ||
-         cleanEndpoint.startsWith('/api/upload') ||
-         cleanEndpoint.startsWith('/api/countries') ||
-         cleanEndpoint.startsWith('/api/cities') ||
-         cleanEndpoint.startsWith('/api/dhl') ||
-         cleanEndpoint.startsWith('/api/orders') ||
-         cleanEndpoint.startsWith('/api/health-check');
+/**
+ * Detects whether an endpoint is a Next.js API route (/api/*).
+ * In the browser, all /api/* requests are routed through Next.js proxy routes
+ * so secret tokens are never exposed and Edge CDN caching can be utilized.
+ */
+export const isNextApiRoute = (endpoint) => {
+  return typeof endpoint === 'string' && endpoint.split('?')[0].startsWith('/api/');
 };
 
-const getFetchUrl = (endpoint) => {
+/**
+ * Resolves the destination URL for an API request:
+ *
+ * 1. SERVER-SIDE: Always routes directly to Strapi (INTERNAL_API_URL).
+ *    Guarantees: Server Component -> fetchDataFromApi() -> Strapi DIRECTLY.
+ *    Strictly prevents Server Component -> Next.js /api route -> Strapi (function chaining).
+ *    Even if a full URL like `https://traditionalalley.com.np/api/products` was passed,
+ *    it strips the frontend origin and redirects directly to Strapi internal URL.
+ *
+ * 2. BROWSER-SIDE:
+ *    - /api/* paths -> relative URL for Next.js API proxy / Vercel Edge CDN.
+ *    - External http(s):// -> as-is.
+ *    - Non-/api assets -> prepended with public API_URL.
+ */
+export const getFetchUrl = (endpoint) => {
+  if (!endpoint || typeof endpoint !== 'string') return '';
+
+  const isServer = typeof window === 'undefined';
+
+  if (isServer) {
+    // If a full frontend URL was passed on the server, rewrite to Strapi directly
+    if (endpoint.includes('/api/')) {
+      const apiPath = endpoint.substring(endpoint.indexOf('/api/'));
+      return `${getStrapiInternalUrl()}${apiPath}`;
+    }
+    if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+      return endpoint; // External third-party API
+    }
+    const cleanPath = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    return `${getStrapiInternalUrl()}${cleanPath}`;
+  }
+
+  // Browser-side:
   if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
     return endpoint;
   }
-  if (typeof window === 'undefined') {
-    return `${getStrapiInternalUrl()}${endpoint}`;
+  if (endpoint.startsWith('/api/')) {
+    return endpoint; // Relative URL for browser to hit Next.js API / Edge CDN
   }
-  if (isNextApiRoute(endpoint)) {
-    return endpoint; // Relative URL for browser
-  }
-  return `${API_URL}${endpoint}`;
+  const cleanPath = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `${API_URL}${cleanPath}`;
 };
 
-const shouldCacheEndpoint = (endpoint) => {
-  const cleanEndpoint = endpoint.split('?')[0];
-  return cleanEndpoint.startsWith('/api/products') ||
-         cleanEndpoint.startsWith('/api/hero-slides') ||
-         cleanEndpoint.startsWith('/api/offers') ||
-         cleanEndpoint.startsWith('/api/top-picks') ||
-         cleanEndpoint.startsWith('/api/instagrams') ||
-         cleanEndpoint.startsWith('/api/categories') ||
-         cleanEndpoint.startsWith('/api/collections') ||
-         cleanEndpoint.startsWith('/api/product-variants') ||
-         cleanEndpoint.startsWith('/api/customer-reviews') ||
-         cleanEndpoint.startsWith('/api/shipping-rates') ||
-         cleanEndpoint.startsWith('/api/ncm/branches') ||
-         cleanEndpoint.startsWith('/api/countries') ||
-         cleanEndpoint.startsWith('/api/cities');
+const PUBLIC_CATALOG_PREFIXES = [
+  '/api/products',
+  '/api/hero-slides',
+  '/api/offers',
+  '/api/top-picks',
+  '/api/instagrams',
+  '/api/categories',
+  '/api/collections',
+  '/api/product-variants',
+  '/api/customer-reviews',
+  '/api/shipping-rates',
+  '/api/countries',
+  '/api/cities',
+  '/api/ncm/branches',
+];
+
+export const shouldCacheEndpoint = (endpoint) => {
+  if (typeof endpoint !== 'string') return false;
+  const path = endpoint.split('?')[0];
+  return PUBLIC_CATALOG_PREFIXES.some(prefix => path.startsWith(prefix));
 };
 
 /**
