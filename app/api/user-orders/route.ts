@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { getStrapiInternalUrl } from "@/utils/urls";
 
 const getStrapiUrl = () => getStrapiInternalUrl();
-const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN || process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN;
 
 // GET - Fetch user orders
 export async function GET(request: NextRequest) {

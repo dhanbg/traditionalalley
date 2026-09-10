@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN || process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN;
 
 export const dynamic = 'force-dynamic';
 export async function GET(request) {

@@ -5,7 +5,7 @@
 require('dotenv').config();
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:1337";
-const STRAPI_API_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN || process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+const STRAPI_API_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN;
 
 console.log('🔧 Cart Deletion Debug Script');
 console.log('API_URL:', API_URL);

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 // Server-side route: prefer internal Docker URL for container-to-container communication
 const API_BASE_URL = process.env.STRAPI_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'https://admin.traditionalalley.com.np';
-const API_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN || process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+const API_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN;
 
 // Add validation for required environment variables
 if (!API_TOKEN) {
