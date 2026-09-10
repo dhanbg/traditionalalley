@@ -11,6 +11,7 @@ export const getStrapiToken = () => {
     process.env.strapi_api_token ||
     process.env.STRAPI_TOKEN ||
     process.env.strapi_token ||
+    process.env.NEXT_PUBLIC_STRAPI_API_TOKEN ||
     ''
   );
 };

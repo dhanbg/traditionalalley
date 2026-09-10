@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getStrapiInternalUrl } from '@/utils/urls';
 
-const API_TOKEN = process.env.STRAPI_API_TOKEN;
+const API_TOKEN = STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN;
 
 export async function DELETE(request, { params }) {
   try {

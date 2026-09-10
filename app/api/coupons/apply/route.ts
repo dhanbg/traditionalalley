@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { getStrapiInternalUrl } from '@/utils/urls';
-
-const STRAPI_API_TOKEN = process.env.STRAPI_API_TOKEN;
+import { getStrapiInternalUrl, STRAPI_API_TOKEN } from '@/utils/urls';
 
 export async function POST(request: NextRequest) {
   try {
