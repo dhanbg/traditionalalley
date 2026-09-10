@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
+import { getStrapiInternalUrl } from '@/utils/urls';
 
 const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
 
-export const dynamic = 'force-dynamic';
+// Enable ISR caching at route level (60 seconds)
+export const revalidate = 60;
+
 export async function GET(request) {
   let strapiUrl;
   try {
@@ -11,8 +14,8 @@ export async function GET(request) {
     const populate = searchParams.get('populate') || '*';
     const pageSize = searchParams.get('pageSize') || '100';
 
-    // Construct the URL for the Strapi API with proper population and publication state using internal network
-    const apiUrl = process.env.STRAPI_INTERNAL_URL || process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://strapi-alley-production:1337';
+    // Construct the URL for the Strapi API with proper population and publication state
+    const apiUrl = getStrapiInternalUrl();
     strapiUrl = `${apiUrl}/api/offers?publicationState=live&pagination[pageSize]=${pageSize}&populate=${populate}`;
 
     console.log('🎯 Fetching offers from Strapi:', strapiUrl);
@@ -40,14 +43,7 @@ export async function GET(request) {
       },
     });
   } catch (error) {
-    // Log the error and the Strapi URL (without token) for debugging
     console.error('Error fetching offers from Strapi:', error.message);
-    if (strapiUrl) {
-      console.error('Strapi URL:', strapiUrl);
-    } else {
-      console.error('Strapi URL not set');
-    }
-
     return NextResponse.json({ 
       error: 'Failed to fetch offers', 
       details: error.message,

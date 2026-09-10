@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
-
-export const dynamic = 'force-dynamic';
+export const revalidate = 120;
 export async function GET(request) {
   let strapiUrl;
   try {
