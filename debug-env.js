@@ -2,12 +2,13 @@
 require('dotenv').config();
 
 console.log('🔧 Environment Variables:');
+const token = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN || process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
 console.log('API_URL:', process.env.NEXT_PUBLIC_API_URL);
-console.log('STRAPI_API_TOKEN present:', !!process.env.NEXT_PUBLIC_STRAPI_API_TOKEN);
-console.log('STRAPI_API_TOKEN length:', process.env.NEXT_PUBLIC_STRAPI_API_TOKEN?.length || 0);
+console.log('STRAPI_API_TOKEN present:', !!token);
+console.log('STRAPI_API_TOKEN length:', token?.length || 0);
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:1337";
-const STRAPI_API_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+const STRAPI_API_TOKEN = token;
 
 async function testConnection() {
   try {

@@ -243,11 +243,7 @@ const ShippingAnalytics = ({ tabId, dateFilter }) => {
   // CSV Export Functions
   const fetchShippingRates = async () => {
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/shipping-rates?populate=*&pagination[pageSize]=1000`, {
-        headers: {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`
-        }
-      });
+      const response = await axios.get('/api/shipping-rates?populate=*&pagination[pageSize]=1000');
       return response.data.data || [];
     } catch (error) {
       console.error('Error fetching shipping rates:', error);
@@ -363,8 +359,6 @@ const ShippingAnalytics = ({ tabId, dateFilter }) => {
   const deleteAllShippingRates = async () => {
     try {
       console.log('Starting delete process...');
-      console.log('API URL:', process.env.NEXT_PUBLIC_API_URL);
-      console.log('Token exists:', !!process.env.NEXT_PUBLIC_STRAPI_API_TOKEN);
       
       // First fetch all shipping rates to get their IDs
       const shippingRates = await fetchShippingRates();
@@ -376,18 +370,13 @@ const ShippingAnalytics = ({ tabId, dateFilter }) => {
         return 0;
       }
       
-      // Try bulk delete first
+      // Try bulk delete first via internal Next.js API route
       try {
         console.log('Attempting bulk delete for all', shippingRates.length, 'rates...');
         const documentIds = shippingRates.map(rate => rate.documentId);
         
-        const bulkResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/shipping-rates/bulk-delete`, {
-          documentIds
-        }, {
-          headers: {
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`,
-            'Content-Type': 'application/json'
-          }
+        const bulkResponse = await axios.delete('/api/shipping-rates', {
+          data: { documentIds }
         });
         
         console.log('Bulk delete completed successfully:', bulkResponse.data);
@@ -412,11 +401,7 @@ const ShippingAnalytics = ({ tabId, dateFilter }) => {
           
           const batchPromises = batch.map(async (rate, index) => {
             try {
-              const response = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/shipping-rates/${rate.documentId}`, {
-                headers: {
-                  'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`
-                }
-              });
+              const response = await axios.delete(`/api/shipping-rates/${rate.documentId}`);
               console.log(`✓ Deleted rate ${i + index + 1}/${shippingRates.length}: ${rate.documentId}`);
               return { success: true, documentId: rate.documentId };
             } catch (error) {
@@ -629,13 +614,6 @@ const ShippingAnalytics = ({ tabId, dateFilter }) => {
   };
 
   const bulkImportShippingRates = async (shippingRates) => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    const token = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
-    
-    if (!token) {
-      throw new Error('API token not found');
-    }
-
     let successCount = 0;
     let errorCount = 0;
     const errors = [];
@@ -645,11 +623,10 @@ const ShippingAnalytics = ({ tabId, dateFilter }) => {
       setImportProgress(Math.round(((i + 1) / shippingRates.length) * 100));
       
       try {
-        const response = await fetch(`${apiUrl}/api/shipping-rates`, {
+        const response = await fetch('/api/shipping-rates', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({
             data: rate

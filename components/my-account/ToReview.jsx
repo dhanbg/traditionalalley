@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { fetchDataFromApi, createData, getOptimizedImageUrl } from "@/utils/api";
-import { API_URL, STRAPI_API_TOKEN } from "@/utils/urls";
 
 export default function ToReview() {
   const { data: session } = useSession();
@@ -211,11 +210,8 @@ export default function ToReview() {
               const formData = new FormData();
               formData.append('files', photo.file);
 
-              const uploadResponse = await fetch(`${API_URL}/api/upload`, {
+              const uploadResponse = await fetch('/api/upload', {
                 method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${STRAPI_API_TOKEN}`,
-                },
                 body: formData,
               });
 

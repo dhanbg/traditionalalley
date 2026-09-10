@@ -3,7 +3,7 @@ import { allProducts } from "@/data/productsWomen";
 import { openCartModal } from "@/utils/openCartModal";
 import { openWistlistModal } from "@/utils/openWishlist";
 import { useSession } from "next-auth/react";
-import { API_URL, STRAPI_API_TOKEN, CARTS_API, USER_CARTS_API, PRODUCT_BY_DOCUMENT_ID_API } from "@/utils/urls";
+import { API_URL, CARTS_API, USER_CARTS_API, PRODUCT_BY_DOCUMENT_ID_API } from "@/utils/urls";
 import { fetchDataFromApi, createData, updateData, deleteData } from "@/utils/api";
 import { getImageUrl, getBestImageUrl } from "@/utils/imageUtils";
 import { validateCartStock } from "@/utils/stockValidation";
@@ -872,10 +872,9 @@ export default function Context({ children }) {
         } catch (updateError) {
           // Try direct fetch as last resort
           try {
-            const directResponse = await fetch(`${API_URL}/api/carts/${cartDocumentId}?populate=*`, {
+            const directResponse = await fetch(`/api/carts/${cartDocumentId}?populate=*`, {
               method: 'PUT',
               headers: {
-                'Authorization': `Bearer ${STRAPI_API_TOKEN}`,
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify(updatePayload)
@@ -1579,16 +1578,14 @@ export default function Context({ children }) {
       
       try {
         // Make a manual fetch to get more detailed response info
-        const fullUrl = `${API_URL}${deleteUrl}`;
         const deleteOptions = {
           method: "DELETE",
           headers: {
-            Authorization: `Bearer ${STRAPI_API_TOKEN}`,
             'Content-Type': 'application/json'
           },
         };
         
-        const rawResponse = await fetch(fullUrl, deleteOptions);
+        const rawResponse = await fetch(deleteUrl, deleteOptions);
         
         const responseText = await rawResponse.text();
         

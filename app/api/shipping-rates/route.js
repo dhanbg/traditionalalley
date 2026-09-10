@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 
 // Server-side route: prefer internal Docker URL for container-to-container communication
 const API_BASE_URL = process.env.STRAPI_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'https://admin.traditionalalley.com.np';
-const API_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN;
+const API_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN || process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
 
 // Add validation for required environment variables
 if (!API_TOKEN) {
-  console.error('NEXT_PUBLIC_STRAPI_API_TOKEN is not defined in environment variables');
+  console.error('STRAPI_API_TOKEN is not defined in environment variables');
 }
 
 export async function GET(request) {
@@ -40,7 +40,7 @@ export async function GET(request) {
       return NextResponse.json(
         { 
           error: 'API token not configured',
-          message: 'NEXT_PUBLIC_STRAPI_API_TOKEN environment variable is missing'
+          message: 'STRAPI_API_TOKEN environment variable is missing'
         },
         { status: 500 }
       );
@@ -109,7 +109,7 @@ export async function POST(request) {
       return NextResponse.json(
         { 
           error: 'API token not configured',
-          message: 'NEXT_PUBLIC_STRAPI_API_TOKEN environment variable is missing'
+          message: 'STRAPI_API_TOKEN environment variable is missing'
         },
         { status: 500 }
       );
@@ -160,3 +160,59 @@ export async function POST(request) {
     );
   }
 }
+
+export async function DELETE(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id') || searchParams.get('documentId');
+    const body = await request.json().catch(() => ({}));
+    const targetId = id || body?.documentId || body?.id;
+
+    if (!targetId && !body?.documentIds) {
+      return NextResponse.json({ error: 'Missing documentId or documentIds' }, { status: 400 });
+    }
+
+    if (!API_TOKEN) {
+      return NextResponse.json(
+        { error: 'API token not configured', message: 'STRAPI_API_TOKEN environment variable is missing' },
+        { status: 500 }
+      );
+    }
+
+    if (body?.documentIds && Array.isArray(body.documentIds)) {
+      // Bulk delete
+      let deletedCount = 0;
+      for (const docId of body.documentIds) {
+        const delRes = await fetch(`${API_BASE_URL}/api/shipping-rates/${docId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${API_TOKEN}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (delRes.ok) deletedCount++;
+      }
+      return NextResponse.json({ success: true, deletedCount });
+    }
+
+    const deleteUrl = `${API_BASE_URL}/api/shipping-rates/${targetId}`;
+    const response = await fetch(deleteUrl, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${API_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return NextResponse.json({ error: 'Failed to delete shipping rate', details: errorText }, { status: response.status });
+    }
+
+    const data = await response.json().catch(() => ({ success: true }));
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Shipping rates DELETE API error:', error);
+    return NextResponse.json({ error: 'Internal server error', message: error.message }, { status: 500 });
+  }
+}

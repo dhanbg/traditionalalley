@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { getStrapiInternalUrl } from "@/utils/urls";
 
 const getStrapiUrl = () => getStrapiInternalUrl();
-
+const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN || process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
 
 // GET - Fetch user orders
 export async function GET(request: NextRequest) {
@@ -21,11 +21,15 @@ export async function GET(request: NextRequest) {
     // Fetch orders from Strapi
     const strapiUrl = `${getStrapiUrl()}/api/user-orders?filters[authUserId][$eq]=${authUserId}&pagination[limit]=${limit}&sort=${sort}&populate=*`;
     
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (STRAPI_TOKEN) {
+      headers['Authorization'] = `Bearer ${STRAPI_TOKEN}`;
+    }
+
     const response = await fetch(strapiUrl, {
-      headers: {
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -65,12 +69,16 @@ export async function POST(request: NextRequest) {
     // Create order in Strapi
     const strapiUrl = `${getStrapiUrl()}/api/user-orders`;
     
+    const postHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (STRAPI_TOKEN) {
+      postHeaders['Authorization'] = `Bearer ${STRAPI_TOKEN}`;
+    }
+
     const response = await fetch(strapiUrl, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
+      headers: postHeaders,
       body: JSON.stringify({ data: orderData }),
     });
 
@@ -119,12 +127,16 @@ export async function PUT(request: NextRequest) {
     // Update order in Strapi
     const strapiUrl = `${getStrapiUrl()}/api/user-orders/${orderId}`;
     
+    const putHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (STRAPI_TOKEN) {
+      putHeaders['Authorization'] = `Bearer ${STRAPI_TOKEN}`;
+    }
+
     const response = await fetch(strapiUrl, {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
+      headers: putHeaders,
       body: JSON.stringify({ data: updateData }),
     });
 

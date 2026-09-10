@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN || process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+
 export const dynamic = 'force-dynamic';
 export async function GET(request) {
   let strapiUrl;
@@ -15,11 +17,14 @@ export async function GET(request) {
 
     console.log('🎯 Fetching offers from Strapi:', strapiUrl);
 
+    const headers = {};
+    if (STRAPI_TOKEN) {
+      headers['Authorization'] = `Bearer ${STRAPI_TOKEN}`;
+    }
+
     // Fetch offers from Strapi
     const response = await fetch(strapiUrl, {
-      headers: {
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`
-      },
+      headers,
       next: { revalidate: 60 }
     });
 

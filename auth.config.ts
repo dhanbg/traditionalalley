@@ -50,9 +50,9 @@ export default {
           const { fetchDataFromApi } = await import("@/utils/api")
           
           console.log('📡 About to call fetchDataFromApi...');
-          console.log('🌐 API URL being used:', process.env.NEXT_PUBLIC_API_URL);
-          console.log('🔐 API Token exists:', !!process.env.NEXT_PUBLIC_STRAPI_API_TOKEN);
-          console.log('🔐 API Token length:', process.env.NEXT_PUBLIC_STRAPI_API_TOKEN?.length || 0);
+          const token = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN || process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+          console.log('🔐 API Token exists:', !!token);
+          console.log('🔐 API Token length:', token?.length || 0);
           
           // Find user in Strapi (get the most recent one)
           const userResponse = await fetchDataFromApi(

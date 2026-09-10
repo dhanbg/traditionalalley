@@ -5,15 +5,15 @@
 require('dotenv').config();
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:1337";
-const STRAPI_API_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+const STRAPI_API_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN || process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
 
 console.log('🔧 Cart Deletion Debug Script');
 console.log('API_URL:', API_URL);
 console.log('Token present:', STRAPI_API_TOKEN ? 'Yes' : 'No');
 
 if (!STRAPI_API_TOKEN) {
-  console.error('❌ NEXT_PUBLIC_STRAPI_API_TOKEN not found in environment variables');
-  console.log('Please check your .env file contains NEXT_PUBLIC_STRAPI_API_TOKEN=your_token_here');
+  console.error('❌ STRAPI_API_TOKEN not found in environment variables');
+  console.log('Please check your .env file contains STRAPI_API_TOKEN=your_token_here');
   process.exit(1);
 }
 

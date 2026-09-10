@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://admin.traditionalalley.com.np';
-const API_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN;
+const API_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN || process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
 
 export async function GET() {
   try {
@@ -14,7 +14,7 @@ export async function GET() {
     if (!API_TOKEN) {
       return NextResponse.json({
         status: 'error',
-        message: 'NEXT_PUBLIC_STRAPI_API_TOKEN is not configured',
+        message: 'STRAPI_API_TOKEN is not configured',
         environment: {
           NODE_ENV: process.env.NODE_ENV,
           API_BASE_URL,

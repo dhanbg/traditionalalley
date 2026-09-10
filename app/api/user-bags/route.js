@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getStrapiInternalUrl } from '@/utils/urls';
 
+const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN || process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+
 export async function GET(request) {
   let strapiUrl;
   try {
@@ -21,11 +23,14 @@ export async function GET(request) {
     const base = getStrapiInternalUrl();
     strapiUrl = `${base}/api/user-bags?${searchParams.toString()}`;
 
+    const headers = {};
+    if (STRAPI_TOKEN) {
+      headers['Authorization'] = `Bearer ${STRAPI_TOKEN}`;
+    }
+
     // Fetch user bags from Strapi
     const response = await fetch(strapiUrl, {
-      headers: {
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`
-      }
+      headers
     });
 
     if (!response.ok) {
@@ -59,12 +64,16 @@ export async function POST(request) {
     const base = getStrapiInternalUrl();
     strapiUrl = `${base}/api/user-bags`;
 
+    const postHeaders = {
+      'Content-Type': 'application/json',
+    };
+    if (STRAPI_TOKEN) {
+      postHeaders['Authorization'] = `Bearer ${STRAPI_TOKEN}`;
+    }
+
     const response = await fetch(strapiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_TOKEN}`
-      },
+      headers: postHeaders,
       body: JSON.stringify(body)
     });
 

@@ -134,7 +134,16 @@ const isNextApiRoute = (endpoint) => {
          cleanEndpoint.startsWith('/api/shipping-rates') ||
          cleanEndpoint.startsWith('/api/coupons') ||
          cleanEndpoint.startsWith('/api/carts') ||
-         cleanEndpoint.startsWith('/api/user-data');
+         cleanEndpoint.startsWith('/api/user-data') ||
+         cleanEndpoint.startsWith('/api/hero-slides') ||
+         cleanEndpoint.startsWith('/api/offers') ||
+         cleanEndpoint.startsWith('/api/customer-reviews') ||
+         cleanEndpoint.startsWith('/api/upload') ||
+         cleanEndpoint.startsWith('/api/countries') ||
+         cleanEndpoint.startsWith('/api/cities') ||
+         cleanEndpoint.startsWith('/api/dhl') ||
+         cleanEndpoint.startsWith('/api/orders') ||
+         cleanEndpoint.startsWith('/api/health-check');
 };
 
 const getFetchUrl = (endpoint) => {
@@ -238,9 +247,9 @@ export const fetchDataFromApi = async (endpoint) => {
   const options = {
     method: "GET",
     headers: {
-      Authorization: `Bearer ${STRAPI_API_TOKEN}`,
+      ...(STRAPI_API_TOKEN ? { Authorization: `Bearer ${STRAPI_API_TOKEN}` } : {}),
     },
-  }
+  };
 
   try {
     // Check for known invalid product IDs to avoid unnecessary API calls
@@ -345,18 +354,20 @@ export const fetchDataFromApi = async (endpoint) => {
 }
 
 export const createData = async (endpoint, data) => {
+  const isRoute = isNextApiRoute(endpoint);
+  const headers = {
+    "Content-Type": "application/json",
+    ...(STRAPI_API_TOKEN && (typeof window === 'undefined' || !isRoute) ? { Authorization: `Bearer ${STRAPI_API_TOKEN}` } : {}),
+  };
   const options = {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${STRAPI_API_TOKEN}`,
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify(data),
-  }
+  };
   
   try {
     const fetchUrl = getFetchUrl(endpoint);
-    const res = await fetch(fetchUrl, options)
+    const res = await fetch(fetchUrl, options);
     
     if (!res.ok) {
       // Try to get the response body to include more details
@@ -369,26 +380,28 @@ export const createData = async (endpoint, data) => {
       throw new Error(`HTTP error! status: ${res.status}, body: ${errorBody}`);
     }
     
-    return res.json()
+    return res.json();
   } catch (error) {
     throw error;
   }
-}
+};
 
 export const updateData = async (endpoint, data) => {
   const fetchUrl = getFetchUrl(endpoint);
+  const isRoute = isNextApiRoute(endpoint);
   
   // Cloudflare WAF blocks raw PUT/PATCH requests (403 Forbidden).
   // We send a POST request with X-HTTP-Method-Override: PUT headers.
+  const headers = {
+    "Content-Type": "application/json",
+    "X-HTTP-Method-Override": "PUT",
+    "X-Method-Override": "PUT",
+    "X-HTTP-Method": "PUT",
+    ...(STRAPI_API_TOKEN && (typeof window === 'undefined' || !isRoute) ? { Authorization: `Bearer ${STRAPI_API_TOKEN}` } : {}),
+  };
   const options = {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${STRAPI_API_TOKEN}`,
-      "Content-Type": "application/json",
-      "X-HTTP-Method-Override": "PUT",
-      "X-Method-Override": "PUT",
-      "X-HTTP-Method": "PUT"
-    },
+    headers,
     body: JSON.stringify(data),
   };
   
@@ -419,8 +432,8 @@ export const updateData = async (endpoint, data) => {
             const fallbackRes = await fetch(fallbackUrl, {
               method: 'POST',
               headers: {
-                Authorization: `Bearer ${STRAPI_API_TOKEN}`,
                 'Content-Type': 'application/json',
+                ...(STRAPI_API_TOKEN && typeof window === 'undefined' ? { Authorization: `Bearer ${STRAPI_API_TOKEN}` } : {}),
               },
               body: JSON.stringify({
                 documentId: bagDocumentId,
@@ -438,8 +451,8 @@ export const updateData = async (endpoint, data) => {
             const fallbackRes = await fetch(fallbackUrl, {
               method: 'POST',
               headers: {
-                Authorization: `Bearer ${STRAPI_API_TOKEN}`,
                 'Content-Type': 'application/json',
+                ...(STRAPI_API_TOKEN && typeof window === 'undefined' ? { Authorization: `Bearer ${STRAPI_API_TOKEN}` } : {}),
               },
               body: JSON.stringify({
                 documentId: bagDocumentId,
@@ -463,8 +476,8 @@ export const updateData = async (endpoint, data) => {
           const fallbackRes = await fetch(fallbackUrl, {
             method: 'POST',
             headers: {
-              Authorization: `Bearer ${STRAPI_API_TOKEN}`,
               'Content-Type': 'application/json',
+              ...(STRAPI_API_TOKEN && typeof window === 'undefined' ? { Authorization: `Bearer ${STRAPI_API_TOKEN}` } : {}),
             },
             body: JSON.stringify({
               documentId: prodDocumentId,
@@ -477,6 +490,7 @@ export const updateData = async (endpoint, data) => {
           }
         }
       }
+
 
       const error = new Error(`Update failed: ${res.statusText}`);
       error.status = res.status;
@@ -523,8 +537,8 @@ export const deleteData = async (endpoint) => {
         const strapiRes = await fetch(strapiDeleteUrl, {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${STRAPI_API_TOKEN}`,
             'Content-Type': 'application/json',
+            ...(STRAPI_API_TOKEN && typeof window === 'undefined' ? { Authorization: `Bearer ${STRAPI_API_TOKEN}` } : {}),
           },
           body: JSON.stringify({ documentId: cartId }),
         });
@@ -537,14 +551,15 @@ export const deleteData = async (endpoint) => {
     }
 
     // Standard DELETE via POST method override
+    const isRoute = isNextApiRoute(cleanEndpoint);
     const options = {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${STRAPI_API_TOKEN}`,
         "Content-Type": "application/json",
         "X-HTTP-Method-Override": "DELETE",
         "X-Method-Override": "DELETE",
-        "X-HTTP-Method": "DELETE"
+        "X-HTTP-Method": "DELETE",
+        ...(STRAPI_API_TOKEN && (typeof window === 'undefined' || !isRoute) ? { Authorization: `Bearer ${STRAPI_API_TOKEN}` } : {}),
       },
     };
 
@@ -989,11 +1004,13 @@ export const updateProductStock = async (purchasedProducts) => {
 // Create order record in Strapi user_orders collection
 export const createOrderRecord = async (orderData, userId) => {
   try {
-    const response = await fetch(`${API_URL}/api/user-orders`, {
+    const fetchUrl = getFetchUrl('/api/user-orders');
+    const isRoute = isNextApiRoute('/api/user-orders');
+    const response = await fetch(fetchUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${STRAPI_API_TOKEN}`
+        ...(STRAPI_API_TOKEN && (typeof window === 'undefined' || !isRoute) ? { Authorization: `Bearer ${STRAPI_API_TOKEN}` } : {}),
       },
       body: JSON.stringify({
         data: {

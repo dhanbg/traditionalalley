@@ -238,7 +238,6 @@ const DHLShippingForm = ({ onRateCalculated, onShipmentCreated, initialPackages 
 
   // API Configuration
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
-  const API_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
 
   // Helper function to extract actual country code from unique identifier
   const getActualCountryCode = (uniqueId) => {
