@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
         'Authorization': `Bearer ${STRAPI_API_TOKEN}`,
       },
       next: { revalidate: 60 },
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!strapiResponse.ok) {

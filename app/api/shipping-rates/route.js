@@ -52,7 +52,8 @@ export async function GET(request) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${API_TOKEN}`
       },
-      next: { revalidate: 300 }
+      next: { revalidate: 300 },
+      signal: AbortSignal.timeout(5000),
     });
     
     if (!response.ok) {

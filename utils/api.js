@@ -182,13 +182,16 @@ const shouldCacheEndpoint = (endpoint) => {
  */
 const isTransientSocketError = (error) => {
   if (!error) return false;
+  // Never retry abort timeouts to prevent doubling Vercel Fluid Active CPU time
+  if (error.name === 'AbortError' || (error.message && error.message.toLowerCase().includes('timed out'))) {
+    return false;
+  }
   const code = error.cause?.code || error.code;
   const msg = (error.cause?.message || error.message || '').toLowerCase();
   
   return (
     code === 'ECONNRESET' ||
     code === 'UND_ERR_SOCKET' ||
-    code === 'ETIMEDOUT' ||
     code === 'ECONNREFUSED' ||
     msg.includes('other side closed') ||
     msg.includes('socket disconnected') ||
@@ -199,10 +202,10 @@ const isTransientSocketError = (error) => {
 };
 
 /**
- * Execute fetch with controlled timeout (10s on server) and transparent 1x retry on transient socket errors.
+ * Execute fetch with controlled timeout (5s for public catalog, 10s for transactional)
+ * and transparent 1x retry on transient socket errors.
  */
-const executeWithRetry = async (fetchUrl, fetchOptions) => {
-  const timeoutMs = 10000;
+const executeWithRetry = async (fetchUrl, fetchOptions, timeoutMs = 5000) => {
   const isServer = typeof window === 'undefined';
   const maxAttempts = isServer ? 2 : 1; // Strict maximum 1 retry on server for socket resets
 
@@ -311,9 +314,13 @@ export const fetchDataFromApi = async (endpoint) => {
       fetchOptions.next = { revalidate: 60 };
     }
 
+    // Public catalog gets 5s timeout to minimize Vercel Fluid Active CPU on serverless functions.
+    // Private/authenticated/transactional endpoints get 10s.
+    const timeoutMs = isCacheable ? 5000 : 10000;
+
     let res;
     try {
-      res = await executeWithRetry(fetchUrl, fetchOptions);
+      res = await executeWithRetry(fetchUrl, fetchOptions, timeoutMs);
     } catch (networkError) {
       console.error(`[Strapi API] Network fetch failed for ${processedEndpoint}:`, networkError.message);
       // In server components (SSR/ISR/RSC), return graceful error structure rather than crashing with unhandled 500

@@ -25,7 +25,8 @@ export async function GET(request) {
       headers: {
         'Authorization': `Bearer ${STRAPI_API_TOKEN}`
       },
-      next: { revalidate: 60 }
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!response.ok) {

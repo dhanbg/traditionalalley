@@ -25,10 +25,11 @@ export async function GET(request) {
       headers['Authorization'] = `Bearer ${STRAPI_TOKEN}`;
     }
 
-    // Fetch offers from Strapi
+    // Fetch offers from Strapi with 5s timeout
     const response = await fetch(strapiUrl, {
       headers,
-      next: { revalidate: 60 }
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!response.ok) {

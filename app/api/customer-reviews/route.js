@@ -19,6 +19,7 @@ export async function GET(request) {
       method: 'GET',
       headers,
       next: { revalidate: 60 },
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!res.ok) {
