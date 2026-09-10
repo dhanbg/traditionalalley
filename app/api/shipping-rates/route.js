@@ -1,13 +1,7 @@
 import { NextResponse } from 'next/server';
+import { getStrapiInternalUrl } from '@/utils/urls';
 
-// Server-side route: prefer internal Docker URL for container-to-container communication
-const API_BASE_URL = process.env.STRAPI_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'https://admin.traditionalalley.com.np';
 const API_TOKEN = process.env.STRAPI_API_TOKEN;
-
-// Add validation for required environment variables
-if (!API_TOKEN) {
-  console.error('STRAPI_API_TOKEN is not defined in environment variables');
-}
 
 export async function GET(request) {
   try {
@@ -30,11 +24,7 @@ export async function GET(request) {
       }
     }
     
-    const strapiUrl = `${API_BASE_URL}/api/shipping-rates?${queryParams.toString()}`;
-    
-    console.log('Fetching shipping rates from Strapi:', strapiUrl);
-    console.log('API_BASE_URL:', API_BASE_URL);
-    console.log('API_TOKEN exists:', !!API_TOKEN);
+    const strapiUrl = `${getStrapiInternalUrl()}/api/shipping-rates?${queryParams.toString()}`;
     
     if (!API_TOKEN) {
       return NextResponse.json(
@@ -100,11 +90,7 @@ export async function POST(request) {
   try {
     const body = await request.json();
     
-    const strapiUrl = `${API_BASE_URL}/api/shipping-rates`;
-    
-    console.log('Creating shipping rate in Strapi:', strapiUrl);
-    console.log('API_BASE_URL:', API_BASE_URL);
-    console.log('API_TOKEN exists:', !!API_TOKEN);
+    const strapiUrl = `${getStrapiInternalUrl()}/api/shipping-rates`;
     
     if (!API_TOKEN) {
       return NextResponse.json(
@@ -130,13 +116,11 @@ export async function POST(request) {
       console.error('Strapi API Error:', {
         status: response.status,
         statusText: response.statusText,
-        body: errorText
       });
       
       return NextResponse.json(
         { 
           error: 'Failed to create shipping rate in Strapi',
-          details: errorText,
           status: response.status
         },
         { status: response.status }
@@ -144,18 +128,15 @@ export async function POST(request) {
     }
     
     const data = await response.json();
-    console.log('Successfully created shipping rate');
     
     return NextResponse.json(data);
     
   } catch (error) {
-    console.error('Shipping rates POST API error:', error);
+    console.error('Shipping rates POST API error:', error?.message || error);
     
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        message: error.message,
-        details: error.stack
       },
       { status: 500 }
     );
@@ -184,7 +165,7 @@ export async function DELETE(request) {
       // Bulk delete
       let deletedCount = 0;
       for (const docId of body.documentIds) {
-        const delRes = await fetch(`${API_BASE_URL}/api/shipping-rates/${docId}`, {
+        const delRes = await fetch(`${getStrapiInternalUrl()}/api/shipping-rates/${docId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${API_TOKEN}`,
@@ -196,7 +177,7 @@ export async function DELETE(request) {
       return NextResponse.json({ success: true, deletedCount });
     }
 
-    const deleteUrl = `${API_BASE_URL}/api/shipping-rates/${targetId}`;
+    const deleteUrl = `${getStrapiInternalUrl()}/api/shipping-rates/${targetId}`;
     const response = await fetch(deleteUrl, {
       method: 'DELETE',
       headers: {

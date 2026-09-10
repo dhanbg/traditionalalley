@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
+import { getStrapiInternalUrl } from '@/utils/urls';
 
-const API_BASE_URL = process.env.STRAPI_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'https://admin.traditionalalley.com.np';
 const API_TOKEN = process.env.STRAPI_API_TOKEN;
 
 export async function DELETE(request, { params }) {
@@ -19,7 +19,7 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    const deleteUrl = `${API_BASE_URL}/api/shipping-rates/${id}`;
+    const deleteUrl = `${getStrapiInternalUrl()}/api/shipping-rates/${id}`;
     const response = await fetch(deleteUrl, {
       method: 'DELETE',
       headers: {

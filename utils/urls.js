@@ -12,7 +12,7 @@ export const getStrapiInternalUrl = () => {
   if (process.env.STRAPI_URL && process.env.STRAPI_URL !== "undefined") {
     return process.env.STRAPI_URL;
   }
-  if (process.env.NODE_ENV === 'production' || (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.includes('traditionalalley.com.np'))) {
+  if (process.env.NODE_ENV === 'production') {
     return "https://admin.traditionalalley.com.np";
   }
   return "http://localhost:1337";

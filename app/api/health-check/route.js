@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
+import { getStrapiInternalUrl } from '@/utils/urls';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://admin.traditionalalley.com.np';
 const API_TOKEN = process.env.STRAPI_API_TOKEN;
 
 export async function GET() {
@@ -19,7 +19,7 @@ export async function GET() {
     }
 
     // Ping Strapi backend
-    const testUrl = `${API_BASE_URL}/api/shipping-rates?pagination[pageSize]=1`;
+    const testUrl = `${getStrapiInternalUrl()}/api/shipping-rates?pagination[pageSize]=1`;
     const response = await fetch(testUrl, {
       method: 'GET',
       headers: {

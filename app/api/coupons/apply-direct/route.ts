@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
+import { getStrapiInternalUrl } from '@/utils/urls';
 
-const STRAPI_URL = process.env['STRAPI_INTERNAL_URL'] || process.env['STRAPI_URL'] || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
 const STRAPI_API_TOKEN = process.env.STRAPI_API_TOKEN;
 
 export async function POST(request: NextRequest) {
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     // First validate the coupon
-    const validateResponse = await fetch(`${STRAPI_URL}/api/coupons/validate`, {
+    const validateResponse = await fetch(`${getStrapiInternalUrl()}/api/coupons/validate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If validation successful, apply the coupon directly
-    const applyResponse = await fetch(`${STRAPI_URL}/api/coupons/apply`, {
+    const applyResponse = await fetch(`${getStrapiInternalUrl()}/api/coupons/apply`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from "@/auth";
+import { getStrapiInternalUrl } from '@/utils/urls';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
 const STRAPI_API_TOKEN = process.env.STRAPI_API_TOKEN;
 
 async function fetchDataFromApi(endpoint: string) {
@@ -12,7 +12,7 @@ async function fetchDataFromApi(endpoint: string) {
     },
   };
   
-  const res = await fetch(`${API_URL}${endpoint}`, options);
+  const res = await fetch(`${getStrapiInternalUrl()}${endpoint}`, options);
   if (!res.ok) {
     throw new Error(`API request failed: ${res.statusText}`);
   }
@@ -27,7 +27,7 @@ async function deleteData(endpoint: string) {
     },
   };
   
-  const res = await fetch(`${API_URL}${endpoint}`, options);
+  const res = await fetch(`${getStrapiInternalUrl()}${endpoint}`, options);
   
   let responseText;
   try {
@@ -49,7 +49,7 @@ async function deleteData(endpoint: string) {
     const error = new Error(`Delete failed: ${res.statusText}`);
     (error as any).status = res.status;
     (error as any).detail = responseData || responseText;
-    (error as any).url = `${API_URL}${endpoint}`;
+    (error as any).url = `${getStrapiInternalUrl()}${endpoint}`;
     throw error;
   }
   

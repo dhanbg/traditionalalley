@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
+import { getStrapiInternalUrl } from '@/utils/urls';
+import { rewriteImageUrlsInText } from '@/utils/imageUtils';
 
-const STRAPI_URL = process.env['STRAPI_INTERNAL_URL'] || process.env['STRAPI_URL'] || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
 const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
 
 export const revalidate = 300;
 
-export async function GET(request) {
+export async function GET() {
   try {
-    if (!STRAPI_URL) {
+    const strapiUrl = getStrapiInternalUrl();
+    if (!strapiUrl) {
       console.error('❌ STRAPI_URL is not set');
       return NextResponse.json({ error: 'Server configuration error: STRAPI_URL missing' }, { status: 500 });
     }
@@ -17,7 +19,7 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Server configuration error: STRAPI_TOKEN missing' }, { status: 500 });
     }
 
-    const apiUrl = `${STRAPI_URL}/api/instagrams?populate=*`;
+    const apiUrl = `${strapiUrl}/api/instagrams?populate=*`;
 
     // Fetch Instagram posts from Strapi with 5s timeout
     const response = await fetch(apiUrl, {
@@ -31,57 +33,27 @@ export async function GET(request) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Strapi API error:', response.status, errorText);
+      console.error('❌ Strapi API error:', response.status);
       return NextResponse.json({ 
         error: 'Failed to fetch Instagram posts from Strapi',
-        details: errorText,
         status: response.status
       }, { status: response.status });
     }
 
-    const data = await response.json();
+    const rawText = await response.text();
+    const rewritten = rewriteImageUrlsInText(rawText);
 
-
-
-    // Process the data to ensure proper image URLs and iOS-compatible video codecs
-    if (data.data) {
-      data.data = data.data.map(post => {
-        if (post.media?.url && !post.media.url.startsWith('http')) {
-          post.media.url = `${STRAPI_URL}${post.media.url}`;
-        }
-        
-
-        
-        // Handle thumbnail formats
-        if (post.media?.formats?.thumbnail?.url && !post.media.formats.thumbnail.url.startsWith('http')) {
-          post.media.formats.thumbnail.url = `${STRAPI_URL}${post.media.formats.thumbnail.url}`;
-        }
-        
-        // Handle small formats
-        if (post.media?.formats?.small?.url && !post.media.formats.small.url.startsWith('http')) {
-          post.media.formats.small.url = `${STRAPI_URL}${post.media.formats.small.url}`;
-        }
-        
-        // Handle medium formats
-        if (post.media?.formats?.medium?.url && !post.media.formats.medium.url.startsWith('http')) {
-          post.media.formats.medium.url = `${STRAPI_URL}${post.media.formats.medium.url}`;
-        }
-        
-        return post;
-      });
-    }
-
-    return NextResponse.json(data, {
+    return new NextResponse(rewritten, {
+      status: 200,
       headers: {
+        'Content-Type': 'application/json',
         'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
       },
     });
   } catch (error) {
-    console.error('❌ Instagram API error:', error);
+    console.error('❌ Instagram API error:', error?.message || error);
     return NextResponse.json({ 
       error: 'Internal server error',
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     }, { status: 500 });
   }
 }
