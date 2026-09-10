@@ -6,7 +6,13 @@ export const getStrapiToken = () => {
   if (typeof window !== 'undefined') {
     return '';
   }
-  return process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN || '';
+  return (
+    process.env.STRAPI_API_TOKEN ||
+    process.env.strapi_api_token ||
+    process.env.STRAPI_TOKEN ||
+    process.env.strapi_token ||
+    ''
+  );
 };
 
 export const STRAPI_API_TOKEN = getStrapiToken();

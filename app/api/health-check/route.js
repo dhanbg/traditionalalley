@@ -1,20 +1,22 @@
 import { NextResponse } from 'next/server';
-import { getStrapiInternalUrl } from '@/utils/urls';
-
-const API_TOKEN = process.env.STRAPI_API_TOKEN;
+import { getStrapiInternalUrl, getStrapiToken } from '@/utils/urls';
 
 export async function GET() {
-  const isProd = process.env.NODE_ENV === 'production';
-  const allowDebug = !isProd || process.env.ENABLE_PRODUCTION_DEBUG === 'true';
+  const token = getStrapiToken();
 
   try {
-    if (!API_TOKEN) {
-      if (!allowDebug) {
-        return NextResponse.json({ status: 'error', message: 'Service unavailable' }, { status: 503 });
-      }
+    if (!token) {
       return NextResponse.json({
         status: 'error',
-        message: 'STRAPI_API_TOKEN is not configured',
+        message: 'STRAPI_API_TOKEN is not configured in server environment variables',
+        envPresence: {
+          STRAPI_API_TOKEN: Boolean(process.env.STRAPI_API_TOKEN),
+          strapi_api_token: Boolean(process.env.strapi_api_token),
+          STRAPI_TOKEN: Boolean(process.env.STRAPI_TOKEN),
+          strapi_token: Boolean(process.env.strapi_token),
+          NEXT_PUBLIC_STRAPI_API_TOKEN: Boolean(process.env.NEXT_PUBLIC_STRAPI_API_TOKEN),
+        },
+        hint: 'Please add STRAPI_API_TOKEN to Vercel Project Settings -> Environment Variables and redeploy.'
       }, { status: 500 });
     }
 
@@ -24,15 +26,12 @@ export async function GET() {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_TOKEN}`,
+        'Authorization': `Bearer ${token}`,
       },
       signal: AbortSignal.timeout(5000), // 5s timeout
     });
 
     if (!response.ok) {
-      if (!allowDebug) {
-        return NextResponse.json({ status: 'error', message: 'Upstream unavailable' }, { status: 502 });
-      }
       return NextResponse.json({
         status: 'error',
         message: 'Failed to connect to Strapi',
@@ -40,25 +39,12 @@ export async function GET() {
       }, { status: response.status });
     }
 
-    // Production safe response - zero information disclosure
-    if (!allowDebug) {
-      return NextResponse.json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    // Development / explicitly enabled debug response
     return NextResponse.json({
-      status: 'success',
+      status: 'ok',
       timestamp: new Date().toISOString(),
       strapiConnected: true,
     });
   } catch (error) {
-    if (!allowDebug) {
-      return NextResponse.json({ status: 'error', message: 'Health check failed' }, { status: 500 });
-    }
-
     return NextResponse.json({
       status: 'error',
       message: error instanceof Error ? error.message : 'Unknown error',
