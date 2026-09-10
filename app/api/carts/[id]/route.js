@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getStrapiInternalUrl } from '@/utils/urls';
+import { getStrapiInternalUrl, STRAPI_API_TOKEN } from '@/utils/urls';
 
 const getStrapiUrl = () => getStrapiInternalUrl();
 const STRAPI_TOKEN = STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN;
