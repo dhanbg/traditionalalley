@@ -86,7 +86,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
 
   useEffect(() => {
     checkMobile(); // Run on mount to set correct mobile flag based on actual window size
-    window.addEventListener('resize', checkMobile);
+    window.addEventListener('resize', checkMobile, { passive: true });
     return () => {
       window.removeEventListener('resize', checkMobile);
     };
@@ -498,7 +498,8 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                         src={slide.poster || slide.imgSrc}
                         width={1920}
                         height={803}
-                        quality={100}
+                        quality={85}
+                        sizes="100vw"
                         priority={index === 0}
                         style={{
                           width: '100%',
@@ -538,7 +539,8 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                         src={slide.imgSrc || "https://www.image2url.com/r2/default/images/1784894579658-80104e75-d617-4a30-919d-51cc8ec04b13.jpg"}
                         width={1920}
                         height={803}
-                        quality={100}
+                        quality={85}
+                        sizes="100vw"
                         priority={index === 0}
                         className="d-none d-md-block"
                         style={{
@@ -558,7 +560,8 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                         src={slide.mobileMedia?.url || "https://www.image2url.com/r2/default/images/1784894592927-1225a295-9c8e-416b-9fad-fd6954d7869e.jpg"}
                         width={768}
                         height={1024}
-                        quality={100}
+                        quality={85}
+                        sizes="100vw"
                         priority={index === 0}
                         className="d-block d-md-none"
                         style={{
@@ -694,8 +697,6 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
 
       {/* Custom styles for teaser drop */}
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700;800&family=Outfit:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
-
         .teaser-content-container {
           position: absolute;
           top: 0;

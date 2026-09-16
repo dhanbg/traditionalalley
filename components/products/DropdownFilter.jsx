@@ -6,7 +6,6 @@ import {
   categories,
   sizes,
 } from "@/data/productFilterOptions";
-import { productMain } from "@/data/productsWomen";
 
 import RangeSlider from "react-range-slider-input";
 

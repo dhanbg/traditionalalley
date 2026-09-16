@@ -202,7 +202,7 @@ export default class WOW {
         }
       }
     }
-    if (!this.disabled()) {
+    if (this.boxes.length && !this.disabled()) {
       addEvent(
         this.config.scrollContainer || window,
         "scroll",

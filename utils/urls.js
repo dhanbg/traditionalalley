@@ -39,10 +39,10 @@ export const getStrapiInternalUrl = () => {
 export const INTERNAL_API_URL = getStrapiInternalUrl();
 
 
-// Strapi 5 populate helpers - populate=* populates 1st level relations/media. For deep, use strictly valid syntax.
-export const PRODUCT_LISTING_POPULATE = "populate[imgSrc][populate]=*&populate[imgHover][populate]=*&populate[collection][populate]=*&populate[product_variants][populate]=*";
+// Strapi 5 populate helpers - targeted relations to maintain high performance and avoid >2MB data cache overflow
+export const PRODUCT_LISTING_POPULATE = "populate[imgSrc][populate]=*&populate[imgHover][populate]=*&populate[collection][populate][0]=category&populate[product_variants][populate][imgSrc][populate]=*&populate[product_variants][populate][imgHover][populate]=*&populate[product_variants][populate][0]=color";
 export const PRODUCT_POPULATE = "populate[imgSrc][populate]=*&populate[imgHover][populate]=*&populate[gallery][populate]=*&populate[collection][populate]=*&populate[product_variants][populate]=*&populate[customer_reviews][populate]=*";
-export const COLLECTION_POPULATE = "populate[image][populate]=*&populate[category][populate]=*&populate[products][populate][imgSrc][populate]=*&populate[products][populate][imgHover][populate]=*";
+export const COLLECTION_POPULATE = "populate[image][populate]=*&populate[category][populate]=*";
 export const VARIANT_POPULATE = "populate[imgSrc][populate]=*&populate[imgHover][populate]=*&populate[gallery][populate]=*&populate[product][populate][collection][populate]=*";
 export const TOP_PICKS_POPULATE = "populate[products][populate]=*&populate[product_variants][populate]=*";
 

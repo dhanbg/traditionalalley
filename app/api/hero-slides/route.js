@@ -3,6 +3,7 @@ import { getStrapiInternalUrl, STRAPI_API_TOKEN } from '@/utils/urls';
 
 const STRAPI_URL = getStrapiInternalUrl();
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 60;
 
 export async function GET(request) {

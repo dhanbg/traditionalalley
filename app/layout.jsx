@@ -1,11 +1,23 @@
 import "../public/scss/main.scss";
-import "photoswipe/style.css";
-import "react-range-slider-input/dist/style.css";
-import "../public/css/image-compare-viewer.min.css";
 import "../public/css/custom.css"; // Custom CSS for compare products
-import "../public/css/drift-basic.min.css"; // Drift zoom CSS
 import ClientLayout from "./ClientLayout";
 import { metadata as globalMetadata } from "./metadata";
+import { Bodoni_Moda, Outfit } from "next/font/google";
+import Script from "next/script";
+
+const bodoniModa = Bodoni_Moda({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+  variable: "--font-bodoni",
+});
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+  variable: "--font-outfit",
+});
 
 export const metadata = globalMetadata;
 
@@ -59,13 +71,8 @@ const jsonLdGlobal = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning={true}>
+    <html lang="en" className={`${bodoniModa.variable} ${outfit.variable}`} suppressHydrationWarning={true}>
       <head>
-        {/* Google Fonts */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@400;500;600&display=swap" rel="stylesheet" />
-
         {/* Global Structured Data (Organization & WebSite) */}
         <script
           type="application/ld+json"
@@ -73,18 +80,24 @@ export default function RootLayout({ children }) {
         />
 
         {/* Google Tag Manager */}
-        <script dangerouslySetInnerHTML={{
-          __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        <Script
+          id="gtm-script"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-58N5BZ7C');`
-        }} />
-        {/* End Google Tag Manager */}
+})(window,document,'script','dataLayer','GTM-58N5BZ7C');`,
+          }}
+        />
 
         {/* Meta Pixel Code */}
-        <script dangerouslySetInnerHTML={{
-          __html: `!function(f,b,e,v,n,t,s)
+        <Script
+          id="fb-pixel"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `!function(f,b,e,v,n,t,s)
 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
 n.callMethod.apply(n,arguments):n.queue.push(arguments)};
 if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
@@ -93,9 +106,9 @@ t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
 fbq('init', '882153701609750');
-fbq('track', 'PageView');`
-        }} />
-        {/* End Meta Pixel Code */}
+fbq('track', 'PageView');`,
+          }}
+        />
       </head>
       <body suppressHydrationWarning={true}>
         {/* Google Tag Manager (noscript) */}

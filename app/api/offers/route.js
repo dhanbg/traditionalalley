@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getStrapiInternalUrl, STRAPI_API_TOKEN } from '@/utils/urls';
 
-// Enable ISR caching at route level (60 seconds)
+export const dynamic = 'force-dynamic';
 export const revalidate = 60;
 
 export async function GET(request) {

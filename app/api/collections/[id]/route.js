@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { INTERNAL_API_URL, STRAPI_API_TOKEN } from '@/utils/urls';
 import { rewriteImageUrlsInText } from '@/utils/imageUtils';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request, { params }) {
   let strapiUrl;
   try {

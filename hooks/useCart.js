@@ -3,7 +3,6 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { useCallback, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { allProducts } from '@/data/productsWomen';
 import { getImageUrl } from '@/utils/imageUtils';
 import { validateCartStock } from '@/utils/stockValidation';
 import { useStockNotifications } from '@/components/common/StockNotification';

@@ -5,6 +5,7 @@
 @font-face {
   font-family: skip;
   src: url(/fonts/103fc5fac08dcb15-s.p.woff2);
+  font-display: swap;
 }
 
 /* Size Selection Hover Display - Matching Product Details Page */
@@ -2221,7 +2222,6 @@ img {
 /* ==========================================================================
    WORLD CUP CORSET JERSEY TEASER CAMPAIGN STYLES (MATCHES VANTAGE BRAND)
    ========================================================================== */
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700;800&family=Outfit:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
 
 .teaser-content-container {
   position: absolute;

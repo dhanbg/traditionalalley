@@ -1,5 +1,4 @@
 "use client";
-import { allProducts } from "@/data/productsWomen";
 import { openCartModal } from "@/utils/openCartModal";
 import { openWistlistModal } from "@/utils/openWishlist";
 import { useSession } from "next-auth/react";
@@ -15,7 +14,6 @@ import {
   saveCurrencyPreference, 
   getSavedCurrencyPreference 
 } from "@/utils/currency";
-import { useCartImagePreloader } from "@/hooks/useCartImagePreloader";
 import { useCartStore } from "@/store/useCartStore";
 import { useWishlistStore } from "@/store/useWishlistStore";
 import { useValidateStockMutation, useSyncCartMutation } from "@/hooks/queries/useCartMutations";
@@ -38,24 +36,6 @@ export default function Context({ children }) {
   const [wishList, setWishList] = useState([]);
   const [isWishlistLoading, setIsWishlistLoading] = useState(false);
   const [compareItem, setCompareItem] = useState([]);
-  
-  // Remove cart image preloader initialization
-  // const cartImagePreloader = useCartImagePreloader(cartProducts, {
-  //   autoPreload: true,
-  //   delay: 200,
-  //   preloadOptions: {
-  //     timeout: 8000,
-  //     crossOrigin: 'anonymous'
-  //   },
-  //   onComplete: (stats) => {
-  //     console.log(`🖼️ Cart images preloaded: ${stats.successful}/${stats.total}`);
-  //   },
-  //   onError: (error) => {
-  //     console.warn('Cart image preloading error:', error);
-  //   }
-  // });
-
-
   const [totalPrice, setTotalPrice] = useState(0);
   const [cartRefreshKey, setCartRefreshKey] = useState(0);
   // Initialize selectedCartItems from sessionStorage for session persistence
@@ -71,10 +51,6 @@ export default function Context({ children }) {
     return {};
   });
 
-  // User state changes
-  useEffect(() => {
-    // User state effect logic here
-  }, [user, session]);
   const [isCartClearing, setIsCartClearing] = useState(false);
   const [cartClearedTimestamp, setCartClearedTimestamp] = useState(null);
   

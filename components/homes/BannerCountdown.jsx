@@ -474,11 +474,11 @@ export default function BannerCountdown({ initialOfferData = null }) {
                       <div key={index} style={{ flex: 1, display: 'flex', justifyContent: 'center', maxWidth: '300px' }}>
                         <Image
                           className="lazyload"
-                          data-src={image.url}
-                          alt={image.alternativeText}
+                          alt={image.alternativeText || "Special Offer Banner"}
                           src={image.url}
                           width={607}
                           height={655}
+                          sizes="(max-width: 768px) 100vw, 300px"
                           style={{ 
                             width: '100%',
                             height: '350px',
@@ -617,11 +617,11 @@ export default function BannerCountdown({ initialOfferData = null }) {
                    <div key={index} style={{ flex: 1, display: 'flex', justifyContent: 'center', maxWidth: '300px' }}>
                     <Image
                        className="lazyload"
-                       data-src={image.url}
-                       alt={image.alternativeText}
+                       alt={image.alternativeText || "Special Offer Banner"}
                        src={image.url}
                        width={607}
                        height={655}
+                       sizes="(max-width: 768px) 100vw, 300px"
                        style={{ 
                          width: '100%',
                          height: '350px',

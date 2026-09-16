@@ -39,6 +39,8 @@ vps_*_api.*
 # local debug/output artifacts
 curled*.json
 debug-*.html
+debug-output.txt
+deliverability-report*.json
 out.txt
 temp*.json
 test_*output*.txt
@@ -70,4 +72,5 @@ next-env.d.ts
 /deploy.zip
 /deploy_auto.zip
 
-.vercel
+# uploaded invoices and user assets
+/public/uploads/

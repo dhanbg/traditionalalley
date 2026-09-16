@@ -1,16 +1,24 @@
-"use client";
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import Topbar6 from "@/components/headers/Topbar6";
-import RecentProducts from "@/components/otherPages/RecentProducts";
 import ShopCart from "@/components/otherPages/ShopCart";
 import ShopCartLoader from "@/components/common/ShopCartLoader";
 import Link from "next/link";
 import React from "react";
-import { useRouter } from "nextjs-toploader/app";
+import dynamic from "next/dynamic";
+
+const RecentProducts = dynamic(() => import("@/components/otherPages/RecentProducts"));
+
+export const metadata = {
+  title: "Shopping Cart - Traditional Alley",
+  description: "View your shopping cart, update quantities, and proceed to checkout at Traditional Alley.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function ShoppingCartPage() {
-  const router = useRouter();
 
   return (
     <>

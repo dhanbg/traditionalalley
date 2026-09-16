@@ -126,7 +126,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
     };
     checkMobile();
     if (typeof window !== 'undefined') {
-      window.addEventListener('resize', checkMobile);
+      window.addEventListener('resize', checkMobile, { passive: true });
     }
     return () => {
       if (typeof window !== 'undefined') {
@@ -274,7 +274,6 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
       <div className="card-product-wrapper">
         <Link
           href={detailHref}
-          prefetch={true}
           className="product-img"
           style={{
             WebkitTapHighlightColor: 'transparent',
@@ -287,18 +286,22 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
             alt={safeProduct.title ? `${safeProduct.title} - Traditional Alley` : "Authentic Nepali Traditional Clothing"}
             width={600}
             height={800}
-            priority={currentImage === "/images/products/womens/women-19.jpg"}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            priority={index === 0}
           />
 
-          <Image
-            className="lazyload img-hover"
-            src={(safeProduct.imgHover && safeProduct.imgHover !== "") ?
-              safeProduct.imgHover :
-              (currentImage && currentImage !== "" ? currentImage : DEFAULT_IMAGE)}
-            alt={safeProduct.title ? `${safeProduct.title} - Traditional Alley` : "Authentic Nepali Traditional Clothing"}
-            width={600}
-            height={800}
-          />
+          {!isMobile && (
+            <Image
+              className="lazyload img-hover"
+              src={(safeProduct.imgHover && safeProduct.imgHover !== "") ?
+                safeProduct.imgHover :
+                (currentImage && currentImage !== "" ? currentImage : DEFAULT_IMAGE)}
+              alt={safeProduct.title ? `${safeProduct.title} - Traditional Alley` : "Authentic Nepali Traditional Clothing"}
+              width={600}
+              height={800}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            />
+          )}
         </Link>
         {safeProduct.hotSale && (
           <div className="marquee-product bg-main">

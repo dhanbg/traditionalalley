@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useContextElement } from "@/context/Context";
-import { products41 } from "@/data/productsWomen";
 import { useSession, signIn } from "next-auth/react";
 import { fetchDataFromApi } from "@/utils/api";
 import { PRODUCT_BY_DOCUMENT_ID_API, API_URL } from "@/utils/urls";

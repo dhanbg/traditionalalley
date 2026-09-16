@@ -3,8 +3,6 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import NCMOrderForm from './NCMOrderForm';
 import NCMOrderButton from './NCMOrderButton';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 // Removed direct email import - using API route instead
 // Force recompilation - all userBag references fixed
 

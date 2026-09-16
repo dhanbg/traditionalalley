@@ -87,7 +87,7 @@ export default function ProductsCards6({ product }) {
     };
     checkMobile();
     if (typeof window !== 'undefined') {
-      window.addEventListener('resize', checkMobile);
+      window.addEventListener('resize', checkMobile, { passive: true });
     }
     return () => {
       if (typeof window !== 'undefined') {
@@ -110,21 +110,25 @@ export default function ProductsCards6({ product }) {
       }}
     >
       <div className="card-product-wrapper">
-        <Link href={detailHref} prefetch={true} className="product-img">
+        <Link href={detailHref} className="product-img">
           <Image
             className="lazyload img-product"
             src={currentImage || DEFAULT_IMAGE}
             alt={safeProduct.title ? `${safeProduct.title} - Traditional Alley` : "Authentic Nepali Traditional Clothing"}
             width={600}
             height={800}
+            sizes="(max-width: 640px) 100vw, 300px"
           />
-          <Image
-            className="lazyload img-hover"
-            src={safeProduct.imgHover || currentImage || DEFAULT_IMAGE}
-            alt={safeProduct.title ? `${safeProduct.title} - Traditional Alley` : "Authentic Nepali Traditional Clothing"}
-            width={600}
-            height={800}
-          />
+          {!isMobile && (
+            <Image
+              className="lazyload img-hover"
+              src={safeProduct.imgHover || currentImage || DEFAULT_IMAGE}
+              alt={safeProduct.title ? `${safeProduct.title} - Traditional Alley` : "Authentic Nepali Traditional Clothing"}
+              width={600}
+              height={800}
+              sizes="(max-width: 640px) 100vw, 300px"
+            />
+          )}
         </Link>
         {safeProduct.isOnSale && (
           <div className="on-sale-wrap">

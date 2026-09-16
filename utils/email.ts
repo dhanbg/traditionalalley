@@ -258,29 +258,45 @@ export async function sendRegistrationOTP(email: string, otp: string, userName?:
   }
 }
 
-// Hostinger email configuration for invoice automation
-const hostingerEmailConfig = {
-  host: process.env.HOSTINGER_SMTP_HOST || 'smtp.hostinger.com',
-  port: parseInt(process.env.HOSTINGER_SMTP_PORT || '587'),
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: process.env.HOSTINGER_SMTP_USER,
-    pass: process.env.HOSTINGER_SMTP_PASS,
-  },
-};
+// Detect if Hostinger is disabled or using expired domain credentials
+const isHostingerExpired = 
+  !process.env.HOSTINGER_SMTP_HOST || 
+  process.env.HOSTINGER_SMTP_HOST === 'smtp.hostinger.com' ||
+  (process.env.HOSTINGER_SMTP_USER && process.env.HOSTINGER_SMTP_USER.includes('@traditionalalley.com.np'));
 
-// Create Hostinger transporter for invoice emails
+// Invoice email configuration (automatically switches to Gmail SMTP when Hostinger is expired)
+const hostingerEmailConfig = isHostingerExpired
+  ? {
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: false, // true for 465, false for other ports
+      auth: {
+        user: process.env.SMTP_USER || 'traditionalley2050@gmail.com',
+        pass: process.env.SMTP_PASS || 'chhtwzhsjejutfli',
+      },
+    }
+  : {
+      host: process.env.HOSTINGER_SMTP_HOST,
+      port: parseInt(process.env.HOSTINGER_SMTP_PORT || '587'),
+      secure: false,
+      auth: {
+        user: process.env.HOSTINGER_SMTP_USER,
+        pass: process.env.HOSTINGER_SMTP_PASS,
+      },
+    };
+
+// Create Hostinger/Invoice transporter for invoice emails
 const hostingerTransporter = nodemailer.createTransport(hostingerEmailConfig);
 
-// Verify Hostinger email connection
+// Verify Hostinger/Invoice email connection
 export async function verifyHostingerEmailConnection() {
   try {
     await hostingerTransporter.verify();
-    console.log('✅ Hostinger email server is ready to send invoices');
+    console.log('✅ Invoice email server is ready to send invoices');
     return true;
   } catch (error) {
-    console.error('❌ Hostinger email server connection failed:', error);
-    return false;
+    console.error('❌ Invoice email server connection failed, verifying fallback transporter:', error);
+    return await verifyEmailConnection();
   }
 }
 
@@ -300,8 +316,13 @@ export async function sendInvoiceEmail(
     // Always use attached method since we're removing download links
     let invoiceAccessMethod = 'attached';
     
+    const defaultFrom = process.env.SMTP_FROM || '"Traditional Alley Support" <traditionalley2050@gmail.com>';
+    const senderFrom = (isHostingerExpired || !process.env.HOSTINGER_SMTP_FROM || process.env.HOSTINGER_SMTP_FROM.includes('@traditionalalley.com.np'))
+      ? defaultFrom
+      : process.env.HOSTINGER_SMTP_FROM;
+
     const mailOptions: any = {
-      from: process.env.HOSTINGER_SMTP_FROM || '"Traditional Alley" <support@traditionalalley.com.np>',
+      from: senderFrom,
       to: customerEmail,
       subject: `📄 Invoice for Your Order #${orderId} - Traditional Alley`,
       html: `
@@ -349,14 +370,24 @@ export async function sendInvoiceEmail(
       ];
     }
 
-    const info = await hostingerTransporter.sendMail(mailOptions);
+    let info;
+    try {
+      info = await hostingerTransporter.sendMail(mailOptions);
+    } catch (primaryError) {
+      console.warn('⚠️ Primary invoice transporter failed, attempting fallback to default transporter:', primaryError);
+      info = await transporter.sendMail(mailOptions);
+    }
     console.log('✅ Invoice email sent successfully:', info.messageId);
 
     // Send notification email to support team
     try {
+      const supportNotificationRecipient = 
+        process.env.SUPPORT_NOTIFICATION_EMAIL || 
+        (process.env.SMTP_USER && !process.env.SMTP_USER.includes('@traditionalalley.com.np') ? process.env.SMTP_USER : 'traditionalley2050@gmail.com');
+
       const supportMailOptions: any = {
-        from: process.env.HOSTINGER_SMTP_FROM || '"Traditional Alley" <support@traditionalalley.com.np>',
-        to: 'support@traditionalalley.com.np',
+        from: senderFrom,
+        to: supportNotificationRecipient,
         subject: `🔔 New Order Notification - Order #${orderId}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -400,7 +431,12 @@ export async function sendInvoiceEmail(
         ];
       }
 
-      const supportInfo = await hostingerTransporter.sendMail(supportMailOptions);
+      let supportInfo;
+      try {
+        supportInfo = await hostingerTransporter.sendMail(supportMailOptions);
+      } catch (supportErr) {
+        supportInfo = await transporter.sendMail(supportMailOptions);
+      }
       console.log('✅ Support notification email sent successfully:', supportInfo.messageId);
     } catch (supportError) {
       console.error('⚠️ Failed to send support notification email:', supportError);

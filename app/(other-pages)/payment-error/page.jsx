@@ -1,18 +1,14 @@
-import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+"use client";
+
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import React, { Suspense } from 'react';
 
-export default function PaymentError() {
-  const router = useRouter();
-  const [errorReason, setErrorReason] = useState<string>('');
+function PaymentErrorContent() {
+  const searchParams = useSearchParams();
+  const reason = searchParams.get('reason') || '';
 
-  useEffect(() => {
-    if (router.query.reason) {
-      setErrorReason(router.query.reason as string);
-    }
-  }, [router.query]);
-
-  const getErrorMessage = (reason: string) => {
+  const getErrorMessage = (reason) => {
     switch (reason) {
       case 'missing-parameters':
         return 'Payment information is incomplete. Please try again.';
@@ -34,7 +30,7 @@ export default function PaymentError() {
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Error</h1>
           <p className="text-gray-600 mb-6">
-            {getErrorMessage(errorReason)}
+            {getErrorMessage(reason)}
           </p>
         </div>
 
@@ -66,4 +62,12 @@ export default function PaymentError() {
       </div>
     </div>
   );
-} 
+}
+
+export default function PaymentErrorPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto px-4 py-16 text-center">Loading...</div>}>
+      <PaymentErrorContent />
+    </Suspense>
+  );
+}

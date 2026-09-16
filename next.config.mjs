@@ -1,11 +1,31 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  compress: true,
+  poweredByHeader: false,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+  },
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      'react-icons',
+      'motion',
+      'framer-motion',
+      '@radix-ui/react-slot',
+      'swiper',
+      'axios',
+      'zustand',
+      'clsx',
+      'tailwind-merge',
+      '@tanstack/react-query',
+    ],
+  },
   images: {
-    // ✅ PERFORMANCE: Enable image optimization for WebP conversion and responsive sizing
-    unoptimized: true, 
-    formats: ['image/webp', 'image/avif'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    // ✅ PERFORMANCE: Enable Sharp-powered image optimization for WebP/AVIF conversion and responsive sizing
+    unoptimized: false,
+    formats: ['image/avif', 'image/webp'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
       {
@@ -38,6 +58,42 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: '*.ucarecdn.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.image2url.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'image2url.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'http',
+        hostname: '82.25.105.70',
+        port: '1339',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'assets-api.kathmandupost.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'thebuzznepal.com',
+        port: '',
+        pathname: '/**',
+      },
       // Dynamic hostname based on NEXT_PUBLIC_API_URL
       ...(process.env.NEXT_PUBLIC_API_URL ? [{
         protocol: process.env.NEXT_PUBLIC_API_URL.startsWith('https') ? 'https' : 'http',
@@ -59,6 +115,23 @@ const nextConfig = {
   },
   async headers() {
     return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+        ],
+      },
       {
         source: '/fonts/:path*',
         headers: [
@@ -82,7 +155,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=86400, stale-while-revalidate=604800',
+            value: 'public, max-age=2592000, stale-while-revalidate=86400',
           },
         ],
       },
@@ -91,7 +164,16 @@ const nextConfig = {
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=86400, stale-while-revalidate=604800',
+            value: 'public, max-age=2592000, stale-while-revalidate=86400',
+          },
+        ],
+      },
+      {
+        source: '/:path*.:ext(svg|png|jpg|jpeg|webp|avif|mp3|ico)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=2592000, stale-while-revalidate=86400',
           },
         ],
       },

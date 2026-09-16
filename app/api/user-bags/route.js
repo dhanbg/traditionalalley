@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getStrapiInternalUrl, STRAPI_API_TOKEN } from '@/utils/urls';
 
+export const dynamic = 'force-dynamic';
+
 const STRAPI_TOKEN = STRAPI_API_TOKEN || process.env.STRAPI_API_TOKEN || process.env.STRAPI_TOKEN;
 
 export async function GET(request) {

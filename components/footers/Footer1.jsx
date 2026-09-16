@@ -2,7 +2,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import emailjs from "@emailjs/browser";
 import { footerLinks, socialLinks } from "@/data/footerLinks";
 import FooterFaq from "@/components/footers/FooterFaq";
 import { usePathname } from "next/navigation";
@@ -25,26 +24,25 @@ export default function Footer1({
     }, 2000);
   };
 
-  const sendMail = (e) => {
+  const sendMail = async (e) => {
     e.preventDefault();
-    emailjs
-      .sendForm("service_noj8796", "template_fs3xchn", formRef.current, {
+    try {
+      const { default: emailjs } = await import("@emailjs/browser");
+      const res = await emailjs.sendForm("service_noj8796", "template_fs3xchn", formRef.current, {
         publicKey: "iG4SCmR-YtJagQ4gV",
-      })
-      .then((res) => {
-        if (res.status === 200) {
-          setSuccess(true);
-          handleShowMessage();
-
-          formRef.current.reset();
-        } else {
-          setSuccess(false);
-          handleShowMessage();
-        }
-      })
-      .catch((err) => {
-        // Remove console.log statements
       });
+      if (res.status === 200) {
+        setSuccess(true);
+        handleShowMessage();
+        formRef.current?.reset();
+      } else {
+        setSuccess(false);
+        handleShowMessage();
+      }
+    } catch (err) {
+      setSuccess(false);
+      handleShowMessage();
+    }
   };
   useEffect(() => {
     const headings = document.querySelectorAll(".footer-heading-mobile");

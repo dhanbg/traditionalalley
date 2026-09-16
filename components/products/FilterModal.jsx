@@ -6,6 +6,7 @@ import {
   sizes as defaultSizes,
 } from "@/data/productFilterOptions";
 import RangeSlider from "react-range-slider-input";
+import "react-range-slider-input/dist/style.css";
 import { calculateInStock } from "@/utils/stockUtils";
 
 export default function FilterModal({ allProps = {}, products = [], filterOptions = {} }) {

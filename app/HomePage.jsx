@@ -1,20 +1,14 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
-import BannerCountdown from "@/components/homes/BannerCountdown";
-import Blogs from "@/components/homes/Blogs";
-import Features from "@/components/common/Features";
 import Hero from "@/components/homes/Hero";
-import Products from "@/components/common/Products3";
-import InstagramVideoCards from "@/components/common/InstagramVideoCards";
-import TopPicks from "@/components/common/TopPicks";
-import PromoHero from "@/components/common/PromoHero";
-
-import Testimonials3 from "@/components/common/Testimonials3";
 import MarqueeSection from "@/components/common/MarqueeSection";
-import CouponPopup from "@/components/common/CouponPopup";
+
+const BannerCountdown = dynamic(() => import("@/components/homes/BannerCountdown"));
+const TopPicks = dynamic(() => import("@/components/common/TopPicks"));
 
 function PaymentMessageHandler() {
     const searchParams = useSearchParams();

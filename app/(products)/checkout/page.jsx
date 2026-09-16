@@ -1,4 +1,3 @@
-"use client";
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import Topbar6 from "@/components/headers/Topbar6";
@@ -6,6 +5,15 @@ import Checkout from "@/components/otherPages/Checkout";
 import CartLoadingGuard from "@/components/common/CartLoadingGuard";
 import Link from "next/link";
 import React from "react";
+
+export const metadata = {
+  title: "Checkout - Traditional Alley",
+  description: "Secure checkout at Traditional Alley. Complete your order with worldwide delivery and secure payment options.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function page() {
   return (

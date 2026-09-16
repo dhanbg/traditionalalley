@@ -5,9 +5,9 @@ import {
   categories,
   sizes,
 } from "@/data/productFilterOptions";
-import { productMain } from "@/data/productsWomen";
 
 import RangeSlider from "react-range-slider-input";
+import "react-range-slider-input/dist/style.css";
 export default function FilterSidebar({ allProps }) {
   return (
     <div className="sidebar-filter canvas-filter left">

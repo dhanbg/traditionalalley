@@ -7,6 +7,7 @@ import { Thumbs } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
 import Drift from 'drift-zoom';
+import "@/public/css/drift-basic.min.css";
 
 export default function Slider1({
   activeColor = "gray",
@@ -310,11 +311,11 @@ export default function Slider1({
             >
               <Image
                 className="lazyload"
-                data-src={slide.thumbnailSrc || '/logo.png'}
-                alt={slide.alt}
+                alt={slide.alt || "Product Thumbnail"}
                 src={slide.thumbnailSrc || '/logo.png'}
-                width={slide.width * 0.6}
-                height={slide.height * 0.6}
+                width={slide.width ? slide.width * 0.6 : 80}
+                height={slide.height ? slide.height * 0.6 : 100}
+                sizes="(max-width: 768px) 60px, 80px"
                 style={{ 
                   width: '100%',
                   height: '100%',
@@ -355,11 +356,12 @@ export default function Slider1({
             >
               <Image
                 className="lazyload drift-zoom-target"
-                data-src={slide.src || '/logo.png'}
-                alt={slide.alt || ""}
+                alt={slide.alt || "Product Main Image"}
                 src={slide.src || '/logo.png'}
                 width={600}
                 height={800}
+                priority={index === 0}
+                sizes="(max-width: 768px) 100vw, 400px"
                 style={{
                   width: '100%',
                   height: '100%',

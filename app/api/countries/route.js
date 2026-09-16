@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { countries, getCountriesByRegion, searchCountries } from '../../../lib/countries-cities.js';
+ 
+export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
