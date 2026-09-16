@@ -37,9 +37,10 @@ export default function ToReview() {
 
           if (userBag && userBag.user_orders && userBag.user_orders.payments) {
             // Get all successful orders
-            const successfulOrders = userBag.user_orders.payments.filter(
-              payment => payment.status === "Success"
-            );
+            const successfulOrders = userBag.user_orders.payments.filter(payment => {
+              const pStatus = payment.status?.toLowerCase();
+              return pStatus === "success" || pStatus === "completed" || pStatus === "paid";
+            });
 
             // Extract all purchased products
             const allPurchasedProducts = [];
@@ -285,7 +286,7 @@ export default function ToReview() {
     return (
       <div className="my-account-content">
         <div className="account-orders">
-          <div className="text-center">Loading products to review...</div>
+          <div className="text-center">Loading your orders...</div>
         </div>
       </div>
     );
@@ -294,7 +295,7 @@ export default function ToReview() {
   return (
     <div className="my-account-content">
       <div className="account-orders">
-        <h4 className="mb-4">Products to Review</h4>
+        <h4 className="mb-4">Your Orders</h4>
         
         {purchasedProducts.length > 0 ? (
           <div className="products-to-review">
@@ -464,8 +465,8 @@ export default function ToReview() {
           </div>
         ) : (
           <div className="text-center">
-            <h5>No products to review</h5>
-            <p>You have already reviewed all your purchased products or haven't made any purchases yet.</p>
+            <h5>No orders found</h5>
+            <p>You haven't placed any orders yet.</p>
           </div>
         )}
       </div>

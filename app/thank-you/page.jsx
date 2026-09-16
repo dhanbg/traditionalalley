@@ -181,7 +181,7 @@ function ThankYouContent() {
               </Link>
               
               <Link 
-                href="/my-account-orders"
+                href="/my-account-reviews"
                 className="tf-btn btn-outline animate-hover-btn radius-3"
                 style={{
                   padding: '12px 24px',

@@ -8,7 +8,7 @@ import React from "react";
 
 export const metadata = {
   title:
-    "My Account Reviews || Traditional Alley",
+    "My Account Orders || Traditional Alley",
   description: "Traditional Alley",
 };
 
