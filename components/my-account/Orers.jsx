@@ -27,14 +27,26 @@ export default function Orders() {
           return;
         }
         
-        // Extract all user orders (both processing and shipped)
+        // Extract only successful user orders
         const userOrders = [];
+        const seenOrderIds = new Set();
+
         (response.data || []).forEach(bag => {
           if (bag.user_orders && bag.user_orders.payments) {
             bag.user_orders.payments.forEach(payment => {
-              // Include Success, Completed, Paid, or COD payments
+              // Only include verified successful payments (filter out pending, failed, or unconfirmed orders)
               const pStatus = payment.status?.toLowerCase();
-              if (pStatus === 'success' || pStatus === 'completed' || pStatus === 'paid' || payment.provider === 'cod' || pStatus === 'cod') {
+              const isSuccess = pStatus === 'success' || pStatus === 'completed' || pStatus === 'paid';
+
+              if (isSuccess) {
+                const orderId = payment.merchantTxnId || payment.processId || `order-${Date.now()}`;
+                
+                // Prevent duplicate orders across user bags
+                if (seenOrderIds.has(orderId)) {
+                  return;
+                }
+                seenOrderIds.add(orderId);
+
                 let hasValidTracking = false;
                 let matchingTrackingInfo = null;
 
@@ -81,7 +93,7 @@ export default function Orders() {
                 }
 
                 userOrders.push({
-                  id: payment.merchantTxnId || payment.processId || `order-${Date.now()}`,
+                  id: orderId,
                   bagId: bag.id,
                   bagName: bag.Name,
                   createdAt: payment.timestamp || bag.createdAt,

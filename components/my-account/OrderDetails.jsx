@@ -43,20 +43,24 @@ export default function OrderDetails() {
               bag.user_orders.payments.forEach(payment => {
                 const paymentOrderId = payment.merchantTxnId || payment.processId || `order-${Date.now()}`;
                 if (paymentOrderId === orderId) {
-                  foundOrder = {
-                    id: paymentOrderId,
-                    bagId: bag.id,
-                    bagName: bag.Name,
-                    createdAt: payment.timestamp || bag.createdAt,
-                    status: payment.status,
-                    amount: payment.amount,
-                    provider: payment.provider,
-                    orderData: payment.orderData,
-                    trackingInfo: bag.trackingInfo,
-                    gatewayReferenceNo: payment.gatewayReferenceNo,
-                    // Add NCM order ID if available
-                    ncmOrderId: ncmOrderId || (bag.trackingInfo?.ncmOrderId)
-                  };
+                  const pStatus = payment.status?.toLowerCase();
+                  const isSuccess = pStatus === 'success' || pStatus === 'completed' || pStatus === 'paid';
+                  if (isSuccess) {
+                    foundOrder = {
+                      id: paymentOrderId,
+                      bagId: bag.id,
+                      bagName: bag.Name,
+                      createdAt: payment.timestamp || bag.createdAt,
+                      status: payment.status,
+                      amount: payment.amount,
+                      provider: payment.provider,
+                      orderData: payment.orderData,
+                      trackingInfo: bag.trackingInfo,
+                      gatewayReferenceNo: payment.gatewayReferenceNo,
+                      // Add NCM order ID if available
+                      ncmOrderId: ncmOrderId || (bag.trackingInfo?.ncmOrderId)
+                    };
+                  }
                 }
               });
             }

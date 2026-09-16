@@ -37,9 +37,10 @@ export default function ToReview() {
 
           if (userBag && userBag.user_orders && userBag.user_orders.payments) {
             // Get all successful orders
-            const successfulOrders = userBag.user_orders.payments.filter(
-              payment => payment.status === "Success"
-            );
+            const successfulOrders = userBag.user_orders.payments.filter(payment => {
+              const pStatus = payment.status?.toLowerCase();
+              return pStatus === "success" || pStatus === "completed" || pStatus === "paid";
+            });
 
             // Extract all purchased products
             const allPurchasedProducts = [];
