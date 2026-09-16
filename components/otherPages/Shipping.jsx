@@ -51,7 +51,7 @@ export default function Shipping() {
                 <h3 style={{ color: '#d4af37', marginBottom: '10px' }}>International Express Courier</h3>
                 <p style={{ marginBottom: '10px' }}>Premium and faster international delivery option for urgent shipments like documents, samples, or small parcels.</p>
                 <div style={{ padding: '8px 12px', backgroundColor: '#e8f5e8', borderRadius: '4px', marginBottom: '10px' }}>
-                  <strong style={{ color: '#28a745' }}>Delivery Time: 9-11 days</strong>
+                  <strong style={{ color: '#28a745' }}>Delivery Time: 12-15 days</strong>
                 </div>
                 <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
                   <li>Reliable and secure door-to-door delivery</li>

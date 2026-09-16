@@ -692,7 +692,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                         <p className="text-caption-1">
                           <strong>Delivery Times:</strong><br />
                           Domestic: Zone 1 (3-5 days), Zone 2 (5-7 days), Zone 3 (6-8 days)<br />
-                          International: Express (9-11 days), Economy (16-21 days)
+                          International: Express (12-15 days), Economy (16-21 days)
                         </p>
                       </div>
                       <div className="tf-product-info-return">

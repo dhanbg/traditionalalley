@@ -215,7 +215,7 @@ const sendAutomaticInvoiceEmail = async (paymentData: any) => {
 
         let estimatedDelivery = shippingInfo.estimatedDelivery || 'N/A';
         const deliveryType = shippingInfo.deliveryType || '';
-        if (deliveryType.toLowerCase().includes('express')) estimatedDelivery = '9-11 days';
+        if (deliveryType.toLowerCase().includes('express')) estimatedDelivery = '12-15 days';
         else if (deliveryType.toLowerCase().includes('economy')) estimatedDelivery = '16-21 days';
 
         doc.setFontSize(12);

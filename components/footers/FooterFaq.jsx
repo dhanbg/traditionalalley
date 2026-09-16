@@ -18,7 +18,7 @@ const FAQ_ITEMS = [
     id: "footer-accordion-3",
     question: "How long does shipping take?",
     answer:
-      "Domestic: Zone 1 (3–5 business days), Zone 2 (5–7), Zone 3 (6–8). International: Express (9–11 business days), Economy (16–21). Times exclude 1–2 business days for order processing and may vary due to remote areas or customs. Tracking is shared by email once dispatched.",
+      "Domestic: Zone 1 (3–5 business days), Zone 2 (5–7), Zone 3 (6–8). International: Express (12–15 business days), Economy (16–21). Times exclude 1–2 business days for order processing and may vary due to remote areas or customs. Tracking is shared by email once dispatched.",
   },
   {
     id: "footer-accordion-4",

@@ -797,7 +797,7 @@ const OrderManagement = () => {
       const deliveryType = shippingInfo.deliveryType || '';
 
       if (deliveryType.toLowerCase().includes('express')) {
-        estimatedDelivery = '9-11 days';
+        estimatedDelivery = '12-15 days';
       } else if (deliveryType.toLowerCase().includes('economy')) {
         estimatedDelivery = '16-21 days';
       }
@@ -1224,7 +1224,7 @@ const OrderManagement = () => {
       const deliveryType = shippingInfo.deliveryType || '';
 
       if (deliveryType.toLowerCase().includes('express')) {
-        estimatedDelivery = '9-11 days';
+        estimatedDelivery = '12-15 days';
       } else if (deliveryType.toLowerCase().includes('economy')) {
         estimatedDelivery = '16-21 days';
       }
