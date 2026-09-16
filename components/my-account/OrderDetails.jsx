@@ -127,8 +127,8 @@ export default function OrderDetails() {
       <div className="order-info">
         <div className="order-meta">
           <p><strong>Order Date:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
-          <p><strong>Total Amount:</strong> ${order.totalAmount}</p>
-          <p><strong>Payment Status:</strong> {order.paymentStatus}</p>
+          <p><strong>Total Amount:</strong> {order.orderData?.orderSummary?.currency || 'NPR'} {Number(order.amount || 0).toFixed(2)}</p>
+          <p><strong>Payment Status:</strong> {order.status}</p>
           {order.ncmOrderId && (
             <p><strong>NCM Order ID:</strong> {order.ncmOrderId}</p>
           )}
@@ -136,36 +136,75 @@ export default function OrderDetails() {
 
         <div className="shipping-info">
           <h3>Shipping Address</h3>
-          <p>{order.shippingAddress?.firstName} {order.shippingAddress?.lastName}</p>
-          <p>{order.shippingAddress?.street}</p>
-          <p>{order.shippingAddress?.city}, {order.shippingAddress?.state} {order.shippingAddress?.postalCode}</p>
-          <p>{order.shippingAddress?.country}</p>
+          {order.orderData?.receiver_details ? (
+            <>
+              <p><strong>{order.orderData.receiver_details.name}</strong></p>
+              {order.orderData.receiver_details.address?.addressLine1 && <p>{order.orderData.receiver_details.address.addressLine1}</p>}
+              <p>
+                {[
+                  order.orderData.receiver_details.address?.cityName,
+                  order.orderData.receiver_details.address?.postalCode,
+                  order.orderData.receiver_details.address?.countryCode
+                ].filter(Boolean).join(', ')}
+              </p>
+              {order.orderData.receiver_details.phone && <p>Phone: {order.orderData.receiver_details.phone}</p>}
+            </>
+          ) : order.shippingAddress ? (
+            <>
+              <p>{order.shippingAddress?.firstName} {order.shippingAddress?.lastName}</p>
+              <p>{order.shippingAddress?.street}</p>
+              <p>{order.shippingAddress?.city}, {order.shippingAddress?.state} {order.shippingAddress?.postalCode}</p>
+              <p>{order.shippingAddress?.country}</p>
+            </>
+          ) : (
+            <p>Address information not available</p>
+          )}
         </div>
       </div>
 
       {/* NCM Order Status Tracking */}
-      <OrderStatusTracker ncmOrderId={order.ncmOrderId} />
+      {order.ncmOrderId && <OrderStatusTracker ncmOrderId={order.ncmOrderId} />}
 
       <div className="order-items">
         <h3>Order Items</h3>
-        {order.orderItems?.map((item) => (
-          <div key={item.id} className="order-item">
-            <div className="item-image">
-              <Image
-                src={item.product?.imgSrc || "/images/placeholder.jpg"}
-                alt={item.product?.title || "Product"}
-                width={80}
-                height={80}
-              />
+        {(order.orderData?.products || order.orderItems || []).map((item, index) => {
+          const title = item.title || item.product?.title || "Product";
+          const imgSrc = item.imgSrc || item.product?.imgSrc || "/images/placeholder.jpg";
+          const size = item.selectedSize || item.selectedVariant?.size;
+          const color = item.selectedColor || item.selectedVariant?.color;
+          const qty = item.quantity || item.pricing?.quantity || 1;
+          const price = item.finalPrice ?? item.price;
+          const currency = order.orderData?.orderSummary?.currency || 'NPR';
+
+          return (
+            <div key={item.id || index} className="order-item">
+              <div className="item-image">
+                <img
+                  src={imgSrc}
+                  alt={title}
+                  width={80}
+                  height={80}
+                  style={{ objectFit: 'cover', borderRadius: '6px' }}
+                  onError={(e) => { e.target.src = "/images/placeholder.jpg"; }}
+                />
+              </div>
+              <div className="item-details">
+                <h4>{title}</h4>
+                {(size || color) && (
+                  <p style={{ fontSize: '13px', color: '#666', margin: '4px 0' }}>
+                    {size && `Size: ${size}`}
+                    {size && color && color !== 'default' && ' | '}
+                    {color && color !== 'default' && `Color: ${color}`}
+                  </p>
+                )}
+                <p>Quantity: {qty}</p>
+                {price !== undefined && (
+                  <p>Price: {currency} {price}</p>
+                )}
+              </div>
             </div>
-            <div className="item-details">
-              <h4>{item.product?.title}</h4>
-              <p>Quantity: {item.quantity}</p>
-              <p>Price: ${item.price}</p>
-              <p>Total: ${(item.price * item.quantity).toFixed(2)}</p>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="order-actions">

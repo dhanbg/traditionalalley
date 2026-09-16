@@ -27,13 +27,14 @@ export default function Orders() {
           return;
         }
         
-        // Extract truly shipped orders (those with tracking info)
-        const shippedOrders = [];
+        // Extract all user orders (both processing and shipped)
+        const userOrders = [];
         (response.data || []).forEach(bag => {
           if (bag.user_orders && bag.user_orders.payments) {
             bag.user_orders.payments.forEach(payment => {
-              // Only include Success payments
-              if (payment.status === 'Success') {
+              // Include Success, Completed, Paid, or COD payments
+              const pStatus = payment.status?.toLowerCase();
+              if (pStatus === 'success' || pStatus === 'completed' || pStatus === 'paid' || payment.provider === 'cod' || pStatus === 'cod') {
                 let hasValidTracking = false;
                 let matchingTrackingInfo = null;
 
@@ -79,29 +80,27 @@ export default function Orders() {
                   }
                 }
 
-                if (hasValidTracking) {
-                  shippedOrders.push({
-                    id: payment.merchantTxnId || payment.processId || `order-${Date.now()}`,
-                    bagId: bag.id,
-                    bagName: bag.Name,
-                    createdAt: payment.timestamp || bag.createdAt,
-                    status: payment.status,
-                    amount: payment.amount,
-                    provider: payment.provider,
-                    orderData: payment.orderData,
-                    trackingInfo: matchingTrackingInfo || bag.trackingInfo,
-                    gatewayReferenceNo: payment.gatewayReferenceNo
-                  });
-                }
+                userOrders.push({
+                  id: payment.merchantTxnId || payment.processId || `order-${Date.now()}`,
+                  bagId: bag.id,
+                  bagName: bag.Name,
+                  createdAt: payment.timestamp || bag.createdAt,
+                  status: payment.status,
+                  amount: payment.amount,
+                  provider: payment.provider,
+                  orderData: payment.orderData,
+                  trackingInfo: hasValidTracking ? (matchingTrackingInfo || bag.trackingInfo) : null,
+                  gatewayReferenceNo: payment.gatewayReferenceNo
+                });
               }
             });
           }
         });
         
         // Sort by creation date (newest first)
-        shippedOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        userOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         
-        setOrders(shippedOrders);
+        setOrders(userOrders);
       } catch (error) {
         console.error("Error fetching orders:", error);
         setOrders([]);
@@ -130,8 +129,8 @@ export default function Orders() {
   if (!orders.length) {
     return (
       <div className="no-orders">
-        <h3>No shipped orders found</h3>
-        <p>You don't have any shipped orders yet.</p>
+        <h3>No orders found</h3>
+        <p>You haven't placed any orders yet.</p>
         <Link href="/shop-default-grid" className="tf-btn btn-fill">
           Start Shopping
         </Link>
@@ -220,24 +219,32 @@ export default function Orders() {
   const getItemsCount = (orderData) => {
     if (!orderData?.products) return 0;
     return orderData.products.reduce((total, product) => {
-      return total + (product.pricing?.quantity || 1);
+      return total + (product.quantity || product.pricing?.quantity || 1);
     }, 0);
   };
 
   // Helper function to get order status display
   const getStatusDisplay = (status, trackingInfo) => {
-    if (status === 'Success') {
+    const s = status?.toLowerCase();
+    if (s === 'success' || s === 'completed' || s === 'paid') {
       return trackingInfo ? 'Shipped' : 'Processing';
     }
-    return status;
+    if (s === 'cod') {
+      return trackingInfo ? 'Shipped' : 'Cash On Delivery';
+    }
+    return status || 'Processing';
   };
 
   // Helper function to get status class
   const getStatusClass = (status, trackingInfo) => {
-    if (status === 'Success') {
+    const s = status?.toLowerCase();
+    if (s === 'success' || s === 'completed' || s === 'paid') {
       return trackingInfo ? 'shipped' : 'processing';
     }
-    return status.toLowerCase();
+    if (s === 'cod') {
+      return trackingInfo ? 'shipped' : 'processing';
+    }
+    return (status || 'processing').toLowerCase();
   };
 
   return (
@@ -285,12 +292,12 @@ export default function Orders() {
                 {/* Minimal View - Always Visible */}
                 <div className="order-summary-minimal">
                   <div className="minimal-info">
-                     <p><strong>Total:</strong> {order.orderData?.orderSummary?.currency || 'NPR'} {order.amount}</p>
+                     <p><strong>Total:</strong> {order.orderData?.orderSummary?.currency || 'NPR'} {Number(order.amount).toFixed(2)}</p>
                      <p><strong>Items:</strong> {itemsCount}</p>
                      <p>
                        <strong>Tracking:</strong> 
                        <span className="tracking-number">
-                         {deliveryInfo.trackingNumber}
+                         {deliveryInfo.trackingNumber !== 'N/A' ? deliveryInfo.trackingNumber : 'Pending dispatch'}
                        </span>
                      </p>
                    </div>
@@ -398,32 +405,37 @@ export default function Orders() {
                            <h5>📦 Order Items ({order.orderData.products.length})</h5>
                          </div>
                          <div className="products-grid">
-                           {order.orderData.products.slice(0, 4).map((product, index) => (
-                             <div key={index} className="product-card">
-                               <div className="product-info">
-                                 <h6 className="product-title">{product.title}</h6>
-                                 {product.selectedVariant && (
-                                   <div className="product-variant">
-                                     {product.selectedVariant.size && (
-                                       <span className="variant-tag">Size: {product.selectedVariant.size}</span>
-                                     )}
-                                     {product.selectedVariant.color && product.selectedVariant.color !== 'default' && (
-                                       <span className="variant-tag">Color: {product.selectedVariant.color}</span>
+                           {order.orderData.products.map((product, index) => {
+                             const size = product.selectedSize || product.selectedVariant?.size;
+                             const color = product.selectedColor || product.selectedVariant?.color;
+                             const quantity = product.quantity || product.pricing?.quantity || 1;
+                             const price = product.finalPrice ?? product.price ?? product.pricing?.currentPrice;
+                             const currency = order.orderData?.orderSummary?.currency || 'NPR';
+
+                             return (
+                               <div key={index} className="product-card">
+                                 <div className="product-info">
+                                   <h6 className="product-title">{product.title}</h6>
+                                   {(size || color) && (
+                                     <div className="product-variant">
+                                       {size && (
+                                         <span className="variant-tag">Size: {size}</span>
+                                       )}
+                                       {color && color !== 'default' && (
+                                         <span className="variant-tag">Color: {color}</span>
+                                       )}
+                                     </div>
+                                   )}
+                                   <div className="product-pricing">
+                                     <span className="quantity">Qty: {quantity}</span>
+                                     {price !== undefined && (
+                                       <span className="price">{currency} {price}</span>
                                      )}
                                    </div>
-                                 )}
-                                 <div className="product-pricing">
-                                   <span className="quantity">Qty: {product.pricing?.quantity || 1}</span>
-                                   <span className="price">{order.orderData?.orderSummary?.currency || 'NPR'} {product.pricing?.currentPrice}</span>
                                  </div>
                                </div>
-                             </div>
-                           ))}
-                           {order.orderData.products.length > 4 && (
-                             <div className="more-products-card">
-                               <span className="more-text">+ {order.orderData.products.length - 4} more items</span>
-                             </div>
-                           )}
+                             );
+                           })}
                          </div>
                        </div>
                      )}
