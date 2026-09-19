@@ -22,9 +22,11 @@ const nextConfig = {
     ],
   },
   images: {
-    // ✅ PERFORMANCE: Enable Sharp-powered image optimization for WebP/AVIF conversion and responsive sizing
-    unoptimized: false,
-    formats: ['image/avif', 'image/webp'],
+    // Disabled on-demand optimization on Vercel to prevent exceeding free tier transformation (5K/mo) and CPU limits.
+    // Images are served directly without serverless transformation overhead.
+    unoptimized: true,
+    formats: ['image/webp'],
+    minimumCacheTTL: 31536000,
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
