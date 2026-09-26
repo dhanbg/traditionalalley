@@ -305,7 +305,7 @@ export default function CartModal() {
                             <div className="tf-mini-cart-info">
                               <div className="name">
                                 <Link
-                                  className="link text-line-clamp-2"
+                                  className="link text-line-clamp-3"
                                   href={buildProductDetailHref(elm)}
                                 >
                                   {getVariantAwareTitle(elm)}
@@ -570,15 +570,16 @@ export default function CartModal() {
         .tf-mini-cart-info {
           flex: 1;
           min-width: 0;
-        }
-        
-        .tf-mini-cart-info .name {
-          margin-bottom: 8px;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+          gap: 6px;
         }
         
         .tf-mini-cart-info .name {
           flex: 1;
           min-width: 0;
+          margin: 0;
         }
         
         .tf-mini-cart-info .name .link {
@@ -586,11 +587,14 @@ export default function CartModal() {
           font-weight: 500;
           color: var(--cart-text-color);
           text-decoration: none;
-          line-height: 1.4;
+          line-height: 1.35;
           display: -webkit-box;
-          -webkit-line-clamp: 2;
+          -webkit-line-clamp: 3;
+          line-clamp: 3;
           -webkit-box-orient: vertical;
           overflow: hidden;
+          text-overflow: ellipsis;
+          word-break: break-word;
         }
         
         .tf-mini-cart-info .name .link:hover {
@@ -611,16 +615,17 @@ export default function CartModal() {
         }
         
         .quantity-display-wrapper {
-          display: flex;
+          display: inline-flex;
           align-items: center;
           gap: 4px;
-          padding: 6px 12px;
+          padding: 3px 8px;
           background: var(--cart-bg-light);
           border-radius: 4px;
           border: 1px solid var(--cart-border-color);
           width: fit-content;
           max-width: 70px;
           flex-shrink: 0;
+          margin-top: 2px;
         }
         
         .quantity-label {
@@ -806,6 +811,8 @@ export default function CartModal() {
           
           .tf-mini-cart-info .name .link {
             font-size: 13px;
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
           }
           
           .tf-mini-cart-right-section {
@@ -815,7 +822,7 @@ export default function CartModal() {
           
           .quantity-display-wrapper {
             max-width: 65px;
-            padding: 5px 10px;
+            padding: 2px 7px;
           }
           
           .tf-mini-cart-image-section {
