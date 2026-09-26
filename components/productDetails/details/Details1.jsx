@@ -608,7 +608,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                           }}
                         >
                           <span>
-                            {isOutOfStock ? "Out of Stock" : (user && (() => {
+                            {isOutOfStock ? "Out of Stock" : (() => {
                               // Check if current product+size combination is in cart using same logic as handleCartClick
                               const baseId = safeProduct.documentId || safeProduct.id;
                               let uniqueCartIdToCheck;
@@ -625,7 +625,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
 
                               const isInCart = isAddedToCartProducts(uniqueCartIdToCheck);
                               return isInCart ? "Added" : "Add to cart";
-                            })() || "Add to cart")}
+                            })()}
                           </span>
                         </a>
 

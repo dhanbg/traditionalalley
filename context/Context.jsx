@@ -1,4 +1,5 @@
 "use client";
+import { allProducts } from "@/data/productsWomen";
 import { openCartModal } from "@/utils/openCartModal";
 import { openWistlistModal } from "@/utils/openWishlist";
 import { useSession } from "next-auth/react";
@@ -32,7 +33,17 @@ export default function Context({ children }) {
   const validateStockMutation = useValidateStockMutation(showStockError);
   const syncCartMutation = useSyncCartMutation();
 
-  const [cartProducts, setCartProducts] = useState([]);
+  const [cartProducts, setCartProducts] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const storeProducts = useCartStore.getState().cartProducts;
+        if (Array.isArray(storeProducts) && storeProducts.length > 0) {
+          return storeProducts;
+        }
+      } catch (e) {}
+    }
+    return [];
+  });
   const [wishList, setWishList] = useState([]);
   const [isWishlistLoading, setIsWishlistLoading] = useState(false);
   const [compareItem, setCompareItem] = useState([]);
@@ -517,9 +528,9 @@ export default function Context({ children }) {
       if (baseProductId.includes('-variant-')) baseProductId = baseProductId.split('-variant-')[0];
     }
 
-    const productInfo = allProducts.find(product =>
+    const productInfo = productData || (typeof allProducts !== 'undefined' ? allProducts.find(product =>
       product.documentId === baseProductId || product.id === baseProductId
-    ) || productData;
+    ) : null);
 
     let imgSrc = '/images/placeholder.png';
     let title = productInfo?.title || variantInfo?.title || "Product Item";
@@ -536,7 +547,8 @@ export default function Context({ children }) {
       }
     } else if (productInfo) {
       if (productInfo.imgSrc?.formats?.small?.url) imgSrc = getImageUrl(productInfo.imgSrc.formats.small.url);
-      else imgSrc = typeof productInfo.imgSrc === 'string' ? productInfo.imgSrc : getImageUrl(productInfo.imgSrc);
+      else if (typeof productInfo.imgSrc === 'string') imgSrc = getImageUrl(productInfo.imgSrc);
+      else if (productInfo.imgSrc) imgSrc = getOptimizedImageUrl(productInfo.imgSrc) || getBestImageUrl(productInfo.imgSrc, 'medium') || '/images/placeholder.png';
     }
 
     const productToAdd = {
@@ -1117,7 +1129,7 @@ export default function Context({ children }) {
               cartItemId = `${cartItemId}-size-${cartItemSize}`;
             }
             
-            const fallbackProduct = allProducts.find(p => p.documentId === (productAttrs.documentId || productId) || p.id === productId || p.id === productAttrs.id) || {};
+            const fallbackProduct = (typeof allProducts !== 'undefined' ? allProducts.find(p => p.documentId === (productAttrs.documentId || productId) || p.id === productId || p.id === productAttrs.id) : null) || {};
             let rawPrice = variantAttrs.price || productAttrs.price || fallbackProduct.price || 0;
             let rawOldPrice = productAttrs.oldPrice || variantAttrs.oldPrice || fallbackProduct.oldPrice || null;
 
@@ -1195,8 +1207,13 @@ export default function Context({ children }) {
       
       loadCartFromBackend();
     } else {
-      // User logged out, clear the cart
-      setCartProducts([]);
+      // Guest user - restore cart from Zustand store if available
+      try {
+        const localCart = useCartStore.getState().cartProducts || [];
+        if (localCart.length > 0) {
+          setCartProducts(localCart);
+        }
+      } catch (e) {}
       // If no user, we're not loading and consider it loaded
       setIsCartLoading(false);
       setCartLoadedOnce(true);

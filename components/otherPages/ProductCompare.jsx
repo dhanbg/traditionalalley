@@ -182,7 +182,9 @@ export default function ProductCompare() {
   }, [compareItem, setCompareItem]);
 
   const handleAddToCart = (id) => {
-    addProductToCart(id);
+    const product = items.find(p => p.id === id || p.documentId === id);
+    const cartId = product?.documentId || id;
+    addProductToCart(cartId, 1, true, null, null, product);
   };
 
   const removeItem = (product) => {

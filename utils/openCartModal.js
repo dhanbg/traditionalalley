@@ -6,16 +6,27 @@ export const openCartModal = async () => {
     await closeAllModals();
     await closeAllOffcanvas();
     
+    // Wait for the modal element to be mounted (CartModal is dynamically loaded with ssr: false)
+    let shoppingCartElement = document.getElementById("shoppingCart");
+    let attempts = 0;
+    while (!shoppingCartElement && attempts < 10) {
+      await new Promise(resolve => setTimeout(resolve, 80));
+      shoppingCartElement = document.getElementById("shoppingCart");
+      attempts++;
+    }
+
     // Create and show the cart modal
     const myModal = await createModal("shoppingCart");
     myModal.show();
     
     // Add event listener for when modal is hidden
-    const shoppingCartElement = document.getElementById("shoppingCart");
     if (shoppingCartElement) {
-      shoppingCartElement.addEventListener("hidden.bs.modal", () => {
-        myModal.hide();
-      });
+      const handleHidden = () => {
+        try {
+          myModal.hide();
+        } catch (e) {}
+      };
+      shoppingCartElement.addEventListener("hidden.bs.modal", handleHidden, { once: true });
     }
   } catch (error) {
     console.error("Error opening cart modal:", error);

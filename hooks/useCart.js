@@ -3,6 +3,7 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { useCallback, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import { allProducts } from '@/data/productsWomen';
 import { getImageUrl } from '@/utils/imageUtils';
 import { validateCartStock } from '@/utils/stockValidation';
 import { useStockNotifications } from '@/components/common/StockNotification';
@@ -193,19 +194,13 @@ export const useCart = () => {
             }
         }
 
-        // Find product info
-        let productInfo = allProducts.find(product =>
+        // Find product info - prioritize passed productData, then fallback to local static data
+        let productInfo = productData || (typeof allProducts !== 'undefined' ? allProducts.find(product =>
             product.documentId === baseProductId ||
             product.id === baseProductId
-        );
+        ) : null);
 
-        // If not found in local data and productData was passed (Strapi products), use that
-        if (!productInfo && productData) {
-            productInfo = productData;
-            console.log('✅ Using provided Strapi product data');
-        }
-
-        console.log('🔍 Product lookup:', { baseProductId, found: !!productInfo, totalProducts: allProducts.length, usedProvidedData: !allProducts.find(p => p.documentId === baseProductId || p.id === baseProductId) && !!productData });
+        console.log('🔍 Product lookup:', { baseProductId, found: !!productInfo, usedProvidedData: !!productData });
 
         let productToAdd = null;
 

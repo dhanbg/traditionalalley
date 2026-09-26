@@ -40,6 +40,18 @@ export const createModal = async (elementId, options = {}) => {
       throw new Error(`Element with ID '${elementId}' not found`);
     }
     
+    if (Modal.getOrCreateInstance) {
+      return Modal.getOrCreateInstance(element, {
+        keyboard: false,
+        ...options
+      });
+    }
+
+    const existingInstance = Modal.getInstance ? Modal.getInstance(element) : null;
+    if (existingInstance) {
+      return existingInstance;
+    }
+
     return new Modal(element, {
       keyboard: false,
       ...options
