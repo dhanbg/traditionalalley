@@ -299,10 +299,18 @@ export async function sendInvoiceEmail(
     let invoiceAccessMethod = 'attached';
     
     const senderFrom = process.env.INVOICE_SMTP_FROM || '"Traditional Alley Orders" <order@traditionalalley.com.np>';
+    const invoiceBcc = process.env.INVOICE_BCC_EMAIL || 'order@traditionalalley.com.np';
+
+    // Also send a copy of the invoice to order@traditionalalley.com.np
+    const bccRecipient = customerEmail && customerEmail.trim().toLowerCase() === invoiceBcc.toLowerCase()
+      ? undefined
+      : invoiceBcc;
 
     const mailOptions: any = {
       from: senderFrom,
       to: customerEmail,
+      ...(bccRecipient ? { bcc: bccRecipient } : {}),
+      replyTo: process.env.INVOICE_SMTP_USER || 'order@traditionalalley.com.np',
       subject: `📄 Invoice for Your Order #${orderId} - Traditional Alley`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
