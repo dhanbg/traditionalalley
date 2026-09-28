@@ -5,13 +5,14 @@ import nodemailer from "nodemailer";
 
 // Configure email transporter
 const createTransporter = () => {
+  const port = parseInt(process.env.SMTP_PORT || "465");
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: parseInt(process.env.SMTP_PORT || "587"),
-    secure: false,
+    host: process.env.SMTP_HOST || "mail.spacemail.com",
+    port: port,
+    secure: port === 465,
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: process.env.SMTP_USER || "support@traditionalalley.com.np",
+      pass: process.env.SMTP_PASS || "Password@support99",
     },
   });
 };
