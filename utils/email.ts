@@ -258,9 +258,29 @@ export async function sendRegistrationOTP(email: string, otp: string, userName?:
   }
 }
 
+// Dedicated Invoice / Order Email Configuration (Spacemail)
+const invoiceConfig = {
+  host: process.env.INVOICE_SMTP_HOST || process.env.SMTP_HOST || 'mail.spacemail.com',
+  port: parseInt(process.env.INVOICE_SMTP_PORT || process.env.SMTP_PORT || '465'),
+  secure: parseInt(process.env.INVOICE_SMTP_PORT || process.env.SMTP_PORT || '465') === 465,
+  auth: {
+    user: process.env.INVOICE_SMTP_USER || 'order@traditionalalley.com.np',
+    pass: process.env.INVOICE_SMTP_PASS || 'Password@order99',
+  },
+};
+
+const invoiceTransporter = nodemailer.createTransport(invoiceConfig);
+
 // Alias for backwards compatibility with any existing callers
-export const hostingerTransporter = transporter;
-export const verifyHostingerEmailConnection = verifyEmailConnection;
+export const hostingerTransporter = invoiceTransporter;
+export const verifyHostingerEmailConnection = async () => {
+  try {
+    await invoiceTransporter.verify();
+    return true;
+  } catch (e) {
+    return await verifyEmailConnection();
+  }
+};
 
 // Send invoice email with PDF attachment
 export async function sendInvoiceEmail(
@@ -278,7 +298,7 @@ export async function sendInvoiceEmail(
     // Always use attached method since we're removing download links
     let invoiceAccessMethod = 'attached';
     
-    const senderFrom = process.env.SMTP_FROM || '"Traditional Alley Support" <support@traditionalalley.com.np>';
+    const senderFrom = process.env.INVOICE_SMTP_FROM || '"Traditional Alley Orders" <order@traditionalalley.com.np>';
 
     const mailOptions: any = {
       from: senderFrom,
@@ -329,7 +349,7 @@ export async function sendInvoiceEmail(
       ];
     }
 
-    const info = await transporter.sendMail(mailOptions);
+    const info = await invoiceTransporter.sendMail(mailOptions);
     console.log('✅ Invoice email sent successfully:', info.messageId);
 
     // Send notification email to support team
