@@ -24,7 +24,7 @@ export default function CartTogglerSide() {
           strokeLinejoin="round"
         />
       </svg>
-      <span className="count-box">
+      <span className="count-box" suppressHydrationWarning>
         <CartLength />
       </span>
     </a>

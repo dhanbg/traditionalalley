@@ -431,7 +431,7 @@ export default function Header1({ fullWidth = false }) {
                       strokeLinejoin="round"
                     />
                   </svg>
-                  <span className="count-box">
+                  <span className="count-box" suppressHydrationWarning>
                     <CartLength />
                   </span>
                 </a>

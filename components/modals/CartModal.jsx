@@ -273,7 +273,7 @@ export default function CartModal() {
                               <div className="tf-mini-cart-image">
                                 <Link href={buildProductDetailHref(elm)}>
                                   <FallbackImage
-                                    src={elm.variantInfo?.imgSrc || elm.imgSrc}
+                                    src={elm.variantInfo?.imgSrc?.trim() || elm.imgSrc?.trim() || "/images/placeholder.svg"}
                                     alt={getVariantAwareTitle(elm)}
                                     width={60}
                                     height={90}

@@ -18,6 +18,8 @@ import imagePreloader from '@/utils/imagePreloader';
  * @param {Function} props.onError - Callback when image fails to load
  * @param {Object} props.imageProps - Additional props to pass to Next.js Image
  */
+const isValidSrc = (s) => typeof s === 'string' && s.trim().length > 0;
+
 const FallbackImage = ({
   src,
   fallbackSrc = '/images/placeholder.jpg',
@@ -31,39 +33,46 @@ const FallbackImage = ({
   onError,
   ...imageProps
 }) => {
-  const [currentSrc, setCurrentSrc] = useState(src);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
+  const getInitialSrc = () => {
+    if (isValidSrc(src)) return src.trim();
+    if (isValidSrc(fallbackSrc)) return fallbackSrc.trim();
+    return null;
+  };
+
+  const [currentSrc, setCurrentSrc] = useState(getInitialSrc);
+  const [isLoading, setIsLoading] = useState(() => Boolean(getInitialSrc()));
+  const [hasError, setHasError] = useState(() => !getInitialSrc());
   const [isPreloaded, setIsPreloaded] = useState(false);
 
   // Preload image if requested
   useEffect(() => {
-    if (preload && src && !isPreloaded) {
-      imagePreloader.preloadImage(src, {
+    if (preload && isValidSrc(currentSrc) && !isPreloaded) {
+      imagePreloader.preloadImage(currentSrc, {
         timeout: 8000,
         crossOrigin: 'anonymous'
       }).then((result) => {
         setIsPreloaded(true);
         if (!result.loaded) {
-          console.warn('Image preload failed:', src, result.error);
+          console.warn('Image preload failed:', currentSrc, result.error);
           // Don't set error here, let the Image component handle it
         }
       }).catch((error) => {
-        console.warn('Image preload error:', src, error);
+        console.warn('Image preload error:', currentSrc, error);
         setIsPreloaded(true);
       });
     }
-  }, [src, preload, isPreloaded]);
+  }, [currentSrc, preload, isPreloaded]);
 
-  // Reset state when src changes
+  // Reset state when src or fallbackSrc changes
   useEffect(() => {
-    if (src !== currentSrc) {
-      setCurrentSrc(src);
-      setIsLoading(true);
-      setHasError(false);
+    const nextSrc = isValidSrc(src) ? src.trim() : (isValidSrc(fallbackSrc) ? fallbackSrc.trim() : null);
+    if (nextSrc !== currentSrc) {
+      setCurrentSrc(nextSrc);
+      setIsLoading(Boolean(nextSrc));
+      setHasError(!nextSrc);
       setIsPreloaded(false);
     }
-  }, [src, currentSrc]);
+  }, [src, fallbackSrc, currentSrc]);
 
   const handleLoad = (event) => {
     setIsLoading(false);
@@ -76,10 +85,11 @@ const FallbackImage = ({
   const handleError = (event) => {
     setIsLoading(false);
     
+    const validFallback = isValidSrc(fallbackSrc) ? fallbackSrc.trim() : null;
     // If we haven't tried the fallback yet, try it
-    if (currentSrc !== fallbackSrc && fallbackSrc) {
-      console.warn('Image failed to load, trying fallback:', currentSrc, '→', fallbackSrc);
-      setCurrentSrc(fallbackSrc);
+    if (currentSrc !== validFallback && validFallback) {
+      console.warn('Image failed to load, trying fallback:', currentSrc, '→', validFallback);
+      setCurrentSrc(validFallback);
       setIsLoading(true);
       return;
     }
@@ -173,7 +183,7 @@ const FallbackImage = ({
       )}
       
       {/* Actual image */}
-      {!hasError && (
+      {!hasError && isValidSrc(currentSrc) && (
         <Image
           src={currentSrc}
           alt={alt}
