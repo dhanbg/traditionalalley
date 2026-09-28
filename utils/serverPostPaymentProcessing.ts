@@ -386,7 +386,25 @@ const sendAutomaticInvoiceEmail = async (paymentData: any) => {
             receiverDetails.fullName || receiverDetails.name || 'Valued Customer',
             txnId,
             pdfBuffer,
-            {}
+            {
+                amount: `${currency} ${formattedAmount}`,
+                phone: receiverDetails.phone,
+                address: receiverDetails.address,
+                shippingInfo: {
+                    method: shippingInfo?.method || 'Nepal Can Move',
+                    deliveryType: shippingInfo?.deliveryType || 'Standard',
+                    cost: shippingCostText,
+                    estimatedDelivery: estimatedDelivery
+                },
+                products: (orderData?.products || []).map((item: any) => ({
+                    title: item.title || item.name || 'Product',
+                    size: item.selectedSize || item.size || '-',
+                    quantity: item.pricing?.quantity ?? item.quantity ?? 1,
+                    price: `${currency} ${Number(item.pricing?.finalPrice ?? item.subtotal ?? ((item.pricing?.currentPrice ?? item.price ?? 0) * (item.pricing?.quantity ?? item.quantity ?? 1))).toFixed(2)}`
+                })),
+                paymentMethod: paymentMethod,
+                institution: institution
+            }
         );
         console.log('✅ [AUTO-EMAIL] Email utility returned:', emailResult);
         return emailResult;

@@ -333,7 +333,17 @@ const sendAutomaticInvoiceEmail = async (paymentData) => {
       orderId: txnId,
       amount: `${currency} ${formattedAmount}`,
       fileName,
-      pdfBase64
+      pdfBase64,
+      phone: receiverDetails.phone,
+      address: receiverDetails.address,
+      paymentMethod: paymentMethod,
+      shippingInfo: shippingInfo,
+      products: (orderData.products || []).map(item => ({
+        title: item.title || item.name || 'Product',
+        size: item.selectedSize || item.size || '-',
+        quantity: item.pricing?.quantity ?? item.quantity ?? 1,
+        price: `${currency} ${Number(item.pricing?.finalPrice ?? item.subtotal ?? ((item.pricing?.currentPrice ?? item.price ?? 0) * (item.pricing?.quantity ?? item.quantity ?? 1))).toFixed(2)}`
+      }))
     };
 
     console.log('📤 [AUTO-EMAIL] Making API call to /api/send-invoice-email...');

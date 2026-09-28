@@ -299,17 +299,11 @@ export async function sendInvoiceEmail(
     let invoiceAccessMethod = 'attached';
     
     const senderFrom = process.env.INVOICE_SMTP_FROM || '"Traditional Alley Orders" <order@traditionalalley.com.np>';
-    const invoiceBcc = process.env.INVOICE_BCC_EMAIL || 'order@traditionalalley.com.np';
 
-    // Also send a copy of the invoice to order@traditionalalley.com.np
-    const bccRecipient = customerEmail && customerEmail.trim().toLowerCase() === invoiceBcc.toLowerCase()
-      ? undefined
-      : invoiceBcc;
-
+    // Customer Invoice Email
     const mailOptions: any = {
       from: senderFrom,
       to: customerEmail,
-      ...(bccRecipient ? { bcc: bccRecipient } : {}),
       replyTo: process.env.INVOICE_SMTP_USER || 'order@traditionalalley.com.np',
       subject: `📄 Invoice for Your Order #${orderId} - Traditional Alley`,
       html: `
@@ -358,53 +352,181 @@ export async function sendInvoiceEmail(
     }
 
     const info = await invoiceTransporter.sendMail(mailOptions);
-    console.log('✅ Invoice email sent successfully:', info.messageId);
+    console.log('✅ Invoice email sent successfully to customer:', info.messageId);
 
-    // Send notification email to support team
+    // Send dedicated Admin Notification email to order@traditionalalley.com.np
     try {
-      const supportNotificationRecipient = 
-        process.env.SUPPORT_NOTIFICATION_EMAIL || 
-        process.env.SMTP_USER || 
-        'support@traditionalalley.com.np';
+      const primaryAdminEmail = 
+        process.env.ADMIN_NOTIFICATION_EMAIL || 
+        process.env.ORDER_NOTIFICATION_EMAIL || 
+        process.env.INVOICE_SMTP_USER || 
+        'order@traditionalalley.com.np';
 
-      const supportMailOptions: any = {
+      const adminRecipients: string[] = [primaryAdminEmail];
+      if (process.env.SUPPORT_NOTIFICATION_EMAIL && !adminRecipients.includes(process.env.SUPPORT_NOTIFICATION_EMAIL)) {
+        adminRecipients.push(process.env.SUPPORT_NOTIFICATION_EMAIL);
+      }
+
+      // Format shipping address
+      let formattedAddress = 'N/A';
+      if (typeof orderDetails?.address === 'object' && orderDetails?.address !== null) {
+        const addr = orderDetails.address;
+        formattedAddress = [
+          addr.addressLine1 || addr.street || addr.streetAddress,
+          addr.cityName || addr.city,
+          addr.state || addr.zone,
+          addr.postalCode || addr.zipCode,
+          addr.countryCode || addr.country
+        ].filter(Boolean).join(', ') || 'N/A';
+      } else if (typeof orderDetails?.address === 'string' && orderDetails.address.trim()) {
+        formattedAddress = orderDetails.address.trim();
+      }
+
+      // Format ordered items if present
+      let productsHtml = '';
+      let productsText = '';
+      if (Array.isArray(orderDetails?.products) && orderDetails.products.length > 0) {
+        productsHtml = `
+          <div style="margin-top: 20px;">
+            <h3 style="color: #1e293b; font-size: 15px; margin-bottom: 10px; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px;">📦 Ordered Items:</h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <thead>
+                <tr style="background-color: #f1f5f9; text-align: left; color: #475569;">
+                  <th style="padding: 10px; border: 1px solid #e2e8f0;">Item</th>
+                  <th style="padding: 10px; border: 1px solid #e2e8f0;">Size</th>
+                  <th style="padding: 10px; border: 1px solid #e2e8f0; text-align: center;">Qty</th>
+                  <th style="padding: 10px; border: 1px solid #e2e8f0; text-align: right;">Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${orderDetails.products.map((p: any) => `
+                  <tr>
+                    <td style="padding: 10px; border: 1px solid #e2e8f0; color: #0f172a; font-weight: 500;">${p.title || p.name || 'Product'}</td>
+                    <td style="padding: 10px; border: 1px solid #e2e8f0; color: #64748b;">${p.size || p.selectedSize || '-'}</td>
+                    <td style="padding: 10px; border: 1px solid #e2e8f0; text-align: center; color: #0f172a;">${p.quantity || 1}</td>
+                    <td style="padding: 10px; border: 1px solid #e2e8f0; text-align: right; color: #0f172a; font-weight: 600;">${p.price || '-'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        productsText = `\nOrdered Items:\n` + orderDetails.products.map((p: any) => 
+          `- ${p.title || p.name || 'Product'} (Size: ${p.size || p.selectedSize || '-'}, Qty: ${p.quantity || 1}, Price: ${p.price || '-'})`
+        ).join('\n');
+      }
+
+      const totalAmount = orderDetails?.amount || 'See attached invoice';
+      const paymentMethod = orderDetails?.paymentMethod || 'Online Payment';
+      const phone = orderDetails?.phone || 'N/A';
+      const shippingMethod = orderDetails?.shippingInfo?.method || orderDetails?.shippingInfo?.deliveryType 
+        ? `${orderDetails.shippingInfo.method || 'Standard'} (${orderDetails.shippingInfo.deliveryType || 'Standard'})`
+        : null;
+
+      const adminMailOptions: any = {
         from: senderFrom,
-        to: supportNotificationRecipient,
-        subject: `🔔 New Order Notification - Order #${orderId}`,
+        to: adminRecipients,
+        subject: `🔔 [Admin Alert] New Order #${orderId} - ${totalAmount} (${customerName})`,
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: #333; font-size: 24px; margin-bottom: 20px;">🔔 New Order Received</h1>
-            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-              <h2 style="color: #495057; font-size: 18px; margin-bottom: 15px;">Order Details:</h2>
-              <p><strong>Order ID:</strong> #${orderId}</p>
-              <p><strong>Customer:</strong> ${customerName}</p>
-              <p><strong>Email:</strong> ${customerEmail}</p>
-              <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 24px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <div style="background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%); color: #ffffff; padding: 20px 24px; border-radius: 6px; margin-bottom: 24px;">
+              <span style="background-color: rgba(255,255,255,0.25); font-size: 11px; font-weight: bold; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px;">Admin Notification</span>
+              <h1 style="margin: 8px 0 0 0; font-size: 22px; font-weight: bold; color: #ffffff;">🔔 New Order Arrived!</h1>
+              <p style="margin: 4px 0 0 0; font-size: 14px; opacity: 0.9;">A new customer order has been placed on Traditional Alley.</p>
             </div>
-            <p>A new order has been placed and the invoice has been sent to the customer.</p>
-            <p style="margin-top: 30px; color: #6c757d; font-size: 14px;">
-              This is an automated notification from Traditional Alley order system.
+
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; margin-bottom: 20px;">
+              <h3 style="color: #1e293b; font-size: 15px; margin: 0 0 12px 0;">📋 Order Overview:</h3>
+              <table style="width: 100%; font-size: 14px; line-height: 1.7;">
+                <tr>
+                  <td style="width: 35%; color: #64748b; font-weight: 600;">Order ID:</td>
+                  <td style="color: #0f172a; font-weight: bold;">#${orderId}</td>
+                </tr>
+                <tr>
+                  <td style="color: #64748b; font-weight: 600;">Total Amount:</td>
+                  <td style="color: #16a34a; font-weight: bold; font-size: 16px;">${totalAmount}</td>
+                </tr>
+                <tr>
+                  <td style="color: #64748b; font-weight: 600;">Payment Method:</td>
+                  <td style="color: #0f172a;">${paymentMethod}</td>
+                </tr>
+                <tr>
+                  <td style="color: #64748b; font-weight: 600;">Date:</td>
+                  <td style="color: #0f172a;">${new Date().toLocaleString()}</td>
+                </tr>
+              </table>
+            </div>
+
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; margin-bottom: 20px;">
+              <h3 style="color: #1e293b; font-size: 15px; margin: 0 0 12px 0;">👤 Customer & Shipping Details:</h3>
+              <table style="width: 100%; font-size: 14px; line-height: 1.7;">
+                <tr>
+                  <td style="width: 35%; color: #64748b; font-weight: 600;">Customer Name:</td>
+                  <td style="color: #0f172a; font-weight: 600;">${customerName}</td>
+                </tr>
+                <tr>
+                  <td style="color: #64748b; font-weight: 600;">Customer Email:</td>
+                  <td style="color: #0f172a;"><a href="mailto:${customerEmail}" style="color: #2563eb; text-decoration: none;">${customerEmail}</a></td>
+                </tr>
+                <tr>
+                  <td style="color: #64748b; font-weight: 600;">Customer Phone:</td>
+                  <td style="color: #0f172a;">${phone}</td>
+                </tr>
+                <tr>
+                  <td style="color: #64748b; font-weight: 600;">Shipping Address:</td>
+                  <td style="color: #0f172a;">${formattedAddress}</td>
+                </tr>
+                ${shippingMethod ? `
+                  <tr>
+                    <td style="color: #64748b; font-weight: 600;">Shipping Method:</td>
+                    <td style="color: #0f172a;">${shippingMethod}</td>
+                  </tr>
+                ` : ''}
+              </table>
+            </div>
+
+            ${productsHtml}
+
+            <div style="margin-top: 26px; text-align: center;">
+              <a href="https://www.traditionalalley.com.np/dashboard/orders" 
+                 style="display: inline-block; background-color: #8B4513; color: #ffffff; padding: 12px 28px; font-size: 14px; font-weight: bold; text-decoration: none; border-radius: 6px;">
+                👉 Open Orders in Admin Dashboard
+              </a>
+            </div>
+
+            <p style="margin-top: 24px; font-size: 13px; color: #64748b; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+              📎 The customer's invoice PDF is attached to this notification.<br>
+              Automated Admin Notification • Traditional Alley Order System
             </p>
           </div>
         `,
         text: `
-          New Order Notification - Order #${orderId}
-          
-          Order Details:
-          - Order ID: #${orderId}
-          - Customer: ${customerName}
-          - Email: ${customerEmail}
-          - Date: ${new Date().toLocaleString()}
-          
-          A new order has been placed and the invoice has been sent to the customer.
-          
-          This is an automated notification from Traditional Alley order system.
+🔔 [ADMIN ALERT] New Order Received!
+
+Order Details:
+- Order ID: #${orderId}
+- Total Amount: ${totalAmount}
+- Payment Method: ${paymentMethod}
+- Date: ${new Date().toLocaleString()}
+
+Customer Details:
+- Name: ${customerName}
+- Email: ${customerEmail}
+- Phone: ${phone}
+- Address: ${formattedAddress}
+${shippingMethod ? `- Shipping: ${shippingMethod}` : ''}
+${productsText}
+
+Manage order in Admin Dashboard: https://www.traditionalalley.com.np/dashboard/orders
+
+(The customer's invoice PDF is attached to this email)
         `
       };
 
-      // Add attachment to support email as well if available
+      // Add attachment to admin email as well if available
       if (hasAttachment) {
-        supportMailOptions.attachments = [
+        adminMailOptions.attachments = [
           {
             filename: `Invoice-${orderId}.pdf`,
             content: invoicePdfBuffer,
@@ -413,11 +535,10 @@ export async function sendInvoiceEmail(
         ];
       }
 
-      const supportInfo = await transporter.sendMail(supportMailOptions);
-      console.log('✅ Support notification email sent successfully:', supportInfo.messageId);
-    } catch (supportError) {
-      console.error('⚠️ Failed to send support notification email:', supportError);
-      // Don't fail the main function if support email fails
+      const adminInfo = await invoiceTransporter.sendMail(adminMailOptions);
+      console.log('✅ Admin order notification email sent successfully:', adminInfo.messageId);
+    } catch (adminError) {
+      console.error('⚠️ Failed to send admin order notification email:', adminError);
     }
 
     return {

@@ -49,7 +49,17 @@ export default async function handler(req, res) {
       customerName || 'Valued Customer',
       orderId || 'N/A',
       pdfBuffer,
-      { amount, fileName, downloadUrl }
+      {
+        amount,
+        fileName,
+        downloadUrl,
+        phone: req.body.phone,
+        address: req.body.address,
+        products: req.body.products,
+        shippingInfo: req.body.shippingInfo,
+        paymentMethod: req.body.paymentMethod,
+        ...req.body
+      }
     );
     
     console.log('📧 Email sending result:', result);

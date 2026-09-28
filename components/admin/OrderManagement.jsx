@@ -1585,7 +1585,17 @@ const OrderManagement = () => {
         orderId: txnId,
         amount: `${currency} ${formattedAmount}`,
         fileName,
-        downloadUrl: saveResult.downloadUrl
+        downloadUrl: saveResult.downloadUrl,
+        phone: customerDetails?.phone || receiverDetails?.phone,
+        address: address || receiverDetails?.address,
+        paymentMethod: paymentMethod,
+        shippingInfo: shippingInfo,
+        products: (orderData.products || []).map(item => ({
+          title: getVariantAwareTitle(item),
+          size: item.selectedSize || item.size || 'N/A',
+          quantity: item.pricing?.quantity ?? item.quantity ?? 1,
+          price: `${currency} ${(item.pricing?.finalPrice ?? item.subtotal ?? ((item.pricing?.currentPrice ?? item.price ?? 0) * (item.pricing?.quantity ?? item.quantity ?? 1))).toFixed(2)}`
+        }))
       };
 
       // Only include PDF attachment if file is small enough
