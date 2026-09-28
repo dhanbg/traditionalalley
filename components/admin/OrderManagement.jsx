@@ -1,10 +1,30 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import jsPDF from 'jspdf';
+import { jsPDF as jsPDFClass } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import NCMOrderForm from './NCMOrderForm';
 import NCMOrderButton from './NCMOrderButton';
-// Removed direct email import - using API route instead
-// Force recompilation - all userBag references fixed
+
+// Robust PDF instantiation helpers supporting all bundler export formats and dynamic fallback
+const createPdfDocument = async (options) => {
+  let PDFClass = typeof jsPDFClass === 'function' ? jsPDFClass : (typeof jsPDF === 'function' ? jsPDF : (jsPDF?.jsPDF || jsPDF?.default));
+  if (!PDFClass) {
+    const mod = await import('jspdf');
+    PDFClass = mod.jsPDF || mod.default;
+  }
+  return options ? new PDFClass(options) : new PDFClass();
+};
+
+const getAutoTableFunc = async () => {
+  let at = typeof autoTable === 'function' ? autoTable : (autoTable?.default || autoTable);
+  if (!at) {
+    const mod = await import('jspdf-autotable');
+    at = mod.default || mod.autoTable || mod;
+  }
+  return at;
+};
 
 const OrderManagement = () => {
   const [userBags, setUserBags] = useState([]);
@@ -649,9 +669,9 @@ const OrderManagement = () => {
   };
 
   // Function to generate PDF only (no email)
-  const generateBillOnly = async (payment) => {
+  const generateBill = async (payment) => {
     try {
-      console.log('🔥 GENERATE BILL ONLY FUNCTION CALLED');
+      console.log('🔥 GENERATE BILL FUNCTION CALLED');
       console.log('📋 Payment data received:', JSON.stringify(payment, null, 2));
 
       // Validate payment data
@@ -661,12 +681,12 @@ const OrderManagement = () => {
         throw new Error('Payment data is missing');
       }
 
-      // Extract orderData from payment
-      const orderData = payment.orderData || {};
+      // Extract orderData from payment with fallbacks to userBag
+      const orderData = payment.orderData || payment.userBag?.orderData || payment.userBag?.attributes?.orderData || payment.userBag?.user_orders?.orderData || {};
       console.log('📦 Order data extracted:', JSON.stringify(orderData, null, 2));
 
       // Check if receiver details exist
-      const receiverDetails = orderData.receiver_details || {};
+      const receiverDetails = orderData.receiver_details || orderData.receiverDetails || payment.receiver_details || {};
       console.log('👤 Receiver details:', JSON.stringify(receiverDetails, null, 2));
 
       // Detect if delivery is to Nepal
@@ -676,7 +696,8 @@ const OrderManagement = () => {
 
       console.log('Bill generation - Nepal destination:', isNepal, 'Currency:', currency);
 
-      const doc = new jsPDF();
+      const doc = await createPdfDocument();
+      const autoTableFunc = await getAutoTableFunc();
 
       // Add Traditional Alley logo (prefer JPEG for smaller filesize, fallback to PNG)
       let logoLoaded = false;
@@ -687,18 +708,32 @@ const OrderManagement = () => {
         const logoX = (pageWidth - logoWidth) / 2;
 
         await new Promise((resolve) => {
+          const timeoutId = setTimeout(() => {
+            console.warn('Logo loading timed out (2s), continuing without logo');
+            resolve();
+          }, 2000);
+
+          const finish = () => {
+            clearTimeout(timeoutId);
+            resolve();
+          };
+
           const tryPngFallback = () => {
             const pngImg = new Image();
             pngImg.crossOrigin = 'anonymous';
             pngImg.onload = () => {
-              doc.addImage(pngImg, 'PNG', logoX, 10, logoWidth, logoHeight);
-              logoLoaded = true;
-              resolve();
+              try {
+                doc.addImage(pngImg, 'PNG', logoX, 10, logoWidth, logoHeight);
+                logoLoaded = true;
+              } catch (e) {
+                console.warn('doc.addImage PNG failed:', e);
+              }
+              finish();
             };
             pngImg.onerror = () => {
               console.warn('Could not load PNG logo, continuing without it');
               logoLoaded = false;
-              resolve();
+              finish();
             };
             pngImg.src = '/logo.png';
           };
@@ -706,10 +741,15 @@ const OrderManagement = () => {
           const jpegImg = new Image();
           jpegImg.crossOrigin = 'anonymous';
           jpegImg.onload = () => {
-            // Use MEDIUM compression hint for JPEG embedding
-            doc.addImage(jpegImg, 'JPEG', logoX, 10, logoWidth, logoHeight, undefined, 'MEDIUM');
-            logoLoaded = true;
-            resolve();
+            try {
+              // Use MEDIUM compression hint for JPEG embedding
+              doc.addImage(jpegImg, 'JPEG', logoX, 10, logoWidth, logoHeight, undefined, 'MEDIUM');
+              logoLoaded = true;
+              finish();
+            } catch (e) {
+              console.warn('doc.addImage JPEG failed, trying PNG:', e);
+              tryPngFallback();
+            }
           };
           jpegImg.onerror = () => {
             // Fallback to PNG
@@ -755,10 +795,13 @@ const OrderManagement = () => {
       doc.setFont(undefined, 'normal');
       doc.setFontSize(10);
 
-      const orderSummary = orderData.orderSummary || {};
+      const orderSummary = orderData.orderSummary || payment.orderSummary || payment.userBag?.orderSummary || {};
+
+      const paymentDate = payment.timestamp ? getCorrectPaymentDate(payment, payment.userBag) : null;
+      const dateText = paymentDate && !isNaN(paymentDate.getTime()) ? paymentDate.toLocaleDateString() : 'N/A';
 
       const orderInfo = [
-        `Date: ${payment.timestamp ? getCorrectPaymentDate(payment, payment.userBag).toLocaleDateString() : 'N/A'}`,
+        `Date: ${dateText}`,
         `Payment Status: ${payment.status || 'N/A'}`,
         `Payment Method: ${payment.instrument || 'N/A'}`,
         `Institution: ${payment.institution || 'N/A'}`
@@ -770,13 +813,17 @@ const OrderManagement = () => {
       });
 
       // Shipping Information (Left Column under Order Info)
-      const shippingInfo = orderData.shipping || {};
+      const shippingInfo = orderData.shipping || payment.shipping || payment.userBag?.shipping || {};
       const shippingCostRaw = orderSummary.shippingCost || 0;
       let displayShippingCostVal = shippingCostRaw;
       if (!isNepal && shippingCostRaw > 200) {
-        const { getExchangeRate } = await import('../../utils/currency');
-        const nprToUsdRate = await getExchangeRate();
-        displayShippingCostVal = shippingCostRaw / nprToUsdRate;
+        try {
+          const { getExchangeRate } = await import('../../utils/currency');
+          const nprToUsdRate = await getExchangeRate();
+          displayShippingCostVal = shippingCostRaw / (nprToUsdRate || 135);
+        } catch (e) {
+          displayShippingCostVal = shippingCostRaw / 135;
+        }
       }
       // Use same currency symbol as invoice
       const shippingCostText = shippingCostRaw > 0
@@ -822,16 +869,17 @@ const OrderManagement = () => {
       doc.setFontSize(10);
 
       // Extract data from the correct structure
-      const customerDetails = orderData.receiver_details || {};
-      const address = customerDetails.address || {};
+      const address = receiverDetails.address || receiverDetails.shippingAddress || {};
 
-      console.log('Customer data sources:', { orderData, customerDetails, address });
+      console.log('Customer data sources:', { orderData, customerDetails: receiverDetails, address });
+
+      const customerPhone = receiverDetails.phone ? `${receiverDetails.countryCode || ''}${receiverDetails.phone}`.replace(/^\+?/, '+') : 'N/A';
 
       const customerInfo = [
-        `Name: ${customerDetails.name || customerDetails.fullName || 'N/A'}`,
-        `Email: ${customerDetails.email || 'N/A'}`,
-        `Phone: ${customerDetails.countryCode || ''}${customerDetails.phone || 'N/A'}`.replace(/^\+?/, '+'),
-        `Height: ${customerDetails.height || 'N/A'}`,
+        `Name: ${receiverDetails.name || receiverDetails.fullName || 'N/A'}`,
+        `Email: ${receiverDetails.email || 'N/A'}`,
+        `Phone: ${customerPhone}`,
+        `Height: ${receiverDetails.height || 'N/A'}`,
         `Address: ${address.addressLine1 || 'N/A'}`,
         `City: ${address.cityName || 'N/A'}`,
         `Postal Code: ${address.postalCode || 'N/A'}`,
@@ -850,18 +898,24 @@ const OrderManagement = () => {
       yPosition += 15;
 
       const tableData = [];
-      const products = orderData.products || [];
+      const products = orderData.products || payment.products || payment.userBag?.products || [];
 
       console.log('Product data sources:', { orderData, products });
 
       // Convert product prices for Nepal orders
-      const { getExchangeRate } = await import('../../utils/currency');
-      const exchangeRate = isNepal ? await getExchangeRate() : 1;
+      let exchangeRate = 1;
+      try {
+        const { getExchangeRate } = await import('../../utils/currency');
+        exchangeRate = isNepal ? await getExchangeRate() : 1;
+      } catch (e) {
+        console.warn('Exchange rate fetch failed, using fallback:', e);
+        exchangeRate = isNepal ? 135 : 1;
+      }
 
       products.forEach(item => {
-        let price = item.pricing?.currentPrice ?? item.price ?? 0;
-        const quantity = item.pricing?.quantity ?? item.quantity ?? 1;
-        let total = item.pricing?.finalPrice ?? item.subtotal ?? (price * quantity);
+        let price = Number(item.pricing?.currentPrice ?? item.price ?? 0);
+        const quantity = Number(item.pricing?.quantity ?? item.quantity ?? 1);
+        let total = Number(item.pricing?.finalPrice ?? item.subtotal ?? (price * quantity));
 
         // Convert USD prices to NPR for Nepal orders
         if (isNepal && !item.pricing) {
@@ -879,8 +933,8 @@ const OrderManagement = () => {
           item.productDetails?.productCode || item.productCode || 'N/A',
           item.selectedSize || 'N/A',
           quantity.toString(),
-          `${currency} ${price.toFixed(2)}`,
-          `${currency} ${total.toFixed(2)}`
+          `${currency} ${Number(price || 0).toFixed(2)}`,
+          `${currency} ${Number(total || 0).toFixed(2)}`
         ]);
       });
 
@@ -888,7 +942,7 @@ const OrderManagement = () => {
         tableData.push(['No items found', '', '', '', '', '']);
       }
 
-      autoTable(doc, {
+      autoTableFunc(doc, {
         head: [['Product', 'Product Code', 'Size', 'Quantity', 'Price', 'Total']],
         body: tableData,
         startY: yPosition,
@@ -899,7 +953,7 @@ const OrderManagement = () => {
       });
 
       // Calculation Breakdown
-      let breakdownY = doc.lastAutoTable.finalY + 15;
+      let breakdownY = (doc.lastAutoTable && doc.lastAutoTable.finalY) ? doc.lastAutoTable.finalY + 15 : yPosition + 40;
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
       doc.text('Order Summary', 20, breakdownY);
@@ -910,15 +964,15 @@ const OrderManagement = () => {
 
       // Calculate values for breakdown
       const originalSubtotal = products.reduce((sum, item) => {
-        const price = item.pricing?.currentPrice ?? item.price ?? 0;
-        const quantity = item.pricing?.quantity ?? item.quantity ?? 1;
+        const price = Number(item.pricing?.currentPrice ?? item.price ?? 0);
+        const quantity = Number(item.pricing?.quantity ?? item.quantity ?? 1);
         return sum + (price * quantity);
       }, 0);
 
-      const productDiscounts = orderSummary.productDiscounts || 0;
-      const couponDiscount = orderSummary.couponDiscount || 0;
-      const shippingCost = orderSummary.shippingCost || 0;
-      const finalSubtotal = orderSummary.finalSubtotal || 0;
+      const productDiscounts = Number(orderSummary.productDiscounts || 0);
+      const couponDiscount = Number(orderSummary.couponDiscount || 0);
+      const shippingCost = Number(orderSummary.shippingCost || 0);
+      const finalSubtotal = Number(orderSummary.finalSubtotal || 0);
 
       // Convert values for Nepal orders
       let displayOriginalSubtotal = originalSubtotal;
@@ -926,9 +980,13 @@ const OrderManagement = () => {
       let displayCouponDiscount = couponDiscount;
       let displayShippingCost = shippingCost;
       if (!isNepal && shippingCost > 200) {
-        const { getExchangeRate } = await import('../../utils/currency');
-        const nprToUsdRate = await getExchangeRate();
-        displayShippingCost = shippingCost / nprToUsdRate;
+        try {
+          const { getExchangeRate } = await import('../../utils/currency');
+          const nprToUsdRate = await getExchangeRate();
+          displayShippingCost = shippingCost / (nprToUsdRate || 135);
+        } catch (e) {
+          displayShippingCost = shippingCost / 135;
+        }
       }
 
       if (isNepal) {
@@ -948,7 +1006,8 @@ const OrderManagement = () => {
 
       breakdownItems.forEach(item => {
         doc.text(item.label, 20, breakdownY);
-        const valueText = `${currency} ${Math.abs(item.value).toFixed(2)}`;
+        const numVal = Number(item.value || 0);
+        const valueText = `${currency} ${Math.abs(numVal).toFixed(2)}`;
         const displayValue = item.isDiscount ? `- ${valueText}` : valueText;
 
         // Set color for discounts (green for savings)
@@ -976,30 +1035,38 @@ const OrderManagement = () => {
       doc.setFont(undefined, 'bold');
 
       // Use payment amount as primary source, fallback to order summary total amount
-      let amount = payment.amount || orderSummary.totalAmount || 0;
+      let amount = Number(payment.amount || orderSummary.totalAmount || 0);
 
       // For Nepal orders, keep NPR amounts as-is; for international orders, convert NPR to USD
       if (!isNepal) {
         // Convert NPR amounts to USD for international readability
         if (payment.amount_npr) {
           // Convert NPR to USD for bill display using live exchange rate
-          const { getExchangeRate } = await import('../../utils/currency');
-          const nprToUsdRate = await getExchangeRate();
-          amount = payment.amount_npr / nprToUsdRate;
+          try {
+            const { getExchangeRate } = await import('../../utils/currency');
+            const nprToUsdRate = await getExchangeRate();
+            amount = Number(payment.amount_npr) / (nprToUsdRate || 135);
+          } catch (e) {
+            amount = Number(payment.amount_npr) / 135;
+          }
         } else if (amount > 1000) {
           // If amount is large (>1000), it's likely in NPR, convert to USD
-          const { getExchangeRate } = await import('../../utils/currency');
-          const nprToUsdRate = await getExchangeRate();
-          amount = amount / nprToUsdRate;
+          try {
+            const { getExchangeRate } = await import('../../utils/currency');
+            const nprToUsdRate = await getExchangeRate();
+            amount = amount / (nprToUsdRate || 135);
+          } catch (e) {
+            amount = amount / 135;
+          }
         }
       } else {
         // For Nepal orders, use NPR amount directly
         if (payment.amount_npr) {
-          amount = payment.amount_npr;
+          amount = Number(payment.amount_npr);
         }
       }
 
-      const formattedAmount = typeof amount === 'number' ? amount.toFixed(2) : amount;
+      const formattedAmount = !isNaN(amount) ? amount.toFixed(2) : '0.00';
 
       console.log('Amount data:', {
         orderSummaryAmount: orderSummary.totalAmount,
@@ -1021,15 +1088,25 @@ const OrderManagement = () => {
 
       let noteText;
       if (isNepal) {
-        const { getExchangeRate } = await import('../../utils/currency');
-        const currentRate = await getExchangeRate();
-        noteText = `Note: All amounts in NPR. Product prices converted from USD at rate 1 USD = ${currentRate.toFixed(2)} NPR`;
+        let currentRate = 135;
+        try {
+          const { getExchangeRate } = await import('../../utils/currency');
+          currentRate = await getExchangeRate();
+        } catch (e) {
+          currentRate = 135;
+        }
+        noteText = `Note: All amounts in NPR. Product prices converted from USD at rate 1 USD = ${Number(currentRate).toFixed(2)} NPR`;
       } else {
         noteText = 'Note: All amounts in USD';
         if (payment.amount_npr || amount !== (payment.amount || orderSummary.totalAmount || 0)) {
-          const { getExchangeRate } = await import('../../utils/currency');
-          const currentRate = await getExchangeRate();
-          noteText = `Note: All amounts in USD (converted from NPR at rate 1 USD = ${currentRate.toFixed(2)} NPR)`;
+          let currentRate = 135;
+          try {
+            const { getExchangeRate } = await import('../../utils/currency');
+            currentRate = await getExchangeRate();
+          } catch (e) {
+            currentRate = 135;
+          }
+          noteText = `Note: All amounts in USD (converted from NPR at rate 1 USD = ${Number(currentRate).toFixed(2)} NPR)`;
         }
       }
 
@@ -1059,6 +1136,9 @@ const OrderManagement = () => {
       alert(`Error generating PDF: ${error.message}. Please check the console for more details.`);
     }
   };
+
+  // Alias for backward compatibility and test scripts
+  const generateBillOnly = generateBill;
 
   // Function to send email only
   const sendEmailOnly = async (payment) => {
@@ -1122,7 +1202,8 @@ const OrderManagement = () => {
       console.log('✅ Customer email found, proceeding to send invoice email to:', customerEmail);
 
       // Generate PDF for email (same logic as generateBillOnly but for email purposes)
-      const doc = new jsPDF();
+      const doc = await createPdfDocument();
+      const autoTableFunc = await getAutoTableFunc();
 
       // Add Traditional Alley logo
       let logoLoaded = false;
@@ -1130,17 +1211,28 @@ const OrderManagement = () => {
         const logoImg = new Image();
         logoImg.crossOrigin = 'anonymous';
         logoImg.src = '/logo.png';
-        await new Promise((resolve, reject) => {
+        await new Promise((resolve) => {
+          const timeoutId = setTimeout(() => {
+            console.warn('Logo loading timed out (2s), continuing without it');
+            resolve();
+          }, 2000);
+
           logoImg.onload = () => {
-            const logoWidth = 40;
-            const logoHeight = 10;
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const logoX = (pageWidth - logoWidth) / 2;
-            doc.addImage(logoImg, 'PNG', logoX, 10, logoWidth, logoHeight);
-            logoLoaded = true;
+            clearTimeout(timeoutId);
+            try {
+              const logoWidth = 40;
+              const logoHeight = 10;
+              const pageWidth = doc.internal.pageSize.getWidth();
+              const logoX = (pageWidth - logoWidth) / 2;
+              doc.addImage(logoImg, 'PNG', logoX, 10, logoWidth, logoHeight);
+              logoLoaded = true;
+            } catch (e) {
+              console.warn('doc.addImage failed in sendEmailOnly:', e);
+            }
             resolve();
           };
           logoImg.onerror = () => {
+            clearTimeout(timeoutId);
             console.warn('Could not load logo, continuing without it');
             logoLoaded = false;
             resolve();
@@ -1310,7 +1402,7 @@ const OrderManagement = () => {
         tableData.push(['No items found', '', '', '', '', '']);
       }
 
-      autoTable(doc, {
+      autoTableFunc(doc, {
         head: [['Product', 'Product Code', 'Size', 'Quantity', 'Price', 'Total']],
         body: tableData,
         startY: yPosition,
@@ -1320,7 +1412,7 @@ const OrderManagement = () => {
         margin: { left: 20, right: 20 }
       });
 
-      yPosition = doc.lastAutoTable.finalY + 15;
+      yPosition = (doc.lastAutoTable && doc.lastAutoTable.finalY) ? doc.lastAutoTable.finalY + 15 : yPosition + 40;
 
       // Order Summary (same detailed breakdown as generateBillOnly)
       doc.setFontSize(12);
@@ -1442,7 +1534,7 @@ const OrderManagement = () => {
       if (originalSize > maxSize) {
         console.log('⚠️ PDF too large, attempting compression...');
         // Generate PDF with lower quality/compression
-        const compressedPdf = new jsPDF({
+        const compressedPdf = await createPdfDocument({
           compress: true,
           precision: 2
         });
