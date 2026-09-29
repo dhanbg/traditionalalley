@@ -43,6 +43,8 @@ interface MetaCapiEventOptions {
         city?: string;
         zip?: string;
         countryCode?: string;
+        fbp?: string;
+        fbc?: string;
     };
     customData: {
         currency: string;
@@ -88,6 +90,8 @@ export async function sendMetaCapiEvent(options: MetaCapiEventOptions) {
             ct: hashedCity ? [hashedCity] : undefined,
             zp: hashedZip ? [hashedZip] : undefined,
             country: hashedCountry ? [hashedCountry] : undefined,
+            fbp: options.userData.fbp || undefined,
+            fbc: options.userData.fbc || undefined,
         };
 
         // Remove undefined keys

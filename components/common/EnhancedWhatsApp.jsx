@@ -73,6 +73,22 @@ const EnhancedWhatsApp = () => {
     const message = "Hi! I would like to customize a design. Can you help me?";
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 
+    // Track Meta Pixel Contact event
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'Contact', {
+        contact_method: 'whatsapp',
+      });
+      console.log('📢 [META-PIXEL] Tracked Contact event (WhatsApp)');
+    }
+
+    // Google Analytics / GTM contact event
+    if (typeof window !== 'undefined' && window.dataLayer) {
+      window.dataLayer.push({
+        event: 'contact',
+        method: 'whatsapp',
+      });
+    }
+
     // Open WhatsApp in a new tab
     window.open(whatsappUrl, '_blank');
 

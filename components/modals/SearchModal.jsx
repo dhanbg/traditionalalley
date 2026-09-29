@@ -73,6 +73,13 @@ export default function SearchModal() {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      // Track Meta Pixel Search event
+      if (typeof window !== 'undefined' && window.fbq) {
+        window.fbq('track', 'Search', {
+          search_string: searchQuery.trim(),
+          content_type: 'product',
+        });
+      }
       router.push(`/search-result?query=${encodeURIComponent(searchQuery.trim())}`);
       // Close the modal
       const modal = document.getElementById('search');

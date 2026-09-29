@@ -24,6 +24,22 @@ export default function Contact2() {
           setSuccess(true);
           handleShowMessage();
 
+          // Track Meta Pixel Contact event
+          if (typeof window !== 'undefined' && window.fbq) {
+            window.fbq('track', 'Contact', {
+              contact_method: 'contact_form',
+            });
+            console.log('📢 [META-PIXEL] Tracked Contact event (Contact Form)');
+          }
+
+          // Google Analytics / GTM contact event
+          if (typeof window !== 'undefined' && window.dataLayer) {
+            window.dataLayer.push({
+              event: 'contact',
+              method: 'contact_form',
+            });
+          }
+
           formRef.current.reset();
         } else {
           setSuccess(false);

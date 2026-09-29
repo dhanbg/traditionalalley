@@ -33,6 +33,23 @@ export default function Context({ children }) {
   const validateStockMutation = useValidateStockMutation(showStockError);
   const syncCartMutation = useSyncCartMutation();
 
+  // Meta Pixel Advanced Matching for logged-in users
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.fbq && user?.email) {
+      const email = user.email.toLowerCase().trim();
+      const nameParts = (user.name || '').trim().split(/\s+/);
+      const firstName = nameParts[0]?.toLowerCase() || '';
+      const lastName = nameParts.slice(1).join(' ')?.toLowerCase() || '';
+
+      window.fbq('init', '882153701609750', {
+        em: email,
+        fn: firstName,
+        ln: lastName,
+      });
+      console.log('📢 [META-PIXEL] Advanced matching initialized for logged-in user');
+    }
+  }, [user?.email, user?.name]);
+
   const [cartProducts, setCartProducts] = useState(() => {
     if (typeof window !== 'undefined') {
       try {

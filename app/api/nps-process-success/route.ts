@@ -20,14 +20,21 @@ export async function POST(request: NextRequest) {
         const userAgent = request.headers.get('user-agent') || '';
         const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0] || request.headers.get('x-real-ip') || '';
 
+        const fbp = request.cookies.get('_fbp')?.value;
+        const fbc = request.cookies.get('_fbc')?.value;
+
         if (!paymentData) {
             paymentData = {
                 client_ip: clientIp,
-                client_user_agent: userAgent
+                client_user_agent: userAgent,
+                fbp,
+                fbc
             };
         } else {
             paymentData.client_ip = clientIp;
             paymentData.client_user_agent = userAgent;
+            paymentData.fbp = fbp;
+            paymentData.fbc = fbc;
         }
 
         console.log('📋 [PROCESS-SUCCESS] Request data:', {

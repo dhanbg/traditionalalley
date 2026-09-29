@@ -51,6 +51,24 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
       if (response.ok) {
         setSubscribeStatus('success');
         setNotifyEmail("");
+
+        // Track Meta Pixel Lead event
+        if (typeof window !== 'undefined' && window.fbq) {
+          window.fbq('track', 'Lead', {
+            content_name: 'Hero Notify Signup',
+            content_category: 'hero_notify',
+          });
+          console.log('📢 [META-PIXEL] Tracked Lead event (Hero Notify)');
+        }
+
+        // Google Analytics / GTM generate_lead event
+        if (typeof window !== 'undefined' && window.dataLayer) {
+          window.dataLayer.push({
+            event: 'generate_lead',
+            form_name: 'hero_notify',
+          });
+        }
+
         setTimeout(() => {
           setIsNotifyModalOpen(false);
           setSubscribeStatus(null);

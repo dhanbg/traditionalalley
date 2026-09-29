@@ -149,6 +149,23 @@ export default function OTPVerification({ email, firstName, lastName, password, 
       }
 
       setSuccess("Registration completed successfully! Redirecting to login...");
+
+      // Track Meta Pixel CompleteRegistration event
+      if (typeof window !== 'undefined' && window.fbq) {
+        window.fbq('track', 'CompleteRegistration', {
+          status: true,
+          method: 'email_otp',
+        });
+        console.log('📢 [META-PIXEL] Tracked CompleteRegistration event');
+      }
+
+      // Google Analytics / GTM sign_up event
+      if (typeof window !== 'undefined' && window.dataLayer) {
+        window.dataLayer.push({
+          event: 'sign_up',
+          method: 'email_otp',
+        });
+      }
       setTimeout(() => {
         if (onSuccess) {
           onSuccess(data.user);

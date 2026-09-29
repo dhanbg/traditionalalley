@@ -478,6 +478,8 @@ export const processServerPostPayment = async (selectedProducts: any[], user: an
                         city: address.cityName || undefined,
                         zip: address.postalCode || undefined,
                         countryCode: address.countryCode || undefined,
+                        fbp: paymentData?.fbp || undefined,
+                        fbc: paymentData?.fbc || undefined,
                     },
                     customData: {
                         currency,

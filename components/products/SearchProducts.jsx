@@ -54,6 +54,24 @@ export default function SearchProducts() {
       try {
         const results = await searchProductsWithVariants(queryParam);
         setSearchResults(results);
+
+        // Track Meta Pixel Search event
+        if (typeof window !== 'undefined' && window.fbq) {
+          window.fbq('track', 'Search', {
+            search_string: queryParam.trim(),
+            content_type: 'product',
+            content_ids: results.slice(0, 10).map((r) => r.documentId || r.id),
+          });
+          console.log('📢 [META-PIXEL] Tracked Search event for:', queryParam.trim());
+        }
+
+        // Google Analytics / GTM search event
+        if (typeof window !== 'undefined' && window.dataLayer) {
+          window.dataLayer.push({
+            event: 'search',
+            search_term: queryParam.trim(),
+          });
+        }
       } catch (error) {
         console.error("Error searching products:", error);
         setSearchResults([]);

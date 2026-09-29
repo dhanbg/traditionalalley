@@ -103,6 +103,23 @@ export default function Checkout() {
         value: totalPrice || 0,
         currency: userCurrency || 'NPR'
       });
+      // Google Analytics / GTM begin_checkout event
+      if (typeof window !== 'undefined' && window.dataLayer) {
+        window.dataLayer.push({
+          event: 'begin_checkout',
+          ecommerce: {
+            currency: userCurrency || 'NPR',
+            value: totalPrice || 0,
+            items: selectedProducts.map((p) => ({
+              item_id: p.documentId || p.id,
+              item_name: p.title || 'Product',
+              price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0,
+              quantity: p.quantity || 1,
+            })),
+          },
+        });
+      }
+
       initiatedCheckoutRef.current = true;
       console.log('📢 [META-PIXEL] Tracked InitiateCheckout event');
     }
@@ -1090,7 +1107,9 @@ export default function Checkout() {
               fullName: receiverDetails?.fullName || receiverDetails?.name || user?.name,
               city: receiverDetails?.address?.cityName,
               zip: receiverDetails?.address?.postalCode,
-              countryCode: receiverDetails?.address?.countryCode || 'NP'
+              countryCode: receiverDetails?.address?.countryCode || 'NP',
+              fbp: typeof document !== 'undefined' ? (document.cookie.match(/(^|;\s*)_fbp=([^;]*)/)?.[2] || undefined) : undefined,
+              fbc: typeof document !== 'undefined' ? (document.cookie.match(/(^|;\s*)_fbc=([^;]*)/)?.[2] || undefined) : undefined,
             },
             customData: {
               currency: 'NPR',

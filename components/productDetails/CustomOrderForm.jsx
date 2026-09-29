@@ -137,6 +137,31 @@ export default function CustomOrderForm({ isOpen, onClose, product }) {
     // Create WhatsApp URL with the message
     const whatsappUrlWithMessage = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
     
+    // Track Meta Pixel Lead & CustomOrder event
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('trackCustom', 'CustomOrderInquiry', {
+        content_name: product?.title || 'Custom Order',
+        content_ids: product?.id ? [product.id] : [],
+        customization_type: customizationType,
+        value: product?.price ? parseFloat(product.price) : 0,
+        currency: 'USD',
+      });
+      window.fbq('track', 'Lead', {
+        content_name: `Custom Order: ${product?.title || 'Bespoke'}`,
+        content_category: 'custom_order',
+      });
+      console.log('📢 [META-PIXEL] Tracked CustomOrder / Lead event');
+    }
+
+    // Google Analytics / GTM generate_lead event
+    if (typeof window !== 'undefined' && window.dataLayer) {
+      window.dataLayer.push({
+        event: 'generate_lead',
+        lead_type: 'custom_order',
+        product_name: product?.title || 'Custom Order',
+      });
+    }
+
     // Open WhatsApp in a new tab
     window.open(whatsappUrlWithMessage, '_blank');
     

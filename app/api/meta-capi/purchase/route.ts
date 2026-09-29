@@ -13,11 +13,16 @@ export async function POST(request: NextRequest) {
         const userAgent = request.headers.get('user-agent') || '';
         const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0] || request.headers.get('x-real-ip') || '';
 
+        const fbp = request.cookies.get('_fbp')?.value || userData?.fbp;
+        const fbc = request.cookies.get('_fbc')?.value || userData?.fbc;
+
         console.log('📦 [META-CAPI-PURCHASE] Received COD purchase event:', {
             eventId,
             amount: customData?.value,
             currency: customData?.currency || 'NPR',
-            itemCount: customData?.contents?.length || 0
+            itemCount: customData?.contents?.length || 0,
+            hasFbp: !!fbp,
+            hasFbc: !!fbc
         });
 
         const result = await sendMetaCapiEvent({
@@ -25,7 +30,11 @@ export async function POST(request: NextRequest) {
             eventId: eventId || `cod-${Date.now()}`,
             clientIp,
             clientUserAgent: userAgent,
-            userData: userData || {},
+            userData: {
+                ...(userData || {}),
+                fbp,
+                fbc
+            },
             customData: customData || {
                 currency: 'NPR',
                 value: 0,

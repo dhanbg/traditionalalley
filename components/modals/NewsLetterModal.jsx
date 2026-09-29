@@ -66,6 +66,23 @@ export default function NewsLetterModal() {
       if (response.ok) {
         e.target.reset(); // Reset the form
         setSuccess(true); // Set success state
+
+        // Track Meta Pixel Lead event
+        if (typeof window !== 'undefined' && window.fbq) {
+          window.fbq('track', 'Lead', {
+            content_name: 'Newsletter Signup',
+            content_category: 'popup_modal',
+          });
+          console.log('📢 [META-PIXEL] Tracked Lead event (Newsletter)');
+        }
+
+        // Google Analytics / GTM generate_lead event
+        if (typeof window !== 'undefined' && window.dataLayer) {
+          window.dataLayer.push({
+            event: 'generate_lead',
+            form_name: 'newsletter_popup',
+          });
+        }
       } else {
         setSuccess(false); // Handle unexpected responses
       }
