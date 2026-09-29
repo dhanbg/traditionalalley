@@ -39,7 +39,56 @@ const womenSchema = {
           { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://traditionalalley.com.np" },
           { "@type": "ListItem", "position": 2, "name": "Women", "item": "https://traditionalalley.com.np/women" }
         ]
+      },
+      "mainEntity": {
+        "@type": "ItemList",
+        "name": "Women's Traditional Collections",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Ethnic Corsets", "url": "https://traditionalalley.com.np/collections/corsets" },
+          { "@type": "ListItem", "position": 2, "name": "Kurtha & Tunics", "url": "https://traditionalalley.com.np/collections/kurtha" },
+          { "@type": "ListItem", "position": 3, "name": "Bridal & Party Lehenga", "url": "https://traditionalalley.com.np/collections/lehenga" },
+          { "@type": "ListItem", "position": 4, "name": "Traditional Dresses", "url": "https://traditionalalley.com.np/collections/dresses" },
+          { "@type": "ListItem", "position": 5, "name": "Graduation Dresses", "url": "https://traditionalalley.com.np/collections/graduation" }
+        ]
       }
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://traditionalalley.com.np/women#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What types of authentic Nepali women's clothing does Traditional Alley offer?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Traditional Alley offers a versatile range of authentic Nepali garments, including handwoven Dhaka corsets and crop tops, classic and modern Kurtha Suruwal sets, bridal and reception lehengas, ethnic sarees, designer gowns, and contemporary co-ord sets."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I request custom measurements or bespoke sizing for dresses and lehengas?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes! We provide made-to-measure custom tailoring for all our women's outfits. You can submit your exact bust, waist, hip, and length measurements through our Custom Order option or WhatsApp support (+977-9844594187) for a tailored bespoke fit."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How should I care for handcrafted Dhaka and velvet garments?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Because authentic Nepali Dhaka and embroidered velvet feature delicate handwoven threads and metallic zari work, we recommend professional dry cleaning. For light storage, keep garments in breathable cotton bags away from direct moisture and sunlight."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do you offer international shipping for weddings and cultural events abroad?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, we ship worldwide via DHL Express to the United States, Australia, United Kingdom, Canada, Europe, Japan, and the Middle East. Express delivery typically arrives within 12 to 15 business days with end-to-end tracking provided upon dispatch."
+          }
+        }
+      ]
     }
   ]
 };

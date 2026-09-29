@@ -39,6 +39,13 @@ const kidsSchema = {
           { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://traditionalalley.com.np" },
           { "@type": "ListItem", "position": 2, "name": "Kids", "item": "https://traditionalalley.com.np/kids" }
         ]
+      },
+      "mainEntity": {
+        "@type": "ItemList",
+        "name": "Kids Ethnic Wear Collections",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Kids Cultural & Traditional Clothing", "url": "https://traditionalalley.com.np/collections/kids" }
+        ]
       }
     }
   ]

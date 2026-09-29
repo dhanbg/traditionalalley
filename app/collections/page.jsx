@@ -19,9 +19,33 @@ export const metadata = {
   },
 };
 
+const collectionPageSchema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "CollectionPage",
+      "@id": "https://traditionalalley.com.np/collections#webpage",
+      "url": "https://traditionalalley.com.np/collections",
+      "name": "All Collections - Nepali Ethnic & Traditional Wear",
+      "description": "Browse all fashion collections at Traditional Alley. Discover authentic Nepali dresses, Dhaka clothing, bridal lehengas, kurthas, and daura suruwal.",
+      "breadcrumb": {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://traditionalalley.com.np" },
+          { "@type": "ListItem", "position": 2, "name": "Collections", "item": "https://traditionalalley.com.np/collections" }
+        ]
+      }
+    }
+  ]
+};
+
 export default function CollectionsPage() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionPageSchema) }}
+      />
       <Topbar6 bgColor="bg-main" />
       <Header1 />
       <div className="tf-page-title">

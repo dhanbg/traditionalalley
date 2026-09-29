@@ -218,6 +218,16 @@ const nextConfig = {
         destination: '/',
         permanent: true,
       },
+      {
+        source: '/women/collections/:slug',
+        destination: '/collections/:slug',
+        permanent: true,
+      },
+      {
+        source: '/men/collections/:slug',
+        destination: '/collections/:slug',
+        permanent: true,
+      },
     ];
   },
   async rewrites() {

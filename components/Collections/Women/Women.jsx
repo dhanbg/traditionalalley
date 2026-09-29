@@ -1,13 +1,14 @@
 import React from 'react'
 import Hero from '@/components/homes/CatHero'
 import Collections from './Collections'
-// Products component removed to hide "Women's Top Picks" section
+import CategoryFaq from '../Common/CategoryFaq'
 
 const Women = () => {
   return (
     <>
-    <Hero />
-    <Collections />
+      <Hero />
+      <Collections />
+      <CategoryFaq type="women" />
     </>
   )
 }

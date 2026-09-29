@@ -125,27 +125,54 @@ export default async function CollectionPage({ params }) {
     // Silently handle fallback
   }
 
-  const breadcrumbJsonLd = {
+  const collectionJsonLd = {
     "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
+    "@graph": [
       {
-        "@type": "ListItem",
-        position: 1,
-        name: "Home",
-        item: "https://traditionalalley.com.np",
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Collections",
-        item: "https://traditionalalley.com.np/collections",
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: formattedName,
-        item: `https://traditionalalley.com.np/collections/${slug}`,
+        "@type": "CollectionPage",
+        "@id": `https://traditionalalley.com.np/collections/${slug}#webpage`,
+        "url": `https://traditionalalley.com.np/collections/${slug}`,
+        "name": `${formattedName} Collection - Traditional Alley`,
+        "description": `Explore the ${formattedName} collection at Traditional Alley. Shop authentic Nepali ethnic wear, handcrafted traditional outfits, and modern cultural designs with worldwide shipping.`,
+        "isPartOf": {
+          "@id": "https://traditionalalley.com.np/#website",
+        },
+        "breadcrumb": {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://traditionalalley.com.np",
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Collections",
+              "item": "https://traditionalalley.com.np/collections",
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": formattedName,
+              "item": `https://traditionalalley.com.np/collections/${slug}`,
+            },
+          ],
+        },
+        ...(initialProducts && initialProducts.length > 0 ? {
+          "mainEntity": {
+            "@type": "ItemList",
+            "name": `${formattedName} Products`,
+            "numberOfItems": initialProducts.length,
+            "itemListElement": initialProducts.slice(0, 15).map((prod, idx) => ({
+              "@type": "ListItem",
+              "position": idx + 1,
+              "url": `https://traditionalalley.com.np/product-detail/${prod.documentId || prod.id}`,
+              "name": prod.title || `${formattedName} Item`,
+            })),
+          },
+        } : {}),
       },
     ],
   };
@@ -154,7 +181,7 @@ export default async function CollectionPage({ params }) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
       />
       <Topbar6 bgColor="bg-main" />
       <Header1 />
