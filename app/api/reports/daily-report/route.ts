@@ -3,6 +3,7 @@ import axios from 'axios';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import fs from 'fs';
 import path from 'path';
+import { auth } from '@/auth';
 
 // Helper to get Google Analytics Client if credentials exist
 function getGA4Client() {
@@ -44,6 +45,25 @@ function getGA4Client() {
 
 export async function GET(request: NextRequest) {
   try {
+    // 0. Authorization check: Only gurungvaaiii@gmail.com can access Daily Report data
+    const session = await auth();
+    const userEmail = (session?.user?.email || '').trim().toLowerCase();
+    const userRole = (session?.user as any)?.role;
+
+    if (session) {
+      if (userRole !== 'admin' || userEmail !== 'gurungvaaiii@gmail.com') {
+        return NextResponse.json(
+          { success: false, error: 'Unauthorized: Access restricted to authorized administrator' },
+          { status: 403 }
+        );
+      }
+    } else if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
 
     // Default target date is yesterday in YYYY-MM-DD format

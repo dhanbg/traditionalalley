@@ -47,6 +47,15 @@ export default auth((req) => {
       return NextResponse.redirect(new URL("/", nextUrl))
     }
 
+    // Daily Report access: Only gurungvaaiii@gmail.com can access
+    if (nextUrl.pathname.startsWith("/dashboard/daily-report")) {
+      const normalizedEmail = (userEmail || "").trim().toLowerCase()
+      if (normalizedEmail !== "gurungvaaiii@gmail.com") {
+        console.log("⛔ Daily report access restricted. Denied for:", userEmail)
+        return NextResponse.redirect(new URL("/dashboard/orders", nextUrl))
+      }
+    }
+
     console.log("✅ Admin access granted for:", userEmail)
   }
 

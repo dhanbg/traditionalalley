@@ -3,6 +3,8 @@
 import '../../../globals.css';
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { toPng } from 'html-to-image';
 
 const serifStyle = {
@@ -378,6 +380,11 @@ function ReportCardContent({ reportData, formattedDate, shortDate, isExport = fa
 
 export default function DailyReportPage() {
   const exportRef = useRef(null);
+  const router = useRouter();
+  const { data: session, status: sessionStatus } = useSession();
+
+  const userEmail = (session?.user?.email || '').trim().toLowerCase();
+  const isAuthorized = userEmail === 'gurungvaaiii@gmail.com';
 
   // Compute yesterday's date string YYYY-MM-DD
   const getYesterdayString = () => {
@@ -392,8 +399,16 @@ export default function DailyReportPage() {
   const [reportData, setReportData] = useState(null);
   const [copySuccess, setCopySuccess] = useState(false);
 
+  // Redirect unauthorized users
+  useEffect(() => {
+    if (sessionStatus !== 'loading' && session && !isAuthorized) {
+      router.replace('/dashboard/orders');
+    }
+  }, [session, sessionStatus, isAuthorized, router]);
+
   // Fetch report data whenever selectedDate changes
   useEffect(() => {
+    if (sessionStatus !== 'loading' && session && !isAuthorized) return;
     async function fetchReport() {
       setLoading(true);
       try {
@@ -409,7 +424,7 @@ export default function DailyReportPage() {
       }
     }
     fetchReport();
-  }, [selectedDate]);
+  }, [selectedDate, session, sessionStatus, isAuthorized]);
 
   // Format date for display: "September 28, 2026"
   const formattedDate = React.useMemo(() => {
@@ -484,6 +499,29 @@ Website Health:
     setCopySuccess(true);
     setTimeout(() => setCopySuccess(false), 2000);
   };
+
+  // Block unauthorized users immediately
+  if (sessionStatus !== 'loading' && session && !isAuthorized) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center p-6">
+        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 text-center max-w-md w-full">
+          <div className="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+            🔒
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-1.5">Access Restricted</h2>
+          <p className="text-sm text-gray-500 mb-5 leading-relaxed">
+            The Daily Website Report is restricted exclusively to authorized executive administrators.
+          </p>
+          <Link
+            href="/dashboard/orders"
+            className="inline-flex items-center px-4 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-semibold hover:bg-gray-800 transition"
+          >
+            ← Return to Orders
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] py-5 px-3 sm:px-6 lg:px-8">

@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 
 const navigationItems = [
   {
@@ -56,8 +57,15 @@ const navigationItems = [
   }
 ];
 
-const AdminSidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
+const AdminSidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen, canAccessDailyReport }) => {
   const pathname = usePathname();
+
+  const visibleNavItems = navigationItems.filter(item => {
+    if (item.href === '/dashboard/daily-report') {
+      return canAccessDailyReport;
+    }
+    return true;
+  });
 
   const isActive = (href) => {
     if (href === '/dashboard/orders') {
@@ -143,7 +151,7 @@ const AdminSidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
 
         {/* Navigation */}
         <nav className="flex-1 p-3 sm:p-4 space-y-1.5 overflow-y-auto overscroll-contain">
-          {navigationItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const active = isActive(item.href);
             return (
               <Link
@@ -210,9 +218,20 @@ const AdminSidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
 export default function AdminLayout({ children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { data: session } = useSession();
+
+  const userEmail = (session?.user?.email || '').trim().toLowerCase();
+  const canAccessDailyReport = userEmail === 'gurungvaaiii@gmail.com';
+
+  const visibleNavItems = navigationItems.filter(item => {
+    if (item.href === '/dashboard/daily-report') {
+      return canAccessDailyReport;
+    }
+    return true;
+  });
 
   // Find active navigation item title for mobile header
-  const currentItem = navigationItems.find(item => 
+  const currentItem = visibleNavItems.find(item => 
     pathname.startsWith(item.href) || (item.href === '/dashboard/orders' && pathname === '/dashboard')
   );
   const pageTitle = currentItem?.label || 'Order Management';
@@ -271,6 +290,7 @@ export default function AdminLayout({ children }) {
       <AdminSidebar 
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
+        canAccessDailyReport={canAccessDailyReport}
       />
 
       {/* Main Content Area */}
