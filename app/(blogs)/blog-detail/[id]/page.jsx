@@ -48,7 +48,7 @@ export async function generateMetadata({ params }) {
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: fullTitle,
       description: description.substring(0, 160),
       images: [imageUrl],
     },
@@ -70,6 +70,8 @@ export default async function page({ params }) {
     headline: blog?.title || "Traditional Alley Blog",
     description: blog?.description || blog?.desc || blog?.excerpt,
     image: [imageUrl],
+    datePublished: "2025-08-13T00:00:00Z",
+    dateModified: "2026-01-01T00:00:00Z",
     author: {
       "@type": "Person",
       name: blog?.author || "Traditional Alley",
@@ -88,11 +90,40 @@ export default async function page({ params }) {
     },
   };
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://traditionalalley.com.np",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Blog",
+        item: "https://traditionalalley.com.np/blog-list",
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: blog?.title || "Blog Post",
+        item: `https://traditionalalley.com.np/blog-detail/${id}`,
+      },
+    ],
+  };
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <Topbar6 bgColor="bg-main" />
       <Header1 />
