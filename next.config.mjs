@@ -220,6 +220,18 @@ const nextConfig = {
       },
     ];
   },
+  async rewrites() {
+    return [
+      {
+        source: '/google-shopping-feed.xml',
+        destination: '/api/google-shopping-feed',
+      },
+      {
+        source: '/google-merchant-feed.xml',
+        destination: '/api/google-shopping-feed',
+      },
+    ];
+  },
 };
 
 export default nextConfig;
