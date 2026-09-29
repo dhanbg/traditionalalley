@@ -10,9 +10,9 @@ export default function Blogs() {
     <section className="flat-spacing">
       <div className="container">
         <div className="heading-section text-center wow fadeInUp">
-          <h3 className="heading">News insight</h3>
+          <h3 className="heading">Cultural Fashion &amp; Styling Guides</h3>
           <p className="subheading text-secondary">
-            Browse our Top Trending: the hottest picks loved by all.
+            Read expert styling tips, Nepali heritage stories, and modern ethnic fashion insights.
           </p>
         </div>
         <Swiper
@@ -38,7 +38,7 @@ export default function Blogs() {
               >
                 <div className="img-style">
                   <Image
-                    alt={item.imgAlt}
+                    alt={item.imgAlt || item.title}
                     src={item.imgSrc}
                     width={606}
                     height={404}
@@ -51,7 +51,7 @@ export default function Blogs() {
                   <div className="title-box">
                     <h6 className="title">
                       <Link
-                        href={`/blog-default`}
+                        href={`/blog-detail/${item.id}`}
                         className="link text-line-clamp-2"
                       >
                         {item.title}
@@ -60,10 +60,10 @@ export default function Blogs() {
                     <p className="text-line-clamp-2 desc">{item.desc}</p>
                   </div>
                   <Link
-                    href={`/blog-default`}
+                    href={`/blog-detail/${item.id}`}
                     className="text-btn-uppercase link"
                   >
-                    readmore
+                    Read More &rarr;
                   </Link>
                 </div>
               </div>

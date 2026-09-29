@@ -1,27 +1,34 @@
+"use client";
+
 import React from "react";
-import Comments from "./Comments";
-import CommentForm from "./CommentForm";
 import Image from "next/image";
+import Link from "next/link";
+
 export default function BlogDetail1({ blog }) {
+  if (!blog) return null;
+
+  const currentUrl = typeof window !== "undefined" ? window.location.href : `https://traditionalalley.com.np/blog-detail/${blog.id}`;
+  const encodedUrl = encodeURIComponent(currentUrl);
+  const encodedTitle = encodeURIComponent(blog.title || "Traditional Alley");
+
   return (
     <div className="blog-detail-wrap">
-      <div className="image" />
       <div className="inner">
-        <div className="heading">
-          <ul className="list-tags has-bg justify-content-center">
+        <div className="heading text-center">
+          <ul className="list-tags has-bg justify-content-center mb_16">
             <li>
-              <a href="#" className="link">
-                Fashion Trends
-              </a>
+              <span className="link text-btn-uppercase">
+                {blog.category || "Nepali Fashion"}
+              </span>
             </li>
           </ul>
-          <h3 className="fw-5">{blog.title}</h3>
-          <div className="meta justify-content-center">
+          <h2 className="fw-6 mb_16">{blog.title}</h2>
+          <div className="meta justify-content-center mb_24">
             <div className="meta-item gap-8">
               <div className="icon">
                 <i className="icon-calendar" />
               </div>
-              <p className="body-text-1">February 28, 2024</p>
+              <p className="body-text-1">{blog.date || "March 2026"}</p>
             </div>
             <div className="meta-item gap-8">
               <div className="icon">
@@ -29,173 +36,150 @@ export default function BlogDetail1({ blog }) {
               </div>
               <p className="body-text-1">
                 by{" "}
-                <a className="link" href="#">
-                  Themesflat
-                </a>
+                <Link className="link fw-6" href="/about-us">
+                  {blog.author || "Traditional Alley"}
+                </Link>
               </p>
             </div>
           </div>
         </div>
-        <div className="content">
-          <p className="body-text-1 mb_12">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi
-            interdum sed mauris eu imperdiet. Donec congue orci nec mi luctus,
-            ut faucibus mauris scelerisque. Donec orci lorem, volutpat a mauris
-            nec, sodales imperdiet urna. Sed dictum enim libero. Interdum et
-            malesuada fames ac ante ipsum primis in faucibus. Maecenas ligula
-            libero, pharetra non dolor et, tempor bibendum magna. Mauris a
-            efficitur nisi.
-          </p>
-          <p className="body-text-1">
-            Praesent interdum lacus ac est viverra hendrerit. Aliquam dapibus,
-            ante vitae mattis gravida, purus sapien interdum magna, convallis
-            volutpat est turpis pulvinar dui. Aenean eu turpis est. In hac
-            habitasse platea dictumst. Integer at lobortis metus. Proin molestie
-            eget massa vel gravida. Suspendisse nec ante vel
-          </p>
-        </div>
-        <div className="group-image d-flex gap-20">
-          <div>
+
+        {blog.imgSrc && (
+          <div className="featured-image mb_32 text-center">
             <Image
-              alt=""
-              src="/images/blog/blog-details-3.jpg"
-              width={623}
-              height={468}
+              alt={blog.imgAlt || blog.title}
+              src={blog.imgSrc}
+              width={1000}
+              height={550}
+              priority
+              className="rounded-3 w-100 object-fit-cover shadow-sm"
+              style={{ maxHeight: "550px" }}
             />
           </div>
-          <div>
-            <Image
-              alt=""
-              src="/images/blog/blog-details-4.jpg"
-              width={623}
-              height={468}
-            />
-          </div>
-        </div>
+        )}
+
         <div className="content">
-          <h3 className="fw-5 mb_16">How to deal with employee quitting</h3>
-          <p className="body-text-1 mb_16">
-            Donec eu dui condimentum, laoreet nulla vitae, venenatis ipsum.
-            Donec luctus sem sit amet varius laoreet. Aliquam fermentum sit amet
-            urna fringilla tincidunt. Vestibulum ullamcorper nec lacus ac
-            molestie. Curabitur congue neque sed nisi auctor consequat.
-            Pellentesque rhoncus tortor vitae ipsum sagittis tempor.
-          </p>
-          <p className="body-text-1 mb_16">
-            Vestibulum et pharetra arcu. In porta lobortis turpis. Ut faucibus
-            fermentum posuere. Suspendisse potenti. Mauris a metus sed est
-            semper vestibulum. Mauris tortor sem, consectetur vehicula vulputate
-            id, suscipit vel leo.
-          </p>
-          <ul className="list-text type-disc mb_16">
-            <li className="body-text-1">
-              15+ years of industry experience designing, building, and
-              supporting large-scale distributed systems in production, with
-              recent experience in building large scale cloud services.
-            </li>
-            <li className="body-text-1">
-              Deep knowledge and experience with different security areas like
-              identity and access management, cryptography, network security,
-              etc.
-            </li>
-            <li className="body-text-1">
-              Experience with database systems and database internals, such as
-              query engines and optimizers are a big plus.
-            </li>
-            <li className="body-text-1">
-              Strong fundamentals in computer science skills.
-            </li>
-            <li className="body-text-1">
-              Expert-level development skills in Java or C++.
-            </li>
-            <li className="body-text-1">
-              Knowledge of industry standard security concepts and protocols
-              like SAML, SCIM, OAuth, RBAC, cryptography is a plus.
-            </li>
-            <li className="body-text-1">
-              Advanced degree in Computer Science or related degree.
-            </li>
-            <li className="body-text-1">
-              Ph.D. in the related field is a plus
-            </li>
-          </ul>
-          <p className="body-text-1 mb_16">
-            Curabitur aliquam ac arcu in mattis. Phasellus pulvinar erat at
-            aliquam hendrerit. Nam ut velit dolor. Sed fermentum tempus odio, ac
-            faucibus elit scelerisque consequat. Fusce ac malesuada elit. Nam at
-            aliquam libero, quis lacinia erat. In hac habitasse platea dictumst.
-            Suspendisse id dolor orci. Vivamus at aliquam tellus. Vestibulum a
-            augue ac purus suscipit varius non eget lectus. Nam lobortis mauris
-            luctus tristique feugiat. Nulla eleifend risus sit amet nisi
-            feugiat, id eleifend sapien malesuada. Phasellus venenatis convallis
-            mattis. Duis vel tempor eros. Mauris semper sollicitudin neque,
-            imperdiet ultrices urna maximus id.
-          </p>
+          {blog.intro && (
+            <p className="body-text-1 lead mb_20 fw-5 text-dark" style={{ fontSize: "1.15rem", lineHeight: "1.8" }}>
+              {blog.intro}
+            </p>
+          )}
+
+          {blog.isExternal && blog.externalUrl && (
+            <div className="p-3 mb_24 rounded-3 border bg-light d-flex align-items-center justify-content-between flex-wrap gap-12">
+              <div>
+                <span className="badge bg-main text-white me-2">Press Coverage</span>
+                <strong>Featured in {blog.source || "National Media"}</strong>
+              </div>
+              <a
+                href={blog.externalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="tf-btn btn-outline animate-hover-btn btn-sm"
+              >
+                Read on {blog.source || "Kathmandu Post"} &rarr;
+              </a>
+            </div>
+          )}
+
+          {Array.isArray(blog.sections) &&
+            blog.sections.map((sec, idx) => (
+              <div key={idx} className="blog-section mb_24">
+                <h4 className="fw-6 mb_12 text-main">{sec.heading}</h4>
+                <p className="body-text-1 text-secondary mb_16" style={{ fontSize: "1.05rem", lineHeight: "1.75" }}>
+                  {sec.content}
+                </p>
+                {Array.isArray(sec.bullets) && (
+                  <ul className="list-text type-disc mb_16 ps-4">
+                    {sec.bullets.map((b, bIdx) => (
+                      <li key={bIdx} className="body-text-1 mb_8 text-secondary">
+                        {b}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+
+          {blog.cta && (
+            <div className="cta-box p-4 my-4 rounded-3 text-center border bg-surface shadow-sm">
+              <h4 className="fw-6 mb_8">Looking for Authentic Nepali Fashion?</h4>
+              <p className="mb_16 text-secondary" style={{ maxWidth: "600px", margin: "0 auto 16px" }}>
+                Handcrafted by master artisans with genuine handloom fabrics and delivered express worldwide.
+              </p>
+              <Link href={blog.cta.href} className="tf-btn btn-fill animate-hover-btn">
+                {blog.cta.text}
+              </Link>
+            </div>
+          )}
         </div>
-        <div className="bot d-flex justify-content-between gap-10 flex-wrap">
-          <ul className="list-tags has-bg">
-            <li>Tag:</li>
-            <li>
-              <a href="#" className="link">
-                Fashion
-              </a>
-            </li>
-            <li>
-              <a href="#" className="link">
-                Trending
-              </a>
-            </li>
-          </ul>
-          <div className="d-flex align-items-center justify-content-between gap-16">
-            <p>Share this post:</p>
-            <ul className="tf-social-icon style-1">
+
+        <div className="bot d-flex justify-content-between align-items-center gap-16 flex-wrap mt_32 pt_20 border-top">
+          {Array.isArray(blog.tags) && blog.tags.length > 0 && (
+            <ul className="list-tags has-bg d-flex flex-wrap gap-8">
               <li>
-                <a href="#" className="social-facebook">
+                <span className="fw-6">Tags:</span>
+              </li>
+              {blog.tags.map((tag, tIdx) => (
+                <li key={tIdx}>
+                  <Link href="/blog-list" className="link">
+                    #{tag}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="d-flex align-items-center gap-12 ms-auto">
+            <span className="fw-6 text-caption-1">Share this post:</span>
+            <ul className="tf-social-icon style-1 d-flex gap-8 list-unstyled mb-0">
+              <li>
+                <a
+                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="social-facebook"
+                  title="Share on Facebook"
+                >
                   <i className="icon icon-fb" />
                 </a>
               </li>
               <li>
-                <a href="#" className="social-twiter">
+                <a
+                  href={`https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="social-twiter"
+                  title="Share on Twitter / X"
+                >
                   <i className="icon icon-x" />
                 </a>
               </li>
               <li>
-                <a href="#" className="social-pinterest">
+                <a
+                  href={`https://pinterest.com/pin/create/button/?url=${encodedUrl}&description=${encodedTitle}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="social-pinterest"
+                  title="Pin on Pinterest"
+                >
                   <i className="icon icon-pinterest" />
                 </a>
               </li>
               <li>
-                <a href="#" className="social-instagram">
-                  <i className="icon icon-instagram" />
+                <a
+                  href={`https://api.whatsapp.com/send?text=${encodedTitle}%20${encodedUrl}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="social-whatsapp"
+                  title="Share on WhatsApp"
+                >
+                  <i className="icon icon-whatsapp" />
                 </a>
               </li>
             </ul>
           </div>
         </div>
-        <div className="related-post">
-          <div className="pre w-50">
-            <div className="text-btn-uppercase">
-              <a href="#">Previous</a>
-            </div>
-            <h6 className="fw-5">
-              <a className="link" href="#">
-                How to choose the right customer
-              </a>
-            </h6>
-          </div>
-          <div className="next w-50">
-            <div className="text-btn-uppercase text-end">
-              <a href="#">Next</a>
-            </div>
-            <h6 className="fw-5 text-end">
-              <a className="link" href="#">
-                Starting your traveling blog with Vasco
-              </a>
-            </h6>
-          </div>
-        </div>
-        <Comments />
-        <CommentForm />
       </div>
     </div>
   );
