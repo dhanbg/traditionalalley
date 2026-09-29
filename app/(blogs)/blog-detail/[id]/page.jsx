@@ -62,7 +62,7 @@ export default async function page({ params }) {
 
   const imageUrl = blog?.imgSrc?.startsWith('http') 
     ? blog.imgSrc 
-    : `https://traditionalalley.com.np${blog?.imgSrc || '/logo.png'}`;
+    : `https://traditionalalley.com.np${blog?.imgSrc || '/og-image.jpg'}`;
 
   const articleJsonLd = {
     "@context": "https://schema.org",
@@ -70,18 +70,19 @@ export default async function page({ params }) {
     headline: blog?.title || "Traditional Alley Blog",
     description: blog?.description || blog?.desc || blog?.excerpt,
     image: [imageUrl],
-    datePublished: "2025-08-13T00:00:00Z",
-    dateModified: "2026-01-01T00:00:00Z",
+    datePublished: blog?.datePublished || "2026-01-01T00:00:00Z",
+    dateModified: blog?.dateModified || blog?.datePublished || "2026-03-15T00:00:00Z",
     author: {
-      "@type": "Person",
+      "@type": "Organization",
       name: blog?.author || "Traditional Alley",
+      url: "https://traditionalalley.com.np",
     },
     publisher: {
       "@type": "Organization",
       name: "Traditional Alley",
       logo: {
         "@type": "ImageObject",
-        url: "https://traditionalalley.com.np/logo.png",
+        url: "https://traditionalalley.com.np/og-image.jpg",
       },
     },
     mainEntityOfPage: {

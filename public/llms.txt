@@ -1,6 +1,7 @@
 # Traditional Alley
 
 > Traditional Alley is a premier Nepali traditional and ethnic clothing brand based in Lalitpur/Kathmandu, Nepal, delivering authentic handcrafted cultural garments worldwide.
+> Full Knowledge Base: [llms-full.txt](https://traditionalalley.com.np/llms-full.txt)
 
 ## About
 Traditional Alley offers high-quality Nepali fashion, ethnic attire, and cultural clothing combining authentic Newari, Nepali Dhaka, and Himalayan textile heritage with contemporary designs.
