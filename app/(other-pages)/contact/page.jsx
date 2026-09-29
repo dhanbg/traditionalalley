@@ -5,22 +5,22 @@ import Contact2 from "@/components/otherPages/Contact2";
 import React from "react";
 
 export const metadata = {
-  title: "Contact Us - Customer Support & Inquiries",
-  description: "Get in touch with Traditional Alley. Reach out for custom sizing inquiries, order support, and wholesale questions. Located in Lalitpur, Nepal with worldwide delivery.",
+  title: "Contact Traditional Alley Boutique Lalitpur | Authentic Nepali Clothing Store",
+  description: "Visit Traditional Alley store in Hattiban, Lalitpur, Nepal or contact us online. Nepali traditional dress, Daura Suruwal, Dhaka sets, bridal wear, custom tailoring & worldwide delivery. Call +977-9844594187.",
   alternates: {
     canonical: "/contact",
   },
   openGraph: {
-    title: "Contact Us | Traditional Alley - Customer Support & Inquiries",
-    description: "Get in touch with Traditional Alley. Reach out for custom sizing inquiries, order support, and wholesale questions.",
+    title: "Contact Traditional Alley Boutique Lalitpur | Authentic Nepali Clothing Store",
+    description: "Visit Traditional Alley store in Hattiban, Lalitpur, Nepal. Authentic Nepali traditional dresses, Dhaka clothing, custom tailoring, and worldwide shipping.",
     url: "https://traditionalalley.com.np/contact",
     siteName: "Traditional Alley",
-    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Traditional Alley" }],
+    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Traditional Alley Store Lalitpur" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Contact Us | Traditional Alley - Customer Support & Inquiries",
-    description: "Get in touch with Traditional Alley. Reach out for custom sizing inquiries, order support, and wholesale questions.",
+    title: "Contact Traditional Alley Boutique Lalitpur | Authentic Nepali Clothing Store",
+    description: "Visit Traditional Alley store in Hattiban, Lalitpur, Nepal. Authentic Nepali traditional dresses, Dhaka clothing, custom tailoring, and worldwide shipping.",
     images: ["/logo.png"],
   },
 };
@@ -30,13 +30,35 @@ const contactJsonLd = {
   "@type": "ContactPage",
   "@id": "https://traditionalalley.com.np/contact#webpage",
   url: "https://traditionalalley.com.np/contact",
-  name: "Contact Traditional Alley",
-  description: "Customer support, order inquiries, and wholesale questions for Traditional Alley.",
+  name: "Contact Traditional Alley Boutique",
+  description: "Store location, customer support, and order inquiries for Traditional Alley in Lalitpur, Nepal.",
   mainEntity: {
-    "@type": "LocalBusiness",
+    "@type": "ClothingStore",
+    "@id": "https://traditionalalley.com.np/#organization",
     name: "Traditional Alley",
+    image: "https://traditionalalley.com.np/logo.png",
     telephone: "+977-9844594187",
     email: "contact@traditionalalley.com.np",
+    priceRange: "$$",
+    currenciesAccepted: "NPR, USD",
+    paymentAccepted: "Cash, Credit Card, Debit Card, eSewa, Khalti, Bank Transfer, Visa, MasterCard",
+    hasMap: "https://www.google.com/maps?cid=3047248882064954290",
+    openingHoursSpecification: [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday"
+        ],
+        "opens": "10:00",
+        "closes": "19:00"
+      }
+    ],
     address: {
       "@type": "PostalAddress",
       streetAddress: "Hattiban",
@@ -50,6 +72,7 @@ const contactJsonLd = {
       latitude: 27.6466158,
       longitude: 85.3316533,
     },
+    areaServed: ["Lalitpur", "Kathmandu", "Bhaktapur", "Nepal", "United States", "Australia", "United Kingdom", "Canada"],
   },
   breadcrumb: {
     "@type": "BreadcrumbList",

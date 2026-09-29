@@ -496,6 +496,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
                   imgHover={currentProduct.imgHover}
                   gallery={currentProduct.gallery}
                   slideItems={slideItems}
+                  productTitle={currentProduct?.title}
                 />
               </div>
             </div>

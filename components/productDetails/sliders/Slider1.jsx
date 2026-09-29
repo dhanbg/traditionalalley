@@ -18,6 +18,7 @@ export default function Slider1({
   slideItems = slides,
   thumbSlidePerView = 6,
   thumbSlidePerViewOnMobile = 6,
+  productTitle = "",
 }) {
   // Use gallery if provided, or fallback to slideItems
   const useGallery = gallery && gallery.length > 0;
@@ -77,7 +78,7 @@ export default function Slider1({
             id: idx + 2, // Start from 2 to leave room for main image and hover image
             src: mainUrl, // Full size for main slider
             thumbnailSrc: thumbnailUrl, // Thumbnail for thumbnail slider
-            alt: `Gallery image ${idx + 1}`,
+            alt: productTitle ? `${productTitle} - Angle Detail ${idx + 1}` : `Gallery image ${idx + 1}`,
             color: activeColor,
             width: 600,
             height: 800
@@ -90,7 +91,7 @@ export default function Slider1({
           id: 0,
           src: firstItem,
           thumbnailSrc: generateThumbnailUrl(firstItem), // Generate thumbnail for main product
-          alt: "Main product image",
+          alt: productTitle ? `${productTitle} - Authentic Nepali Traditional Fashion` : "Main product image",
           color: activeColor,
           width: 600,
           height: 800
@@ -101,7 +102,7 @@ export default function Slider1({
           id: 1,
           src: imgHover,
           thumbnailSrc: generateThumbnailUrl(imgHover), // Generate thumbnail for hover image
-          alt: "Product hover image",
+          alt: productTitle ? `${productTitle} - Back Angle View` : "Product hover image",
           color: activeColor,
           width: 600,
           height: 800
@@ -118,7 +119,7 @@ export default function Slider1({
           id: 0,
           src: firstItem,
           thumbnailSrc: generateThumbnailUrl(firstItem),
-          alt: "Main product image",
+          alt: productTitle ? `${productTitle} - Authentic Nepali Traditional Fashion` : "Main product image",
           color: activeColor,
           width: 600,
           height: 800
@@ -129,7 +130,7 @@ export default function Slider1({
           id: 1,
           src: imgHover,
           thumbnailSrc: generateThumbnailUrl(imgHover),
-          alt: "Product hover image",
+          alt: productTitle ? `${productTitle} - Back Angle View` : "Product hover image",
           color: activeColor,
           width: 600,
           height: 800
@@ -137,7 +138,7 @@ export default function Slider1({
       }
     }
     setItems(newItems);
-  }, [useGallery, gallery, slideItems, firstItem, imgHover]);
+  }, [useGallery, gallery, slideItems, firstItem, imgHover, productTitle]);
   
   // --- NEW: Reset Swiper to first slide on items/color change (mobile fix) ---
   useEffect(() => {
@@ -311,7 +312,7 @@ export default function Slider1({
             >
               <Image
                 className="lazyload"
-                alt={slide.alt || "Product Thumbnail"}
+                alt={slide.alt || (productTitle ? `${productTitle} - Thumbnail` : "Authentic Nepali Traditional Fashion Thumbnail")}
                 src={slide.thumbnailSrc || '/logo.png'}
                 width={slide.width ? slide.width * 0.6 : 80}
                 height={slide.height ? slide.height * 0.6 : 100}
@@ -356,7 +357,7 @@ export default function Slider1({
             >
               <Image
                 className="lazyload drift-zoom-target"
-                alt={slide.alt || "Product Main Image"}
+                alt={slide.alt || (productTitle ? `${productTitle} - Authentic Nepali Traditional Clothing` : "Authentic Nepali Traditional Clothing")}
                 src={slide.src || '/logo.png'}
                 width={600}
                 height={800}

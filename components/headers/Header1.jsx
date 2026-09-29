@@ -83,7 +83,7 @@ export default function Header1({ fullWidth = false }) {
                 src="/logo.png"
                 width={180}
                 height={48}
-                alt="Logo"
+                alt="Traditional Alley - Authentic Nepali Traditional Clothing & Modern Fashion"
                 priority
                 style={{
                   width: '180px',

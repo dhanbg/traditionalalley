@@ -1,7 +1,7 @@
 export const teamMembers = [
   {
     imgSrc: "/images/team/team-1.jpg",
-    alt: "image-team",
+    alt: "Renu Shrestha - Founder of Traditional Alley",
     name: "Renu Shrestha",
     position: "Founder",
     wowDelay: "0s",
@@ -9,7 +9,7 @@ export const teamMembers = [
   },
   {
     imgSrc: "/images/team/team-2.jpg",
-    alt: "image-team",
+    alt: "Aman KC - CEO of Traditional Alley",
     name: "Aman KC",
     position: "CEO",
     wowDelay: "0.1s",
@@ -17,7 +17,7 @@ export const teamMembers = [
   },
   {
     imgSrc: "/images/team/team-3.jpg",
-    alt: "image-team",
+    alt: "Anshu KC - Manager at Traditional Alley",
     name: "Anshu KC",
     position: "Manager",
     wowDelay: "0.2s",
@@ -25,7 +25,7 @@ export const teamMembers = [
   },
   {
     imgSrc: "/images/team/team-4.jpg",
-    alt: "image-team",
+    alt: "Rohit Gurung - IT Manager at Traditional Alley",
     name: "Rohit Gurung",
     position: "IT Manager",
     wowDelay: "0.3s",

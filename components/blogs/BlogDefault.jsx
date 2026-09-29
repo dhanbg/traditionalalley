@@ -18,7 +18,7 @@ export default function BlogDefault() {
                   <div className="image">
                     <Image
                       className="lazyload"
-                      alt=""
+                      alt={post.title || "Traditional Alley Cultural Fashion Article"}
                       src={post.imgSrc}
                       width={1275}
                       height={717}

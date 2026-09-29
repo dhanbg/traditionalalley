@@ -7,7 +7,7 @@ export const socialLinks = [
 
 export const footerLinks = [
   {
-    heading: "Infomation",
+    heading: "Information",
     items: [
       { label: "About Us", href: "/about-us", isLink: true },
       { label: "Our Stories", href: "#", isLink: false },

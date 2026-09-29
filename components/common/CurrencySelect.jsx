@@ -59,7 +59,7 @@ export default function CurrencySelect({ topStart = false, light = false }) {
                 src={selected.thumbnail}
                 width="640"
                 height="480"
-                alt="image"
+                alt={selected.text ? `${selected.text} currency flag` : "Currency option"}
               />
               {selected.text}
             </div>
@@ -100,7 +100,7 @@ export default function CurrencySelect({ topStart = false, light = false }) {
                       src={elm.thumbnail}
                       width="640"
                       height="480"
-                      alt="image"
+                      alt={elm.text ? `${elm.text} currency flag` : "Currency option"}
                     />
                     {elm.text}
                   </span>

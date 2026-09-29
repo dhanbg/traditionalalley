@@ -48,7 +48,7 @@ export default function RelatedBlogs() {
                     <div className="image">
                       <Image
                         className="lazyload"
-                        alt=""
+                        alt={post.title || "Traditional Alley Blog Post"}
                         src={post.imgSrc}
                         width={615}
                         height={461}

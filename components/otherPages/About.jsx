@@ -12,7 +12,7 @@ export default function About() {
               <Image
                 className="lazyload"
                 data-src="/images/banner/about-us.jpg"
-                alt="image-team"
+                alt="Traditional Alley Artisans - Handcrafted Nepali Traditional Fashion Heritage"
                 src="/images/banner/about-us.jpg"
                 width={930}
                 height={618}

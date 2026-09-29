@@ -38,6 +38,35 @@ const jsonLdGlobal = {
       "telephone": "+977-9844594187",
       "email": "contact@traditionalalley.com.np",
       "priceRange": "$$",
+      "currenciesAccepted": "NPR, USD",
+      "paymentAccepted": "Cash, Credit Card, Debit Card, eSewa, Khalti, Bank Transfer, Visa, MasterCard",
+      "hasMap": "https://www.google.com/maps?cid=3047248882064954290",
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday"
+          ],
+          "opens": "10:00",
+          "closes": "19:00"
+        }
+      ],
+      "areaServed": [
+        { "@type": "City", "name": "Lalitpur" },
+        { "@type": "City", "name": "Kathmandu" },
+        { "@type": "City", "name": "Bhaktapur" },
+        { "@type": "Country", "name": "Nepal" },
+        { "@type": "Country", "name": "United States" },
+        { "@type": "Country", "name": "Australia" },
+        { "@type": "Country", "name": "United Kingdom" },
+        { "@type": "Country", "name": "Canada" }
+      ],
       "logo": {
         "@type": "ImageObject",
         "url": "https://traditionalalley.com.np/logo.png",

@@ -31,6 +31,25 @@ export const metadata = {
     telephone: false,
   },
   metadataBase: new URL('https://traditionalalley.com.np'),
+  alternates: {
+    canonical: 'https://traditionalalley.com.np',
+    languages: {
+      'en': 'https://traditionalalley.com.np',
+      'ne': 'https://traditionalalley.com.np',
+      'en-NP': 'https://traditionalalley.com.np',
+      'en-US': 'https://traditionalalley.com.np',
+      'en-GB': 'https://traditionalalley.com.np',
+      'en-AU': 'https://traditionalalley.com.np',
+      'en-CA': 'https://traditionalalley.com.np',
+      'x-default': 'https://traditionalalley.com.np',
+    },
+  },
+  other: {
+    'geo.region': 'NP-BA',
+    'geo.placename': 'Lalitpur',
+    'geo.position': '27.646616;85.331653',
+    'ICBM': '27.646616, 85.331653',
+  },
   icons: {
     icon: [
       { url: '/favicon.ico?v=2' },

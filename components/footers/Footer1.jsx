@@ -91,7 +91,7 @@ export default function Footer1({
                     <div className="footer-logo">
                       <Link href={`/`} className="logo-header">
                         <Image
-                          alt=""
+                          alt="Traditional Alley - Authentic Nepali Traditional Clothing"
                           src={
                             dark
                               ? "/images/logo/logo-white.svg"
@@ -104,24 +104,26 @@ export default function Footer1({
                     </div>
                     <div className="footer-address">
                       <p>44700 Hattiban, Lalitpur, Bagmati, Nepal</p>
-                      <Link
-                        href={`/contact`}
+                      <a
+                        href="https://www.google.com/maps/dir/?api=1&destination=27.6466158,85.3316533"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className={`tf-btn-default fw-6 ${
                           dark ? "style-white" : ""
                         } `}
                       >
                         GET DIRECTION
                         <i className="icon-arrowUpRight" />
-                      </Link>
+                      </a>
                     </div>
                     <ul className="footer-info">
                       <li>
                         <i className="icon-mail" />
-                        <p>contact@traditionalalley.com.np</p>
+                        <a href="mailto:contact@traditionalalley.com.np" className="text-secondary">contact@traditionalalley.com.np</a>
                       </li>
                       <li>
                         <i className="icon-phone" />
-                        <p>9844594187</p>
+                        <a href="tel:+9779844594187" className="text-secondary">+977 9844594187</a>
                       </li>
                     </ul>
                     <ul
@@ -277,7 +279,7 @@ export default function Footer1({
                       <ul>
                         <li>
                           <Image
-                            alt=""
+                            alt="Accepted digital payment methods: eSewa, Khalti, online bank transfer"
                             src="/images/payment/img-1.png"
                             width={100}
                             height={64}
@@ -285,7 +287,7 @@ export default function Footer1({
                         </li>
                         <li>
                           <Image
-                            alt=""
+                            alt="Accepted card payment methods: Visa, Mastercard, Cash on Delivery"
                             src="/images/payment/img-2.png"
                             width={100}
                             height={64}

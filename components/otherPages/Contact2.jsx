@@ -131,11 +131,15 @@ export default function Contact2() {
             <h4>Information</h4>
             <div className="mb_20">
               <div className="text-title mb_8">Phone:</div>
-              <p className="text-secondary">9810333750</p>
+              <p className="text-secondary">
+                <a href="tel:+9779844594187" className="text-secondary">+977 9844594187</a>
+              </p>
             </div>
             <div className="mb_20">
               <div className="text-title mb_8">Email:</div>
-              <p className="text-secondary">contact@traditionalalley.com.np</p>
+              <p className="text-secondary">
+                <a href="mailto:contact@traditionalalley.com.np" className="text-secondary">contact@traditionalalley.com.np</a>
+              </p>
             </div>
             <div className="mb_20">
               <div className="text-title mb_8">Address:</div>
@@ -146,8 +150,7 @@ export default function Contact2() {
             <div>
               <div className="text-title mb_8">Open Time:</div>
               <p className="mb_4 open-time">
-                <span className="text-secondary">Sun - Fri:</span> 11:00am -
-                6:00pm PST
+                <span className="text-secondary">Mon - Sun:</span> 10:00am - 7:00pm NPT
               </p>
             </div>
           </div>
