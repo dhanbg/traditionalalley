@@ -63,7 +63,10 @@ export async function generateMetadata({ params }) {
         
         const imageUrl = product.imgSrc?.url 
           ? (product.imgSrc.url.startsWith('http') ? product.imgSrc.url : `${API_URL}${product.imgSrc.url}`)
-          : 'https://traditionalalley.com.np/logo.png';
+          : 'https://traditionalalley.com.np/og-image.jpg';
+
+        const price = product.price != null ? String(product.price) : undefined;
+        const availability = product.inStock !== false ? 'instock' : 'oos';
         
         return {
           title,
@@ -80,8 +83,8 @@ export async function generateMetadata({ params }) {
             images: [
               {
                 url: imageUrl,
-                width: 800,
-                height: 600,
+                width: 1000,
+                height: 1000,
                 alt: product.title,
               },
             ],
@@ -91,6 +94,17 @@ export async function generateMetadata({ params }) {
             title: `${title} | Traditional Alley`,
             description,
             images: [imageUrl],
+          },
+          other: {
+            ...(price ? {
+              'product:price:amount': price,
+              'product:price:currency': 'NPR',
+              'og:price:amount': price,
+              'og:price:currency': 'NPR',
+            } : {}),
+            'product:availability': availability,
+            'product:condition': 'new',
+            'product:brand': 'Traditional Alley',
           },
         };
       }
@@ -105,6 +119,11 @@ export async function generateMetadata({ params }) {
     description: "Traditional Alley - Premium quality traditional and modern fashion.",
     alternates: {
       canonical: canonicalUrl,
+    },
+    openGraph: {
+      title: "Product Detail | Traditional Alley",
+      description: "Traditional Alley - Premium quality traditional and modern fashion.",
+      images: ['/og-image.jpg'],
     },
   };
 }

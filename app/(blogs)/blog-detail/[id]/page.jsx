@@ -23,7 +23,7 @@ export async function generateMetadata({ params }) {
   const description = blog.description || blog.desc || blog.excerpt || "Read stories about Nepali fashion, culture, and traditional attire from Traditional Alley.";
   const imageUrl = blog.imgSrc?.startsWith('http') 
     ? blog.imgSrc 
-    : `https://traditionalalley.com.np${blog.imgSrc || '/logo.png'}`;
+    : `https://traditionalalley.com.np${blog.imgSrc || '/og-image.jpg'}`;
 
   return {
     title: blogTitle,

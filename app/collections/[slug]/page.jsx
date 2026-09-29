@@ -62,7 +62,7 @@ export async function generateMetadata({ params }) {
   const fullTitle = `${collectionTitle} | Traditional Alley`;
   const description = `Explore the ${formattedName} collection at Traditional Alley. Shop authentic Nepali ethnic wear, handcrafted traditional outfits, and modern cultural designs with worldwide shipping.`;
 
-  let collectionImageUrl = 'https://traditionalalley.com.np/logo.png';
+  let collectionImageUrl = 'https://traditionalalley.com.np/og-image.jpg';
   try {
     const collectionRes = await fetchDataFromApi(`/api/collections?filters[slug][$eq]=${slug}&populate=image`);
     const collData = collectionRes?.data?.find(c => c.slug === slug) || collectionRes?.data?.[0];

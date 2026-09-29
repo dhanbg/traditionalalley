@@ -553,7 +553,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
                       {/* Laptop / Desktop Image */}
                       <Image
-                        alt={slide.alt || "Hero Laptop"}
+                        alt={slide.alt || "Traditional Alley - Authentic Nepali Ethnic Wear and Traditional Fashion"}
                         src={slide.imgSrc || "https://www.image2url.com/r2/default/images/1784894579658-80104e75-d617-4a30-919d-51cc8ec04b13.jpg"}
                         width={1920}
                         height={803}
@@ -574,7 +574,7 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                       />
                       {/* Mobile Image */}
                       <Image
-                        alt={slide.alt || "Hero Mobile"}
+                        alt={slide.alt || "Traditional Alley - Handcrafted Nepali Cultural Clothing"}
                         src={slide.mobileMedia?.url || "https://www.image2url.com/r2/default/images/1784894592927-1225a295-9c8e-416b-9fad-fd6954d7869e.jpg"}
                         width={768}
                         height={1024}

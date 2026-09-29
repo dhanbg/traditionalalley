@@ -17,13 +17,13 @@ export const metadata = {
     description: "Read stories, styling guides, Nepali cultural heritage insights, and traditional fashion trends from Traditional Alley.",
     url: "https://traditionalalley.com.np/blog-list",
     siteName: "Traditional Alley",
-    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Traditional Alley Blog" }],
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630, type: "image/jpeg", alt: "Traditional Alley Blog" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Fashion, Culture & Heritage Blog | Traditional Alley",
     description: "Read stories, styling guides, Nepali cultural heritage insights, and traditional fashion trends from Traditional Alley.",
-    images: ["/logo.png"],
+    images: ["/og-image.jpg"],
   },
 };
 

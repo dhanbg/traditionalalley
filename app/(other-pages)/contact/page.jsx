@@ -15,13 +15,13 @@ export const metadata = {
     description: "Visit Traditional Alley store in Hattiban, Lalitpur, Nepal. Authentic Nepali traditional dresses, Dhaka clothing, custom tailoring, and worldwide shipping.",
     url: "https://traditionalalley.com.np/contact",
     siteName: "Traditional Alley",
-    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Traditional Alley Store Lalitpur" }],
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630, type: "image/jpeg", alt: "Traditional Alley Store Lalitpur" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Contact Traditional Alley Boutique Lalitpur | Authentic Nepali Clothing Store",
     description: "Visit Traditional Alley store in Hattiban, Lalitpur, Nepal. Authentic Nepali traditional dresses, Dhaka clothing, custom tailoring, and worldwide shipping.",
-    images: ["/logo.png"],
+    images: ["/og-image.jpg"],
   },
 };
 

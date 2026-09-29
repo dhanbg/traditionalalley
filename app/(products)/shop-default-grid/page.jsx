@@ -15,7 +15,13 @@ export const metadata = {
     description: "Browse our complete catalog of authentic Nepali dresses, Dhaka tops, Kurthas, bridal lehengas, and Daura Suruwal.",
     url: "https://traditionalalley.com.np/shop-default-grid",
     siteName: "Traditional Alley",
-    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Traditional Alley Storefront" }],
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630, type: "image/jpeg", alt: "Traditional Alley Storefront" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Shop All Authentic Nepali Clothing & Ethnic Wear | Traditional Alley",
+    description: "Browse our complete catalog of authentic Nepali dresses, Dhaka tops, Kurthas, bridal lehengas, and Daura Suruwal.",
+    images: ["/og-image.jpg"],
   },
 };
 

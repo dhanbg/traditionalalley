@@ -14,13 +14,13 @@ export const metadata = {
     description: "Discover our exclusive women's fashion collection featuring authentic Nepali traditional clothing, lehengas, kurthas, sarees, and modern ethnic outfits.",
     url: "https://traditionalalley.com.np/women",
     siteName: "Traditional Alley",
-    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Traditional Alley Women Collection" }],
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630, type: "image/jpeg", alt: "Traditional Alley Women Collection" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Women's Ethnic & Traditional Fashion Collection | Traditional Alley",
     description: "Discover our exclusive women's fashion collection featuring authentic Nepali traditional clothing, lehengas, kurthas, sarees, and modern ethnic outfits.",
-    images: ["/logo.png"],
+    images: ["/og-image.jpg"],
   },
 };
 

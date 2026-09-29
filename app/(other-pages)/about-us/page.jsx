@@ -18,13 +18,13 @@ export const metadata = {
     description: "Learn about Traditional Alley, Nepal's premier traditional clothing brand. Discover our heritage, craftsmanship, and commitment to authentic Nepali fashion.",
     url: "https://traditionalalley.com.np/about-us",
     siteName: "Traditional Alley",
-    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Traditional Alley" }],
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630, type: "image/jpeg", alt: "Traditional Alley" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "About Us | Traditional Alley - Authentic Nepali Ethnic Wear",
     description: "Learn about Traditional Alley, Nepal's premier traditional clothing brand. Discover our heritage, craftsmanship, and commitment to authentic Nepali fashion.",
-    images: ["/logo.png"],
+    images: ["/og-image.jpg"],
   },
 };
 

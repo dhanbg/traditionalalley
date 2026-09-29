@@ -123,9 +123,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${bodoniModa.variable} ${outfit.variable}`} suppressHydrationWarning={true}>
       <head>
-        {/* Preconnect to image CDN for faster image rendering & Google Image indexing */}
+        {/* Preconnect to critical domains for faster asset & script handshake */}
         <link rel="preconnect" href="https://admin.traditionalalley.com.np" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://admin.traditionalalley.com.np" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <link rel="preconnect" href="https://connect.facebook.net" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://connect.facebook.net" />
 
         {/* Global Structured Data (Organization & WebSite) */}
         <script

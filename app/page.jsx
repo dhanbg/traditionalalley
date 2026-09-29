@@ -23,10 +23,11 @@ export const metadata = {
     siteName: 'Traditional Alley',
     images: [
       {
-        url: '/logo.png',
+        url: '/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'Traditional Alley - Authentic Nepali Fashion',
+        type: 'image/jpeg',
+        alt: 'Traditional Alley - Authentic Nepali Fashion & Cultural Attire',
       },
     ],
     type: 'website',
@@ -37,7 +38,7 @@ export const metadata = {
     creator: '@_traditional_alley',
     title: 'Traditional Alley - Authentic Nepali Fashion & Traditional Clothing',
     description: 'Discover authentic Nepali traditional clothing and modern fashion at Traditional Alley. Shop premium quality ethnic wear, traditional dresses, and contemporary styles.',
-    images: ['/logo.png'],
+    images: ['/og-image.jpg'],
   },
 };
 
