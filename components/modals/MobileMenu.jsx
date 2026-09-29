@@ -4,12 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut, signIn } from "next-auth/react";
 import { fetchCollectionsCached } from "@/utils/api";
+import { defaultNavigationCollections } from "@/data/defaultCollections";
 
 const MobileMenu = React.memo(function MobileMenu() {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const [collections, setCollections] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Initialize with default collections so Googlebot Smartphone discovers internal links in SSR HTML
+  const [collections, setCollections] = useState(defaultNavigationCollections);
+  const [loading, setLoading] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({});
 
   // Fetch collections from backend (deduplicated & cached in memory)
@@ -17,11 +19,11 @@ const MobileMenu = React.memo(function MobileMenu() {
     const fetchCollections = async () => {
       try {
         const data = await fetchCollectionsCached();
-        setCollections(data.data || []);
+        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+          setCollections(data.data);
+        }
       } catch (error) {
         console.error('Error fetching collections:', error);
-      } finally {
-        setLoading(false);
       }
     };
 

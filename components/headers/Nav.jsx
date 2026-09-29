@@ -4,24 +4,26 @@ import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
 import { fetchCollectionsCached } from "@/utils/api";
+import { defaultNavigationCollections } from "@/data/defaultCollections";
 
 export default function Nav() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const [collections, setCollections] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Initialize with default collections so Googlebot receives crawlable internal links in SSR HTML
+  const [collections, setCollections] = useState(defaultNavigationCollections);
+  const [loading, setLoading] = useState(false);
 
   // Fetch collections from backend (deduplicated & cached in memory)
   useEffect(() => {
     const fetchCollections = async () => {
       try {
         const data = await fetchCollectionsCached();
-        setCollections(data.data || []);
+        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+          setCollections(data.data);
+        }
       } catch (error) {
         console.error('Error fetching collections:', error);
-      } finally {
-        setLoading(false);
       }
     };
 

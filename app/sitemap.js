@@ -10,13 +10,13 @@ export default async function sitemap() {
 
   // 1. Core Static Storefront Pages
   const staticRoutes = [
-    { route: '', priority: 1.0, changeFrequency: 'daily', images: [`${baseUrl}/logo.png`] },
+    { route: '', priority: 1.0, changeFrequency: 'daily', images: [`${baseUrl}/og-image.jpg`] },
     { route: '/collections', priority: 0.9, changeFrequency: 'daily' },
     { route: '/women', priority: 0.9, changeFrequency: 'daily' },
     { route: '/men', priority: 0.9, changeFrequency: 'daily' },
     { route: '/kids', priority: 0.9, changeFrequency: 'daily' },
     { route: '/shop-default-grid', priority: 0.8, changeFrequency: 'daily' },
-    { route: '/about-us', priority: 0.7, changeFrequency: 'monthly', images: [`${baseUrl}/logo.png`] },
+    { route: '/about-us', priority: 0.7, changeFrequency: 'monthly', images: [`${baseUrl}/og-image.jpg`] },
     { route: '/contact', priority: 0.7, changeFrequency: 'monthly' },
     { route: '/FAQs', priority: 0.6, changeFrequency: 'monthly' },
     { route: '/privacy-policy', priority: 0.5, changeFrequency: 'yearly' },
@@ -92,7 +92,7 @@ export default async function sitemap() {
     .map((b) => {
       const bImg = b?.imgSrc?.startsWith('http')
         ? b.imgSrc
-        : `${baseUrl}${b?.imgSrc || '/logo.png'}`;
+        : `${baseUrl}${b?.imgSrc || '/og-image.jpg'}`;
 
       return {
         url: `${baseUrl}/blog-detail/${b.id}`,
