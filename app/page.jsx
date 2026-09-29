@@ -69,14 +69,77 @@ export default async function Page() {
     : null;
   const initialInstagramPosts = [];
 
+  const homeCollectionsJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Popular Ethnic Fashion Collections',
+    description: 'Explore popular Nepali traditional clothing collections at Traditional Alley',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: "Women's Ethnic Wear",
+        url: 'https://traditionalalley.com.np/women',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: "Men's Traditional Attire & Daura Suruwal",
+        url: 'https://traditionalalley.com.np/men',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: "Kids' Cultural Clothing",
+        url: 'https://traditionalalley.com.np/kids',
+      },
+      {
+        '@type': 'ListItem',
+        position: 4,
+        name: 'Kurtha & Tunics Collection',
+        url: 'https://traditionalalley.com.np/collections/kurtha',
+      },
+      {
+        '@type': 'ListItem',
+        position: 5,
+        name: 'Nepali Dhaka Collection',
+        url: 'https://traditionalalley.com.np/collections/nepalidhaka',
+      },
+      {
+        '@type': 'ListItem',
+        position: 6,
+        name: 'Bridal & Party Lehenga',
+        url: 'https://traditionalalley.com.np/collections/lehenga',
+      },
+      {
+        '@type': 'ListItem',
+        position: 7,
+        name: 'Ethnic Corsets',
+        url: 'https://traditionalalley.com.np/collections/corsets',
+      },
+      {
+        '@type': 'ListItem',
+        position: 8,
+        name: 'Traditional Saree Sets',
+        url: 'https://traditionalalley.com.np/collections/sareesets',
+      },
+    ],
+  };
+
   return (
-    <HomePage
-      initialHeroSlidesRaw={initialHeroSlidesRaw}
-      initialOfferData={initialOfferData}
-      initialTopPicks={initialTopPicks}
-      initialTopPicksMeta={initialTopPicksMeta}
-      initialInstagramPosts={initialInstagramPosts}
-      isMobileInitial={isMobileInitial}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(homeCollectionsJsonLd) }}
+      />
+      <HomePage
+        initialHeroSlidesRaw={initialHeroSlidesRaw}
+        initialOfferData={initialOfferData}
+        initialTopPicks={initialTopPicks}
+        initialTopPicksMeta={initialTopPicksMeta}
+        initialInstagramPosts={initialInstagramPosts}
+        isMobileInitial={isMobileInitial}
+      />
+    </>
   );
 }
