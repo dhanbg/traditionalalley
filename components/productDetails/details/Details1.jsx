@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Slider1 from "../sliders/Slider1";
 import ColorSelect from "@/components/productDetails/ColorSelect";
 import ColorVariantSelect from "@/components/productDetails/ColorVariantSelect";
@@ -205,6 +205,7 @@ export default function Details1({ product, variants = [], preferredVariantId = 
     cartProducts,
     updateQuantity,
     user,
+    userCurrency,
   } = useContextElement();
 
   useEffect(() => {
@@ -219,6 +220,57 @@ export default function Details1({ product, variants = [], preferredVariantId = 
     }
     getReviewCount();
   }, [product?.documentId]);
+
+  // Track Meta Pixel ViewContent event
+  const trackedViewIdRef = useRef(null);
+
+  useEffect(() => {
+    const currentId = activeVariant?.documentId || safeProduct?.documentId || safeProduct?.id;
+    if (typeof window !== 'undefined' && currentId && trackedViewIdRef.current !== currentId) {
+      const priceVal = parseFloat(activeVariant?.price || safeProduct?.price) || 0;
+      const titleVal = activeVariant?.title || safeProduct?.title || 'Product';
+
+      // Meta Pixel ViewContent
+      if (window.fbq) {
+        window.fbq('track', 'ViewContent', {
+          content_name: titleVal,
+          content_ids: [currentId],
+          content_type: 'product',
+          value: priceVal,
+          currency: userCurrency || 'NPR',
+        });
+        console.log('📢 [META-PIXEL] Tracked ViewContent event for:', titleVal, `(${currentId})`);
+      }
+
+      // Google Analytics / GTM view_item
+      if (window.dataLayer) {
+        window.dataLayer.push({
+          event: 'view_item',
+          ecommerce: {
+            currency: userCurrency || 'NPR',
+            value: priceVal,
+            items: [{
+              item_id: currentId,
+              item_name: titleVal,
+              price: priceVal,
+              quantity: 1,
+            }],
+          },
+        });
+      }
+
+      trackedViewIdRef.current = currentId;
+    }
+  }, [
+    activeVariant?.documentId,
+    activeVariant?.price,
+    activeVariant?.title,
+    safeProduct?.documentId,
+    safeProduct?.id,
+    safeProduct?.price,
+    safeProduct?.title,
+    userCurrency,
+  ]);
 
   useEffect(() => {
     if (safeProduct.colors && safeProduct.colors.length > 0) {

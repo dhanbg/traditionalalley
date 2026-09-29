@@ -32,7 +32,7 @@ function hashName(fullName: string | undefined | null): { fn: string | null; ln:
 }
 
 interface MetaCapiEventOptions {
-    eventName: 'Purchase' | 'InitiateCheckout' | 'AddToCart' | 'PageView';
+    eventName: 'Purchase' | 'InitiateCheckout' | 'AddToCart' | 'PageView' | 'ViewContent';
     eventId?: string;
     clientIp?: string;
     clientUserAgent?: string;

@@ -256,7 +256,7 @@ const OverviewCards = ({ tabId, dateFilter }) => {
 
 
       {/* Key Metrics Cards with enhanced animations */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
         {[
           { 
             title: 'Total Revenue', 
@@ -289,31 +289,28 @@ const OverviewCards = ({ tabId, dateFilter }) => {
         ].map((metric, index) => (
           <div 
             key={metric.title}
-            className="group bg-white p-4 lg:p-6 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] border border-gray-100 hover:border-gray-200"
+            className="group bg-white p-3 sm:p-4 lg:p-6 rounded-xl shadow-xs hover:shadow-md transition-all duration-300 border border-gray-200/80 relative overflow-hidden"
             style={{ 
-              animationDelay: `${index * 100}ms`,
-              animation: 'slideInUp 0.6s ease-out forwards'
+              animationDelay: `${index * 80}ms`,
+              animation: 'slideInUp 0.5s ease-out forwards'
             }}
           >
-            <div className="flex items-center">
-              <div className={`p-3 bg-gradient-to-br ${metric.gradient} rounded-xl shadow-md group-hover:shadow-lg transition-all duration-300 transform group-hover:scale-110`}>
-                <span className="text-white text-lg sm:text-xl filter drop-shadow-sm">{metric.icon}</span>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+              <div className={`p-2.5 sm:p-3 bg-gradient-to-br ${metric.gradient} rounded-xl shadow-xs text-white text-base sm:text-xl flex-shrink-0`}>
+                <span className="filter drop-shadow-xs">{metric.icon}</span>
               </div>
-              <div className="ml-4 min-w-0 flex-1">
-                <p className="text-xs sm:text-sm font-medium text-gray-600 truncate mb-1">{metric.title}</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate group-hover:text-gray-800 transition-colors">
+              <div className="min-w-0 flex-1 w-full">
+                <p className="text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide leading-tight mb-0.5">
+                  {metric.title}
+                </p>
+                <p className="text-sm sm:text-lg lg:text-2xl font-bold text-gray-900 leading-tight break-words">
                   {metric.value}
                 </p>
-              </div>
-              <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
               </div>
             </div>
             
             {/* Hover effect overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-xl transform -skew-x-12"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-xl transform -skew-x-12 pointer-events-none"></div>
           </div>
         ))}
       </div>
@@ -426,26 +423,26 @@ const OverviewCards = ({ tabId, dateFilter }) => {
                   animation: 'slideInRight 0.5s ease-out forwards'
                 }}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm flex-shrink-0">
                       {index + 1}
                     </div>
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-gray-900">#{order.id}</span>
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Completed</span>
+                        <span className="text-xs sm:text-sm font-semibold text-gray-900">#{order.id}</span>
+                        <span className="text-[10px] sm:text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium">Completed</span>
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-[11px] sm:text-xs text-gray-500 truncate mt-0.5">
                         {order.customer} • {formatDate(order.date)}
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm font-bold text-gray-900">
+                  <div className="text-left sm:text-right pl-11 sm:pl-0">
+                    <div className="text-xs sm:text-sm font-bold text-gray-900">
                       {formatCurrency(order.total).replace('NPR', '₹')}
                     </div>
-                    <div className="text-xs text-gray-500 truncate max-w-32">
+                    <div className="text-[11px] sm:text-xs text-gray-500 truncate max-w-full sm:max-w-32">
                       {order.product}
                     </div>
                   </div>

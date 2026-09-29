@@ -508,7 +508,7 @@ const SalesAnalytics = ({ tabId, dateFilter }) => {
             </div>
             <div className="ml-3 sm:ml-4 min-w-0 flex-1">
               <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Total Revenue</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">
+              <p className="text-base sm:text-xl lg:text-2xl font-bold text-gray-900 break-words leading-tight">
                 {formatCurrency(totalRevenue).replace('NPR', '₹')}
               </p>
             </div>

@@ -126,9 +126,9 @@ const NCMOrderForm = ({ onOrderCreated, onCancel }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 max-w-2xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Create NCM Order</h2>
+    <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 max-w-2xl mx-auto w-full">
+      <div className="flex justify-between items-center mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Create NCM Order</h2>
         {onCancel && (
           <button
             onClick={onCancel}
@@ -309,12 +309,12 @@ const NCMOrderForm = ({ onOrderCreated, onCancel }) => {
         )}
 
         {/* Action Buttons */}
-        <div className="flex justify-end space-x-3 pt-4">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:space-x-3 pt-4">
           {onCancel && (
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium text-center"
             >
               Cancel
             </button>
@@ -322,7 +322,7 @@ const NCMOrderForm = ({ onOrderCreated, onCancel }) => {
           <button
             type="submit"
             disabled={loading || loadingBranches}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm font-medium shadow-xs"
           >
             {loading ? (
               <>

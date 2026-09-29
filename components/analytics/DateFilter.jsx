@@ -152,16 +152,17 @@ const DateFilter = ({ selectedFilter, onFilterChange, className = '', customStar
         </div>
       )}
 
-      {/* Quick filter buttons for mobile/tablet */}
-      <div className="mt-4 sm:hidden">
-        <div className="flex flex-wrap gap-2">
-          {groupedOptions.quick.slice(0, 5).map(option => (
+      {/* Quick filter pills for mobile */}
+      <div className="mt-3 sm:hidden border-t border-gray-100 pt-2.5">
+        <p className="text-[11px] font-medium text-gray-500 mb-1.5">Quick Filters:</p>
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 -mx-1 px-1">
+          {groupedOptions.quick.map(option => (
             <button
               key={option.value}
               onClick={() => onFilterChange(option.value)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+              className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 active:scale-95 ${
                 selectedFilter === option.value
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-red-600 text-white shadow-xs font-semibold'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >

@@ -90,33 +90,34 @@ const ProductsContent = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="bg-white shadow-lg backdrop-blur-sm bg-white/95">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-4 sm:py-6">
+      <div className="bg-white border-b border-gray-200 shadow-xs">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3.5 sm:py-5">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2.5 sm:space-x-4">
                 <Link 
                   href="/dashboard" 
-                  className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                  aria-label="Back to Dashboard"
+                  className="p-1.5 -ml-1 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors flex-shrink-0"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </Link>
-                <div>
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-purple-900 to-purple-700 bg-clip-text text-transparent flex items-center">
-                    <span className="text-2xl mr-2">📦</span>
-                    Product Analytics
+                <div className="min-w-0">
+                  <h1 className="text-lg sm:text-2xl font-bold text-gray-900 flex items-center truncate">
+                    <span className="text-xl sm:text-2xl mr-2 flex-shrink-0">📦</span>
+                    <span className="truncate">Product Analytics</span>
                   </h1>
-                  <p className="mt-1 text-xs sm:text-sm text-gray-600">
+                  <p className="mt-0.5 text-xs sm:text-sm text-gray-500 truncate">
                     Product performance, inventory insights, and category analysis
                   </p>
                 </div>
               </div>
             </div>
-            <div className="mt-4 sm:mt-0 flex items-center justify-between sm:justify-end space-x-2 sm:space-x-4">
-              <div className="hidden sm:flex items-center text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
+            <div className="flex items-center justify-between sm:justify-end gap-2 flex-shrink-0">
+              <div className="flex items-center text-xs text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full font-medium">
+                <span className="w-1.5 h-1.5 bg-purple-500 rounded-full mr-1.5"></span>
                 Product Insights
               </div>
               <button
@@ -129,9 +130,9 @@ const ProductsContent = () => {
                   }, 500);
                 }}
                 disabled={refreshing}
-                className="group bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-3 py-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-purple-600 hover:bg-purple-700 active:scale-95 text-white px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-xs flex items-center space-x-1.5 disabled:opacity-50"
               >
-                <svg className={`w-4 h-4 transition-transform duration-500 ${refreshing ? 'animate-spin' : 'group-hover:rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
@@ -142,7 +143,7 @@ const ProductsContent = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Date Filter */}
         <div className="mb-6 transform transition-all duration-500 hover:scale-[1.01]">
           <DateFilter 

@@ -590,6 +590,39 @@ export default function Context({ children }) {
       openCartModal().catch(() => {});
     }
 
+    // Trigger Meta Pixel AddToCart event
+    if (typeof window !== 'undefined' && window.fbq) {
+      const contentId = productToAdd.documentId || productToAdd.baseProductId || productToAdd.id;
+      const itemPrice = parseFloat(productToAdd.price) || 0;
+      window.fbq('track', 'AddToCart', {
+        content_name: productToAdd.title,
+        content_ids: [contentId],
+        content_type: 'product',
+        value: itemPrice * (qty || 1),
+        currency: userCurrency || 'NPR',
+      });
+      console.log('📢 [META-PIXEL] Tracked AddToCart event for:', productToAdd.title, `(${contentId})`);
+    }
+
+    // Google Analytics / GTM add_to_cart event
+    if (typeof window !== 'undefined' && window.dataLayer) {
+      const contentId = productToAdd.documentId || productToAdd.baseProductId || productToAdd.id;
+      const itemPrice = parseFloat(productToAdd.price) || 0;
+      window.dataLayer.push({
+        event: 'add_to_cart',
+        ecommerce: {
+          currency: userCurrency || 'NPR',
+          value: itemPrice * (qty || 1),
+          items: [{
+            item_id: contentId,
+            item_name: productToAdd.title,
+            price: itemPrice,
+            quantity: qty || 1,
+          }],
+        },
+      });
+    }
+
     // 2. NON-BLOCKING BACKGROUND MUTATIONS
     if (selectedSize) {
       validateStockMutation.mutate({

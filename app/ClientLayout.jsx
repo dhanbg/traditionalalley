@@ -129,6 +129,8 @@ export default function ClientLayout({ children }) {
     };
   }, [pathname]);
 
+  const isAdminRoute = pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin');
+
   return (
     <SessionProvider refetchOnWindowFocus={false} refetchInterval={0}>
       <QueryProvider>
@@ -138,16 +140,20 @@ export default function ClientLayout({ children }) {
               <NextTopLoader showSpinner={false} />
               <CenterLoader />
               <div id="wrapper">{children}</div>
-              <CartModal />
-              <Compare />
-              <MobileMenu />
-              <SearchModal />
-              <SizeGuide />
-              <Categories />
-              <ScrollTop />
-              <EnhancedWhatsApp />
-              {/* Floating Dark Mode Toggle Button */}
-              <ThemeToggleButton className="floating-theme-toggle" start="bottom-left" />
+              {!isAdminRoute && (
+                <>
+                  <CartModal />
+                  <Compare />
+                  <MobileMenu />
+                  <SearchModal />
+                  <SizeGuide />
+                  <Categories />
+                  <ScrollTop />
+                  <EnhancedWhatsApp />
+                  {/* Floating Dark Mode Toggle Button */}
+                  <ThemeToggleButton className="floating-theme-toggle" start="bottom-left" />
+                </>
+              )}
             </Context>
           </ToastProvider>
         </ThemeProvider>

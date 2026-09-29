@@ -224,56 +224,58 @@ const NCMOrderButton = ({ payment, bag, onOrderCreated }) => {
           Create NCM Order
         </button>
       ) : (
-        <div className="absolute top-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg p-4 z-10 w-80">
-          <div className="flex justify-between items-center mb-3">
-            <h4 className="font-medium text-gray-800">Create NCM Order</h4>
-            <button
-              onClick={() => {
-                setShowForm(false);
-                setError('');
-                setFormData({ branch: '' });
-              }}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              ×
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            <div className="bg-gray-50 p-2 rounded text-xs">
-              <div><strong>Customer:</strong> {payment.orderData.receiver_details.name || payment.orderData.receiver_details.fullName}</div>
-              <div><strong>Phone:</strong> {payment.orderData.receiver_details.phone}</div>
-              <div><strong>COD Amount:</strong> NPR {calculateCODCharge()}</div>
-              <div><strong>From:</strong> Tinkune</div>
-              <div><strong>Destination Branch:</strong> {formData.branch}</div>
-              <div><strong>Package Type:</strong> Clothing</div>
-              <div><strong>Vendor Reference ID:</strong> {payment.gatewayReferenceNo}</div>
-            </div>
-
-            {error && (
-              <div className="text-red-600 text-xs bg-red-50 p-2 rounded">
-                {error}
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              <button
-                onClick={handleCreateOrder}
-                disabled={loading}
-                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-3 rounded text-sm disabled:opacity-50"
-              >
-                {loading ? 'Creating...' : 'Create Order'}
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 sm:bg-transparent sm:p-0 sm:absolute sm:inset-auto sm:top-0 sm:right-0">
+          <div className="bg-white border border-gray-300 rounded-xl shadow-2xl sm:shadow-lg p-4 w-full max-w-sm sm:w-80">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="font-semibold text-gray-900 text-sm sm:text-base">Create NCM Order</h4>
               <button
                 onClick={() => {
                   setShowForm(false);
                   setError('');
                   setFormData({ branch: '' });
                 }}
-                className="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50"
+                className="text-gray-400 hover:text-gray-700 p-1 rounded-lg"
               >
-                Cancel
+                ✕
               </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="bg-gray-50 p-2.5 rounded-lg text-xs space-y-1">
+                <div><strong>Customer:</strong> {payment.orderData.receiver_details.name || payment.orderData.receiver_details.fullName}</div>
+                <div><strong>Phone:</strong> {payment.orderData.receiver_details.phone}</div>
+                <div><strong>COD Amount:</strong> NPR {calculateCODCharge()}</div>
+                <div><strong>From:</strong> Tinkune</div>
+                <div><strong>Destination Branch:</strong> {formData.branch || 'None'}</div>
+                <div><strong>Package Type:</strong> Clothing</div>
+                <div><strong>Vendor Reference ID:</strong> {payment.gatewayReferenceNo}</div>
+              </div>
+
+              {error && (
+                <div className="text-red-600 text-xs bg-red-50 p-2 rounded border border-red-200">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={handleCreateOrder}
+                  disabled={loading}
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-3 rounded-lg text-xs sm:text-sm disabled:opacity-50 transition-colors"
+                >
+                  {loading ? 'Creating...' : 'Create Order'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowForm(false);
+                    setError('');
+                    setFormData({ branch: '' });
+                  }}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>

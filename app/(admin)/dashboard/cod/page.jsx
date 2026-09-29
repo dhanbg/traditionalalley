@@ -127,39 +127,41 @@ const CODManagement = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 sm:mb-8">
-        <div className="px-4 sm:px-6 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center mb-4 sm:mb-0">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 shadow-xs rounded-2xl mb-5 sm:mb-6">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center space-x-2.5 sm:space-x-4 min-w-0">
               <Link
                 href="/dashboard"
-                className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                aria-label="Back to Dashboard"
+                className="p-1.5 -ml-1 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors flex-shrink-0"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </Link>
-              <div className="ml-4">
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-orange-900 to-orange-700 bg-clip-text text-transparent flex items-center">
-                  <span className="text-2xl mr-2">💵</span>
-                  Cash on Delivery Management
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 flex items-center truncate">
+                  <span className="text-xl sm:text-2xl mr-2 flex-shrink-0">💵</span>
+                  <span className="truncate">Cash on Delivery</span>
                 </h1>
-                <p className="mt-1 text-xs sm:text-sm text-gray-600">
+                <p className="mt-0.5 text-xs sm:text-sm text-gray-500 truncate">
                   Manage COD orders, confirmations, and deliveries
                 </p>
               </div>
             </div>
-            <div className="flex items-center justify-between sm:justify-end space-x-2 sm:space-x-4">
-              <div className="hidden sm:flex items-center text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                <span className="w-2 h-2 bg-orange-400 rounded-full mr-2"></span>
+            <div className="flex items-center justify-between sm:justify-end gap-2 flex-shrink-0">
+              <div className="flex items-center text-xs text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full font-medium">
+                <span className="w-1.5 h-1.5 bg-orange-500 rounded-full mr-1.5"></span>
                 {codOrders.length} Total Orders
               </div>
               <button
                 onClick={fetchCODOrders}
-                className="px-3 sm:px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200 text-sm font-medium flex items-center gap-2"
+                className="px-3 py-1.5 sm:py-2 bg-orange-600 text-white rounded-xl hover:bg-orange-700 active:scale-95 transition-all text-xs sm:text-sm font-semibold flex items-center gap-1.5 shadow-xs"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Refresh
@@ -170,51 +172,48 @@ const CODManagement = () => {
       </div>
 
       {codOrders.length > 0 ? (
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <div className="bg-white p-3.5 sm:p-6 rounded-2xl border border-gray-200/80 shadow-xs">
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
             All COD Orders ({codOrders.length})
           </h3>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {currentOrders.map((order, index) => {
-                            // Build a deterministic, unique key per order to avoid duplicates
+              // Build a deterministic, unique key per order to avoid duplicates
               const baseId = order.id || order.merchantTxnId || `cod-${order.userBag?.id}-${order.orderIndex ?? index}`;
               const orderKey = `cod-${order.userBag?.id || 'bag'}-${order.orderIndex ?? index}-${order.merchantTxnId || order.id || 'noid'}`;
               const isExpanded = expandedOrders.has(orderKey);
 
               return (
-                <div key={orderKey} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center">
-                          <h4 className="text-lg font-medium text-gray-900">
-                            {order.orderData?.receiver_details?.fullName || 'N/A'}
-                          </h4>
-                        </div>
-                      </div>
+                <div key={orderKey} className="border border-gray-200/90 rounded-2xl p-3.5 sm:p-4 hover:shadow-xs transition-shadow duration-200 bg-white">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm sm:text-base font-bold text-gray-900 truncate">
+                        {order.orderData?.receiver_details?.fullName || 'N/A'}
+                      </h4>
 
-                      <div className="text-sm text-gray-600">
-                        <span className="font-medium">Date:</span> {order.timestamp ? new Date(order.timestamp).toLocaleDateString() : 'N/A'}
+                      <div className="text-xs sm:text-sm text-gray-500 flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+                        <span><strong className="text-gray-700 font-medium">Date:</strong> {order.timestamp ? new Date(order.timestamp).toLocaleDateString() : 'N/A'}</span>
+                        <span><strong className="text-gray-700 font-medium">Amount:</strong> NPR {order.amount || 'N/A'}</span>
                       </div>
                     </div>
 
-                    <div className="mt-4 sm:mt-0 sm:ml-4">
+                    <div className="w-full sm:w-auto">
                       <button
                         onClick={() => toggleOrderExpansion(orderKey)}
-                        className="px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors flex items-center gap-2"
+                        className="w-full sm:w-auto justify-center px-3 py-1.5 sm:py-2 bg-blue-600 text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-blue-700 active:scale-95 transition-all flex items-center gap-1.5 shadow-xs"
                       >
                         {isExpanded ? (
                           <>
                             Hide Details
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                             </svg>
                           </>
                         ) : (
                           <>
                             View Details
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                           </>
@@ -298,17 +297,19 @@ const CODManagement = () => {
                       </div>
 
                       {order.orderData?.products && order.orderData.products.length > 0 && (
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <h5 className="text-sm font-medium text-gray-700 mb-3">Products Ordered:</h5>
+                        <div className="bg-gray-50/80 rounded-xl p-3 border border-gray-100">
+                          <h5 className="text-xs font-semibold text-gray-700 mb-2">Products Ordered:</h5>
                           <div className="space-y-2">
                             {order.orderData.products.map((product, idx) => (
-                              <div key={idx} className="flex justify-between items-center text-sm">
-                                <div className="flex-1">
-                                  <span className="font-medium text-gray-900">{product.title}</span>
-                                  <span className="text-gray-600 ml-2">Size: {product.selectedSize}</span>
-                                  <span className="text-blue-600 ml-2">Code: {product.product_code || product.productCode || 'N/A'}</span>
+                              <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-xs sm:text-sm gap-1 border-b border-gray-100 last:border-0 pb-1.5 last:pb-0">
+                                <div className="flex-1 min-w-0">
+                                  <span className="font-medium text-gray-900 block sm:inline">{product.title}</span>
+                                  <div className="flex flex-wrap gap-2 text-gray-500 text-xs mt-0.5 sm:mt-0">
+                                    <span>Size: {product.selectedSize || 'N/A'}</span>
+                                    <span className="text-blue-600">Code: {product.product_code || product.productCode || 'N/A'}</span>
+                                  </div>
                                 </div>
-                                <div className="text-gray-600">
+                                <div className="text-gray-700 font-semibold text-xs sm:text-sm">
                                   Qty: {product.pricing?.quantity || product.quantity || 1} × NPR {
                                     exchangeRate 
                                       ? convertUsdToNpr(product.pricing?.currentPrice || product.price || 0, exchangeRate)
@@ -320,8 +321,6 @@ const CODManagement = () => {
                           </div>
                         </div>
                       )}
-
-
                     </div>
                   )}
                 </div>
@@ -330,58 +329,60 @@ const CODManagement = () => {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
-              <button
-                onClick={goToPreviousPage}
-                disabled={currentPage === 0 || isLoadingPagination}
-                className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${
-                  currentPage === 0 || isLoadingPagination
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-orange-500 text-white hover:bg-orange-600'
-                }`}
-              >
-                {isLoadingPagination && currentPage > 0 ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                    Previous
-                  </>
-                )}
-              </button>
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-6 pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-between w-full sm:w-auto gap-2 order-2 sm:order-1">
+                <button
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 0 || isLoadingPagination}
+                  className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
+                    currentPage === 0 || isLoadingPagination
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-orange-600 text-white hover:bg-orange-700 active:scale-95 shadow-xs'
+                  }`}
+                >
+                  {isLoadingPagination && currentPage > 0 ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white"></div>
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                      Previous
+                    </>
+                  )}
+                </button>
 
-              <span className="text-sm text-gray-600">
+                <button
+                  onClick={goToNextPage}
+                  disabled={currentPage >= totalPages - 1 || isLoadingPagination}
+                  className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
+                    currentPage >= totalPages - 1 || isLoadingPagination
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-orange-600 text-white hover:bg-orange-700 active:scale-95 shadow-xs'
+                  }`}
+                >
+                  {isLoadingPagination && currentPage < totalPages - 1 ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white"></div>
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      Next
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <span className="text-xs sm:text-sm text-gray-500 font-medium order-1 sm:order-2">
                 Page {currentPage + 1} of {totalPages}
               </span>
-
-              <button
-                onClick={goToNextPage}
-                disabled={currentPage >= totalPages - 1 || isLoadingPagination}
-                className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${
-                  currentPage >= totalPages - 1 || isLoadingPagination
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-orange-500 text-white hover:bg-orange-600'
-                }`}
-              >
-                {isLoadingPagination && currentPage < totalPages - 1 ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    Next
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </>
-                )}
-              </button>
             </div>
           )}
         </div>
