@@ -94,6 +94,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${bodoniModa.variable} ${outfit.variable}`} suppressHydrationWarning={true}>
       <head>
+        {/* Preconnect to image CDN for faster image rendering & Google Image indexing */}
+        <link rel="preconnect" href="https://admin.traditionalalley.com.np" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://admin.traditionalalley.com.np" />
+
         {/* Global Structured Data (Organization & WebSite) */}
         <script
           type="application/ld+json"

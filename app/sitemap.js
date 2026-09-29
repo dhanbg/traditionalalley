@@ -1,5 +1,6 @@
 import { fetchDataFromApi } from '@/utils/api';
 import { allBlogs } from '@/data/blogs';
+import { API_URL } from '@/utils/urls';
 
 export const revalidate = 3600; // Revalidate sitemap hourly
 
@@ -9,13 +10,13 @@ export default async function sitemap() {
 
   // 1. Core Static Storefront Pages
   const staticRoutes = [
-    { route: '', priority: 1.0, changeFrequency: 'daily' },
+    { route: '', priority: 1.0, changeFrequency: 'daily', images: [`${baseUrl}/logo.png`] },
     { route: '/collections', priority: 0.9, changeFrequency: 'daily' },
     { route: '/women', priority: 0.9, changeFrequency: 'daily' },
     { route: '/men', priority: 0.9, changeFrequency: 'daily' },
     { route: '/kids', priority: 0.9, changeFrequency: 'daily' },
     { route: '/shop-default-grid', priority: 0.8, changeFrequency: 'daily' },
-    { route: '/about-us', priority: 0.7, changeFrequency: 'monthly' },
+    { route: '/about-us', priority: 0.7, changeFrequency: 'monthly', images: [`${baseUrl}/logo.png`] },
     { route: '/contact', priority: 0.7, changeFrequency: 'monthly' },
     { route: '/FAQs', priority: 0.6, changeFrequency: 'monthly' },
     { route: '/privacy-policy', priority: 0.5, changeFrequency: 'yearly' },
@@ -25,26 +26,35 @@ export default async function sitemap() {
     { route: '/blog-list', priority: 0.8, changeFrequency: 'weekly' },
   ];
 
-  const staticUrls = staticRoutes.map(({ route, priority, changeFrequency }) => ({
+  const staticUrls = staticRoutes.map(({ route, priority, changeFrequency, images }) => ({
     url: `${baseUrl}${route}`,
     lastModified: now,
     changeFrequency,
     priority,
+    images,
   }));
 
-  // 2. Dynamic Product Pages (from Strapi)
+  // 2. Dynamic Product Pages with High-Res Image URLs for Google Image SEO
   let productUrls = [];
   try {
-    const productsRes = await fetchDataFromApi('/api/products?pagination[pageSize]=500&fields[0]=documentId&fields[1]=updatedAt&fields[2]=isActive');
+    const productsRes = await fetchDataFromApi('/api/products?pagination[pageSize]=100&populate=imgSrc');
     if (productsRes && Array.isArray(productsRes.data)) {
       productUrls = productsRes.data
         .filter((item) => item.isActive !== false && item.documentId)
-        .map((item) => ({
-          url: `${baseUrl}/product-detail/${item.documentId}`,
-          lastModified: item.updatedAt || now,
-          changeFrequency: 'daily',
-          priority: 0.9,
-        }));
+        .map((item) => {
+          const rawImg = item.imgSrc?.formats?.large?.url || item.imgSrc?.formats?.medium?.url || item.imgSrc?.url;
+          const imageUrl = rawImg
+            ? (rawImg.startsWith('http') ? rawImg : `${API_URL}${rawImg}`)
+            : null;
+
+          return {
+            url: `${baseUrl}/product-detail/${item.documentId}`,
+            lastModified: item.updatedAt || now,
+            changeFrequency: 'daily',
+            priority: 0.9,
+            images: imageUrl ? [imageUrl] : undefined,
+          };
+        });
     }
   } catch (error) {
     console.error('Error generating product sitemap URLs:', error);
@@ -76,15 +86,22 @@ export default async function sitemap() {
     priority: 0.8,
   }));
 
-  // 4. Blog Posts
+  // 4. Authentic Blog Posts with Featured Images
   const blogUrls = (allBlogs || [])
     .filter((b) => !b.isExternal && b.id)
-    .map((b) => ({
-      url: `${baseUrl}/blog-detail/${b.id}`,
-      lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    }));
+    .map((b) => {
+      const bImg = b?.imgSrc?.startsWith('http')
+        ? b.imgSrc
+        : `${baseUrl}${b?.imgSrc || '/logo.png'}`;
+
+      return {
+        url: `${baseUrl}/blog-detail/${b.id}`,
+        lastModified: b.dateModified || now,
+        changeFrequency: 'weekly',
+        priority: 0.7,
+        images: bImg ? [bImg] : undefined,
+      };
+    });
 
   return [...staticUrls, ...collectionUrls, ...productUrls, ...blogUrls];
 }
