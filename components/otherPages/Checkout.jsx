@@ -1055,73 +1055,9 @@ export default function Checkout() {
       // COD orders don't require automatic stock updates, cart clearing, or email sending
       setOrderSuccess(true);
 
-      // 1. Meta Pixel Browser Purchase Event (with eventID for deduplication)
-      const orderValue = typeof nprAmount === 'number' ? nprAmount : parseFloat(nprAmount) || 0;
-      const orderContentIds = selectedProducts.map(p => p.documentId || p.id);
-      const orderContents = selectedProducts.map(p => ({
-        id: p.documentId || p.id,
-        quantity: p.quantity || 1,
-        item_price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0
-      }));
+      // COD orders are deliberately NOT tracked as 'Purchase' (unpaid until delivery)
+      // Only online confirmed payments (NPS / Cards / Wallets) fire Purchase events
 
-      if (typeof window !== 'undefined' && window.fbq) {
-        window.fbq('track', 'Purchase', {
-          content_type: 'product',
-          content_ids: orderContentIds,
-          contents: orderContents,
-          value: orderValue,
-          currency: 'NPR',
-          num_items: selectedProducts.reduce((sum, p) => sum + (p.quantity || 1), 0)
-        }, { eventID: codPaymentData.merchantTxnId });
-        console.log('📢 [META-PIXEL] Tracked COD Purchase event:', codPaymentData.merchantTxnId);
-      }
-
-      // 2. Google Analytics / GTM Purchase Event
-      if (typeof window !== 'undefined' && window.dataLayer) {
-        window.dataLayer.push({
-          event: 'purchase',
-          ecommerce: {
-            transaction_id: codPaymentData.merchantTxnId,
-            value: orderValue,
-            currency: 'NPR',
-            items: selectedProducts.map(p => ({
-              item_id: p.documentId || p.id,
-              item_name: p.title || 'Product',
-              price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0,
-              quantity: p.quantity || 1
-            }))
-          }
-        });
-      }
-
-      // 3. Server-side Meta Conversions API (CAPI) for COD (Non-blocking, with deduplication)
-      try {
-        fetch('/api/meta-capi/purchase', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            eventId: codPaymentData.merchantTxnId,
-            userData: {
-              email: receiverDetails?.email || user?.email,
-              phone: receiverDetails?.phone,
-              fullName: receiverDetails?.fullName || receiverDetails?.name || user?.name,
-              city: receiverDetails?.address?.cityName,
-              zip: receiverDetails?.address?.postalCode,
-              countryCode: receiverDetails?.address?.countryCode || 'NP',
-              fbp: typeof document !== 'undefined' ? (document.cookie.match(/(^|;\s*)_fbp=([^;]*)/)?.[2] || undefined) : undefined,
-              fbc: typeof document !== 'undefined' ? (document.cookie.match(/(^|;\s*)_fbc=([^;]*)/)?.[2] || undefined) : undefined,
-            },
-            customData: {
-              currency: 'NPR',
-              value: orderValue,
-              contentIds: orderContentIds,
-              contents: orderContents
-            }
-          })
-        }).catch(e => console.warn('⚠️ [META-CAPI] COD CAPI background fetch error:', e));
-      } catch (capiErr) {
-        console.warn('⚠️ [META-CAPI] Failed to initiate CAPI for COD:', capiErr);
-      }
 
       // Redirect to Thank You page with order details
       const thankYouUrl = new URL('/thank-you', window.location.origin);
