@@ -17,11 +17,66 @@ export const metadata = {
     siteName: "Traditional Alley",
     images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Traditional Alley" }],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Contact Us | Traditional Alley - Customer Support & Inquiries",
+    description: "Get in touch with Traditional Alley. Reach out for custom sizing inquiries, order support, and wholesale questions.",
+    images: ["/logo.png"],
+  },
+};
+
+const contactJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "ContactPage",
+  "@id": "https://traditionalalley.com.np/contact#webpage",
+  url: "https://traditionalalley.com.np/contact",
+  name: "Contact Traditional Alley",
+  description: "Customer support, order inquiries, and wholesale questions for Traditional Alley.",
+  mainEntity: {
+    "@type": "LocalBusiness",
+    name: "Traditional Alley",
+    telephone: "+977-9844594187",
+    email: "contact@traditionalalley.com.np",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "Hattiban",
+      addressLocality: "Lalitpur",
+      addressRegion: "Bagmati",
+      postalCode: "44700",
+      addressCountry: "NP",
+    },
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: 27.6466158,
+      longitude: 85.3316533,
+    },
+  },
+  breadcrumb: {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://traditionalalley.com.np",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Contact",
+        item: "https://traditionalalley.com.np/contact",
+      },
+    ],
+  },
 };
 
 export default function page() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(contactJsonLd) }}
+      />
       <Topbar6 bgColor="bg-main" />
       <Header1 />
       <iframe

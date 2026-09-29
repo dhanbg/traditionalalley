@@ -20,11 +20,50 @@ export const metadata = {
     siteName: "Traditional Alley",
     images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Traditional Alley" }],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "About Us | Traditional Alley - Authentic Nepali Ethnic Wear",
+    description: "Learn about Traditional Alley, Nepal's premier traditional clothing brand. Discover our heritage, craftsmanship, and commitment to authentic Nepali fashion.",
+    images: ["/logo.png"],
+  },
+};
+
+const aboutJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  "@id": "https://traditionalalley.com.np/about-us#webpage",
+  url: "https://traditionalalley.com.np/about-us",
+  name: "About Traditional Alley",
+  description: "Learn about Traditional Alley, Nepal's premier traditional clothing brand, our heritage, craftsmanship, and worldwide delivery.",
+  mainEntity: {
+    "@id": "https://traditionalalley.com.np/#organization",
+  },
+  breadcrumb: {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://traditionalalley.com.np",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "About Us",
+        item: "https://traditionalalley.com.np/about-us",
+      },
+    ],
+  },
 };
 
 export default function page() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutJsonLd) }}
+      />
       <Topbar6 bgColor="bg-main" />
       <Header1 />
       <div
