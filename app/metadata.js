@@ -32,8 +32,13 @@ export const metadata = {
   },
   metadataBase: new URL('https://traditionalalley.com.np'),
   icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: [
+      { url: '/favicon.ico?v=2' },
+      { url: '/icon-192.png?v=2', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png?v=2', sizes: '180x180', type: 'image/png' },
+    ],
   },
   openGraph: {
     title: 'Traditional Alley - Authentic Nepali Fashion & Traditional Clothing',
