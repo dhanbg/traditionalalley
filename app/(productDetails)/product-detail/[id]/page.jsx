@@ -248,7 +248,7 @@ export default async function page({ params }) {
   
   const productImageUrl = product.imgSrc?.url 
     ? (product.imgSrc.url.startsWith('http') ? product.imgSrc.url : `${API_URL}${product.imgSrc.url}`)
-    : 'https://traditionalalley.com.np/logo.png';
+    : 'https://traditionalalley.com.np/og-image.jpg';
 
   const allProductImages = [productImageUrl];
   if (Array.isArray(product.gallery)) {

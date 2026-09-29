@@ -61,7 +61,7 @@ export async function GET() {
       let rawImg = p.imgSrc?.formats?.large?.url || p.imgSrc?.formats?.medium?.url || p.imgSrc?.url;
       let imageUrl = rawImg
         ? (rawImg.startsWith('http') ? rawImg : `${API_URL}${rawImg}`)
-        : `${baseUrl}/logo.png`;
+        : `${baseUrl}/og-image.jpg`;
 
       // Price formatted for Google Merchant (e.g., "75.00 USD")
       const priceNum = Number(p.price) || 0;
