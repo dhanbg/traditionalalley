@@ -25,17 +25,17 @@ const DateFilter = ({ selectedFilter, onFilterChange, className = '', customStar
   const isValidCustomRange = customStartDate && customEndDate && new Date(customStartDate) <= new Date(customEndDate);
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 ${className}`}>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex-1">
-          <label htmlFor="dateFilter" className="block text-sm font-medium text-gray-700 mb-2">
-            Time Period
+    <div className={`bg-white rounded-xl shadow-xs border border-gray-200 p-2.5 sm:p-4 ${className}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 flex-1">
+          <label htmlFor="dateFilter" className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0">
+            Period:
           </label>
           <select
             id="dateFilter"
             value={selectedFilter}
             onChange={(e) => onFilterChange(e.target.value)}
-            className="w-full sm:w-auto min-w-[200px] px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            className="w-full sm:w-auto min-w-[160px] px-2.5 py-1.5 sm:py-2 border border-gray-300 rounded-lg shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm bg-white"
           >
             <optgroup label="Quick Filters">
               {groupedOptions.quick.map(option => (

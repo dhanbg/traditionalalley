@@ -15,7 +15,11 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			fontFamily: {
-				skip: ["skip", "sans-serif"]
+				skip: ["skip", "sans-serif"],
+				serif: ["var(--font-bodoni)", "'Bodoni Moda'", "'Playfair Display'", "Georgia", "serif"],
+				sans: ["var(--font-outfit)", "'Outfit'", "sans-serif"],
+				bodoni: ["var(--font-bodoni)", "'Bodoni Moda'", "serif"],
+				outfit: ["var(--font-outfit)", "'Outfit'", "sans-serif"],
 			},
 			colors: {
 				background: 'var(--background)',

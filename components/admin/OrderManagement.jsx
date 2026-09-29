@@ -207,7 +207,7 @@ const OrderManagement = () => {
 
     const basePayments = nonPendingPayments.filter(payment => {
       if (activeTab === 'success') {
-        return payment.computedStatus === 'success';
+        return payment.computedStatus === 'success' || payment.computedStatus === 'shipped';
       }
       return payment.computedStatus === activeTab;
     });
@@ -223,22 +223,21 @@ const OrderManagement = () => {
     return basePayments;
   })();
 
-  // Get counts for each tab
+  // Get counts for each tab (Success, Pending, Failed)
   const getTabCounts = () => {
-    const counts = { pending: 0, success: 0, failed: 0, shipped: 0 };
+    const counts = { pending: 0, success: 0, failed: 0 };
 
-    // Count non-pending payments normally
+    // Count non-pending payments (shipped payments count as success)
     nonPendingPayments.forEach(payment => {
-      counts[payment.computedStatus]++;
+      if (payment.computedStatus === 'success' || payment.computedStatus === 'shipped') {
+        counts.success++;
+      } else if (payment.computedStatus === 'failed') {
+        counts.failed++;
+      }
     });
 
     // For pending, show the total count (not limited)
     counts.pending = totalPendingCount;
-
-    console.log('\n=== PAYMENT COUNTS ===');
-    console.log('Total payments found:', allPayments.length);
-    console.log('Tab counts:', counts);
-    console.log(`Pending: ${totalPendingCount} total, displaying latest ${Math.min(totalPendingCount, 1000)}`);
 
     return counts;
   };
@@ -1679,16 +1678,7 @@ const OrderManagement = () => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 sm:p-6 rounded-2xl text-white shadow-md">
-        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2 flex items-center gap-2">
-          <span>📦</span> Order Management
-        </h2>
-        <p className="text-xs sm:text-sm lg:text-base text-indigo-100">
-          Manage customer orders, track payments, and download bills
-        </p>
-      </div>
-
+    <div className="space-y-3 sm:space-y-5">
       {error && (
         <div className="bg-red-50 border-l-4 border-red-500 p-3 sm:p-4 rounded-xl">
           <div className="flex items-center">
@@ -1738,73 +1728,93 @@ const OrderManagement = () => {
 
       {/* User Payments Section */}
       {userBags && userBags.length > 0 && (
-        <div className="bg-white p-3.5 sm:p-6 rounded-2xl border border-gray-200/80 shadow-xs">
-          {/* Tab Navigation */}
-          <div className="mb-4 sm:mb-6">
-            <div className="border-b border-gray-200 overflow-x-auto no-scrollbar pb-1">
-              <nav className="-mb-px flex space-x-3 sm:space-x-6 items-center min-w-max">
-                {/* Success Tab - Always Active */}
-                <button
-                  onClick={() => handleTabChange('success')}
-                  className={`py-2 px-2.5 sm:px-1 border-b-2 font-semibold text-xs sm:text-sm whitespace-nowrap transition-colors ${activeTab === 'success'
-                    ? 'border-green-600 text-green-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                >
-                  Success ({tabCounts.success})
-                </button>
+        <div className="bg-white p-3 sm:p-6 rounded-2xl border border-gray-200/80 shadow-xs">
+          {/* Tab Navigation - Full Width Responsive Segmented Bar (No Horizontal Scroll) */}
+          <div className="mb-3 sm:mb-5">
+            <div className="bg-gray-100 p-1 rounded-xl border border-gray-200 flex w-full items-center gap-1" role="tablist">
+              {/* Success Tab */}
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'success'}
+                onClick={() => {
+                  handleTabChange('success');
+                  setCurrentPage(0);
+                }}
+                className={`flex-1 py-2 px-1 text-center font-semibold text-xs sm:text-sm transition-all !rounded-lg ${
+                  activeTab === 'success'
+                    ? 'bg-white text-green-700 shadow-sm font-bold border border-gray-200/80'
+                    : 'text-gray-600 hover:text-gray-900 border border-transparent'
+                }`}
+              >
+                <span className="inline-flex items-center justify-center gap-1 sm:gap-1.5 flex-nowrap">
+                  <span>Success</span>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold leading-none ${
+                    activeTab === 'success' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'
+                  }`}>
+                    {tabCounts.success}
+                  </span>
+                </span>
+              </button>
 
-                {/* Shipped Tab */}
-                <button
-                  onClick={() => handleTabChange('shipped')}
-                  className={`py-2 px-2.5 sm:px-1 border-b-2 font-semibold text-xs sm:text-sm whitespace-nowrap transition-colors ${activeTab === 'shipped'
-                    ? 'border-purple-600 text-purple-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                >
-                  Shipped ({tabCounts.shipped})
-                </button>
+              {/* Pending Tab */}
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'pending'}
+                onClick={() => {
+                  handleTabChange('pending');
+                  setShowPending(false);
+                  setShowFailed(false);
+                  setCurrentPage(0);
+                }}
+                className={`flex-1 py-2 px-1 text-center font-semibold text-xs sm:text-sm transition-all !rounded-lg ${
+                  activeTab === 'pending'
+                    ? 'bg-white text-yellow-700 shadow-sm font-bold border border-gray-200/80'
+                    : 'text-gray-600 hover:text-gray-900 border border-transparent'
+                }`}
+              >
+                <span className="inline-flex items-center justify-center gap-1 sm:gap-1.5 flex-nowrap">
+                  <span>Pending</span>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold leading-none ${
+                    activeTab === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-200 text-gray-700'
+                  }`}>
+                    {tabCounts.pending}
+                  </span>
+                </span>
+              </button>
 
-                {/* Divider */}
-                <div className="h-5 w-px bg-gray-200 mx-1 sm:mx-2"></div>
-
-                {/* Pending & Failed Tabs */}
-                <div className="flex space-x-3 sm:space-x-6 items-center">
-                  <button
-                    onClick={() => {
-                      handleTabChange('pending');
-                      setShowPending(false);
-                      setShowFailed(false);
-                      setCurrentPage(0);
-                    }}
-                    className={`py-2 px-2.5 sm:px-1 border-b-2 font-semibold text-xs sm:text-sm whitespace-nowrap transition-colors ${activeTab === 'pending'
-                      ? 'border-blue-600 text-blue-700'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }`}
-                  >
-                    Pending ({tabCounts.pending})
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleTabChange('failed');
-                      setShowPending(false);
-                      setShowFailed(false);
-                      setCurrentPage(0);
-                    }}
-                    className={`py-2 px-2.5 sm:px-1 border-b-2 font-semibold text-xs sm:text-sm whitespace-nowrap transition-colors ${activeTab === 'failed'
-                      ? 'border-red-600 text-red-700'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }`}
-                  >
-                    Failed ({tabCounts.failed})
-                  </button>
-                </div>
-              </nav>
+              {/* Failed Tab */}
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'failed'}
+                onClick={() => {
+                  handleTabChange('failed');
+                  setShowPending(false);
+                  setShowFailed(false);
+                  setCurrentPage(0);
+                }}
+                className={`flex-1 py-2 px-1 text-center font-semibold text-xs sm:text-sm transition-all !rounded-lg ${
+                  activeTab === 'failed'
+                    ? 'bg-white text-red-700 shadow-sm font-bold border border-gray-200/80'
+                    : 'text-gray-600 hover:text-gray-900 border border-transparent'
+                }`}
+              >
+                <span className="inline-flex items-center justify-center gap-1 sm:gap-1.5 flex-nowrap">
+                  <span>Failed</span>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold leading-none ${
+                    activeTab === 'failed' ? 'bg-red-100 text-red-800' : 'bg-gray-200 text-gray-700'
+                  }`}>
+                    {tabCounts.failed}
+                  </span>
+                </span>
+              </button>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <span className="text-sm sm:text-base font-bold text-gray-900">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3 sm:mb-4">
+            <span className="text-xs sm:text-sm font-bold text-gray-900">
               {activeTab === 'success' && (
                 <>Successful Orders
                   {showPending && ' + Pending'}
@@ -1813,9 +1823,8 @@ const OrderManagement = () => {
               )}
               {activeTab === 'pending' && 'Pending Orders'}
               {activeTab === 'failed' && 'Failed Orders'}
-              {activeTab === 'shipped' && 'Shipped Orders'}
             </span>
-            <span className="text-xs text-gray-500 font-medium">
+            <span className="text-[11px] sm:text-xs text-gray-500 font-medium">
               (Showing {Math.min(filteredPayments.length - currentPage * ordersPerPage, ordersPerPage)} of {filteredPayments.length} • Page {currentPage + 1})
             </span>
           </div>

@@ -33,6 +33,7 @@ yarn-error.log*
 .env
 .env.local
 .env.production
+ga-service-account.json
 vps_env.txt
 vps_*_api.*
 

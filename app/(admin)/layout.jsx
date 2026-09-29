@@ -1,4 +1,5 @@
 'use client';
+import '../globals.css';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -10,6 +11,12 @@ const navigationItems = [
     icon: '📋',
     label: 'Order Management',
     description: 'Manage orders and payments'
+  },
+  {
+    href: '/dashboard/daily-report',
+    icon: '📑',
+    label: 'Daily Report',
+    description: 'Generate & export daily report card'
   },
   {
     href: '/dashboard/overview',
