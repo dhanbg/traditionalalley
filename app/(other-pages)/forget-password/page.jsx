@@ -6,9 +6,12 @@ import Link from "next/link";
 import React from "react";
 
 export const metadata = {
-  title:
-    "Forgot Password || Traditional Alley",
-  description: "Traditional Alley",
+  title: "Forgot Password",
+  description: "Reset your Traditional Alley account password.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function page() {

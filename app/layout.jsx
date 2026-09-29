@@ -31,24 +31,45 @@ const jsonLdGlobal = {
   "@context": "https://schema.org",
   "@graph": [
     {
-      "@type": "Organization",
+      "@type": ["Organization", "ClothingStore", "OnlineStore"],
       "@id": "https://traditionalalley.com.np/#organization",
       "name": "Traditional Alley",
       "url": "https://traditionalalley.com.np",
+      "telephone": "+977-9844594187",
+      "email": "contact@traditionalalley.com.np",
+      "priceRange": "$$",
       "logo": {
         "@type": "ImageObject",
         "url": "https://traditionalalley.com.np/logo.png",
         "width": "600",
         "height": "150"
       },
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Hattiban",
+        "addressLocality": "Lalitpur",
+        "addressRegion": "Bagmati",
+        "postalCode": "44700",
+        "addressCountry": "NP"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 27.6466158,
+        "longitude": 85.3316533
+      },
       "sameAs": [
-        "https://www.facebook.com/traditionalalley",
-        "https://www.instagram.com/traditionalalley"
+        "https://www.facebook.com/traditionalalley555/",
+        "https://www.instagram.com/_traditional_alley/",
+        "https://www.tiktok.com/@_traditional_alley",
+        "https://www.pinterest.com/Traditionalley01/"
       ],
       "contactPoint": {
         "@type": "ContactPoint",
+        "telephone": "+977-9844594187",
         "contactType": "Customer Support",
-        "areaServed": ["NP", "US", "AU", "GB", "CA"]
+        "email": "contact@traditionalalley.com.np",
+        "areaServed": ["NP", "US", "AU", "GB", "CA"],
+        "availableLanguage": ["English", "Nepali"]
       }
     },
     {

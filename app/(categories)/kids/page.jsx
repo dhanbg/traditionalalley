@@ -4,7 +4,7 @@ import Header1 from "@/components/headers/Header1";
 import Kids from "@/components/Collections/Kids/Kids";
 
 export const metadata = {
-  title: "Kids Ethnic & Cultural Clothing Collection | Traditional Alley",
+  title: "Kids' Ethnic & Cultural Clothing Collection",
   description: "Browse our adorable kids fashion collection with comfortable, premium Nepali cultural wear, festive outfits, and traditional dresses for children at Traditional Alley.",
   alternates: {
     canonical: "/kids",

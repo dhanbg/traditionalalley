@@ -2,9 +2,12 @@ import Image from "next/image";
 import React from "react";
 import Link from "next/link";
 export const metadata = {
-  title:
-    "Page Not Found || Traditional Alley",
-  description: "Traditional Alley",
+  title: "Page Not Found",
+  description: "The page you are looking for could not be found on Traditional Alley.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function NotFound() {

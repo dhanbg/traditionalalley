@@ -10,7 +10,7 @@ const RelatedProducts = dynamic(() => import("@/components/productDetails/Relate
 import Details1 from "@/components/productDetails/details/Details1";
 import { fetchDataFromApi } from "@/utils/api";
 import { fetchProductsWithVariantsByCategory, fetchProductsWithVariantsByCollection } from "@/utils/productVariantUtils";
-import { API_URL } from "@/utils/urls";
+import { API_URL, PRODUCT_REVIEWS_API } from "@/utils/urls";
 import { calculateInStock } from "@/utils/stockUtils";
 import React, { Suspense, cache } from "react";
 import Link from "next/link";
@@ -44,6 +44,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
+  const canonicalUrl = `/product-detail/${id}`;
   
   try {
     // Fetch product data for metadata (deduplicated with page fetch via React cache)
@@ -54,25 +55,43 @@ export async function generateMetadata({ params }) {
       const product = transformProduct(rawProduct);
       
       if (product && product.isActive !== false) {
-        const title = `${product.title} | Traditional Alley`;
+        const title = product.title;
         const descRaw = normalizeText(product.description);
         const description = descRaw 
           ? `${descRaw.substring(0, 155)}...` 
           : `Shop ${product.title} at Traditional Alley. Premium quality traditional and modern fashion.`;
         
+        const imageUrl = product.imgSrc?.url 
+          ? (product.imgSrc.url.startsWith('http') ? product.imgSrc.url : `${API_URL}${product.imgSrc.url}`)
+          : 'https://traditionalalley.com.np/logo.png';
+        
         return {
           title,
           description,
+          alternates: {
+            canonical: canonicalUrl,
+          },
           openGraph: {
-            title,
+            title: `${title} | Traditional Alley`,
             description,
-            images: product.imgSrc?.url ? [{
-              url: product.imgSrc.url.startsWith('http') ? product.imgSrc.url : `${API_URL}${product.imgSrc.url}`,
-              width: 800,
-              height: 600,
-              alt: product.title
-            }] : []
-          }
+            url: `https://traditionalalley.com.np${canonicalUrl}`,
+            siteName: 'Traditional Alley',
+            type: 'website',
+            images: [
+              {
+                url: imageUrl,
+                width: 800,
+                height: 600,
+                alt: product.title,
+              },
+            ],
+          },
+          twitter: {
+            card: 'summary_large_image',
+            title: `${title} | Traditional Alley`,
+            description,
+            images: [imageUrl],
+          },
         };
       }
     }
@@ -82,8 +101,11 @@ export async function generateMetadata({ params }) {
   
   // Fallback metadata
   return {
-    title: "Product Detail | Traditional Alley",
+    title: "Product Detail",
     description: "Traditional Alley - Premium quality traditional and modern fashion.",
+    alternates: {
+      canonical: canonicalUrl,
+    },
   };
 }
 
@@ -209,13 +231,25 @@ export default async function page({ params }) {
     ? (product.imgSrc.url.startsWith('http') ? product.imgSrc.url : `${API_URL}${product.imgSrc.url}`)
     : 'https://traditionalalley.com.np/logo.png';
 
+  const allProductImages = [productImageUrl];
+  if (Array.isArray(product.gallery)) {
+    product.gallery.forEach((img) => {
+      const gUrl = img?.url
+        ? (img.url.startsWith('http') ? img.url : `${API_URL}${img.url}`)
+        : null;
+      if (gUrl && !allProductImages.includes(gUrl)) {
+        allProductImages.push(gUrl);
+      }
+    });
+  }
+
   const productJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     '@id': `https://traditionalalley.com.np/product-detail/${id}#product`,
     name: product.title,
     description: normalizeText(product.description) || `Authentic Nepali ${product.title} from Traditional Alley`,
-    image: [productImageUrl],
+    image: allProductImages,
     sku: product.sku || id,
     brand: {
       '@type': 'Brand',
@@ -224,7 +258,7 @@ export default async function page({ params }) {
     offers: {
       '@type': 'Offer',
       url: `https://traditionalalley.com.np/product-detail/${id}`,
-      priceCurrency: 'NPR',
+      priceCurrency: 'USD',
       price: product.price || 0,
       priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       itemCondition: 'https://schema.org/NewCondition',
@@ -233,8 +267,111 @@ export default async function page({ params }) {
         '@type': 'Organization',
         name: 'Traditional Alley',
       },
+      shippingDetails: {
+        '@type': 'OfferShippingDetails',
+        shippingRate: {
+          '@type': 'MonetaryAmount',
+          value: '0',
+          currency: 'USD',
+        },
+        shippingDestination: [
+          { '@type': 'DefinedRegion', addressCountry: 'NP' },
+          { '@type': 'DefinedRegion', addressCountry: 'US' },
+          { '@type': 'DefinedRegion', addressCountry: 'AU' },
+          { '@type': 'DefinedRegion', addressCountry: 'GB' },
+          { '@type': 'DefinedRegion', addressCountry: 'CA' },
+        ],
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          handlingTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 1,
+            maxValue: 3,
+            unitCode: 'd',
+          },
+          transitTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 3,
+            maxValue: 7,
+            unitCode: 'd',
+          },
+        },
+      },
+      hasMerchantReturnPolicy: {
+        '@type': 'MerchantReturnPolicy',
+        applicableCountry: ['NP', 'US', 'AU', 'GB', 'CA'],
+        returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+        merchantReturnDays: 7,
+        returnMethod: 'https://schema.org/ReturnByMail',
+        returnFees: 'https://schema.org/FreeReturn',
+      },
     },
   };
+
+  // Attach AggregateRating and Review schemas if customer reviews exist
+  let rawReviews = Array.isArray(product.customer_reviews) ? product.customer_reviews : [];
+  if (rawReviews.length === 0) {
+    try {
+      const reviewRes = await fetchDataFromApi(PRODUCT_REVIEWS_API(id));
+      if (Array.isArray(reviewRes?.data)) {
+        rawReviews = reviewRes.data;
+      }
+    } catch {
+      // Silently continue without review data
+    }
+  }
+
+  const validReviews = rawReviews.filter(
+    (r) => typeof r?.rating === 'number' && r.rating >= 1 && r.rating <= 5
+  );
+
+  if (validReviews.length > 0) {
+    const totalRating = validReviews.reduce((acc, r) => acc + r.rating, 0);
+    const avgRating = (totalRating / validReviews.length).toFixed(1);
+
+    productJsonLd.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: avgRating,
+      reviewCount: validReviews.length,
+      bestRating: '5',
+      worstRating: '1',
+    };
+
+    productJsonLd.review = validReviews.slice(0, 10).map((r) => {
+      const authorName =
+        r.user_data?.[0]?.username ||
+        r.user_data?.[0]?.name ||
+        r.userName ||
+        r.author ||
+        'Verified Customer';
+
+      return {
+        '@type': 'Review',
+        reviewRating: {
+          '@type': 'Rating',
+          ratingValue: r.rating,
+          bestRating: '5',
+          worstRating: '1',
+        },
+        author: {
+          '@type': 'Person',
+          name: authorName,
+        },
+        datePublished: r.createdAt ? r.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+        reviewBody: r.comments || r.comment || `Rated ${r.rating} out of 5 stars.`,
+      };
+    });
+  }
+
+  const collectionCrumb = product?.collection?.slug
+    ? {
+        name: product.collection.title || 'Collection',
+        item: `https://traditionalalley.com.np/collections/${product.collection.slug}`,
+      }
+    : {
+        name: 'Collections',
+        item: 'https://traditionalalley.com.np/collections',
+      };
 
   const breadcrumbJsonLd = {
     '@context': 'https://schema.org',
@@ -249,8 +386,8 @@ export default async function page({ params }) {
       {
         '@type': 'ListItem',
         position: 2,
-        name: 'Collections',
-        item: 'https://traditionalalley.com.np/collections',
+        name: collectionCrumb.name,
+        item: collectionCrumb.item,
       },
       {
         '@type': 'ListItem',

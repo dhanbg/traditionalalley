@@ -5,6 +5,8 @@ import Products from "@/components/products/Products";
 import Link from "next/link";
 import React, { Suspense } from "react";
 import { fetchProductsWithVariantsByCollection } from "@/utils/productVariantUtils";
+import { fetchDataFromApi } from "@/utils/api";
+import { API_URL } from "@/utils/urls";
 
 // Cache collection pages at edge CDN for 5 minutes
 export const revalidate = 300;
@@ -56,24 +58,45 @@ export async function generateMetadata({ params }) {
   const resolvedParams = await params;
   const slug = resolvedParams?.slug || "";
   const formattedName = formatCollectionName(slug);
-  const title = `${formattedName} Collection | Traditional Alley`;
+  const collectionTitle = `${formattedName} Collection`;
+  const fullTitle = `${collectionTitle} | Traditional Alley`;
   const description = `Explore the ${formattedName} collection at Traditional Alley. Shop authentic Nepali ethnic wear, handcrafted traditional outfits, and modern cultural designs with worldwide shipping.`;
 
+  let collectionImageUrl = 'https://traditionalalley.com.np/logo.png';
+  try {
+    const collectionRes = await fetchDataFromApi(`/api/collections?filters[slug][$eq]=${slug}&populate=image`);
+    const collData = collectionRes?.data?.find(c => c.slug === slug) || collectionRes?.data?.[0];
+    if (collData?.image?.url) {
+      const rawUrl = collData.image.formats?.large?.url || collData.image.formats?.medium?.url || collData.image.url;
+      collectionImageUrl = rawUrl.startsWith('http') ? rawUrl : `${API_URL}${rawUrl}`;
+    } else {
+      const products = await fetchProductsWithVariantsByCollection(slug);
+      if (products?.[0]?.imgSrc) {
+        const pImg = typeof products[0].imgSrc === 'string' ? products[0].imgSrc : products[0].imgSrc?.url;
+        if (pImg) {
+          collectionImageUrl = pImg.startsWith('http') ? pImg : `${API_URL}${pImg}`;
+        }
+      }
+    }
+  } catch (error) {
+    // Fall back to default logo
+  }
+
   return {
-    title,
+    title: collectionTitle,
     description,
     alternates: {
       canonical: `/collections/${slug}`,
     },
     openGraph: {
-      title,
+      title: fullTitle,
       description,
       url: `https://traditionalalley.com.np/collections/${slug}`,
       siteName: 'Traditional Alley',
       type: 'website',
       images: [
         {
-          url: '/logo.png',
+          url: collectionImageUrl,
           width: 1200,
           height: 630,
           alt: `${formattedName} Collection - Traditional Alley`,
@@ -82,9 +105,9 @@ export async function generateMetadata({ params }) {
     },
     twitter: {
       card: 'summary_large_image',
-      title,
+      title: fullTitle,
       description,
-      images: ['/logo.png'],
+      images: [collectionImageUrl],
     },
   };
 }

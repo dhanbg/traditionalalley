@@ -13,25 +13,26 @@ export async function generateMetadata({ params }) {
 
   if (!blog) {
     return {
-      title: "Blog | Traditional Alley",
+      title: "Blog",
       description: "Read the latest fashion news, styling tips, and Nepali cultural heritage articles from Traditional Alley.",
     };
   }
 
-  const title = `${blog.title} | Traditional Alley`;
+  const blogTitle = blog.title;
+  const fullTitle = `${blogTitle} | Traditional Alley`;
   const description = blog.description || blog.desc || blog.excerpt || "Read stories about Nepali fashion, culture, and traditional attire from Traditional Alley.";
   const imageUrl = blog.imgSrc?.startsWith('http') 
     ? blog.imgSrc 
     : `https://traditionalalley.com.np${blog.imgSrc || '/logo.png'}`;
 
   return {
-    title,
+    title: blogTitle,
     description: description.substring(0, 160),
     alternates: {
       canonical: `/blog-detail/${id}`,
     },
     openGraph: {
-      title,
+      title: fullTitle,
       description: description.substring(0, 160),
       url: `https://traditionalalley.com.np/blog-detail/${id}`,
       type: "article",

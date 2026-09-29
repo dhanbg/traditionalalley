@@ -7,9 +7,12 @@ import Link from "next/link";
 import React from "react";
 
 export const metadata = {
-  title:
-    "My Account Address || Traditional Alley",
-  description: "Traditional Alley",
+  title: "My Addresses",
+  description: "Manage your delivery addresses on Traditional Alley.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function page() {

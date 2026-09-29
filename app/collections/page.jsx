@@ -5,7 +5,7 @@ import Footer1 from "@/components/footers/Footer1";
 import Topbar6 from "@/components/headers/Topbar6";
 
 export const metadata = {
-  title: "All Collections | Traditional Alley - Nepali Ethnic & Traditional Wear",
+  title: "All Collections - Nepali Ethnic & Traditional Wear",
   description: "Browse all fashion collections at Traditional Alley. Discover authentic Nepali dresses, Dhaka clothing, bridal lehengas, kurthas, daura suruwal, and contemporary ethnic styles.",
   alternates: {
     canonical: "/collections",

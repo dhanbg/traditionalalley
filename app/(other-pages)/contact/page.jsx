@@ -5,7 +5,7 @@ import Contact2 from "@/components/otherPages/Contact2";
 import React from "react";
 
 export const metadata = {
-  title: "Contact Us | Traditional Alley - Customer Support & Inquiries",
+  title: "Contact Us - Customer Support & Inquiries",
   description: "Get in touch with Traditional Alley. Reach out for custom sizing inquiries, order support, and wholesale questions. Located in Lalitpur, Nepal with worldwide delivery.",
   alternates: {
     canonical: "/contact",

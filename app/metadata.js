@@ -35,9 +35,6 @@ export const metadata = {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
   },
-  alternates: {
-    canonical: '/',
-  },
   openGraph: {
     title: 'Traditional Alley - Authentic Nepali Fashion & Traditional Clothing',
     description: 'Discover authentic Nepali traditional clothing and modern fashion at Traditional Alley. Shop premium quality ethnic wear, traditional dresses, and contemporary styles.',
@@ -56,6 +53,8 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
+    site: '@_traditional_alley',
+    creator: '@_traditional_alley',
     title: 'Traditional Alley - Authentic Nepali Fashion & Traditional Clothing',
     description: 'Discover authentic Nepali traditional clothing and modern fashion at Traditional Alley. Shop premium quality ethnic wear, traditional dresses, and contemporary styles.',
     images: ['/logo.png'],

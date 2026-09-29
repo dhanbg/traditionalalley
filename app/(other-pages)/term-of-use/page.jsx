@@ -6,7 +6,7 @@ import React from "react";
 import Link from "next/link";
 
 export const metadata = {
-  title: "Terms of Use | Traditional Alley",
+  title: "Terms of Use",
   description: "Read the terms of use and store conditions for shopping authentic Nepali fashion and ethnic wear at Traditional Alley.",
   alternates: {
     canonical: "/term-of-use",

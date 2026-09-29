@@ -5,7 +5,7 @@ import Products from "@/components/products/Products";
 export const revalidate = 300;
 
 export const metadata = {
-  title: "Shop All Authentic Nepali Clothing & Ethnic Wear | Traditional Alley",
+  title: "Shop All Authentic Nepali Clothing & Ethnic Wear",
   description: "Browse our complete catalog of authentic Nepali dresses, Dhaka tops, Kurthas, bridal lehengas, Daura Suruwal, and contemporary traditional accessories with worldwide shipping.",
   alternates: {
     canonical: "/shop-default-grid",

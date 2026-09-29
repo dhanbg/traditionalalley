@@ -5,8 +5,11 @@ import OrdersFAQs from "@/components/otherPages/OrdersFAQs";
 import Footer1 from "@/components/footers/Footer1";
 
 export const metadata = {
-  title: "Orders FAQs | Traditional Alley",
-  description: "Frequently asked questions about orders, shipping, and returns at Traditional Alley.",
+  title: "Orders & Shipping FAQs",
+  description: "Frequently asked questions about orders, international shipping via DHL, and returns at Traditional Alley.",
+  alternates: {
+    canonical: "/FAQs",
+  },
 };
 
 export default function page() {

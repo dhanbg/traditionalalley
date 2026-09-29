@@ -6,8 +6,12 @@ import Link from "next/link";
 import React from "react";
 
 export const metadata = {
-  title: "Login || Traditional Alley",
-  description: "Traditional Alley",
+  title: "Login",
+  description: "Sign in to your Traditional Alley customer account.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function page() {

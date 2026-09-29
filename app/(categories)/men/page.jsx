@@ -4,7 +4,7 @@ import React from "react";
 import Men from "@/components/Collections/Men/Men";
 
 export const metadata = {
-  title: "Men's Nepali Fashion & Traditional Attire | Traditional Alley",
+  title: "Men's Nepali Fashion & Traditional Attire",
   description: "Explore our premium men's collection featuring authentic Nepali Daura Suruwal, Dhaka coats, ethnic blazers, and contemporary styles. Shop quality menswear at Traditional Alley.",
   alternates: {
     canonical: "/men",

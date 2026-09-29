@@ -189,6 +189,21 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: '/terms-conditions',
+        destination: '/term-of-use',
+        permanent: true,
+      },
+      {
+        source: '/delivery-return',
+        destination: '/shipping',
+        permanent: true,
+      },
+      {
+        source: '/size-guide',
+        destination: '/contact',
+        permanent: false,
+      },
+      {
         source: '/:path(home-.*)',
         destination: '/',
         permanent: true,

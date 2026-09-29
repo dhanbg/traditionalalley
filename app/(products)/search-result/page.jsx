@@ -5,8 +5,12 @@ import SearchProducts from "@/components/products/SearchProducts";
 import React, { Suspense } from "react";
 
 export const metadata = {
-  title: "Search Results | Traditional Alley",
-  description: "Find your perfect fashion items with our search results. Browse through our collection of traditional and modern clothing at Traditional Alley.",
+  title: "Search Results",
+  description: "Find your perfect fashion items with our search results at Traditional Alley.",
+  robots: {
+    index: false,
+    follow: true,
+  },
 };
 
 export default function page() {

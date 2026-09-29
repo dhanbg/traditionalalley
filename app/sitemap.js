@@ -19,9 +19,10 @@ export default async function sitemap() {
     { route: '/contact', priority: 0.7, changeFrequency: 'monthly' },
     { route: '/FAQs', priority: 0.6, changeFrequency: 'monthly' },
     { route: '/privacy-policy', priority: 0.5, changeFrequency: 'yearly' },
-    { route: '/terms-conditions', priority: 0.5, changeFrequency: 'yearly' },
-    { route: '/delivery-return', priority: 0.5, changeFrequency: 'monthly' },
-    { route: '/size-guide', priority: 0.6, changeFrequency: 'monthly' },
+    { route: '/term-of-use', priority: 0.5, changeFrequency: 'yearly' },
+    { route: '/return-refund', priority: 0.5, changeFrequency: 'monthly' },
+    { route: '/shipping', priority: 0.5, changeFrequency: 'monthly' },
+    { route: '/blog-list', priority: 0.8, changeFrequency: 'weekly' },
   ];
 
   const staticUrls = staticRoutes.map(({ route, priority, changeFrequency }) => ({

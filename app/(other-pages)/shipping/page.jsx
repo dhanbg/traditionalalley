@@ -5,8 +5,17 @@ import Shipping from "@/components/otherPages/Shipping";
 import Footer1 from "@/components/footers/Footer1";
 
 export const metadata = {
-  title: "Shipping | Traditional Alley",
-  description: "Learn about our shipping policies and delivery options at Traditional Alley.",
+  title: "Shipping & Delivery Information",
+  description: "Learn about worldwide delivery via DHL Express and domestic shipping across Nepal with Nepal Can Move at Traditional Alley.",
+  alternates: {
+    canonical: "/shipping",
+  },
+  openGraph: {
+    title: "Shipping & Delivery Information | Traditional Alley",
+    description: "Learn about worldwide delivery via DHL Express and domestic shipping across Nepal with Nepal Can Move at Traditional Alley.",
+    url: "https://traditionalalley.com.np/shipping",
+    siteName: "Traditional Alley",
+  },
 };
 
 export default function page() {

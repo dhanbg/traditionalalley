@@ -8,7 +8,7 @@ import Testimonials from "@/components/otherPages/Testimonials";
 import React from "react";
 
 export const metadata = {
-  title: "About Us | Traditional Alley - Authentic Nepali Ethnic Wear",
+  title: "About Us - Authentic Nepali Ethnic Wear",
   description: "Learn about Traditional Alley, Nepal's premier traditional clothing brand. Discover our heritage, craftsmanship, and commitment to authentic Nepali fashion and worldwide delivery.",
   alternates: {
     canonical: "/about-us",

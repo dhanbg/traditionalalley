@@ -5,9 +5,11 @@ import Testimonials2 from "@/components/otherPages/Testimonials2";
 import React from "react";
 import Link from "next/link";
 export const metadata = {
-  title:
-    "Customer Feedback || Traditional Alley",
-  description: "Traditional Alley",
+  title: "Customer Feedback & Reviews",
+  description: "Read customer reviews, testimonials, and feedback from happy clients shopping at Traditional Alley.",
+  alternates: {
+    canonical: "/customer-feedback",
+  },
 };
 
 export default function page() {

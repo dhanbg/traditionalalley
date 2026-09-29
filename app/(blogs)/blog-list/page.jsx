@@ -6,6 +6,27 @@ import Topbar6 from "@/components/headers/Topbar6";
 import Link from "next/link";
 import React from "react";
 
+export const metadata = {
+  title: "Fashion, Culture & Heritage Blog",
+  description: "Read stories, styling guides, Nepali cultural heritage insights, and traditional fashion trends from Traditional Alley.",
+  alternates: {
+    canonical: "/blog-list",
+  },
+  openGraph: {
+    title: "Fashion, Culture & Heritage Blog | Traditional Alley",
+    description: "Read stories, styling guides, Nepali cultural heritage insights, and traditional fashion trends from Traditional Alley.",
+    url: "https://traditionalalley.com.np/blog-list",
+    siteName: "Traditional Alley",
+    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Traditional Alley Blog" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Fashion, Culture & Heritage Blog | Traditional Alley",
+    description: "Read stories, styling guides, Nepali cultural heritage insights, and traditional fashion trends from Traditional Alley.",
+    images: ["/logo.png"],
+  },
+};
+
 export default function page() {
   return (
     <>

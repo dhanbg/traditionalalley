@@ -8,7 +8,12 @@ export const revalidate = 60; // Revalidate every 60 seconds
 
 // Metadata for the home page
 export const metadata = {
-  title: 'Traditional Alley - Authentic Nepali Fashion & Traditional Clothing',
+  title: {
+    absolute: 'Traditional Alley - Authentic Nepali Fashion & Traditional Clothing',
+  },
+  alternates: {
+    canonical: '/',
+  },
   description: 'Discover authentic Nepali traditional clothing and modern fashion at Traditional Alley. Shop premium quality ethnic wear, traditional dresses, and contemporary styles. Free shipping worldwide.',
   keywords: 'Traditional Alley, Nepali fashion, traditional clothing, ethnic wear, Nepal traditional dress, authentic Nepali clothing, traditional fashion, cultural clothing, handmade clothing Nepal',
   openGraph: {
@@ -28,6 +33,8 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
+    site: '@_traditional_alley',
+    creator: '@_traditional_alley',
     title: 'Traditional Alley - Authentic Nepali Fashion & Traditional Clothing',
     description: 'Discover authentic Nepali traditional clothing and modern fashion at Traditional Alley. Shop premium quality ethnic wear, traditional dresses, and contemporary styles.',
     images: ['/logo.png'],

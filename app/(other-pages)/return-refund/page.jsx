@@ -5,8 +5,17 @@ import ReturnRefund from "@/components/otherPages/ReturnRefund";
 import Footer1 from "@/components/footers/Footer1";
 
 export const metadata = {
-  title: "Return & Refund | Traditional Alley",
-  description: "Learn about our return and refund policies at Traditional Alley.",
+  title: "Return & Refund Policy",
+  description: "Learn about our return, refund, and exchange policies for authentic Nepali clothing at Traditional Alley.",
+  alternates: {
+    canonical: "/return-refund",
+  },
+  openGraph: {
+    title: "Return & Refund Policy | Traditional Alley",
+    description: "Learn about our return, refund, and exchange policies for authentic Nepali clothing at Traditional Alley.",
+    url: "https://traditionalalley.com.np/return-refund",
+    siteName: "Traditional Alley",
+  },
 };
 
 export default function page() {

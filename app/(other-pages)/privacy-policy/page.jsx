@@ -5,8 +5,17 @@ import PrivacyPolicy from "@/components/otherPages/PrivacyPolicy";
 import Footer1 from "@/components/footers/Footer1";
 
 export const metadata = {
-  title: "Privacy Policy | Traditional Alley",
+  title: "Privacy Policy",
   description: "Learn about our privacy policy and how we protect your personal information at Traditional Alley.",
+  alternates: {
+    canonical: "/privacy-policy",
+  },
+  openGraph: {
+    title: "Privacy Policy | Traditional Alley",
+    description: "Learn about our privacy policy and how we protect your personal information at Traditional Alley.",
+    url: "https://traditionalalley.com.np/privacy-policy",
+    siteName: "Traditional Alley",
+  },
 };
 
 export default function page() {

@@ -8,9 +8,12 @@ import OrderDetails from "@/components/my-account/OrderDetails";
 import React, { Suspense } from "react";
 
 export const metadata = {
-  title:
-    "My Account Order Details || Traditional Alley",
-  description: "Traditional Alley",
+  title: "Order Details",
+  description: "View details of your order on Traditional Alley.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 function OrderDetailsWrapper() {

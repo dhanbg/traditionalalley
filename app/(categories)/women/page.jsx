@@ -4,7 +4,7 @@ import React from "react";
 import Women from "@/components/Collections/Women/Women";
 
 export const metadata = {
-  title: "Women's Ethnic & Traditional Fashion Collection | Traditional Alley",
+  title: "Women's Ethnic & Traditional Fashion Collection",
   description: "Discover our exclusive women's fashion collection featuring authentic Nepali traditional clothing, lehengas, kurthas, sarees, and modern ethnic outfits. Worldwide shipping.",
   alternates: {
     canonical: "/women",
