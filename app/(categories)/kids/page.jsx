@@ -16,6 +16,12 @@ export const metadata = {
     siteName: "Traditional Alley",
     images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Traditional Alley Kids Collection" }],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kids Ethnic & Cultural Clothing Collection | Traditional Alley",
+    description: "Browse our adorable kids fashion collection with comfortable, premium Nepali cultural wear and festive outfits for children.",
+    images: ["/logo.png"],
+  },
 };
 
 const kidsSchema = {

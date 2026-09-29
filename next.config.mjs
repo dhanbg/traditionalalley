@@ -200,11 +200,16 @@ const nextConfig = {
       },
       {
         source: '/size-guide',
-        destination: '/contact',
-        permanent: false,
+        destination: '/FAQs',
+        permanent: true,
       },
       {
         source: '/:path(home-.*)',
+        destination: '/',
+        permanent: true,
+      },
+      {
+        source: '/:dim1(\\d{2})/:dim2(\\d{2})/:dim3(\\d{2})',
         destination: '/',
         permanent: true,
       },

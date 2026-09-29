@@ -16,6 +16,12 @@ export const metadata = {
     siteName: "Traditional Alley",
     images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Traditional Alley Men Collection" }],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Men's Nepali Fashion & Traditional Attire | Traditional Alley",
+    description: "Explore our premium men's collection featuring authentic Nepali Daura Suruwal, Dhaka coats, ethnic blazers, and contemporary styles.",
+    images: ["/logo.png"],
+  },
 };
 
 const menSchema = {

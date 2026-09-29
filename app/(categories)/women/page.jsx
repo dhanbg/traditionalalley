@@ -16,6 +16,12 @@ export const metadata = {
     siteName: "Traditional Alley",
     images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Traditional Alley Women Collection" }],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Women's Ethnic & Traditional Fashion Collection | Traditional Alley",
+    description: "Discover our exclusive women's fashion collection featuring authentic Nepali traditional clothing, lehengas, kurthas, sarees, and modern ethnic outfits.",
+    images: ["/logo.png"],
+  },
 };
 
 const womenSchema = {

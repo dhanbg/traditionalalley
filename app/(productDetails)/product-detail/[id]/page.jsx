@@ -251,6 +251,7 @@ export default async function page({ params }) {
     description: normalizeText(product.description) || `Authentic Nepali ${product.title} from Traditional Alley`,
     image: allProductImages,
     sku: product.sku || id,
+    mpn: product.product_code || product.sku || id,
     brand: {
       '@type': 'Brand',
       name: 'Traditional Alley',
@@ -261,6 +262,7 @@ export default async function page({ params }) {
       priceCurrency: 'USD',
       price: product.price || 0,
       priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      validFrom: product.createdAt ? product.createdAt.split('T')[0] : '2025-01-01',
       itemCondition: 'https://schema.org/NewCondition',
       availability: product.inStock !== false ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       seller: {
