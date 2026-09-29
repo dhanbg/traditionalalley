@@ -23,7 +23,7 @@ export const footerLinks = [
       { label: "Return & Refund", href: "/return-refund", isLink: true },
       { label: "Privacy Policy", href: "/privacy-policy", isLink: true },
       { label: "Terms & Conditions", href: "/term-of-use", isLink: true },
-      { label: "Orders FAQs", href: "/orders-faqs", isLink: true },
+      { label: "Orders FAQs", href: "/FAQs", isLink: true },
     ],
   },
 ];

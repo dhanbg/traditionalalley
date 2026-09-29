@@ -204,6 +204,11 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: '/orders-faqs',
+        destination: '/FAQs',
+        permanent: true,
+      },
+      {
         source: '/:path(home-.*)',
         destination: '/',
         permanent: true,
