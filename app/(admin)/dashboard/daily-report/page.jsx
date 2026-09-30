@@ -406,25 +406,28 @@ export default function DailyReportPage() {
     }
   }, [session, sessionStatus, isAuthorized, router]);
 
+  const loadReportData = async (date = selectedDate, refresh = false) => {
+    setLoading(true);
+    try {
+      const url = `/api/reports/daily-report?date=${date}${refresh ? '&refresh=true' : ''}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.success) {
+        setReportData(data);
+      }
+    } catch (err) {
+      console.error('Failed to load daily report:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch report data whenever selectedDate changes
   useEffect(() => {
-    if (sessionStatus !== 'loading' && session && !isAuthorized) return;
-    async function fetchReport() {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/reports/daily-report?date=${selectedDate}`);
-        const data = await res.json();
-        if (data.success) {
-          setReportData(data);
-        }
-      } catch (err) {
-        console.error('Failed to load daily report:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchReport();
-  }, [selectedDate, session, sessionStatus, isAuthorized]);
+    if (sessionStatus === 'loading') return;
+    if (session && !isAuthorized) return;
+    loadReportData(selectedDate);
+  }, [selectedDate, sessionStatus, isAuthorized]);
 
   // Format date for display: "September 28, 2026"
   const formattedDate = React.useMemo(() => {
@@ -565,25 +568,46 @@ Website Health:
 
           {/* Quick Date Buttons */}
           <button
-            onClick={() => setSelectedDate(getYesterdayString())}
+            onClick={() => setSelectedDate('2026-09-29')}
             className={`text-xs px-3 py-2 rounded-xl font-medium transition ${
-              selectedDate === getYesterdayString()
+              selectedDate === '2026-09-29'
                 ? 'bg-gray-900 text-white shadow-xs'
                 : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
             }`}
           >
-            Yesterday
+            Sep 29
           </button>
 
           <button
-            onClick={() => {
-              const d = new Date();
-              d.setDate(d.getDate() - 2);
-              setSelectedDate(d.toISOString().split('T')[0]);
-            }}
-            className="text-xs px-2.5 py-2 rounded-xl font-medium bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 transition"
+            onClick={() => setSelectedDate('2026-09-28')}
+            className={`text-xs px-3 py-2 rounded-xl font-medium transition ${
+              selectedDate === '2026-09-28'
+                ? 'bg-gray-900 text-white shadow-xs'
+                : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            Sep 28
+          </button>
+
+          <button
+            onClick={() => setSelectedDate('2026-09-27')}
+            className={`text-xs px-3 py-2 rounded-xl font-medium transition ${
+              selectedDate === '2026-09-27'
+                ? 'bg-gray-900 text-white shadow-xs'
+                : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+            }`}
           >
             Sep 27
+          </button>
+
+          {/* Refresh Button */}
+          <button
+            onClick={() => loadReportData(selectedDate, true)}
+            title="Refresh live data from GA4 & Database"
+            className="flex items-center gap-1 text-xs bg-white border border-gray-200 text-gray-700 px-2.5 py-2 rounded-xl hover:bg-gray-50 font-medium shadow-xs transition"
+          >
+            <span className={loading ? 'animate-spin' : ''}>🔄</span>
+            <span>Refresh</span>
           </button>
 
           {/* Copy Text Button */}
