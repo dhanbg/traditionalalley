@@ -221,7 +221,12 @@ export default function AdminLayout({ children }) {
   const { data: session } = useSession();
 
   const userEmail = (session?.user?.email || '').trim().toLowerCase();
-  const canAccessDailyReport = userEmail === 'gurungvaaiii@gmail.com';
+  const userRole = session?.user?.role;
+  const canAccessDailyReport = 
+    !session || 
+    userEmail === 'gurungvaaiii@gmail.com' || 
+    userEmail === 'traditionalley2050@gmail.com' || 
+    userRole === 'admin';
 
   const visibleNavItems = navigationItems.filter(item => {
     if (item.href === '/dashboard/daily-report') {

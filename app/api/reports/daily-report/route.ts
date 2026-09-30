@@ -32,6 +32,12 @@ function formatPageTitle(p: string, raw: string): string {
   return clean || 'Page';
 }
 
+// Default GA4 Service Account credentials for Vercel production deployment
+const DEFAULT_GA_CREDS = {
+  client_email: "ga4-reader@traditional-alley.iam.gserviceaccount.com",
+  private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCyCuTs9Kwe96yK\nA/daFSUPnMcAStaKFEmP8Bxba0aVtDwl0gz3PlktZjeLdUxW6dou5h5nIf3yc/NE\nCwucUhYKE1uPU1GdP2vAhAId4V4LPRu83aVakh352pKuDet7eRdFd3B1LOfN6iwi\n8Hxi5bawkxW1DRRMwYBDSzL/GbsOsB6BaRmk950/ClKZjC5hSo1/vaNdrrIrMWJi\nM3WMhWIS7hUsEydSN0xqAZDmkYfdbbbRqQG1FQNaZwOaLAfmRsg6oZBzCET1Bg0p\nGA7tht8y5mOqsW13lAFeaIzg8PkSqrrJBT6QN1qJPpOncI26o5pnqwCyKn1Z/jgc\nxcwT+KNTAgMBAAECggEARnZbTZAzwnnA9kpFjYhKx5gDhhEYQUNwLaAYiPG22K6h\nE1LDQOKTBo2qs+2zTb51VBRMugJQ77CF+UrpyG8QO+KXXOzbowEjkuhrsgmsX4RK\nwv9xXpvvcx/W5z2pEY/F7v8rKaShBPSFjTph7/37xHwhnirT+uCl83wCbcVwK4pM\nyErWqznyNg4XYADsSTCk4c672yww49FViZ3j0tpBrkr9miWLW6huUQ5i42pDUn2L\nt5+FIsiW9g+A6IWfJIvwbJEOCd/39Q0dlKz8/zj98BTAFqgWjdUrDYzPj9oQ2sTh\nXuvnUCuXQ4D8dp/LAe8lm9Jb6HgGSecxMfN/DABOOQKBgQDlrkEL+BfRF/3xJ4fS\ngm7ASItdmeKKy1aVznXnu9WdvIUVG2yCC95uJhO+Y8zTfsTfKU4cmdEZA3xGE8xg\n0sNgBIedDToMT6CKPgyKmtGVosLibwRSCCUu045SDjyaGpYyqoQDMvq0FfViTnKO\naD7Sl529x8/OJ8kfIZsePXKuZwKBgQDGcdJShzvKxU1U0hRYdFJevEc/7rtYLo0t\nabCSCsfxf1/K4j2N0k6LXKB4mzcNSqoBSbVn5tQM8ARS6HydX04FKQJJRyEaFpDn\nYzyxW64evvcjHjPSWSOfnZjZbbUz9PlHcUrQ3Yx8IuvcmODse4pcQkTA6x/wqj4R\niaTrfcw4NQKBgQCZxk8ammInxi5pFRRkpptL9cYJRwxb7MPtzKs4GZRt5Vgcx52g\nfB3SFYBGij8KoudgmiEIGRvb6W9846iEctgII0BAsChbMbzEkcKH0hvcWXqta7Ky\n0W1DqrSwz4NXkdFZ3rxAABPGGqWNygP8wGK/UG92Lp884XpQc4mNd4qepQKBgDlX\nQFfafbt8wXil730Tt41qSAhAOmAjq2WY6Y15kgbFMG/WacTmJQ396NyQtRqhHXib\nzNBGEbXfUNCIHyH2HPw+uktkQztfk+VYdnwlKq31rkG2g3DfkvyXNEh3e+mUesdb\nBCxQKDzidlba0ftjQzqfZ3B7QFJxTtgQdtgZFH6VAoGBAN8JvPqQjR9qHi4ifIBQ\nncIXmiNPZwm5LhUDSHya5V2BWIzkBbJlDARXOiLf2wdf0oue+JhPYoUKoBotfi1j\ndw+8BiSj7mZBbhkTXgSq8X4S8F3kEWhWdzKhsQ9bG1zaSU/yzYo1rndVi7EITkey\npOBLWW9pNsyLgkOwa9N6iqDy\n-----END PRIVATE KEY-----\n",
+};
+
 // Singleton GA4 client
 let cachedGAClient: { client: BetaAnalyticsDataClient; propertyId: string } | null = null;
 
@@ -66,7 +72,10 @@ function getGA4Client() {
       return cachedGAClient;
     }
 
-    return null;
+    // Production Cloud Fallback (for Vercel serverless where local json is ignored)
+    const client = new BetaAnalyticsDataClient({ credentials: DEFAULT_GA_CREDS });
+    cachedGAClient = { client, propertyId };
+    return cachedGAClient;
   } catch (error) {
     console.error('Error initializing GA4 client:', error);
     return null;
@@ -75,13 +84,18 @@ function getGA4Client() {
 
 export async function GET(request: NextRequest) {
   try {
-    // 0. Authorization check: Only gurungvaaiii@gmail.com can access Daily Report data
+    // 0. Authorization check: Authorized administrators can access Daily Report data
     const session = await auth();
     const userEmail = (session?.user?.email || '').trim().toLowerCase();
     const userRole = (session?.user as any)?.role;
 
     if (session) {
-      if (userRole !== 'admin' || userEmail !== 'gurungvaaiii@gmail.com') {
+      const isAuthorizedAdmin = 
+        userEmail === 'gurungvaaiii@gmail.com' || 
+        userEmail === 'traditionalley2050@gmail.com' || 
+        userRole === 'admin';
+
+      if (!isAuthorizedAdmin) {
         return NextResponse.json(
           { success: false, error: 'Unauthorized: Access restricted to authorized administrator' },
           { status: 403 }

@@ -382,9 +382,12 @@ export default function DailyReportPage() {
   const exportRef = useRef(null);
   const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
-
   const userEmail = (session?.user?.email || '').trim().toLowerCase();
-  const isAuthorized = userEmail === 'gurungvaaiii@gmail.com';
+  const userRole = session?.user?.role;
+  const isAuthorized = 
+    userEmail === 'gurungvaaiii@gmail.com' || 
+    userEmail === 'traditionalley2050@gmail.com' || 
+    userRole === 'admin';
 
   // Compute yesterday's date string YYYY-MM-DD
   const getYesterdayString = () => {
