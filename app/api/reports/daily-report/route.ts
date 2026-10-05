@@ -111,12 +111,32 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const now = new Date();
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const targetDate = searchParams.get('date') || yesterday.toISOString().slice(0, 10);
+    const defaultDate = yesterday.toISOString().slice(0, 10);
+
+    const dateParam = searchParams.get('date');
+    const startDateParam = searchParams.get('startDate');
+    const endDateParam = searchParams.get('endDate');
+    const periodParam = (searchParams.get('period') || '').toLowerCase();
+
+    const isValidDate = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d);
+
+    let startDate = isValidDate(startDateParam || '') ? startDateParam! : (isValidDate(dateParam || '') ? dateParam! : defaultDate);
+    let endDate = isValidDate(endDateParam || '') ? endDateParam! : (isValidDate(dateParam || '') ? dateParam! : startDate);
+
+    if (startDate > endDate) {
+      const temp = startDate;
+      startDate = endDate;
+      endDate = temp;
+    }
+
+    const period = periodParam || (startDate === endDate ? 'daily' : 'custom');
     const bypassCache = searchParams.get('refresh') === 'true';
+
+    const cacheKey = `${startDate}_${endDate}_${period}`;
 
     // Check in-memory cache (5-minute TTL)
     if (!bypassCache) {
-      const cached = reportCache.get(targetDate);
+      const cached = reportCache.get(cacheKey);
       if (cached && Date.now() < cached.expiresAt) {
         return NextResponse.json(cached.data);
       }
@@ -130,6 +150,12 @@ export async function GET(request: NextRequest) {
       'Content-Type': 'application/json',
     };
 
+    const isDateInRange = (dStr?: string | null) => {
+      if (!dStr) return false;
+      const d = dStr.slice(0, 10);
+      return d >= startDate && d <= endDate;
+    };
+
     // 1. Fetch Strapi DB data concurrently
     const strapiPromise = async () => {
       let newRegistrations = 0;
@@ -140,9 +166,9 @@ export async function GET(request: NextRequest) {
       let isApiHealthy = true;
 
       const [usersSettled, cartsSettled, bagsSettled] = await Promise.allSettled([
-        axios.get(`${API_URL}/api/user-data?pagination[pageSize]=100&sort=createdAt:desc`, { headers, timeout: 8000 }),
-        axios.get(`${API_URL}/api/carts?pagination[pageSize]=100`, { headers, timeout: 8000 }),
-        axios.get(`${API_URL}/api/user-bags?pagination[pageSize]=100&populate=*&sort=updatedAt:desc`, { headers, timeout: 8000 }),
+        axios.get(`${API_URL}/api/user-data?pagination[pageSize]=500&sort=createdAt:desc`, { headers, timeout: 8000 }),
+        axios.get(`${API_URL}/api/carts?pagination[pageSize]=500`, { headers, timeout: 8000 }),
+        axios.get(`${API_URL}/api/user-bags?pagination[pageSize]=500&populate=*&sort=updatedAt:desc`, { headers, timeout: 8000 }),
       ]);
 
       // 1a. User Registrations
@@ -150,7 +176,7 @@ export async function GET(request: NextRequest) {
         const users = usersSettled.value.data.data;
         const newUsers = users.filter((u: any) => {
           const d = u.attributes || u;
-          return (d.createdAt || '').slice(0, 10) === targetDate;
+          return isDateInRange(d.createdAt);
         });
         newRegistrations = newUsers.length;
       } else if (usersSettled.status === 'rejected') {
@@ -162,9 +188,9 @@ export async function GET(request: NextRequest) {
       if (cartsSettled.status === 'fulfilled' && cartsSettled.value.data?.data) {
         const activeCarts = cartsSettled.value.data.data.filter((c: any) => {
           const d = c.attributes || c;
-          const updated = (d.updatedAt || '').slice(0, 10);
-          const created = (d.createdAt || '').slice(0, 10);
-          return updated === targetDate || created === targetDate;
+          const updated = d.updatedAt;
+          const created = d.createdAt;
+          return isDateInRange(updated) || isDateInRange(created);
         });
         totalCarts = activeCarts.length;
       }
@@ -184,7 +210,7 @@ export async function GET(request: NextRequest) {
               if (match) txnDate = new Date(parseInt(match[1], 10)).toISOString().slice(0, 10);
             }
 
-            if (pDate === targetDate || txnDate === targetDate) {
+            if (isDateInRange(pDate) || isDateInRange(txnDate)) {
               const status = (p.status || '').toLowerCase();
               const firstProduct = p.orderData?.products?.[0];
 
@@ -192,16 +218,30 @@ export async function GET(request: NextRequest) {
                 if (p.amount <= 50) {
                   hasTestPayment = true;
                 } else {
+                  const orderSummary = p.orderData?.orderSummary || {};
+                  const shippingObj = p.orderData?.shipping || {};
+                  const products = p.orderData?.products || [];
+
+                  const orderCurrency = orderSummary.currency || p.currency || 'NPR';
+                  const orderTotal = orderSummary.totalAmount ?? p.amount ?? 0;
+                  const productPrice = orderSummary.subtotal ?? (products.reduce((acc: number, it: any) => acc + (it.subtotal || it.price || 0), 0) || orderTotal);
+                  const shippingCost = orderSummary.shippingCost ?? shippingObj.cost ?? shippingObj.shippingCost ?? p.orderData?.shippingPrice ?? Math.max(0, (typeof orderTotal === 'number' && typeof productPrice === 'number') ? orderTotal - productPrice : 0);
+
                   purchases.push({
                     txnId: p.merchantTxnId,
                     amount: p.amount,
                     currency: p.currency || 'NPR',
+                    orderCurrency,
+                    orderTotal: typeof orderTotal === 'number' ? orderTotal : parseFloat(orderTotal) || 0,
+                    productPrice: typeof productPrice === 'number' ? productPrice : parseFloat(productPrice) || 0,
+                    shippingCost: typeof shippingCost === 'number' ? shippingCost : parseFloat(shippingCost) || 0,
                     title: firstProduct?.title || 'Purchased Item',
                     image: firstProduct?.imgSrc || '/placeholder.png',
                     size: firstProduct?.selectedSize || firstProduct?.size || 'Standard',
-                    customerName: p.orderData?.receiver_details?.name || 'Customer',
+                    customerName: p.orderData?.receiver_details?.name || p.orderData?.receiver_details?.fullName || 'Customer',
                     country: p.orderData?.receiver_details?.address?.countryCode || 'NP',
                     timestamp: p.timestamp,
+                    date: pDate || txnDate,
                   });
                 }
               } else if (status === 'pending') {
@@ -222,6 +262,7 @@ export async function GET(request: NextRequest) {
         newRegistrations,
         totalCarts,
         pendingCheckouts,
+        abandonedCheckouts: Math.max(0, totalCarts - pendingCheckouts),
         purchases,
         hasTestPayment,
         isApiHealthy,
@@ -234,7 +275,9 @@ export async function GET(request: NextRequest) {
       const gaData = {
         connected: !!ga,
         activeUsers: 0,
+        sessions: 0,
         topCountries: [] as any[],
+        topChannels: [] as any[],
         topLandingPages: [] as any[],
         topProducts: [] as any[],
       };
@@ -245,35 +288,44 @@ export async function GET(request: NextRequest) {
         const { client, propertyId } = ga;
         gaData.connected = true;
 
-        const [usersSettled, countriesSettled, pagesSettled, productsSettled] = await Promise.allSettled([
-          // 2a. Active Users
+        const [usersSettled, countriesSettled, channelsSettled, pagesSettled, productsSettled] = await Promise.allSettled([
+          // 2a. Active Users & Sessions
           client.runReport({
             property: `properties/${propertyId}`,
-            dateRanges: [{ startDate: targetDate, endDate: targetDate }],
-            metrics: [{ name: 'activeUsers' }],
+            dateRanges: [{ startDate, endDate }],
+            metrics: [{ name: 'activeUsers' }, { name: 'sessions' }],
           }),
           // 2b. Top Countries
           client.runReport({
             property: `properties/${propertyId}`,
-            dateRanges: [{ startDate: targetDate, endDate: targetDate }],
+            dateRanges: [{ startDate, endDate }],
             dimensions: [{ name: 'country' }, { name: 'countryId' }],
             metrics: [{ name: 'activeUsers' }],
             orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
             limit: 5,
           }),
-          // 2c. Top Landing Pages
+          // 2c. Traffic Channels / Acquisition (Sessions by Channel Group)
           client.runReport({
             property: `properties/${propertyId}`,
-            dateRanges: [{ startDate: targetDate, endDate: targetDate }],
+            dateRanges: [{ startDate, endDate }],
+            dimensions: [{ name: 'sessionDefaultChannelGroup' }],
+            metrics: [{ name: 'sessions' }, { name: 'engagedSessions' }],
+            orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+            limit: 5,
+          }),
+          // 2d. Top Landing Pages
+          client.runReport({
+            property: `properties/${propertyId}`,
+            dateRanges: [{ startDate, endDate }],
             dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
             metrics: [{ name: 'screenPageViews' }],
             orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
             limit: 10,
           }),
-          // 2d. Top Product Views
+          // 2e. Top Product Views
           client.runReport({
             property: `properties/${propertyId}`,
-            dateRanges: [{ startDate: targetDate, endDate: targetDate }],
+            dateRanges: [{ startDate, endDate }],
             dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
             metrics: [{ name: 'screenPageViews' }],
             dimensionFilter: {
@@ -290,12 +342,13 @@ export async function GET(request: NextRequest) {
           }),
         ]);
 
-        // Process Active Users
+        // Process Active Users & Sessions
         if (usersSettled.status === 'fulfilled') {
           const report = usersSettled.value[0];
           gaData.activeUsers = parseInt(report?.rows?.[0]?.metricValues?.[0]?.value || '0', 10);
+          gaData.sessions = parseInt(report?.rows?.[0]?.metricValues?.[1]?.value || '0', 10);
         } else {
-          console.warn('GA4 Active Users query failed:', usersSettled.reason?.message);
+          console.warn('GA4 Active Users & Sessions query failed:', usersSettled.reason?.message);
         }
 
         // Process Countries
@@ -310,6 +363,29 @@ export async function GET(request: NextRequest) {
           }
         } else {
           console.warn('GA4 Countries query failed:', countriesSettled.reason?.message);
+        }
+
+        // Process Traffic Channels (Sessions by Channel Group)
+        if (channelsSettled.status === 'fulfilled') {
+          const report = channelsSettled.value[0];
+          if (report?.rows && report.rows.length > 0) {
+            const totalChannelSessions = report.rows.reduce(
+              (acc: number, row: any) => acc + parseInt(row.metricValues?.[0]?.value || '0', 10),
+              0
+            );
+            gaData.topChannels = report.rows.map((row: any) => {
+              const sessions = parseInt(row.metricValues?.[0]?.value || '0', 10);
+              const pct = totalChannelSessions > 0 ? Math.round((sessions / totalChannelSessions) * 100) : 0;
+              return {
+                channel: row.dimensionValues?.[0]?.value || 'Direct',
+                sessions,
+                engagedSessions: parseInt(row.metricValues?.[1]?.value || '0', 10),
+                percentage: pct,
+              };
+            });
+          }
+        } else {
+          console.warn('GA4 Channels query failed:', channelsSettled.reason?.message);
         }
 
         // Process Landing Pages
@@ -361,14 +437,20 @@ export async function GET(request: NextRequest) {
 
     const result = {
       success: true,
-      date: targetDate,
+      startDate,
+      endDate,
+      period,
+      date: startDate === endDate ? startDate : `${startDate} to ${endDate}`,
       metrics: {
         activeUsers: gaData.activeUsers,
+        sessions: gaData.sessions,
         newRegistrations: strapiData.newRegistrations,
         totalCarts: strapiData.totalCarts,
         pendingCheckouts: strapiData.pendingCheckouts,
+        abandonedCheckouts: strapiData.abandonedCheckouts ?? Math.max(0, strapiData.totalCarts - strapiData.pendingCheckouts),
       },
       topCountries: gaData.topCountries,
+      topChannels: gaData.topChannels,
       topLandingPages: gaData.topLandingPages,
       topProducts: gaData.topProducts,
       purchases: strapiData.purchases,
@@ -380,7 +462,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Cache result in memory for 5 minutes
-    reportCache.set(targetDate, {
+    reportCache.set(cacheKey, {
       data: result,
       expiresAt: Date.now() + 5 * 60 * 1000,
     });
