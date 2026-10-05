@@ -119,7 +119,10 @@ function ReportCardContent({
               </span>
             )}
           </div>
-          <p style={serifStyle} className="text-sm font-normal text-gray-500 mt-1 whitespace-nowrap">
+          <p
+            style={{ ...serifStyle, fontWeight: 600 }}
+            className="text-sm font-semibold sm:font-bold text-gray-700 mt-1 whitespace-nowrap"
+          >
             {formattedDate}
           </p>
         </div>
