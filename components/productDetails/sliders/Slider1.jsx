@@ -2,12 +2,14 @@
 import { API_URL } from "@/utils/urls";
 import { getImageUrl } from "@/utils/imageUtils";
 import { slides } from "@/data/singleProductSliders";
-import { useEffect, useRef, useState, useMemo } from "react";
-import { Thumbs } from "swiper/modules";
+import { useEffect, useRef, useState } from "react";
+import { Thumbs, Zoom } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css/zoom";
 import Image from "next/image";
 import Drift from 'drift-zoom';
 import "@/public/css/drift-basic.min.css";
+import ProductZoomModal from "../ProductZoomModal";
 
 export default function Slider1({
   activeColor = "gray",
@@ -25,8 +27,11 @@ export default function Slider1({
   
   // --- NEW: items as state, update on relevant changes ---
   const [items, setItems] = useState([]);
+  const [isZoomModalOpen, setIsZoomModalOpen] = useState(false);
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const driftInstancesRef = useRef([]);
   const swiperRef = useRef(null);
+  const thumbsSwiperRef = useRef(null);
   const imageRefs = useRef([]);
 
   useEffect(() => {
@@ -144,8 +149,9 @@ export default function Slider1({
   useEffect(() => {
     if (swiperRef.current) {
       swiperRef.current.slideTo(0, 0);
+      setActiveSlideIndex(0);
       setTimeout(() => {
-        swiperRef.current.update && swiperRef.current.update();
+        swiperRef.current?.update && swiperRef.current.update();
       }, 100);
     }
   }, [items]);
@@ -157,6 +163,7 @@ export default function Slider1({
         const slideIndex = items.filter((elm) => elm.color == activeColor)[0]?.id - 1;
         if (slideIndex !== undefined && slideIndex >= 0) {
           swiperRef.current.slideTo(slideIndex);
+          setActiveSlideIndex(slideIndex);
         }
       }, 100);
     }
@@ -172,7 +179,7 @@ export default function Slider1({
     });
     driftInstancesRef.current = [];
 
-    // Check if device is mobile (disable zoom on mobile)
+    // Check if device is mobile (Drift is desktop-only, mobile uses touch zoom + modal)
     const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
     
     // Only create zoom instances on desktop devices
@@ -188,7 +195,7 @@ export default function Slider1({
             zoomFactor: 2.5,
             touchDelay: 100,
             sourceAttribute: 'src',
-            handleTouch: true,
+            handleTouch: false,
             inlineOffsetX: 0,
             inlineOffsetY: 0,
             hoverDelay: 0,
@@ -215,7 +222,7 @@ export default function Slider1({
               zoomFactor: 2.5,
               touchDelay: 100,
               sourceAttribute: 'src',
-              handleTouch: true,
+              handleTouch: false,
               inlineOffsetX: 0,
               inlineOffsetY: 0,
               hoverDelay: 0,
@@ -241,6 +248,7 @@ export default function Slider1({
   const handleThumbnailClick = (index) => {
     if (swiperRef.current) {
       swiperRef.current.slideTo(index);
+      setActiveSlideIndex(index);
       // Mobile-specific fix: force update after slideTo
       if (typeof window !== 'undefined' && window.innerWidth <= 991.98) {
         setTimeout(() => {
@@ -252,6 +260,14 @@ export default function Slider1({
     }
   };
 
+  const handleMainImageClick = (index) => {
+    // Open full-screen modal on mobile click or if zoom is triggered
+    if (typeof window !== 'undefined' && window.innerWidth <= 991) {
+      setActiveSlideIndex(index);
+      setIsZoomModalOpen(true);
+    }
+  };
+
   return (
     <div className="thumbs-slider">
       <Swiper
@@ -260,7 +276,7 @@ export default function Slider1({
         direction="vertical"
         spaceBetween={10}
         slidesPerView={thumbSlidePerView}
-        onSwiper={swiper => { swiperRef.current = swiper; }}
+        onSwiper={swiper => { thumbsSwiperRef.current = swiper; }}
         modules={[Thumbs]}
         initialSlide={1}
         breakpoints={{
@@ -322,65 +338,141 @@ export default function Slider1({
                   height: '100%',
                   objectFit: 'cover',
                   borderRadius: '8px',
-                  border: '1px solid #f0f0f0'
+                  border: index === activeSlideIndex ? '2px solid #E43131' : '1px solid #f0f0f0',
+                  transition: 'border 0.2s ease',
                 }}
               />
             </div>
           </SwiperSlide>
         ))}
       </Swiper>
-      <Swiper
-        dir="ltr"
-        className="swiper tf-product-media-main"
-        id="gallery-swiper-started"
-        spaceBetween={10}
-        slidesPerView={1}
-        onSwiper={(swiper) => (swiperRef.current = swiper)}
-        style={{ 
-          aspectRatio: '2/3',
-          maxWidth: '400px',
-          margin: '0 auto'
-        }}
-      >
-        {items.map((slide, index) => (
-          <SwiperSlide key={index} className="swiper-slide" data-color={slide.color || "gray"}>
-            <div
-              style={{ 
-                cursor: 'pointer', 
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                width: '100%',
-                aspectRatio: '2/3',
-                transition: 'transform 0.3s ease'
-              }}
-            >
-              <Image
-                className="lazyload drift-zoom-target"
-                alt={slide.alt || (productTitle ? `${productTitle} - Authentic Nepali Traditional Clothing` : "Authentic Nepali Traditional Clothing")}
-                src={slide.src || '/logo.png'}
-                width={600}
-                height={800}
-                priority={index === 0}
-                sizes="(max-width: 768px) 100vw, 400px"
-                style={{
+
+      <div style={{ position: 'relative', width: '100%', maxWidth: '400px', margin: '0 auto' }}>
+        <Swiper
+          dir="ltr"
+          className="swiper tf-product-media-main"
+          id="gallery-swiper-started"
+          spaceBetween={10}
+          slidesPerView={1}
+          modules={[Thumbs, Zoom]}
+          zoom={{
+            maxRatio: 3,
+            minRatio: 1,
+            toggle: true,
+          }}
+          onSwiper={(swiper) => (swiperRef.current = swiper)}
+          onSlideChange={(swiper) => setActiveSlideIndex(swiper.activeIndex)}
+          style={{ 
+            aspectRatio: '2/3',
+            width: '100%',
+            borderRadius: '16px',
+            overflow: 'hidden',
+          }}
+        >
+          {items.map((slide, index) => (
+            <SwiperSlide key={index} className="swiper-slide" data-color={slide.color || "gray"}>
+              <div
+                className="swiper-zoom-container"
+                onClick={() => handleMainImageClick(index)}
+                style={{ 
+                  cursor: 'pointer', 
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
                   width: '100%',
                   height: '100%',
-                  objectFit: 'contain',
-                  borderRadius: '16px',
-                  border: '1px solid #f0f0f0',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                  aspectRatio: '2/3',
+                  transition: 'transform 0.3s ease',
+                  touchAction: 'pan-y pinch-zoom',
                 }}
-                ref={el => {
-                  if (el) {
-                    imageRefs.current[index] = el;
-                  }
-                }}
-              />
-            </div>
-          </SwiperSlide>
-        ))}
-      </Swiper>
+              >
+                <Image
+                  className="lazyload drift-zoom-target"
+                  alt={slide.alt || (productTitle ? `${productTitle} - Authentic Nepali Traditional Clothing` : "Authentic Nepali Traditional Clothing")}
+                  src={slide.src || '/logo.png'}
+                  width={600}
+                  height={800}
+                  priority={index === 0}
+                  sizes="(max-width: 768px) 100vw, 400px"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    borderRadius: '16px',
+                    border: '1px solid #f0f0f0',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                  }}
+                  ref={el => {
+                    if (el) {
+                      imageRefs.current[index] = el;
+                    }
+                  }}
+                />
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+
+        {/* Floating Zoom Button - Highly Visible on Mobile */}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveSlideIndex(swiperRef.current?.activeIndex || 0);
+            setIsZoomModalOpen(true);
+          }}
+          aria-label="Zoom product image"
+          style={{
+            position: 'absolute',
+            bottom: '12px',
+            right: '12px',
+            zIndex: 10,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            backgroundColor: 'rgba(255, 255, 255, 0.94)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            color: '#181818',
+            border: '1px solid rgba(0, 0, 0, 0.1)',
+            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.12)',
+            borderRadius: '24px',
+            padding: '7px 13px',
+            fontSize: '12px',
+            fontWeight: '600',
+            fontFamily: '"Outfit", sans-serif',
+            cursor: 'pointer',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#ffffff';
+            e.currentTarget.style.transform = 'scale(1.05)';
+            e.currentTarget.style.boxShadow = '0 6px 18px rgba(0, 0, 0, 0.16)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.94)';
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.boxShadow = '0 4px 14px rgba(0, 0, 0, 0.12)';
+          }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#E43131" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            <line x1="11" y1="8" x2="11" y2="14" />
+            <line x1="8" y1="11" x2="14" y2="11" />
+          </svg>
+          <span>Zoom</span>
+        </button>
+      </div>
+
+      {/* Fullscreen Mobile Zoom Modal */}
+      <ProductZoomModal
+        isOpen={isZoomModalOpen}
+        onClose={() => setIsZoomModalOpen(false)}
+        items={items}
+        initialIndex={activeSlideIndex}
+        productTitle={productTitle}
+      />
     </div>
   );
 }
+
