@@ -120,8 +120,8 @@ function ReportCardContent({
             )}
           </div>
           <p
-            style={{ ...serifStyle, fontWeight: 600 }}
-            className="text-sm font-semibold sm:font-bold text-gray-700 mt-1 whitespace-nowrap"
+            style={outfitStyle}
+            className="text-xs sm:text-sm font-semibold text-gray-600 mt-1 whitespace-nowrap tracking-wide"
           >
             {formattedDate}
           </p>
