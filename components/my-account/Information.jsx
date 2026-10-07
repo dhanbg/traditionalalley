@@ -245,6 +245,12 @@ export default function Information() {
                 >
                   Portugal
                 </option>
+                <option
+                  value="Qatar"
+                  data-provinces="[['Doha','Doha'],['Al Rayyan','Al Rayyan'],['Al Wakrah','Al Wakrah'],['Al Khor','Al Khor'],['Umm Salal','Umm Salal'],['Al Daayen','Al Daayen'],['Al Shamal','Al Shamal'],['Al Sheehaniya','Al Sheehaniya']]"
+                >
+                  Qatar
+                </option>
                 <option value="Singapore" data-provinces="[]">
                   Singapore
                 </option>

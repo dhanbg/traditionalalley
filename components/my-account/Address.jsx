@@ -213,6 +213,12 @@ export default function Address() {
                 >
                   Portugal
                 </option>
+                <option
+                  value="Qatar"
+                  data-provinces="[['Doha','Doha'],['Al Rayyan','Al Rayyan'],['Al Wakrah','Al Wakrah'],['Al Khor','Al Khor'],['Umm Salal','Umm Salal'],['Al Daayen','Al Daayen'],['Al Shamal','Al Shamal'],['Al Sheehaniya','Al Sheehaniya']]"
+                >
+                  Qatar
+                </option>
                 <option value="Singapore" data-provinces="[]">
                   Singapore
                 </option>
@@ -380,6 +386,7 @@ export default function Address() {
                         <option value="United States">United States</option>
                         <option value="Canada">Canada</option>
                         <option value="Australia">Australia</option>
+                        <option value="Qatar">Qatar</option>
                         {/* Add more countries here */}
                       </select>
                     </div>
