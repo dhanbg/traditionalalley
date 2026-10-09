@@ -1,0 +1,317 @@
+[
+  {
+    "InstitutionName": "Card Payment",
+    "InstrumentName": "Card Payment",
+    "InstrumentCode": "NICCARD",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202304261129S76.png",
+    "BankUrl": "checkoutcard",
+    "BankType": "checkoutcard"
+  },
+  {
+    "InstitutionName": "Hamro Pay",
+    "InstrumentName": "Hamro Pay",
+    "InstrumentCode": "HAMROPAYG",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202404091033S72.png",
+    "BankUrl": "CheckoutGateway",
+    "BankType": "CheckoutGateway"
+  },
+  {
+    "InstitutionName": "Khalti",
+    "InstrumentName": "Khalti",
+    "InstrumentCode": "KHALTIG",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202607281527S.png",
+    "BankUrl": "CheckoutGateway",
+    "BankType": "CheckoutGateway"
+  },
+  {
+    "InstitutionName": "MORU",
+    "InstrumentName": "MORU",
+    "InstrumentCode": "MORUG",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202207111046S42.png",
+    "BankUrl": "CheckoutGateway",
+    "BankType": "CheckoutGateway"
+  },
+  {
+    "InstitutionName": "MyPay",
+    "InstrumentName": "MyPay",
+    "InstrumentCode": "MYPAYG",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202405121003S06.png",
+    "BankUrl": "CheckoutGateway",
+    "BankType": "CheckoutGateway"
+  },
+  {
+    "InstitutionName": "Global SMART PLUS",
+    "InstrumentName": "Global SMART PLUS",
+    "InstrumentCode": "EBGlobal",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202202081634S1.png",
+    "BankUrl": "EBanking",
+    "BankType": "EBanking"
+  },
+  {
+    "InstitutionName": "Agricultural Development Bank",
+    "InstrumentName": "Agricultural Development Bank",
+    "InstrumentCode": "MBADBL",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031127S77.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Central Finance Limited",
+    "InstrumentName": "Central Finance Limited",
+    "InstrumentCode": "MBCFLB",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202404261038S67.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Citizens Bank",
+    "InstrumentName": "Citizens Bank",
+    "InstrumentCode": "MCITIZEN",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031127S41.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Everest Bank",
+    "InstrumentName": "Everest Bank",
+    "InstrumentCode": "MBEBL",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031134S57.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Excel Development Bank",
+    "InstrumentName": "Excel Development Bank",
+    "InstrumentCode": "MBEXCEL",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031130S71.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Garima Bikas Bank",
+    "InstrumentName": "Garima Bikas Bank",
+    "InstrumentCode": "MBGRDBL",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202206011459S81.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Global SMART PLUS",
+    "InstrumentName": "Global SMART PLUS",
+    "InstrumentCode": "MBGLOBAL",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031123S1.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Green Development Bank",
+    "InstrumentName": "Green Development Bank",
+    "InstrumentCode": "MBGREN",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031011S15.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "ICFC Finance",
+    "InstrumentName": "ICFC Finance",
+    "InstrumentCode": "MBICFC",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031129S26.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Jyoti Bikas Bank",
+    "InstrumentName": "Jyoti Bikas Bank",
+    "InstrumentCode": "MBJBBL",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031128S09.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Kamana Sewa Bikas Bank",
+    "InstrumentName": "Kamana Sewa Bikas Bank",
+    "InstrumentCode": "MBKAMANA",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031128S64.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Kumari Bank",
+    "InstrumentName": "Kumari Bank",
+    "InstrumentCode": "MBKUMARI",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031124S56.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Laxmi Sunrise Bank",
+    "InstrumentName": "Laxmi Sunrise Bank",
+    "InstrumentCode": "MBLAXMI",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202307141232S14.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Lumbini Bikas Bank",
+    "InstrumentName": "Lumbini Bikas Bank",
+    "InstrumentCode": "MBLUBL",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031010S71.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Machhapuchchhre  Bank",
+    "InstrumentName": "Machhapuchchhre  Bank",
+    "InstrumentCode": "MBMBL",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031125S75.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Mahalaxmi Bikas Bank",
+    "InstrumentName": "Mahalaxmi Bikas Bank",
+    "InstrumentCode": "MBMLBL",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202204271644S01.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Manjushree Finance",
+    "InstrumentName": "Manjushree Finance",
+    "InstrumentCode": "MBMFIL",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031010S77.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Muktinath Bikas Bank",
+    "InstrumentName": "Muktinath Bikas Bank",
+    "InstrumentCode": "MBMUKTI",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031129S28.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Multipurpose Finance",
+    "InstrumentName": "Multipurpose Finance",
+    "InstrumentCode": "MPFLNPKA",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202405121305S03.jpg",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Nepal Bank",
+    "InstrumentName": "Nepal Bank",
+    "InstrumentCode": "MBNBL",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031126S83.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Nepal Finance",
+    "InstrumentName": "Nepal Finance",
+    "InstrumentCode": "MBNFLTD",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031131S41.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "NIC ASIA Bank",
+    "InstrumentName": "NIC ASIA Bank",
+    "InstrumentCode": "MBNIC",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031123S42.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Prabhu Bank",
+    "InstrumentName": "Prabhu Bank",
+    "InstrumentCode": "MBPRABHU",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031123S12.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Prime Commercial Bank",
+    "InstrumentName": "Prime Commercial Bank",
+    "InstrumentCode": "MBPCBL",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202104302111S29.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Rastriya Banijya Bank",
+    "InstrumentName": "Rastriya Banijya Bank",
+    "InstrumentCode": "MBRBB",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031124S09.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Sanima Bank",
+    "InstrumentName": "Sanima Bank",
+    "InstrumentCode": "MBSANIMA",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031126S02.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Shangri-la Development Bank",
+    "InstrumentName": "Shangri-la Development Bank",
+    "InstrumentCode": "MBSNBB",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031130S42.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Siddhartha Bank",
+    "InstrumentName": "Siddhartha Bank",
+    "InstrumentCode": "MBSBL",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031125S05.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  },
+  {
+    "InstitutionName": "Sindhu Bikas Bank",
+    "InstrumentName": "Sindhu Bikas Bank",
+    "InstrumentCode": "MBSINDHU",
+    "InstrumentValue": null,
+    "LogoUrl": "https://apigateway.nepalpayment.com/UploadedImages/PaymentInstitution/LogoUrl-202201031131S09.png",
+    "BankUrl": "MBanking",
+    "BankType": "MBanking"
+  }
+]
