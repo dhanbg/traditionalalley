@@ -383,16 +383,9 @@ export default function NPSPaymentForm({
                       alt={bank.InstrumentName}
                       style={{ width: '24px', height: '24px', objectFit: 'contain', borderRadius: '4px', flexShrink: 0 }}
                     />
-                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      <div style={{ fontSize: '11px', fontWeight: isSelected ? '600' : '500', color: '#212121', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {isGlobal ? 'Global SMART+' : bank.InstrumentName}
-                      </div>
-                      {isGlobal && (
-                        <div style={{ fontSize: '9px', fontWeight: '600', color: '#2e7d32' }}>
-                          Mobile App
-                        </div>
-                      )}
-                    </div>
+                    <span style={{ fontSize: '11px', fontWeight: isSelected ? '600' : '500', color: '#212121', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {isGlobal ? 'Global SMART+' : bank.InstrumentName}
+                    </span>
                   </button>
                 );
               })}
