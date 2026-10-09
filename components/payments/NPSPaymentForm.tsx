@@ -34,13 +34,12 @@ export default function NPSPaymentForm({
   // Categorization states
   const [selectedCategory, setSelectedCategory] = useState<MainCategory>('KHALTI');
   const [selectedInstrument, setSelectedInstrument] = useState<string>('KHALTIG');
-  const [otherSubTab, setOtherSubTab] = useState<'WALLETS' | 'INTERNET_BANKING'>('WALLETS');
 
   // Instruments categorized per user requirement:
   // 1. Khalti
   // 2. Banks (Mobile Banking)
   // 3. Card payments
-  // 4. Other: Wallets (remaining) & Internet Banking (including Global IME Internet Banking)
+  // 4. Other (Remaining digital wallets)
   const khaltiInstrument = useMemo(
     () => NPS_INSTRUMENTS.find((i) => i.InstrumentCode === 'KHALTIG' || i.InstitutionName.toLowerCase().includes('khalti')),
     []
@@ -52,7 +51,7 @@ export default function NPSPaymentForm({
   );
 
   const mobileBanksList = useMemo(
-    () => NPS_INSTRUMENTS.filter((i) => i.BankType === 'MBanking' && i.InstrumentCode !== 'EBGlobal'),
+    () => NPS_INSTRUMENTS.filter((i) => i.BankType === 'MBanking'),
     []
   );
 
@@ -64,11 +63,6 @@ export default function NPSPaymentForm({
           i.InstrumentCode !== 'KHALTIG' &&
           !i.InstitutionName.toLowerCase().includes('khalti')
       ),
-    []
-  );
-
-  const internetBankingList = useMemo(
-    () => NPS_INSTRUMENTS.filter((i) => i.BankType === 'EBanking' || i.InstrumentCode === 'EBGlobal'),
     []
   );
 
@@ -97,11 +91,7 @@ export default function NPSPaymentForm({
         setSelectedInstrument(mobileBanksList[0]?.InstrumentCode || 'MBGLOBAL');
       }
     } else if (category === 'OTHER') {
-      if (otherSubTab === 'WALLETS') {
-        setSelectedInstrument(remainingWalletsList[0]?.InstrumentCode || 'HAMROPAYG');
-      } else {
-        setSelectedInstrument(internetBankingList[0]?.InstrumentCode || 'EBGlobal');
-      }
+      setSelectedInstrument(remainingWalletsList[0]?.InstrumentCode || 'HAMROPAYG');
     }
   };
 
@@ -410,148 +400,52 @@ export default function NPSPaymentForm({
           </div>
         )}
 
-        {/* Other Panel (Wallets & Internet Banking) */}
+        {/* Other Panel (Wallets) */}
         {selectedCategory === 'OTHER' && (
           <div>
-            {/* Sub-tabs inside Other: Wallets vs Internet Banking */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setOtherSubTab('WALLETS');
-                  if (!remainingWalletsList.some((w) => w.InstrumentCode === selectedInstrument)) {
-                    setSelectedInstrument(remainingWalletsList[0]?.InstrumentCode || 'HAMROPAYG');
-                  }
-                }}
-                style={{
-                  flex: 1,
-                  padding: '6px 10px',
-                  borderRadius: '6px',
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  border: otherSubTab === 'WALLETS' ? '1px solid #e65100' : '1px solid #ddd',
-                  background: otherSubTab === 'WALLETS' ? 'rgba(230, 81, 0, 0.1)' : '#fff',
-                  color: otherSubTab === 'WALLETS' ? '#e65100' : '#616161',
-                  cursor: 'pointer',
-                }}
-              >
-                Remaining Wallets ({remainingWalletsList.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setOtherSubTab('INTERNET_BANKING');
-                  if (!internetBankingList.some((i) => i.InstrumentCode === selectedInstrument)) {
-                    setSelectedInstrument(internetBankingList[0]?.InstrumentCode || 'EBGlobal');
-                  }
-                }}
-                style={{
-                  flex: 1,
-                  padding: '6px 10px',
-                  borderRadius: '6px',
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  border: otherSubTab === 'INTERNET_BANKING' ? '1px solid #1565c0' : '1px solid #ddd',
-                  background: otherSubTab === 'INTERNET_BANKING' ? 'rgba(21, 101, 192, 0.1)' : '#fff',
-                  color: otherSubTab === 'INTERNET_BANKING' ? '#1565c0' : '#616161',
-                  cursor: 'pointer',
-                }}
-              >
-                Internet Banking ({internetBankingList.length})
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', fontSize: '11px', color: '#616161' }}>
+              <span><strong>Choose Digital Wallet:</strong></span>
+              <span>{remainingWalletsList.length} Wallets</span>
             </div>
-
-            {/* Remaining Wallets List */}
-            {otherSubTab === 'WALLETS' && (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
-                  gap: '8px',
-                }}
-              >
-                {remainingWalletsList.map((wallet) => {
-                  const isSelected = selectedInstrument === wallet.InstrumentCode;
-                  return (
-                    <button
-                      key={wallet.InstrumentCode}
-                      type="button"
-                      onClick={() => setSelectedInstrument(wallet.InstrumentCode)}
-                      style={{
-                        padding: '8px',
-                        borderRadius: '6px',
-                        border: isSelected ? '2px solid #e65100' : '1px solid #e0e0e0',
-                        background: isSelected ? 'rgba(230, 81, 0, 0.08)' : '#ffffff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <img
-                        src={wallet.LogoUrl}
-                        alt={wallet.InstrumentName}
-                        style={{ width: '24px', height: '24px', objectFit: 'contain', borderRadius: '4px', flexShrink: 0 }}
-                      />
-                      <span style={{ fontSize: '11px', fontWeight: isSelected ? '600' : '500', color: '#212121', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {wallet.InstrumentName}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Internet Banking List (Including Global IME Internet Banking) */}
-            {otherSubTab === 'INTERNET_BANKING' && (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-                  gap: '8px',
-                }}
-              >
-                {internetBankingList.map((ib) => {
-                  const isSelected = selectedInstrument === ib.InstrumentCode;
-                  const isGlobal = ib.InstrumentCode === 'EBGlobal' || ib.InstitutionName.toLowerCase().includes('global');
-                  return (
-                    <button
-                      key={ib.InstrumentCode}
-                      type="button"
-                      onClick={() => setSelectedInstrument(ib.InstrumentCode)}
-                      style={{
-                        padding: '8px',
-                        borderRadius: '6px',
-                        border: isSelected ? '2px solid #1565c0' : '1px solid #e0e0e0',
-                        background: isSelected ? 'rgba(21, 101, 192, 0.08)' : '#ffffff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <img
-                        src={ib.LogoUrl}
-                        alt={ib.InstrumentName}
-                        style={{ width: '24px', height: '24px', objectFit: 'contain', borderRadius: '4px', flexShrink: 0 }}
-                      />
-                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <div style={{ fontSize: '11px', fontWeight: isSelected ? '600' : '500', color: '#212121', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {isGlobal ? 'Global IME' : ib.InstrumentName}
-                        </div>
-                        <div style={{ fontSize: '9px', fontWeight: '600', color: '#1565c0' }}>
-                          Internet Banking
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+                gap: '8px',
+              }}
+            >
+              {remainingWalletsList.map((wallet) => {
+                const isSelected = selectedInstrument === wallet.InstrumentCode;
+                return (
+                  <button
+                    key={wallet.InstrumentCode}
+                    type="button"
+                    onClick={() => setSelectedInstrument(wallet.InstrumentCode)}
+                    style={{
+                      padding: '8px',
+                      borderRadius: '6px',
+                      border: isSelected ? '2px solid #e65100' : '1px solid #e0e0e0',
+                      background: isSelected ? 'rgba(230, 81, 0, 0.08)' : '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <img
+                      src={wallet.LogoUrl}
+                      alt={wallet.InstrumentName}
+                      style={{ width: '24px', height: '24px', objectFit: 'contain', borderRadius: '4px', flexShrink: 0 }}
+                    />
+                    <span style={{ fontSize: '11px', fontWeight: isSelected ? '600' : '500', color: '#212121', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {wallet.InstrumentName}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
