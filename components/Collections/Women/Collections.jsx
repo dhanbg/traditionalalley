@@ -64,14 +64,15 @@ export default function Collections() {
           <div className="collections-grid-container">
             <div className="row g-3">
               {loading ? (
-                [1, 2, 3, 4].map((i) => (
+                [1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                   <div key={i} className="col-lg-3 col-md-4 col-sm-6 col-6 skeleton-collection-card">
-                    <div className="collection-circle">
+                    <div className="collection-circle" style={{ animationDelay: `${i * 0.07}s` }}>
                       <div className="img-style radius-12 skeleton-media">
                         <div className="shimmer-effect" />
                       </div>
-                      <div className="collection-content text-center mt-3 d-flex justify-content-center">
+                      <div className="collection-content text-center mt-3 d-flex flex-column align-items-center gap-2">
                         <div className="skeleton-title shimmer-effect" />
+                        <div className="skeleton-sub shimmer-effect" />
                       </div>
                     </div>
                   </div>
@@ -120,33 +121,43 @@ export default function Collections() {
       </div>
 
       <style jsx>{`
-        /* ───── Skeleton Loading Styles ───── */
+        /* ───── Modern Skeleton Loading Styles ───── */
         .skeleton-collection-card {
           pointer-events: none;
         }
 
         .skeleton-media {
-          background: #f0f2f5 !important;
+          background: #f1f2f6 !important;
           position: relative;
           overflow: hidden;
           aspect-ratio: 3/4;
-          border-radius: 12px;
+          border-radius: 14px;
           width: 100%;
+          border: 1px solid rgba(0, 0, 0, 0.04);
         }
 
         :global(html.dark) .skeleton-media {
-          background: #1a1d26 !important;
+          background: #1e2129 !important;
+          border-color: rgba(255, 255, 255, 0.05);
         }
 
         .skeleton-title {
-          height: 18px;
-          width: 60%;
-          background: #f0f2f5;
-          border-radius: 4px;
+          height: 16px;
+          width: 65%;
+          background: #f1f2f6;
+          border-radius: 6px;
         }
 
-        :global(html.dark) .skeleton-title {
-          background: #1a1d26;
+        .skeleton-sub {
+          height: 10px;
+          width: 35%;
+          background: #f1f2f6;
+          border-radius: 6px;
+        }
+
+        :global(html.dark) .skeleton-title,
+        :global(html.dark) .skeleton-sub {
+          background: #1e2129;
         }
 
         .shimmer-effect {
@@ -166,18 +177,18 @@ export default function Collections() {
           background: linear-gradient(
             90deg,
             transparent,
-            rgba(255, 255, 255, 0.4),
+            rgba(255, 255, 255, 0.65),
             transparent
           );
           transform: translateX(-100%);
-          animation: shimmer-anim 1.5s infinite;
+          animation: shimmer-anim 1.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         :global(html.dark) .shimmer-effect::after {
           background: linear-gradient(
             90deg,
             transparent,
-            rgba(255, 255, 255, 0.1),
+            rgba(255, 255, 255, 0.12),
             transparent
           );
         }

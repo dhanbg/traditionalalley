@@ -1,161 +1,274 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useContextElement } from "@/context/Context";
 
 export default function CartLoadingGuard({ children, showDebug = false, timeout = 10000 }) {
-  const { isCartLoading, cartLoadedOnce, user } = useContextElement();
-  const [mounted, setMounted] = React.useState(false);
-  const [timedOut, setTimedOut] = React.useState(false);
+  const { isCartLoading, cartLoadedOnce, isSessionLoading } = useContextElement();
+  const [mounted, setMounted] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
 
-  // Ensure component is mounted before showing loading state
-  React.useEffect(() => {
+  useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Timeout mechanism to prevent infinite loading
-  React.useEffect(() => {
-    if (mounted && user && (isCartLoading || !cartLoadedOnce)) {
+  // Safety timeout to avoid getting stuck forever in case of network/backend errors
+  useEffect(() => {
+    if (isCartLoading || !cartLoadedOnce || isSessionLoading) {
       const timer = setTimeout(() => {
         setTimedOut(true);
-
       }, timeout);
 
       return () => clearTimeout(timer);
     }
-  }, [mounted, user, isCartLoading, cartLoadedOnce, timeout, showDebug]);
+  }, [isCartLoading, cartLoadedOnce, isSessionLoading, timeout]);
 
-  // Show loading screen if:
-  // 1. Component is mounted AND
-  // 2. User is logged in AND
-  // 3. Cart is currently loading OR cart has never been loaded yet AND
-  // 4. Timeout hasn't been reached
-  const shouldShowLoading = mounted && user && (isCartLoading || !cartLoadedOnce) && !timedOut;
-
-
-
-  // Don't render anything until mounted (prevents hydration issues)
-  if (!mounted) {
-    return null;
-  }
+  const shouldShowLoading = !timedOut && (!mounted || isCartLoading || !cartLoadedOnce || isSessionLoading);
 
   if (shouldShowLoading) {
-    return (
-      <div className="cart-loading-screen">
-        <div className="cart-loading-container">
-          <div className="cart-loading-spinner">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
+    return <CheckoutSkeleton />;
+  }
+
+  return <>{children}</>;
+}
+
+function CheckoutSkeleton() {
+  return (
+    <section className="checkout-skeleton-section">
+      <div className="container">
+        <div className="row g-4">
+          {/* Left Column: Delivery & Shipping Details Skeleton */}
+          <div className="col-xl-6 col-lg-7">
+            <div className="skeleton-card p-4 mb-4">
+              {/* Card Header */}
+              <div className="d-flex align-items-center gap-2 mb-4">
+                <div className="skeleton-box skeleton-icon"></div>
+                <div className="skeleton-box skeleton-heading w-40"></div>
+              </div>
+
+              {/* Form Grid Rows */}
+              <div className="row g-3">
+                <div className="col-md-6 col-12">
+                  <div className="skeleton-box skeleton-label w-35 mb-2"></div>
+                  <div className="skeleton-box skeleton-input"></div>
+                </div>
+                <div className="col-md-6 col-12">
+                  <div className="skeleton-box skeleton-label w-45 mb-2"></div>
+                  <div className="skeleton-box skeleton-input"></div>
+                </div>
+
+                <div className="col-md-6 col-12">
+                  <div className="skeleton-box skeleton-label w-40 mb-2"></div>
+                  <div className="skeleton-box skeleton-input"></div>
+                </div>
+                <div className="col-md-6 col-12">
+                  <div className="skeleton-box skeleton-label w-30 mb-2"></div>
+                  <div className="skeleton-box skeleton-input"></div>
+                </div>
+
+                <div className="col-md-6 col-12">
+                  <div className="skeleton-box skeleton-label w-25 mb-2"></div>
+                  <div className="skeleton-box skeleton-input"></div>
+                </div>
+                <div className="col-md-6 col-12">
+                  <div className="skeleton-box skeleton-label w-35 mb-2"></div>
+                  <div className="skeleton-box skeleton-input"></div>
+                </div>
+
+                <div className="col-12">
+                  <div className="skeleton-box skeleton-label w-30 mb-2"></div>
+                  <div className="skeleton-box skeleton-input"></div>
+                </div>
+
+                <div className="col-md-6 col-12">
+                  <div className="skeleton-box skeleton-label w-35 mb-2"></div>
+                  <div className="skeleton-box skeleton-input"></div>
+                </div>
+              </div>
+
+              {/* Notice Banner & Action Button Skeleton */}
+              <div className="skeleton-box skeleton-alert w-100 mt-4 mb-3"></div>
+              <div className="skeleton-box skeleton-btn w-100"></div>
+            </div>
+
+            {/* Payment Methods Card Skeleton */}
+            <div className="skeleton-card p-4">
+              <div className="skeleton-box skeleton-heading w-35 mb-3"></div>
+              <div className="row g-3">
+                <div className="col-6">
+                  <div className="skeleton-box skeleton-payment-option"></div>
+                </div>
+                <div className="col-6">
+                  <div className="skeleton-box skeleton-payment-option"></div>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="cart-loading-text">
-            <h4>Loading your cart...</h4>
-            <p>Please wait while we fetch your cart items from the server.</p>
-            <div className="loading-dots">
-              <span></span>
-              <span></span>
-              <span></span>
+
+          {/* Right Column: Order Summary & Cart Items Skeleton */}
+          <div className="col-xl-5 col-lg-5 ms-xl-auto">
+            <div className="skeleton-card p-4">
+              {/* Header Badge */}
+              <div className="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom">
+                <div className="skeleton-box skeleton-badge w-35"></div>
+                <div className="skeleton-box skeleton-text w-20"></div>
+              </div>
+
+              {/* Cart Items Placeholder List */}
+              <div className="cart-items-skeleton mb-4">
+                {[1, 2].map((item) => (
+                  <div key={item} className="d-flex gap-3 py-3 border-bottom">
+                    <div className="skeleton-box skeleton-thumb"></div>
+                    <div className="flex-grow-1 d-flex flex-column justify-content-center gap-2">
+                      <div className="skeleton-box skeleton-text w-85"></div>
+                      <div className="skeleton-box skeleton-text w-45"></div>
+                      <div className="skeleton-box skeleton-text w-35"></div>
+                    </div>
+                    <div className="skeleton-box skeleton-price w-20 align-self-center"></div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Order Summary Breakdown */}
+              <div className="summary-breakdown d-flex flex-column gap-3 pt-2">
+                <div className="d-flex justify-content-between">
+                  <div className="skeleton-box skeleton-text w-30"></div>
+                  <div className="skeleton-box skeleton-text w-25"></div>
+                </div>
+                <div className="d-flex justify-content-between">
+                  <div className="skeleton-box skeleton-text w-40"></div>
+                  <div className="skeleton-box skeleton-text w-20"></div>
+                </div>
+                <div className="d-flex justify-content-between pt-2 border-top">
+                  <div className="skeleton-box skeleton-heading w-35"></div>
+                  <div className="skeleton-box skeleton-heading w-30"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        
-        <style jsx>{`
-          .cart-loading-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-          }
-          
-          .cart-loading-container {
-            text-align: center;
-            padding: 2rem;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
-            width: 90%;
-          }
-          
-          .cart-loading-spinner {
-            margin-bottom: 1.5rem;
-          }
-          
-          .spinner-border {
-            width: 3rem;
-            height: 3rem;
-            border-width: 0.3em;
-          }
-          
-          .cart-loading-text h4 {
-            color: #333;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-          }
-          
-          .cart-loading-text p {
-            color: #666;
-            margin: 0;
-            font-size: 0.9rem;
-          }
-          
-          @keyframes fadeIn {
-            from {
-              opacity: 0;
-              transform: translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          
-          .cart-loading-container {
-            animation: fadeIn 0.3s ease-out;
-          }
-          
-          .loading-dots {
-            display: flex;
-            justify-content: center;
-            gap: 4px;
-            margin-top: 1rem;
-          }
-          
-          .loading-dots span {
-            width: 8px;
-            height: 8px;
-            background: #007bff;
-            border-radius: 50%;
-            animation: bounce 1.4s infinite ease-in-out both;
-          }
-          
-          .loading-dots span:nth-child(1) {
-            animation-delay: -0.32s;
-          }
-          
-          .loading-dots span:nth-child(2) {
-            animation-delay: -0.16s;
-          }
-          
-          @keyframes bounce {
-            0%, 80%, 100% {
-              transform: scale(0);
-            }
-            40% {
-              transform: scale(1);
-            }
-          }
-        `}</style>
       </div>
-    );
-  }
 
-  // If not loading, render the children
-  return <>{children}</>;
+      <style jsx>{`
+        .checkout-skeleton-section {
+          padding: 40px 0 60px;
+          min-height: 520px;
+        }
+
+        .skeleton-card {
+          background: #ffffff;
+          border-radius: 12px;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+        }
+
+        :global(html.dark) .skeleton-card {
+          background: #191b22;
+          border-color: rgba(255, 255, 255, 0.08);
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .skeleton-box {
+          position: relative;
+          overflow: hidden;
+          background: #edeef2;
+          border-radius: 6px;
+        }
+
+        :global(html.dark) .skeleton-box {
+          background: #242833;
+        }
+
+        .skeleton-box::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          transform: translateX(-100%);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.65),
+            transparent
+          );
+          animation: skeletonShimmer 1.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        :global(html.dark) .skeleton-box::after {
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.1),
+            transparent
+          );
+        }
+
+        .skeleton-icon {
+          width: 24px;
+          height: 24px;
+          border-radius: 6px;
+        }
+
+        .skeleton-heading {
+          height: 20px;
+        }
+
+        .skeleton-label {
+          height: 12px;
+        }
+
+        .skeleton-input {
+          height: 44px;
+          border-radius: 8px;
+        }
+
+        .skeleton-alert {
+          height: 42px;
+          border-radius: 8px;
+        }
+
+        .skeleton-btn {
+          height: 48px;
+          border-radius: 8px;
+        }
+
+        .skeleton-payment-option {
+          height: 54px;
+          border-radius: 8px;
+        }
+
+        .skeleton-badge {
+          height: 28px;
+          border-radius: 6px;
+        }
+
+        .skeleton-thumb {
+          width: 76px;
+          height: 98px;
+          border-radius: 6px;
+          flex-shrink: 0;
+        }
+
+        .skeleton-text {
+          height: 13px;
+        }
+
+        .skeleton-price {
+          height: 16px;
+        }
+
+        .w-20 { width: 20%; }
+        .w-25 { width: 25%; }
+        .w-30 { width: 30%; }
+        .w-35 { width: 35%; }
+        .w-40 { width: 40%; }
+        .w-45 { width: 45%; }
+        .w-85 { width: 85%; }
+
+        @keyframes skeletonShimmer {
+          100% {
+            transform: translateX(100%);
+          }
+        }
+      `}</style>
+    </section>
+  );
 }

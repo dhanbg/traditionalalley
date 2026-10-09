@@ -53,7 +53,10 @@ export default function Checkout() {
     getSelectedItemsTotal,
     selectedCartItems,
     clearPurchasedItemsFromCart,
-    userCurrency
+    userCurrency,
+    isCartLoading,
+    cartLoadedOnce,
+    isSessionLoading
   } = useContextElement();
 
   const { data: session } = useSession();
@@ -1438,6 +1441,11 @@ export default function Checkout() {
 
   // Check if cart is empty
   if (selectedProducts.length === 0) {
+    // If cart or user session is still loading, do not flash empty cart screen
+    if (isCartLoading || !cartLoadedOnce || isSessionLoading) {
+      return null;
+    }
+
     return (
       <section className="flat-spacing">
         <div className="container">

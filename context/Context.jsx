@@ -26,7 +26,7 @@ export const useContextElement = () => {
 };
 
 export default function Context({ children }) {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const user = session?.user;
   const { showStockError, showAddToCartSuccess, showQuantityUpdateSuccess } = useStockNotifications();
   
@@ -256,6 +256,11 @@ export default function Context({ children }) {
 
   // Initialize cart loading state based on user presence and ensure user exists in backend
   useEffect(() => {
+    if (sessionStatus === "loading") {
+      setIsCartLoading(true);
+      return;
+    }
+
     if (user) {
       // Check if we've already attempted user creation for this specific user in this session
       const userCreationKey = `userCreated_${user.id}`;
@@ -295,13 +300,13 @@ export default function Context({ children }) {
         setUserCreationAttempted(true);
       }
     } else {
-      // If no user, we don't need to load cart from backend
+      // If no user (only after sessionStatus has finished loading), we don't need to load cart from backend
       setIsCartLoading(false);
       setCartLoadedOnce(true);
       // Note: We don't reset userCreationAttempted here because we want to keep 
       // the sessionStorage flag intact until the browser session ends
     }
-  }, [user, cartLoadedOnce]);
+  }, [user, cartLoadedOnce, sessionStatus]);
 
   // Refresh exchange rate periodically (every hour)
   useEffect(() => {
@@ -1057,6 +1062,11 @@ export default function Context({ children }) {
   
   // Load cart data from backend when user logs in
   useEffect(() => {
+    if (sessionStatus === "loading") {
+      setIsCartLoading(true);
+      return;
+    }
+
     // Don't load cart if currently clearing or recently cleared (within 5 seconds)
     const recentlyCleared = cartClearedTimestamp && (Date.now() - cartClearedTimestamp < 5000);
     
@@ -1256,7 +1266,7 @@ export default function Context({ children }) {
       };
       
       loadCartFromBackend();
-    } else {
+    } else if (!user) {
       // Guest user - restore cart from Zustand store if available
       try {
         const localCart = useCartStore.getState().cartProducts || [];
@@ -1268,7 +1278,7 @@ export default function Context({ children }) {
       setIsCartLoading(false);
       setCartLoadedOnce(true);
     }
-  }, [user?.id, isCartClearing, cartClearedTimestamp]); // Only trigger when user ID changes, not entire user object
+  }, [user?.id, isCartClearing, cartClearedTimestamp, sessionStatus]); // Only trigger when user ID or session changes
 
   // Remove localStorage saving for cart data
   useEffect(() => {
@@ -2143,6 +2153,8 @@ export default function Context({ children }) {
     // Cart loading states
     isCartLoading,
     cartLoadedOnce,
+    isSessionLoading: sessionStatus === "loading",
+    sessionStatus,
     // Currency management
     userCountry,
     userCurrency,

@@ -1,5 +1,6 @@
 import React, { Suspense } from "react";
 import Collections from "@/components/Collections/Women/Collections";
+import CollectionsLoader from "@/components/Collections/Common/CollectionsLoader";
 import Header1 from "@/components/headers/Header1";
 import Footer1 from "@/components/footers/Footer1";
 import Topbar6 from "@/components/headers/Topbar6";
@@ -54,14 +55,9 @@ export default function CollectionsPage() {
       />
       <Topbar6 bgColor="bg-main" />
       <Header1 />
-      <div className="tf-page-title">
-        <div className="container-full">
-          <h1 className="heading text-center">All Collections</h1>
-        </div>
-        <Suspense fallback={<div className="text-center py-5">Loading collections...</div>}>
-          <Collections />
-        </Suspense>
-      </div>
+      <Suspense fallback={<CollectionsLoader />}>
+        <Collections />
+      </Suspense>
       <Footer1 />
     </>
   );
