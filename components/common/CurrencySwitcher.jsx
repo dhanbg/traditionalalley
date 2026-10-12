@@ -16,6 +16,14 @@ export default function CurrencySwitcher({ className = "" }) {
   
   const currencies = [
     {
+      code: 'NPR',
+      symbol: 'Rs.',
+      name: 'Nepali Rupee',
+      flag: (
+        <img src="/Flag_of_Nepal.svg" alt="Nepal Flag" style={{ width: 20, height: 15, objectFit: 'contain', display: 'block' }} />
+      )
+    },
+    {
       code: 'USD',
       symbol: '$',
       name: 'US Dollar',
@@ -40,14 +48,6 @@ export default function CurrencySwitcher({ className = "" }) {
             <circle cx="4.8" cy="5" r="0.3"/>
           </g>
         </svg>
-      )
-    },
-    {
-      code: 'NPR',
-      symbol: 'Rs.',
-      name: 'Nepali Rupee',
-      flag: (
-        <img src="/Flag_of_Nepal.svg" alt="Nepal Flag" style={{ width: 20, height: 15, objectFit: 'contain', display: 'block' }} />
       )
     }
   ];

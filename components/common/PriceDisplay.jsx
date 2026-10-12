@@ -21,28 +21,8 @@ export default function PriceDisplay({
   let priceInfo, oldPriceInfo;
 
   if (!children) {
-    if (isNPR) {
-    // Price is already in NPR, so format accordingly
-    if (userCurrency === 'NPR') {
-      priceInfo = {
-        primary: { formatted: formatPrice(price, 'NPR') }
-      };
-    } else {
-      // User wants USD, so convert NPR to USD
-      const usdPrice = exchangeRate ? price / exchangeRate : price;
-      priceInfo = {
-        primary: { formatted: formatPrice(usdPrice, 'USD') }
-      };
-    }
-    oldPriceInfo = oldPrice ? (userCurrency === 'NPR'
-      ? { primary: { formatted: formatPrice(oldPrice, 'NPR') } }
-      : { primary: { formatted: formatPrice(oldPrice / (exchangeRate || 1), 'USD') } }
-    ) : null;
-  } else {
-    // Normal price handling (assumes USD input)
     priceInfo = getDualPriceDisplay(price, userCurrency, exchangeRate);
     oldPriceInfo = oldPrice ? getDualPriceDisplay(oldPrice, userCurrency, exchangeRate) : null;
-  }
   }
 
   // Calculate discount percentage with validation

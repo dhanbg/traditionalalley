@@ -86,10 +86,10 @@ export default function Context({ children }) {
   const [isCartLoading, setIsCartLoading] = useState(true); // Start as loading
   const [cartLoadedOnce, setCartLoadedOnce] = useState(false);
   
-  // Currency and location state
-  const [userCountry, setUserCountry] = useState('US');
-  const [userCurrency, setUserCurrency] = useState('USD');
-  const [exchangeRate, setExchangeRate] = useState(null);
+  // Currency and location state (default NPR base)
+  const [userCountry, setUserCountry] = useState('NP');
+  const [userCurrency, setUserCurrency] = useState('NPR');
+  const [exchangeRate, setExchangeRate] = useState(141.11);
   const [isLoadingCurrency, setIsLoadingCurrency] = useState(true);
   
   // Add this flag
@@ -178,25 +178,23 @@ export default function Context({ children }) {
       // Get saved preferences first
       const savedPrefs = getSavedCurrencyPreference();
       
-      // If no saved preferences, detect country
       let country = savedPrefs.country;
       let currency = savedPrefs.currency;
       
-      if (!country || country === 'US') {
+      // If no saved preference, automatically detect: local Nepal -> NPR, international -> USD
+      if (!currency || !country) {
         country = await detectUserCountry();
+        if (country === 'NP') {
+          currency = 'NPR';
+        } else {
+          currency = 'USD';
+        }
       }
       
-      // Set currency based on country
-      if (country === 'NP' && currency !== 'NPR') {
-        currency = 'NPR';
-      } else if (country !== 'NP' && currency !== 'USD') {
-        currency = 'USD';
-      }
-      
-      // Get exchange rate if needed
-      let rate = null;
-      if (currency === 'NPR' || country === 'NP') {
-        rate = await getExchangeRate();
+      // Get exchange rate for conversion between NPR and USD
+      let rate = await getExchangeRate();
+      if (!rate) {
+        rate = 141.11;
       }
       
       // Update state
@@ -208,10 +206,10 @@ export default function Context({ children }) {
       saveCurrencyPreference(currency, country);
       
     } catch (error) {
-      // Fallback to USD
-      setUserCountry('US');
-      setUserCurrency('USD');
-      setExchangeRate(null);
+      // Fallback to NPR
+      setUserCountry('NP');
+      setUserCurrency('NPR');
+      setExchangeRate(141.11);
     } finally {
       setIsLoadingCurrency(false);
     }

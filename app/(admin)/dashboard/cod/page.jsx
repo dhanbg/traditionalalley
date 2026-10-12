@@ -310,10 +310,8 @@ const CODManagement = () => {
                                   </div>
                                 </div>
                                 <div className="text-gray-700 font-semibold text-xs sm:text-sm">
-                                  Qty: {product.pricing?.quantity || product.quantity || 1} × NPR {
-                                    exchangeRate 
-                                      ? convertUsdToNpr(product.pricing?.currentPrice || product.price || 0, exchangeRate)
-                                      : Math.round((product.pricing?.currentPrice || product.price || 0) * 141.11)
+                                  Qty: {product.pricing?.quantity || product.quantity || 1} × Rs. {
+                                    Math.round(product.pricing?.currentPrice || product.price || 0).toLocaleString()
                                   }
                                 </div>
                               </div>

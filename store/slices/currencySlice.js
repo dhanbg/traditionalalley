@@ -15,25 +15,22 @@ export const initializeCurrency = createAsyncThunk(
             // Get saved preferences first
             const savedPrefs = getSavedCurrencyPreference();
 
-            // If no saved preferences, detect country
             let country = savedPrefs.country;
             let currency = savedPrefs.currency;
 
-            if (!country || country === 'US') {
+            // If no saved preference, automatically detect: local Nepal -> NPR, international -> USD
+            if (!currency || !country) {
                 country = await detectUserCountry();
+                if (country === 'NP') {
+                    currency = 'NPR';
+                } else {
+                    currency = 'USD';
+                }
             }
 
-            // Set currency based on country
-            if (country === 'NP' && currency !== 'NPR') {
-                currency = 'NPR';
-            } else if (country !== 'NP' && currency !== 'USD') {
-                currency = 'USD';
-            }
-
-            // Get exchange rate if needed
-            let rate = null;
-            if (currency === 'NPR' || country === 'NP') {
-                rate = await getExchangeRate();
+            let rate = await getExchangeRate();
+            if (!rate) {
+                rate = 141.11;
             }
 
             // Save preferences
@@ -42,8 +39,8 @@ export const initializeCurrency = createAsyncThunk(
             return { country, currency, rate };
         } catch (error) {
             console.error('Error initializing currency:', error);
-            // Fallback to USD
-            return { country: 'US', currency: 'USD', rate: null };
+            // Fallback to NPR
+            return { country: 'NP', currency: 'NPR', rate: 141.11 };
         }
     }
 );
@@ -54,7 +51,7 @@ export const refreshExchangeRate = createAsyncThunk(
     async (_, { rejectWithValue }) => {
         try {
             const rate = await getExchangeRate();
-            return rate;
+            return rate || 141.11;
         } catch (error) {
             console.error('Error refreshing exchange rate:', error);
             return rejectWithValue(error.message);
@@ -63,9 +60,9 @@ export const refreshExchangeRate = createAsyncThunk(
 );
 
 const initialState = {
-    country: 'US',
-    currency: 'USD',
-    exchangeRate: null,
+    country: 'NP',
+    currency: 'NPR',
+    exchangeRate: 141.11,
     isLoading: true,
     error: null,
 };

@@ -1321,38 +1321,21 @@ export default function Checkout() {
     checkAndApplyWelcomeCoupon();
   }, [user?.id, actualTotal]); // Re-run when user or total changes
 
-  // Helper function to calculate NPR amount for NPS payments
-  const calculateNPRAmount = async (usdAmount) => {
-    try {
-      const rate = nprExchangeRate || await getExchangeRate();
-      if (!nprExchangeRate) {
-        setNprExchangeRate(rate);
-      }
-      return convertUsdToNpr(usdAmount, rate);
-    } catch (error) {
-      console.error('Failed to get exchange rate:', error);
-      const fallbackRate = 134.5;
-      return convertUsdToNpr(usdAmount, fallbackRate);
-    }
+  // Helper function to calculate NPR amount for NPS payments (amounts are already in NPR)
+  const calculateNPRAmount = async (amount) => {
+    return Math.round(amount || 0);
   };
 
-  // Calculate NPR amount for display
+  // Calculate NPR amount for display & payments
   const nprAmount = React.useMemo(() => {
     const isAdmin = user?.role === "admin" || user?.email === "gurungvaaiii@gmail.com" || user?.email === "traditionalley2050@gmail.com";
     if (isAdmin) {
       return 10;
     }
 
-    if (nprExchangeRate) {
-      // Product total needs conversion from USD to NPR (using finalTotal to include coupon discount)
-      const productTotalNPR = convertUsdToNpr(finalTotal, nprExchangeRate);
-
-      // Always use the original NPR shipping cost for NPR amount calculation
-      // This prevents currency switching issues
-      return productTotalNPR + shippingCostNPR;
-    }
-    return finalTotal + shippingCost; // Fallback to USD if no rate available
-  }, [finalTotal, shippingCostNPR, nprExchangeRate, user]);
+    // finalTotal and shippingCostNPR are both in NPR
+    return Math.round((finalTotal || 0) + (shippingCostNPR || 0));
+  }, [finalTotal, shippingCostNPR, user]);
 
   // Effect to fetch exchange rate
   React.useEffect(() => {
@@ -1537,7 +1520,7 @@ export default function Checkout() {
                         width: width,
                         height: height,
                         description: product.title || (product.product && product.product.title) || 'Product',
-                        declaredValue: parseFloat(product.price) || (product.product && parseFloat(product.product.price)) || 0,
+                        declaredValue: Math.round(((parseFloat(product.price) || (product.product && parseFloat(product.product.price)) || 0)) / (nprExchangeRate || 141.11)),
                         quantity: 1, // Each package is now a single item
                         commodityCode: hsCode || '', // Use the product's HS code
                         manufacturingCountryCode: 'NP'
@@ -1843,7 +1826,7 @@ export default function Checkout() {
                                 />
                               ) : (
                                 <PriceDisplay
-                                  price={finalTotal + shippingCost}
+                                  price={finalTotal + shippingCostNPR}
                                   size="normal"
                                 />
                               )}

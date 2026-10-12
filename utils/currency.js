@@ -1,8 +1,8 @@
-// Currency utilities for dual pricing system (USD/NPR)
+// Currency utilities for dual pricing system (NPR base / USD conversion)
 
 // Exchange rate API configuration
 const EXCHANGE_API_URL = 'https://api.exchangerate-api.com/v4/latest/USD';
-const FALLBACK_USD_TO_NPR_RATE = 141.11; // Auto-updated on 2025-09-05T13:42:03.955Z // Fallback rate if API fails
+export const FALLBACK_USD_TO_NPR_RATE = 141.11; // Standard exchange rate used in product pricing
 
 // Cache for exchange rates (valid for 1 hour)
 let exchangeRateCache = {
@@ -17,34 +17,45 @@ let exchangeRateCache = {
  */
 export const detectUserCountry = async () => {
   try {
-    // Method 1: Try to get from browser's timezone
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    let timezone = '';
+    try {
+      timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    } catch (e) {}
+
+    // Method 1: Nepal Standard Time is unique worldwide to Nepal
     if (timezone === 'Asia/Kathmandu') {
       return 'NP';
     }
 
-    // Method 2: Try to get from IP geolocation (free service)
-    try {
-      const response = await fetch('https://ipapi.co/json/', {
-        timeout: 5000
-      });
-      const data = await response.json();
-      return data.country_code || 'US';
-    } catch (ipError) {
-      console.log('IP geolocation failed, using timezone fallback');
-    }
-
-    // Method 3: Check browser language
-    const language = navigator.language || navigator.languages[0];
-    if (language && language.toLowerCase().includes('ne')) {
+    // Method 2: Check Nepali browser language
+    const language = (typeof navigator !== 'undefined' && (navigator.language || (navigator.languages && navigator.languages[0]))) || '';
+    if (language.toLowerCase().includes('ne-np')) {
       return 'NP';
     }
 
-    // Default to US for global users
-    return 'US';
+    // Method 3: Try to get country from IP geolocation
+    try {
+      const response = await fetch('https://ipapi.co/json/', { timeout: 3500 });
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.country_code) {
+          return data.country_code;
+        }
+      }
+    } catch (ipError) {
+      // IP service failed or timed out
+    }
+
+    // Method 4: Fallback based on timezone
+    // If timezone is recognized and NOT Asia/Kathmandu, the user is international
+    if (timezone && timezone !== 'Asia/Kathmandu') {
+      return 'US';
+    }
+
+    // Default fallback
+    return 'NP';
   } catch (error) {
-    console.warn('Country detection failed, defaulting to US:', error.message);
-    return 'US'; // Default fallback
+    return 'NP';
   }
 };
 
@@ -88,51 +99,51 @@ export const getExchangeRate = async () => {
  * @param {number} exchangeRate - Current exchange rate
  * @returns {number} Price in NPR
  */
-export const convertUsdToNpr = (usdPrice, exchangeRate) => {
+export const convertUsdToNpr = (usdPrice, exchangeRate = FALLBACK_USD_TO_NPR_RATE) => {
   if (!usdPrice || !exchangeRate) return 0;
   return Math.round(usdPrice * exchangeRate);
 };
 
 /**
+ * Convert NPR price to USD
+ * @param {number} nprPrice - Price in NPR
+ * @param {number} exchangeRate - Current exchange rate
+ * @returns {number} Price in USD
+ */
+export const convertNprToUsd = (nprPrice, exchangeRate = FALLBACK_USD_TO_NPR_RATE) => {
+  if (!nprPrice || !exchangeRate) return 0;
+  return Number((nprPrice / exchangeRate).toFixed(2));
+};
+
+/**
  * Format price based on currency
  * @param {number} price - Price amount
- * @param {string} currency - Currency code (USD/NPR)
+ * @param {string} currency - Currency code (NPR/USD)
  * @param {boolean} showSymbol - Whether to show currency symbol
  * @returns {string} Formatted price string
  */
-export const formatPrice = (price, currency = 'USD', showSymbol = true) => {
+export const formatPrice = (price, currency = 'NPR', showSymbol = true) => {
   if (!price && price !== 0) return '';
 
   const isNegative = price < 0;
   const absPrice = Math.abs(price);
 
-  const formatters = {
-    USD: new Intl.NumberFormat('en-US', {
-      style: showSymbol ? 'currency' : 'decimal',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }),
-    NPR: new Intl.NumberFormat('en-NP', {
-      style: showSymbol ? 'currency' : 'decimal',
-      currency: 'NPR',
-      minimumFractionDigits: 0,
+  if (currency === 'NPR') {
+    const formattedNum = new Intl.NumberFormat('en-IN', {
       maximumFractionDigits: 0
-    })
-  };
-
-  const formatter = formatters[currency] || formatters.USD;
-
-  let formatted;
-  if (showSymbol) {
-    formatted = formatter.format(absPrice);
-  } else {
-    // For NPR without symbol, add "Rs." prefix
-    const val = formatter.format(absPrice);
-    formatted = currency === 'NPR' ? `Rs. ${val}` : `$${val}`;
+    }).format(absPrice);
+    const result = showSymbol ? `Rs. ${formattedNum}` : formattedNum;
+    return isNegative ? `-${result}` : result;
   }
 
-  return isNegative ? `-${formatted}` : formatted;
+  // USD
+  const formattedUsd = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(absPrice);
+
+  const result = showSymbol ? `$${formattedUsd}` : formattedUsd;
+  return isNegative ? `-${result}` : result;
 };
 
 /**
@@ -148,11 +159,17 @@ export const getCurrencyInfo = (countryCode) => {
       name: 'Nepali Rupee',
       locale: 'ne-NP'
     },
-    default: {
+    US: {
       code: 'USD',
       symbol: '$',
       name: 'US Dollar',
       locale: 'en-US'
+    },
+    default: {
+      code: 'NPR',
+      symbol: 'Rs.',
+      name: 'Nepali Rupee',
+      locale: 'ne-NP'
     }
   };
 
@@ -160,51 +177,57 @@ export const getCurrencyInfo = (countryCode) => {
 };
 
 /**
- * Calculate price with conversion
- * @param {number} basePrice - Base price in USD
- * @param {string} targetCurrency - Target currency (USD/NPR)
+ * Calculate price with conversion from base NPR
+ * @param {number} baseNprPrice - Base price in NPR from database
+ * @param {string} targetCurrency - Target currency (NPR/USD)
  * @param {number} exchangeRate - Current exchange rate
  * @returns {object} Price information
  */
-export const calculatePrice = (basePrice, targetCurrency = 'USD', exchangeRate = null) => {
-  if (!basePrice) return { price: 0, currency: targetCurrency, formatted: formatPrice(0, targetCurrency) };
+export const calculatePrice = (baseNprPrice, targetCurrency = 'NPR', exchangeRate = null) => {
+  if (!baseNprPrice && baseNprPrice !== 0) {
+    return { price: 0, currency: targetCurrency, formatted: formatPrice(0, targetCurrency) };
+  }
 
-  let finalPrice = basePrice;
+  const rate = exchangeRate || FALLBACK_USD_TO_NPR_RATE;
+  let finalPrice = baseNprPrice;
 
-  if (targetCurrency === 'NPR' && exchangeRate) {
-    finalPrice = convertUsdToNpr(basePrice, exchangeRate);
+  if (targetCurrency === 'USD') {
+    finalPrice = convertNprToUsd(baseNprPrice, rate);
+  } else {
+    finalPrice = Math.round(baseNprPrice);
   }
 
   return {
     price: finalPrice,
     currency: targetCurrency,
     formatted: formatPrice(finalPrice, targetCurrency),
-    originalUsd: basePrice
+    originalNpr: baseNprPrice
   };
 };
 
 /**
- * Get price display for dual currency
- * @param {number} usdPrice - Price in USD
- * @param {string} userCurrency - User's preferred currency
+ * Get price display for dual currency (base NPR)
+ * @param {number} nprPrice - Price in NPR from database
+ * @param {string} userCurrency - User's preferred currency ('NPR' or 'USD')
  * @param {number} exchangeRate - Current exchange rate
  * @returns {object} Price display information
  */
-export const getDualPriceDisplay = (usdPrice, userCurrency = 'USD', exchangeRate = null) => {
-  const usdDisplay = calculatePrice(usdPrice, 'USD');
-  const nprDisplay = calculatePrice(usdPrice, 'NPR', exchangeRate);
+export const getDualPriceDisplay = (nprPrice, userCurrency = 'NPR', exchangeRate = null) => {
+  const rate = exchangeRate || FALLBACK_USD_TO_NPR_RATE;
+  const nprDisplay = calculatePrice(nprPrice, 'NPR', rate);
+  const usdDisplay = calculatePrice(nprPrice, 'USD', rate);
 
   return {
-    primary: userCurrency === 'NPR' ? nprDisplay : usdDisplay,
-    secondary: userCurrency === 'NPR' ? usdDisplay : nprDisplay,
-    showConversion: userCurrency === 'NPR',
-    exchangeRate
+    primary: userCurrency === 'USD' ? usdDisplay : nprDisplay,
+    secondary: userCurrency === 'USD' ? nprDisplay : usdDisplay,
+    showConversion: userCurrency === 'USD',
+    exchangeRate: rate
   };
 };
 
 // Local storage keys
-export const CURRENCY_STORAGE_KEY = 'user_currency_preference';
-export const COUNTRY_STORAGE_KEY = 'user_country_detected';
+export const CURRENCY_STORAGE_KEY = 'traditional_user_currency';
+export const COUNTRY_STORAGE_KEY = 'traditional_user_country';
 export const EXCHANGE_RATE_STORAGE_KEY = 'usd_npr_exchange_rate';
 
 /**
@@ -221,15 +244,18 @@ export const saveCurrencyPreference = (currency, country) => {
 
 /**
  * Get saved currency preference
- * @returns {object} Saved preferences
+ * @returns {object} Saved preferences (default NPR)
  */
 export const getSavedCurrencyPreference = () => {
   if (typeof window === 'undefined') {
-    return { currency: 'USD', country: 'US' };
+    return { currency: null, country: null };
   }
 
+  const savedCurrency = localStorage.getItem(CURRENCY_STORAGE_KEY);
+  const savedCountry = localStorage.getItem(COUNTRY_STORAGE_KEY);
+
   return {
-    currency: localStorage.getItem(CURRENCY_STORAGE_KEY) || 'USD',
-    country: localStorage.getItem(COUNTRY_STORAGE_KEY) || 'US'
+    currency: savedCurrency || null,
+    country: savedCountry || null
   };
 };
