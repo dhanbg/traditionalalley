@@ -5,7 +5,7 @@ import { fetchDataFromApi } from "@/utils/api";
 import { SEARCH_PRODUCTS_API, API_URL } from "@/utils/urls";
 import { useRouter } from "nextjs-toploader/app";
 import Link from "next/link";
-import { searchProductsWithVariants, fetchSingleProductWithVariants } from "@/utils/productVariantUtils";
+import { searchProductsWithVariants, fetchSingleProductWithVariants, calculateDiscountedPricing } from "@/utils/productVariantUtils";
 
 
 // Helper function to transform product data (copied from RelatedProducts.jsx)
@@ -14,6 +14,11 @@ const transformProduct = (rawProduct) => {
   if (!rawProduct) return null;
   // Do NOT convert imgSrc/imgHover to string URL here; pass the object
   const id = rawProduct.documentId || rawProduct.id || rawProduct.attributes?.id || 0;
+  const rawPrice = rawProduct.price || rawProduct.attributes?.price || 0;
+  const rawDiscount = rawProduct.discountPercentage ?? rawProduct.attributes?.discountPercentage;
+  const rawOldPrice = rawProduct.oldPrice || rawProduct.attributes?.oldPrice || null;
+  const pricing = calculateDiscountedPricing(rawPrice, rawDiscount, rawOldPrice);
+
   const productObj = {
     ...rawProduct,
     id,
@@ -21,10 +26,11 @@ const transformProduct = (rawProduct) => {
     imgSrc: rawProduct.imgSrc,
     imgHover: rawProduct.imgHover,
     title: rawProduct.title || rawProduct.attributes?.title || "Untitled Product",
-    price: rawProduct.price || rawProduct.attributes?.price || 0,
-    oldPrice: rawProduct.oldPrice || rawProduct.attributes?.oldPrice || null,
-    isOnSale: !!rawProduct.oldPrice || !!rawProduct.attributes?.oldPrice,
-    salePercentage: rawProduct.salePercentage || rawProduct.attributes?.salePercentage || "25%",
+    price: pricing.price,
+    oldPrice: pricing.oldPrice,
+    isOnSale: pricing.isOnSale || !!rawProduct.isOnSale || !!rawProduct.attributes?.isOnSale,
+    discountPercentage: pricing.discountPercentage,
+    salePercentage: pricing.salePercentage || rawProduct.salePercentage || rawProduct.attributes?.salePercentage || "25%",
     size_stocks: rawProduct.size_stocks || rawProduct.attributes?.size_stocks
   };
   // Use isActive from the API - treat null or undefined as inactive

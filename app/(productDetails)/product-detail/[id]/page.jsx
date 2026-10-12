@@ -9,7 +9,7 @@ const RelatedProducts = dynamic(() => import("@/components/productDetails/Relate
 
 import Details1 from "@/components/productDetails/details/Details1";
 import { fetchDataFromApi } from "@/utils/api";
-import { fetchProductsWithVariantsByCategory, fetchProductsWithVariantsByCollection } from "@/utils/productVariantUtils";
+import { fetchProductsWithVariantsByCategory, fetchProductsWithVariantsByCollection, calculateDiscountedPricing } from "@/utils/productVariantUtils";
 import { API_URL, PRODUCT_REVIEWS_API } from "@/utils/urls";
 import { calculateInStock } from "@/utils/stockUtils";
 import React, { Suspense, cache } from "react";
@@ -543,6 +543,8 @@ function transformProduct(rawProduct) {
     ? rawProduct.sizes 
     : (rawProduct.filterSizes || []);
   
+  const pricing = calculateDiscountedPricing(rawProduct.price, rawProduct.discountPercentage, rawProduct.oldPrice);
+
   const transformedProduct = {
     ...rawProduct,
     id: rawProduct.documentId, // Use documentId as the id for consistent reference
@@ -554,10 +556,11 @@ function transformProduct(rawProduct) {
     sizes,
     size_stocks: rawProduct.size_stocks, // Include size_stocks data
     title: rawProduct.title || "Untitled Product",
-    price: rawProduct.price || 0,
-    oldPrice: rawProduct.oldPrice || null,
-    isOnSale: !!rawProduct.oldPrice,
-    salePercentage: rawProduct.salePercentage || "25%",
+    price: pricing.price,
+    oldPrice: pricing.oldPrice,
+    isOnSale: pricing.isOnSale || rawProduct.isOnSale === true,
+    discountPercentage: pricing.discountPercentage,
+    salePercentage: pricing.salePercentage || rawProduct.salePercentage || "25%",
     weight: rawProduct.weight || null
   };
   
@@ -658,6 +661,8 @@ function transformProductAsVariant(rawProduct) {
     }
   }
   
+  const pricing = calculateDiscountedPricing(rawProduct.price, rawProduct.discountPercentage, rawProduct.oldPrice);
+
   return {
     id: rawProduct.documentId,
     colorName,
@@ -668,10 +673,15 @@ function transformProductAsVariant(rawProduct) {
     isDefault: false,
     isActive: rawProduct.isActive !== false,
     quantity: rawProduct.quantity || 0,
+    price: pricing.price,
+    oldPrice: pricing.oldPrice,
+    discountPercentage: pricing.discountPercentage,
     product: {
       documentId: rawProduct.documentId,
       title: rawProduct.title,
-      price: rawProduct.price
+      price: pricing.price,
+      oldPrice: pricing.oldPrice,
+      discountPercentage: pricing.discountPercentage
     }
   };
 }

@@ -376,6 +376,51 @@ export async function fetchProductsWithVariants(apiEndpoint) {
 }
 
 /**
+ * Calculate discounted price and oldPrice based on discountPercentage or explicit oldPrice
+ * @param {number|string} rawPrice - Base catalog price
+ * @param {number|string} discountPercentage - Optional discount percentage (e.g. 20 for 20%)
+ * @param {number|string} explicitOldPrice - Optional explicit oldPrice
+ * @returns {Object} { price, oldPrice, isOnSale, discountPercentage, salePercentage }
+ */
+export function calculateDiscountedPricing(rawPrice, discountPercentage, explicitOldPrice) {
+  const basePrice = parseFloat(rawPrice) || 0;
+  const discount = (discountPercentage !== undefined && discountPercentage !== null && !isNaN(discountPercentage) && Number(discountPercentage) > 0)
+    ? Number(discountPercentage)
+    : null;
+
+  if (discount) {
+    const discountedPrice = Math.round(basePrice * (1 - discount / 100));
+    return {
+      price: discountedPrice,
+      oldPrice: basePrice,
+      isOnSale: true,
+      discountPercentage: discount,
+      salePercentage: `${discount}%`
+    };
+  }
+
+  const oldPriceNum = explicitOldPrice ? parseFloat(explicitOldPrice) : null;
+  if (oldPriceNum && oldPriceNum > basePrice) {
+    const calculatedDiscount = Math.round(((oldPriceNum - basePrice) / oldPriceNum) * 100);
+    return {
+      price: basePrice,
+      oldPrice: oldPriceNum,
+      isOnSale: true,
+      discountPercentage: calculatedDiscount,
+      salePercentage: `${calculatedDiscount}%`
+    };
+  }
+
+  return {
+    price: basePrice,
+    oldPrice: null,
+    isOnSale: false,
+    discountPercentage: null,
+    salePercentage: null
+  };
+}
+
+/**
  * Transform a raw product from API to listing format
  * @param {Object} rawProduct - Raw product data from API
  * @returns {Object} Transformed product for listing
@@ -420,22 +465,24 @@ function transformProductForListing(rawProduct) {
     }).filter(Boolean);
   }
 
+  const pricing = calculateDiscountedPricing(rawProduct.price, rawProduct.discountPercentage, rawProduct.oldPrice);
+
   return {
     id: rawProduct.id,
     documentId: rawProduct.documentId,
     title: rawProduct.title || "Untitled Product",
-    price: rawProduct.price || 0,
-    oldPrice: rawProduct.oldPrice || null,
+    price: pricing.price,
+    oldPrice: pricing.oldPrice,
     imgSrc,
     imgHover,
     gallery,
     colors: processedColors,
     sizes: rawProduct.sizes || [],
     size_stocks: rawProduct.size_stocks,
-    tabFilterOptions: rawProduct.tabFilterOptions || [],
     isActive: rawProduct.isActive === true,
-    isOnSale: !!rawProduct.oldPrice,
-    salePercentage: rawProduct.salePercentage || "25%",
+    isOnSale: pricing.isOnSale || rawProduct.isOnSale === true,
+    discountPercentage: pricing.discountPercentage,
+    salePercentage: pricing.salePercentage || rawProduct.salePercentage || "25%",
     // Strapi 5 relations are now flattened by default or handled via populate
     category: rawProduct.collection?.category?.title || rawProduct.category?.title || null,
     collection: rawProduct.collection?.title || null,
@@ -485,22 +532,28 @@ function transformVariantForListing(rawVariant, parentProduct) {
     ? rawVariant.title
     : parentProduct.title || "Untitled Product";
 
+  // All variants inherit discount directly from the main product
+  const variantDiscount = parentProduct?.discountPercentage;
+  const variantRawPrice = parentProduct?.price || rawVariant.price || 0;
+  const variantExplicitOldPrice = parentProduct?.oldPrice || rawVariant.oldPrice || null;
+  const pricing = calculateDiscountedPricing(variantRawPrice, variantDiscount, variantExplicitOldPrice);
+
   return {
     id: rawVariant.id,
     documentId: rawVariant.documentId,
     title: variantTitle,
-    price: rawVariant.price || parentProduct?.price || 0, 
-    oldPrice: rawVariant.oldPrice || parentProduct?.oldPrice || null,
+    price: pricing.price,
+    oldPrice: pricing.oldPrice,
     imgSrc,
     imgHover,
     gallery,
     colors: variantColor ? [variantColor] : [],
     sizes: rawVariant.sizes || parentProduct?.sizes || [], 
     size_stocks: rawVariant.size_stocks || parentProduct?.size_stocks,
-    tabFilterOptions: parentProduct?.tabFilterOptions || [],
     isActive: rawVariant.isActive !== false,
-    isOnSale: !!(rawVariant.oldPrice || parentProduct?.oldPrice),
-    salePercentage: rawVariant.salePercentage || parentProduct?.salePercentage || "25%",
+    isOnSale: pricing.isOnSale || rawVariant.isOnSale === true || parentProduct?.isOnSale === true,
+    discountPercentage: pricing.discountPercentage,
+    salePercentage: pricing.salePercentage || rawVariant.salePercentage || parentProduct?.salePercentage || "25%",
     category: parentProduct?.collection?.category?.title || parentProduct?.category?.title || null,
     collection: parentProduct?.collection?.title || null,
     design: rawVariant.design,

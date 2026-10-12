@@ -7,7 +7,7 @@ import { Pagination } from "swiper/modules";
 import ProductCard1 from "../productCards/ProductCard1";
 import { fetchDataFromApi } from "@/utils/api";
 import { getBestImageUrl } from "@/utils/imageUtils";
-import { fetchProductsWithVariantsByCategory, fetchProductsWithVariantsByCollection, fetchSingleProductWithVariants } from "@/utils/productVariantUtils";
+import { fetchProductsWithVariantsByCategory, fetchProductsWithVariantsByCollection, fetchSingleProductWithVariants, calculateDiscountedPricing } from "@/utils/productVariantUtils";
 
 
 // Default placeholder image
@@ -47,6 +47,11 @@ const transformProduct = (rawProduct) => {
   // Ensure we have a valid ID
   const id = rawProduct.documentId || rawProduct.id || rawProduct.attributes?.id || 0;
   
+  const rawPrice = rawProduct.price || rawProduct.attributes?.price || 0;
+  const rawDiscount = rawProduct.discountPercentage ?? rawProduct.attributes?.discountPercentage;
+  const rawOldPrice = rawProduct.oldPrice || rawProduct.attributes?.oldPrice || null;
+  const pricing = calculateDiscountedPricing(rawPrice, rawDiscount, rawOldPrice);
+
   // Create the product object first
   const productObj = {
     ...rawProduct,
@@ -55,10 +60,11 @@ const transformProduct = (rawProduct) => {
     imgSrc,
     imgHover,
     title: rawProduct.title || rawProduct.attributes?.title || "Untitled Product",
-    price: rawProduct.price || rawProduct.attributes?.price || 0,
-    oldPrice: rawProduct.oldPrice || rawProduct.attributes?.oldPrice || null,
-    isOnSale: !!rawProduct.oldPrice || !!rawProduct.attributes?.oldPrice,
-    salePercentage: rawProduct.salePercentage || rawProduct.attributes?.salePercentage || "25%",
+    price: pricing.price,
+    oldPrice: pricing.oldPrice,
+    isOnSale: pricing.isOnSale || !!rawProduct.isOnSale || !!rawProduct.attributes?.isOnSale,
+    discountPercentage: pricing.discountPercentage,
+    salePercentage: pricing.salePercentage || rawProduct.salePercentage || rawProduct.attributes?.salePercentage || "25%",
     weight: rawProduct.weight || rawProduct.attributes?.weight || null,
     size_stocks: rawProduct.size_stocks || rawProduct.attributes?.size_stocks
   };

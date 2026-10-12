@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { fetchDataFromApi } from "@/utils/api";
-import { transformProductForListing } from "@/utils/productVariantUtils";
+import { transformProductForListing, calculateDiscountedPricing } from "@/utils/productVariantUtils";
 import { Swiper, SwiperSlide } from "swiper/react";
 import ProductCard1 from "../productCards/ProductCard1";
 import { Pagination } from "swiper/modules";
@@ -19,10 +19,19 @@ const transformProduct = (rawProduct) => {
     imgHover: rawProduct.imgHover || rawProduct.attributes?.imgHover || null,
     gallery: rawProduct.gallery || rawProduct.attributes?.gallery || [],
     colors: rawProduct.colors || rawProduct.attributes?.colors || [],
-    price: rawProduct.price || rawProduct.attributes?.price || 0,
-    oldPrice: rawProduct.oldPrice || rawProduct.attributes?.oldPrice || null,
-    isOnSale: !!rawProduct.oldPrice || !!rawProduct.attributes?.oldPrice,
-    salePercentage: rawProduct.salePercentage || rawProduct.attributes?.salePercentage || "25%",
+    ...(() => {
+      const rawPrice = rawProduct.price || rawProduct.attributes?.price || 0;
+      const rawDiscount = rawProduct.discountPercentage ?? rawProduct.attributes?.discountPercentage;
+      const rawOldPrice = rawProduct.oldPrice || rawProduct.attributes?.oldPrice || null;
+      const pricing = calculateDiscountedPricing(rawPrice, rawDiscount, rawOldPrice);
+      return {
+        price: pricing.price,
+        oldPrice: pricing.oldPrice,
+        isOnSale: pricing.isOnSale || !!rawProduct.isOnSale || !!rawProduct.attributes?.isOnSale,
+        discountPercentage: pricing.discountPercentage,
+        salePercentage: pricing.salePercentage || rawProduct.salePercentage || rawProduct.attributes?.salePercentage || "25%"
+      };
+    })(),
     weight: rawProduct.weight || rawProduct.attributes?.weight || null,
     size_stocks: rawProduct.size_stocks || rawProduct.attributes?.size_stocks
   };
