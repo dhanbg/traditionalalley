@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -61,6 +61,18 @@ export default function ProductsCards6({ product }) {
   const isInStock = calculateInStock(safeProduct);
 
   const [currentImage, setCurrentImage] = useState(safeProduct.imgSrc);
+  const [mobileActiveIndex, setMobileActiveIndex] = useState(0);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const isSwiping = useRef(false);
+
+  const hasHoverImage = Boolean(
+    safeProduct.imgHover &&
+    safeProduct.imgHover !== "" &&
+    safeProduct.imgHover !== DEFAULT_IMAGE &&
+    safeProduct.imgHover !== safeProduct.imgSrc &&
+    safeProduct.imgHover !== currentImage
+  );
   const [selectedSize, setSelectedSize] = useState('');
   const [isMobile, setIsMobile] = useState(false);
 
@@ -77,7 +89,59 @@ export default function ProductsCards6({ product }) {
   useEffect(() => {
     // Ensure we never set an empty string as the currentImage
     setCurrentImage(safeProduct.imgSrc || DEFAULT_IMAGE);
+    setMobileActiveIndex(0);
   }, [safeProduct]);
+
+  const handleTouchStart = (e) => {
+    if (!hasHoverImage) return;
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    isSwiping.current = false;
+  };
+
+  const handleTouchMove = (e) => {
+    if (!hasHoverImage) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const diffX = currentX - touchStartX.current;
+    const diffY = currentY - touchStartY.current;
+
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 10) {
+      isSwiping.current = true;
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!hasHoverImage) return;
+    if (!isSwiping.current) return;
+
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const diffX = touchEndX - touchStartX.current;
+    const diffY = touchEndY - touchStartY.current;
+
+    if (Math.abs(diffX) > 30 && Math.abs(diffX) > Math.abs(diffY)) {
+      if (diffX < 0) {
+        setMobileActiveIndex(1);
+      } else {
+        setMobileActiveIndex(0);
+      }
+      isSwiping.current = true;
+      setTimeout(() => {
+        isSwiping.current = false;
+      }, 150);
+    } else {
+      isSwiping.current = false;
+    }
+  };
+
+  const handleLinkClick = (e) => {
+    if (isSwiping.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      isSwiping.current = false;
+    }
+  };
 
   useEffect(() => {
     const checkMobile = () => {
@@ -100,7 +164,7 @@ export default function ProductsCards6({ product }) {
 
   return (
     <div
-      className={`card-product style-list ${!isInStock ? "out-of-stock" : ""}`}
+      className={`card-product style-list ${!isInStock ? "out-of-stock" : ""} ${mobileActiveIndex === 1 ? "mobile-show-hover" : ""}`}
       data-availability={isInStock ? "In stock" : "Out of stock"}
       data-brand="gucci"
       onMouseEnter={() => {
@@ -110,7 +174,18 @@ export default function ProductsCards6({ product }) {
       }}
     >
       <div className="card-product-wrapper">
-        <Link href={detailHref} className="product-img">
+        <Link
+          href={detailHref}
+          className="product-img"
+          onClick={handleLinkClick}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          style={{
+            WebkitTapHighlightColor: 'transparent',
+            touchAction: 'manipulation'
+          }}
+        >
           <Image
             className="lazyload img-product"
             src={currentImage || DEFAULT_IMAGE}
@@ -119,17 +194,50 @@ export default function ProductsCards6({ product }) {
             height={800}
             sizes="(max-width: 640px) 100vw, 300px"
           />
-          {!isMobile && (
+          {hasHoverImage && (
             <Image
               className="lazyload img-hover"
-              src={safeProduct.imgHover || currentImage || DEFAULT_IMAGE}
+              src={safeProduct.imgHover}
               alt={safeProduct.title ? `${safeProduct.title} - Traditional Alley` : "Authentic Nepali Traditional Clothing"}
               width={600}
               height={800}
               sizes="(max-width: 640px) 100vw, 300px"
+              loading="lazy"
             />
           )}
         </Link>
+        {hasHoverImage && (
+          <div
+            className="mobile-img-pagination"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setMobileActiveIndex((prev) => (prev === 0 ? 1 : 0));
+            }}
+            aria-label="Toggle product image"
+          >
+            <button
+              type="button"
+              className={`dot ${mobileActiveIndex === 0 ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setMobileActiveIndex(0);
+              }}
+              aria-label="View main photo"
+            />
+            <button
+              type="button"
+              className={`dot ${mobileActiveIndex === 1 ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setMobileActiveIndex(1);
+              }}
+              aria-label="View alternate photo"
+            />
+          </div>
+        )}
         {safeProduct.isOnSale && (
           <div className="on-sale-wrap">
             <span className="on-sale-item">-25%</span>

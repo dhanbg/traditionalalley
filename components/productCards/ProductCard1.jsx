@@ -96,6 +96,18 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
   }
 
   const [currentImage, setCurrentImage] = useState(safeProduct.imgSrc);
+  const [mobileActiveIndex, setMobileActiveIndex] = useState(0);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const isSwiping = useRef(false);
+
+  const hasHoverImage = Boolean(
+    safeProduct.imgHover &&
+    safeProduct.imgHover !== "" &&
+    safeProduct.imgHover !== DEFAULT_IMAGE &&
+    safeProduct.imgHover !== safeProduct.imgSrc &&
+    safeProduct.imgHover !== currentImage
+  );
   const [inView, setInView] = useState(false);
   const [showSizeSelection, setShowSizeSelection] = useState(false);
   const [selectedSize, setSelectedSize] = useState('');
@@ -115,7 +127,62 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
   useEffect(() => {
     // Ensure we never set an empty string as the currentImage
     setCurrentImage(safeProduct.imgSrc || DEFAULT_IMAGE);
+    setMobileActiveIndex(0);
   }, [safeProduct]);
+
+  const handleTouchStart = (e) => {
+    if (!hasHoverImage) return;
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    isSwiping.current = false;
+  };
+
+  const handleTouchMove = (e) => {
+    if (!hasHoverImage) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const diffX = currentX - touchStartX.current;
+    const diffY = currentY - touchStartY.current;
+
+    // Detect horizontal swipe intent (horizontal distance > vertical distance and > 10px)
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 10) {
+      isSwiping.current = true;
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!hasHoverImage) return;
+    if (!isSwiping.current) return;
+
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const diffX = touchEndX - touchStartX.current;
+    const diffY = touchEndY - touchStartY.current;
+
+    if (Math.abs(diffX) > 30 && Math.abs(diffX) > Math.abs(diffY)) {
+      if (diffX < 0) {
+        // Swiped left -> show hover/second image
+        setMobileActiveIndex(1);
+      } else {
+        // Swiped right -> show main/first image
+        setMobileActiveIndex(0);
+      }
+      isSwiping.current = true;
+      setTimeout(() => {
+        isSwiping.current = false;
+      }, 150);
+    } else {
+      isSwiping.current = false;
+    }
+  };
+
+  const handleLinkClick = (e) => {
+    if (isSwiping.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      isSwiping.current = false;
+    }
+  };
 
   useEffect(() => {
     // Detect mobile viewport
@@ -255,7 +322,7 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
 
   return (
     <div
-      className={`card-product ${gridClass} ${inView ? "animate-in" : ""} ${!isInStock ? "out-of-stock" : ""}`}
+      className={`card-product ${gridClass} ${inView ? "animate-in" : ""} ${!isInStock ? "out-of-stock" : ""} ${mobileActiveIndex === 1 ? "mobile-show-hover" : ""}`}
       style={{ animationDelay: `${index * 0.12 + 0.1}s` }}
       ref={cardRef}
       onMouseEnter={() => {
@@ -275,6 +342,10 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
         <Link
           href={detailHref}
           className="product-img"
+          onClick={handleLinkClick}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           style={{
             WebkitTapHighlightColor: 'transparent',
             touchAction: 'manipulation'
@@ -290,19 +361,51 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
             priority={index === 0}
           />
 
-          {!isMobile && (
+          {hasHoverImage && (
             <Image
               className="lazyload img-hover"
-              src={(safeProduct.imgHover && safeProduct.imgHover !== "") ?
-                safeProduct.imgHover :
-                (currentImage && currentImage !== "" ? currentImage : DEFAULT_IMAGE)}
+              src={safeProduct.imgHover}
               alt={safeProduct.title ? `${safeProduct.title} - Traditional Alley` : "Authentic Nepali Traditional Clothing"}
               width={600}
               height={800}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              loading="lazy"
             />
           )}
         </Link>
+
+        {hasHoverImage && (
+          <div
+            className="mobile-img-pagination"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setMobileActiveIndex((prev) => (prev === 0 ? 1 : 0));
+            }}
+            aria-label="Toggle product image"
+          >
+            <button
+              type="button"
+              className={`dot ${mobileActiveIndex === 0 ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setMobileActiveIndex(0);
+              }}
+              aria-label="View main photo"
+            />
+            <button
+              type="button"
+              className={`dot ${mobileActiveIndex === 1 ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setMobileActiveIndex(1);
+              }}
+              aria-label="View alternate photo"
+            />
+          </div>
+        )}
         {safeProduct.hotSale && (
           <div className="marquee-product bg-main">
             <div className="marquee-wrapper">
@@ -612,9 +715,45 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
       </div>
 
 
-      {/* Mobile-only smaller title and price */}
+      {/* Mobile-only styling */}
       <style jsx global>{`
+        /* Active hover image state for mobile devices */
+        .card-product.mobile-show-hover .product-img .img-product,
+        .card-product.mobile-show-hover:hover .product-img .img-product {
+          opacity: 0 !important;
+        }
+
+        .card-product.mobile-show-hover .product-img .img-hover,
+        .card-product.mobile-show-hover:hover .product-img .img-hover {
+          opacity: 1 !important;
+          display: block !important;
+          z-index: 2 !important;
+          transform: none !important;
+        }
+
+        /* Mobile product image pagination indicator */
+        .card-product .mobile-img-pagination {
+          position: absolute;
+          bottom: 8px;
+          right: 8px;
+          z-index: 10;
+          display: none;
+          align-items: center;
+          gap: 4px;
+          background: rgba(0, 0, 0, 0.45);
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
+          padding: 3px 6px;
+          border-radius: 12px;
+          pointer-events: auto;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
         @media (max-width: 768px) {
+          .card-product .mobile-img-pagination {
+            display: flex;
+          }
+
           /* Title size in product list cards */
           .card-product .card-product-info .title.link {
             font-size: 13px !important;
@@ -636,6 +775,45 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
             bottom: auto;
             z-index: 10;
           }
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+          .card-product .mobile-img-pagination {
+            display: flex;
+          }
+        }
+
+        .card-product .mobile-img-pagination .dot {
+          position: relative;
+          width: 6px;
+          height: 6px;
+          padding: 0;
+          margin: 0;
+          border: none;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.45);
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
+          display: block;
+        }
+
+        .card-product .mobile-img-pagination .dot::after {
+          content: '';
+          position: absolute;
+          top: -8px;
+          bottom: -8px;
+          left: -6px;
+          right: -6px;
+        }
+
+        .card-product .mobile-img-pagination .dot.active {
+          width: 14px;
+          border-radius: 4px;
+          background: #ffffff;
+        }
+
+        .card-product .mobile-img-pagination .dot:focus {
+          outline: none;
         }
       `}</style>
     </div>

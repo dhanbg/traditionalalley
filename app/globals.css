@@ -114,6 +114,83 @@
   }
 }
 
+/* Active hover image state for mobile devices when swiped or selected via pagination dots */
+.card-product.mobile-show-hover .product-img .img-product,
+.card-product.mobile-show-hover:hover .product-img .img-product {
+  opacity: 0 !important;
+}
+
+.card-product.mobile-show-hover .product-img .img-hover,
+.card-product.mobile-show-hover:hover .product-img .img-hover {
+  opacity: 1 !important;
+  display: block !important;
+  z-index: 2 !important;
+  transform: none !important;
+}
+
+/* Mobile product image pagination indicator */
+.card-product .mobile-img-pagination {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 10;
+  display: none;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  padding: 3px 6px;
+  border-radius: 12px;
+  pointer-events: auto;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 768px) {
+  .card-product .mobile-img-pagination {
+    display: flex;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .card-product .mobile-img-pagination {
+    display: flex;
+  }
+}
+
+.card-product .mobile-img-pagination .dot {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  display: block;
+}
+
+.card-product .mobile-img-pagination .dot::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  left: -6px;
+  right: -6px;
+}
+
+.card-product .mobile-img-pagination .dot.active {
+  width: 14px;
+  border-radius: 4px;
+  background: #ffffff;
+}
+
+.card-product .mobile-img-pagination .dot:focus {
+  outline: none;
+}
+
 /* Mobile touch improvements for product cards */
 @media (max-width: 768px) {
   .card-product {
@@ -130,16 +207,6 @@
   .card-product .product-img:active {
     transform: scale(0.98);
     transition: transform 0.1s ease;
-  }
-
-  /* Prevent hover effects on mobile */
-  .card-product:hover .img-product {
-    opacity: 1;
-  }
-
-  .card-product:hover .img-hover {
-    opacity: 0;
-    transform: none;
   }
 
   /* Mobile description and title improvements */
