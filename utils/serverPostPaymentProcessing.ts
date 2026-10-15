@@ -463,35 +463,85 @@ export const processServerPostPayment = async (selectedProducts: any[], user: an
                 const fullName = receiverDetails.fullName || receiverDetails.name || user?.name || undefined;
                 const address = receiverDetails.address || {};
 
-                const currency = orderSummary.currency || paymentData.currency || 'NPR';
-                const totalAmount = paymentData.amount || orderSummary.totalAmount || 0;
+                // 1. Guard against Admin Test Transactions (e.g. Rs. 10 override) to protect Pixel data quality
+                const isAdminEmail = 
+                    user?.email === 'gurungvaaiii@gmail.com' ||
+                    user?.email === 'traditionalley2050@gmail.com' ||
+                    user?.role === 'admin' ||
+                    email === 'gurungvaaiii@gmail.com' ||
+                    email === 'traditionalley2050@gmail.com';
 
-                await sendMetaCapiEvent({
-                    eventName: 'Purchase',
-                    eventId: paymentData.merchantTxnId || `purchase-${Date.now()}`,
-                    clientIp,
-                    clientUserAgent,
-                    userData: {
+                const isTestAmount = Number(paymentData?.amount) === 10;
+
+                if (isAdminEmail || isTestAmount) {
+                    console.log('🛡️ [SERVER-POST-PAYMENT] Skipping Meta CAPI Purchase event for admin test order:', {
                         email,
-                        phone,
-                        fullName,
-                        city: address.cityName || undefined,
-                        zip: address.postalCode || undefined,
-                        countryCode: address.countryCode || undefined,
-                        fbp: paymentData?.fbp || undefined,
-                        fbc: paymentData?.fbc || undefined,
-                    },
-                    customData: {
-                        currency,
-                        value: typeof totalAmount === 'number' ? totalAmount : parseFloat(totalAmount) || 0,
-                        contentIds: selectedProducts.map(p => p.documentId || p.id),
-                        contents: selectedProducts.map(p => ({
-                            id: p.documentId || p.id,
-                            quantity: p.quantity || 1,
-                            item_price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0
-                        }))
+                        amount: paymentData?.amount,
+                        isAdminEmail,
+                        isTestAmount
+                    });
+                } else {
+                    // 2. Real Customer Order: Resolve currency and total amount accurately
+                    let currency = 'NPR';
+                    let totalAmount = 0;
+
+                    if (paymentData.provider === 'nps') {
+                        // NPS gateway payments are always in NPR
+                        currency = 'NPR';
+                        totalAmount = typeof paymentData.amount === 'number'
+                            ? paymentData.amount
+                            : parseFloat(paymentData.amount) || 0;
+                    } else {
+                        currency = orderSummary.currency || paymentData.currency || 'NPR';
+                        totalAmount = paymentData.amount || orderSummary.totalAmount || 0;
                     }
-                });
+
+                    // Fallback to sum of product prices if totalAmount is missing or 0
+                    if ((!totalAmount || totalAmount <= 0) && selectedProducts.length > 0) {
+                        totalAmount = selectedProducts.reduce((sum, p) => {
+                            const pPrice = typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0;
+                            return sum + (pPrice * (p.quantity || 1));
+                        }, 0);
+                    }
+
+                    const numericValue = typeof totalAmount === 'number' ? totalAmount : parseFloat(totalAmount) || 0;
+
+                    if (numericValue > 0) {
+                        await sendMetaCapiEvent({
+                            eventName: 'Purchase',
+                            eventId: paymentData.merchantTxnId || `purchase-${Date.now()}`,
+                            clientIp,
+                            clientUserAgent,
+                            userData: {
+                                email,
+                                phone,
+                                fullName,
+                                city: address.cityName || undefined,
+                                zip: address.postalCode || undefined,
+                                countryCode: address.countryCode || undefined,
+                                fbp: paymentData?.fbp || undefined,
+                                fbc: paymentData?.fbc || undefined,
+                            },
+                            customData: {
+                                currency,
+                                value: parseFloat(numericValue.toFixed(2)),
+                                contentIds: selectedProducts.map(p => String(p.documentId || p.id)),
+                                contents: selectedProducts.map(p => ({
+                                    id: String(p.documentId || p.id),
+                                    quantity: p.quantity || 1,
+                                    item_price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0
+                                }))
+                            }
+                        });
+                        console.log('✅ [SERVER-POST-PAYMENT] Successfully dispatched Meta CAPI Purchase event:', {
+                            eventId: paymentData.merchantTxnId,
+                            currency,
+                            value: numericValue
+                        });
+                    } else {
+                        console.warn('⚠️ [SERVER-POST-PAYMENT] Skipping Meta CAPI Purchase event because resolved value is <= 0.');
+                    }
+                }
             } catch (capiError) {
                 console.error('❌ [SERVER-POST-PAYMENT] Failed to track purchase via Meta CAPI:', capiError);
             }

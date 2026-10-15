@@ -4,6 +4,7 @@ import Topbar6 from "@/components/headers/Topbar6";
 import Products from "@/components/products/Products";
 import Link from "next/link";
 import React, { Suspense } from "react";
+import { fetchDataFromApi } from "@/utils/api";
 import { fetchProductsWithVariantsByCollection } from "@/utils/productVariantUtils";
 
 // Cache women collection pages at edge CDN for 5 minutes
@@ -12,20 +13,8 @@ export const revalidate = 300;
 // Fetch collection data from API
 async function getCollectionData(slug) {
   try {
-    const apiUrl = process.env.STRAPI_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    const url = `${apiUrl}/api/collections?filters[slug][$eq]=${slug}&populate=*`;
-    const response = await fetch(url, {
-      next: { revalidate: 300 }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch collection: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    const collections = data.data || [];
-    
-    // Strapi 5 uses flattened data without .attributes wrapper
+    const response = await fetchDataFromApi(`/api/collections?filters[slug][$eqi]=${slug}&populate=*`);
+    const collections = response?.data || [];
     return collections.length > 0 ? collections[0] : null;
   } catch (error) {
     console.error('Error fetching collection:', error);

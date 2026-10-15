@@ -1,5 +1,5 @@
 export const initialState = {
-  price: [20, 300],
+  price: [0, 100000],
   availability: { id: "all", label: "All", value: null },
   size: "All",
   activeFilterOnSale: false,
@@ -48,7 +48,7 @@ export function reducer(state, action) {
     case "CLEAR_FILTER":
       return {
         ...state,
-        price: [20, 300],
+        price: [0, 100000],
         availability: { id: "all", label: "All", value: null },
         size: "All",
         collections: [],

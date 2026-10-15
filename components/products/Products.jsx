@@ -40,7 +40,7 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
       { id: "inStock", label: "In stock", count: 0, value: true },
       { id: "outStock", label: "Out of stock", count: 0, value: false }
     ],
-    priceRange: [20, 300]
+    priceRange: [0, 100000]
   });
 
   // Ref for intersection observer
@@ -632,13 +632,30 @@ export default function Products({ parentClass = "flat-spacing", collection, cat
             { id: "inStock", label: "In stock", count: 0, value: true },
             { id: "outStock", label: "Out of stock", count: 0, value: false }
           ],
-          priceRange: [20, 300]
+          priceRange: [0, 100000]
         });
       }
     };
 
     loadFilterOptions();
   }, [categoryTitle]);
+
+  // Dynamically compute price range from loaded products if not already set from category
+  useEffect(() => {
+    if (productDetails && productDetails.length > 0) {
+      const allPrices = productDetails
+        .map(p => typeof p.price === 'number' ? p.price : null)
+        .filter(p => p !== null && !isNaN(p));
+      if (allPrices.length > 0) {
+        const min = Math.floor(Math.min(...allPrices));
+        const max = Math.ceil(Math.max(...allPrices));
+        setFilterOptions(prev => ({
+          ...prev,
+          priceRange: [Math.max(0, min), Math.max(100000, max)]
+        }));
+      }
+    }
+  }, [productDetails]);
 
   // Set the initial collection filter from URL parameters or props
   useEffect(() => {

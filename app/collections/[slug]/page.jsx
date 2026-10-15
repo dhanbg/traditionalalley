@@ -64,8 +64,8 @@ export async function generateMetadata({ params }) {
 
   let collectionImageUrl = 'https://traditionalalley.com.np/og-image.jpg';
   try {
-    const collectionRes = await fetchDataFromApi(`/api/collections?filters[slug][$eq]=${slug}&populate=image`);
-    const collData = collectionRes?.data?.find(c => c.slug === slug) || collectionRes?.data?.[0];
+    const collectionRes = await fetchDataFromApi(`/api/collections?filters[slug][$eqi]=${slug}&populate=image`);
+    const collData = collectionRes?.data?.find(c => c.slug?.toLowerCase() === slug.toLowerCase()) || collectionRes?.data?.[0];
     if (collData?.image?.url) {
       const rawUrl = collData.image.formats?.large?.url || collData.image.formats?.medium?.url || collData.image.url;
       collectionImageUrl = rawUrl.startsWith('http') ? rawUrl : `${API_URL}${rawUrl}`;

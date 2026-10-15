@@ -49,7 +49,7 @@ interface MetaCapiEventOptions {
     customData: {
         currency: string;
         value: number;
-        contentIds: string[];
+        contentIds?: string[];
         contents: Array<{
             id: string;
             quantity: number;
@@ -108,12 +108,14 @@ export async function sendMetaCapiEvent(options: MetaCapiEventOptions) {
             user_data: userDataPayload,
             custom_data: {
                 currency: options.customData.currency.toUpperCase(),
-                value: options.customData.value,
+                value: Math.max(0.01, parseFloat(Number(options.customData.value).toFixed(2))),
                 content_type: 'product',
+                content_ids: options.customData.contentIds || options.customData.contents.map(item => String(item.id)),
+                num_items: options.customData.contents.reduce((sum, item) => sum + (item.quantity || 1), 0),
                 contents: options.customData.contents.map(item => ({
-                    id: item.id,
-                    quantity: item.quantity,
-                    item_price: item.item_price
+                    id: String(item.id),
+                    quantity: item.quantity || 1,
+                    item_price: typeof item.item_price === 'number' ? item.item_price : parseFloat(item.item_price) || 0
                 })),
             }
         };

@@ -636,7 +636,7 @@ export async function fetchSingleProductWithVariants(productId) {
  */
 export async function fetchProductsWithVariantsByCollection(collectionSlug) {
   try {
-    const apiEndpoint = `/api/products?filters[collection][slug][$eq]=${collectionSlug}&${PRODUCT_LISTING_POPULATE}`;
+    const apiEndpoint = `/api/products?filters[collection][slug][$eqi]=${collectionSlug}&${PRODUCT_LISTING_POPULATE}`;
     return await fetchProductsWithVariants(apiEndpoint);
   } catch (error) {
     console.error('Error fetching collection products with variants:', error);

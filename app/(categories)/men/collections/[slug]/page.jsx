@@ -18,7 +18,7 @@ export default async function Page({ params }) {
   let initialProducts = [];
   try {
     const [collectionRes, productsRes] = await Promise.all([
-      fetchDataFromApi(`/api/collections?filters[slug][$eq]=${slug}&populate=*`),
+      fetchDataFromApi(`/api/collections?filters[slug][$eqi]=${slug}&populate=*`),
       fetchProductsWithVariantsByCollection(slug).catch(() => []),
     ]);
     if (collectionRes.data && collectionRes.data.length > 0) {

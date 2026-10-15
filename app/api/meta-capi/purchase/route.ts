@@ -25,9 +25,29 @@ export async function POST(request: NextRequest) {
             hasFbc: !!fbc
         });
 
+        const isAdminEmail = 
+            userData?.email === 'gurungvaaiii@gmail.com' ||
+            userData?.email === 'traditionalley2050@gmail.com';
+
+        const rawValue = typeof customData?.value === 'number'
+            ? customData.value
+            : parseFloat(customData?.value) || 0;
+
+        const isTestAmount = rawValue === 10;
+
+        if (isAdminEmail || isTestAmount) {
+            console.log('🛡️ [META-CAPI-PURCHASE] Skipping admin test order from Meta CAPI.');
+            return NextResponse.json({ success: true, skipped: true, message: 'Skipped admin test transaction' });
+        }
+
+        if (rawValue <= 0) {
+            console.warn('⚠️ [META-CAPI-PURCHASE] Skipping Purchase event with zero or invalid value.');
+            return NextResponse.json({ success: false, error: 'Value must be greater than 0' }, { status: 400 });
+        }
+
         const result = await sendMetaCapiEvent({
             eventName: 'Purchase',
-            eventId: eventId || `cod-${Date.now()}`,
+            eventId: eventId || `purchase-${Date.now()}`,
             clientIp,
             clientUserAgent: userAgent,
             userData: {
@@ -35,11 +55,11 @@ export async function POST(request: NextRequest) {
                 fbp,
                 fbc
             },
-            customData: customData || {
-                currency: 'NPR',
-                value: 0,
-                contentIds: [],
-                contents: []
+            customData: {
+                currency: (customData?.currency || 'NPR').toUpperCase(),
+                value: parseFloat(rawValue.toFixed(2)),
+                contentIds: customData?.contentIds || (customData?.contents || []).map((c: any) => String(c.id)),
+                contents: customData?.contents || []
             }
         });
 

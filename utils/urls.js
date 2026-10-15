@@ -53,7 +53,7 @@ export const PRODUCT_BY_DOCUMENT_ID_API = (documentId) => `/api/products?filters
 
 // Collection endpoints
 export const COLLECTIONS_API = `/api/collections?${COLLECTION_POPULATE}`;
-export const COLLECTION_BY_SLUG_API = (slug) => `/api/collections?filters[slug][$eq]=${slug}&${COLLECTION_POPULATE}`;
+export const COLLECTION_BY_SLUG_API = (slug) => `/api/collections?filters[slug][$eqi]=${slug}&${COLLECTION_POPULATE}`;
 export const COLLECTION_BY_DOCUMENT_ID_API = (documentId) => `/api/collections/${documentId}?${COLLECTION_POPULATE}`;
 
 // Cart endpoints

@@ -18,7 +18,7 @@ export default function FilterModal({ allProps = {}, products = [], filterOption
   // Ensure price exists with default values
   const price = Array.isArray(allProps.price) && allProps.price.length === 2 
     ? allProps.price 
-    : [20, 300];
+    : [0, 100000];
     
   // Ensure other properties exist
     
@@ -84,11 +84,11 @@ export default function FilterModal({ allProps = {}, products = [], filterOption
   // Determine the price range for the slider with safety checks
   const minPrice = filterOptions && filterOptions.priceRange && Array.isArray(filterOptions.priceRange) && filterOptions.priceRange.length > 0 
     ? filterOptions.priceRange[0] 
-    : 10;
+    : 0;
     
   const maxPrice = filterOptions && filterOptions.priceRange && Array.isArray(filterOptions.priceRange) && filterOptions.priceRange.length > 1 
     ? filterOptions.priceRange[1] 
-    : 450;
+    : 100000;
 
   // Calculate product counts based on the actual products from the API
   const getAvailabilityCount = (option) => {
