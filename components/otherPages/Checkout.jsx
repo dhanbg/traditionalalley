@@ -15,7 +15,6 @@ import PriceDisplay from "@/components/common/PriceDisplay";
 import { convertUsdToNpr, getExchangeRate } from "@/utils/currency";
 import styles from './Checkout.module.css'; // Import CSS module for Checkout component
 import { getVariantAwareTitle } from "@/utils/titleUtils";
-import { isDashainExemptProduct, hasDashainDelayedProducts, getDashainDeliveryStatus } from "@/utils/festivalDelivery";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1337';
 
@@ -204,9 +203,6 @@ export default function Checkout() {
             documentId: product.variantInfo.documentId || product.variantInfo.variantId,
             isVariant: true
           } : undefined,
-          deliverySchedule: isDashainExemptProduct(product, fetchedProduct)
-            ? "Ready festive stock (Delivered before Dashain)"
-            : "Will be delivered after 2 Oct due to Nepali festival Dashain",
           productDetails: {
             productCode: fetchedProduct?.productCode || "NO-CODES",
             brand: fetchedProduct?.brand || "",
@@ -227,9 +223,7 @@ export default function Checkout() {
         deliveryType: receiverDetails.address?.countryCode === 'NP' ? "Local" : (deliveryType || "Express"),
         cost: shippingCost,
         currency: userCurrency || "NPR",
-        estimatedDelivery: hasDelayedProducts
-          ? "After 2 Oct (Dashain Festival Schedule)"
-          : (receiverDetails.address?.countryCode === 'NP' ? "Local (3-5 business days)" : "Express (3-5 business days)")
+        estimatedDelivery: "3-5 business days"
       },
 
       // Additional metadata
@@ -986,9 +980,7 @@ export default function Checkout() {
             carrier: "Cash on Delivery", // COD carrier
             service: "COD Standard",
             deliveryType: deliveryType || "Standard", // Add delivery type information
-            estimatedDays: hasDelayedProducts
-              ? "Delivered after 2 Oct (Dashain Festival Schedule)"
-              : (receiverDetails?.address?.country === "Nepal" || receiverDetails?.address?.countryCode === "NP" ? "3-5" : "7-10"),
+            estimatedDays: receiverDetails?.address?.country === "Nepal" || receiverDetails?.address?.countryCode === "NP" ? "3-5" : "7-10",
             cost: shippingCost,
             currency: userCurrency || "NPR",
             trackingAvailable: false, // COD usually doesn't have tracking
@@ -1273,11 +1265,6 @@ export default function Checkout() {
 
   // Calculate final total with coupon discount
   const finalTotal = Math.max(0, actualTotal - couponDiscount);
-
-  // Check if order has any products delayed past Oct 2 due to Dashain festival
-  const hasDelayedProducts = useMemo(() => {
-    return hasDashainDelayedProducts(selectedProducts, productsWithOldPrice);
-  }, [selectedProducts, productsWithOldPrice]);
 
   // Auto-apply WELCOMETOTA coupon if user hasn't used it
   useEffect(() => {
@@ -1855,32 +1842,6 @@ export default function Checkout() {
                         </tbody>
                       </table>
                     </div>
-
-                    {/* Dashain Festival Delivery Advisory */}
-                    {hasDelayedProducts && (
-                      <div style={{
-                        marginTop: '14px',
-                        padding: '12px 14px',
-                        backgroundColor: 'rgba(234, 88, 12, 0.08)',
-                        border: '1px solid rgba(234, 88, 12, 0.25)',
-                        borderRadius: '8px',
-                        fontSize: '12.5px',
-                        lineHeight: '1.45',
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '10px'
-                      }}>
-                        <span style={{ fontSize: '18px', lineHeight: 1 }}>🌸</span>
-                        <div>
-                          <strong style={{ color: '#c2410c', display: 'block', marginBottom: '2px' }}>
-                            Nepali Festival Dashain Delivery Notice
-                          </strong>
-                          <span style={{ color: 'var(--checkout-text-color, #424242)' }}>
-                            Products in your bag will be delivered <strong>after 2 Oct</strong> due to Dashain festival holidays, except ready festive stock items (marked with ✨).
-                          </span>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
                 <div className="wrap" style={{ marginTop: '0px' }}>
@@ -2042,50 +2003,6 @@ export default function Checkout() {
                     <span>{selectedProducts.length}</span>
                   </div>
                 </div>
-
-                {/* Dashain Festival Delivery Notice Banner */}
-                {hasDelayedProducts ? (
-                  <div style={{
-                    marginBottom: '16px',
-                    padding: '12px 14px',
-                    backgroundColor: 'rgba(234, 88, 12, 0.08)',
-                    border: '1px solid rgba(234, 88, 12, 0.25)',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    lineHeight: '1.45',
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '10px'
-                  }}>
-                    <span style={{ fontSize: '18px', lineHeight: 1 }}>🌸</span>
-                    <div>
-                      <div style={{ fontWeight: 600, color: '#c2410c', marginBottom: '2px' }}>
-                        Nepali Festival Dashain Notice
-                      </div>
-                      <div style={{ color: 'var(--checkout-text-color, #424242)' }}>
-                        Products will be delivered <strong>after 2 Oct</strong> due to the Nepali festival Dashain, except items marked with ✨.
-                      </div>
-                    </div>
-                  </div>
-                ) : selectedProducts.length > 0 ? (
-                  <div style={{
-                    marginBottom: '16px',
-                    padding: '10px 14px',
-                    backgroundColor: 'rgba(34, 197, 94, 0.08)',
-                    border: '1px solid rgba(34, 197, 94, 0.25)',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    lineHeight: '1.4',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    color: '#15803d'
-                  }}>
-                    <span>✨</span>
-                    <span><strong>Dashain Ready Stock:</strong> All items in your cart are eligible for delivery before Dashain!</span>
-                  </div>
-                ) : null}
-
                 <div className="checkout-product-table">
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                     <thead>
@@ -2095,90 +2012,44 @@ export default function Checkout() {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedProducts.map((elm, i) => {
-                        const fetchedProduct = productsWithOldPrice[elm.id];
-                        const deliveryStatus = getDashainDeliveryStatus(elm, fetchedProduct);
-
-                        return (
-                          <tr key={i} style={{ borderBottom: i < selectedProducts.length - 1 ? '1px solid var(--checkout-border-color, #f5f5f5)' : 'none' }}>
-                            <td style={{ padding: '12px 4px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                <div style={{ position: 'relative', width: '80px', height: '106px', flexShrink: 0, border: '1px solid var(--checkout-border-color, #f0f0f0)', borderRadius: '4px', overflow: 'hidden' }}>
-                                  <Image
-                                    alt="img-product"
-                                    src={getBestImageUrl(elm.variantInfo?.imgSrc || elm.imgSrc, 'small') || '/images/products/default-product.svg'}
-                                    fill
-                                    sizes="80px"
-                                    style={{ objectFit: 'cover' }}
-                                  />
+                      {selectedProducts.map((elm, i) => (
+                        <tr key={i} style={{ borderBottom: i < selectedProducts.length - 1 ? '1px solid var(--checkout-border-color, #f5f5f5)' : 'none' }}>
+                          <td style={{ padding: '12px 4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                              <div style={{ position: 'relative', width: '80px', height: '106px', flexShrink: 0, border: '1px solid var(--checkout-border-color, #f0f0f0)', borderRadius: '4px', overflow: 'hidden' }}>
+                                <Image
+                                  alt="img-product"
+                                  src={getBestImageUrl(elm.variantInfo?.imgSrc || elm.imgSrc, 'small') || '/images/products/default-product.svg'}
+                                  fill
+                                  sizes="80px"
+                                  style={{ objectFit: 'cover' }}
+                                />
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div style={{ fontWeight: 600, color: 'var(--checkout-text-dark, #1f2937)', fontSize: '12px', lineHeight: '1.3' }}>
+                                  {getVariantAwareTitle(elm)}
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                  <div style={{ fontWeight: 600, color: 'var(--checkout-text-dark, #1f2937)', fontSize: '12px', lineHeight: '1.3' }}>
-                                    {getVariantAwareTitle(elm)}
-                                  </div>
-                                  {(elm.selectedSize || (elm.variantInfo && elm.variantInfo.isVariant)) && (
-                                    <div style={{ color: '#6b7280', fontSize: '11px' }}>
-                                      {elm.selectedSize && <span>Size: {elm.selectedSize}</span>}
-                                      {elm.selectedSize && elm.variantInfo && elm.variantInfo.isVariant && <span> / </span>}
-                                      {elm.variantInfo && elm.variantInfo.isVariant && <span>{elm.variantInfo.title}</span>}
-                                    </div>
-                                  )}
+                                {(elm.selectedSize || (elm.variantInfo && elm.variantInfo.isVariant)) && (
                                   <div style={{ color: '#6b7280', fontSize: '11px' }}>
-                                    Qty: {elm.quantity} × <PriceDisplay price={elm.price} size="small" style={{ display: 'inline' }} />
+                                    {elm.selectedSize && <span>Size: {elm.selectedSize}</span>}
+                                    {elm.selectedSize && elm.variantInfo && elm.variantInfo.isVariant && <span> / </span>}
+                                    {elm.variantInfo && elm.variantInfo.isVariant && <span>{elm.variantInfo.title}</span>}
                                   </div>
-
-                                  {/* Dashain Festival Delivery Status */}
-                                  {deliveryStatus.isExempt ? (
-                                    <div style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '5px',
-                                      marginTop: '4px',
-                                      padding: '3px 8px',
-                                      backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                                      border: '1px solid rgba(34, 197, 94, 0.25)',
-                                      borderRadius: '4px',
-                                      color: '#15803d',
-                                      fontSize: '11px',
-                                      fontWeight: 500,
-                                      width: 'fit-content',
-                                      lineHeight: '1.3'
-                                    }}>
-                                      <span>✨</span>
-                                      <span>Ready Stock • Delivery Before Dashain</span>
-                                    </div>
-                                  ) : (
-                                    <div style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '5px',
-                                      marginTop: '4px',
-                                      padding: '3px 8px',
-                                      backgroundColor: 'rgba(234, 88, 12, 0.1)',
-                                      border: '1px solid rgba(234, 88, 12, 0.3)',
-                                      borderRadius: '4px',
-                                      color: '#c2410c',
-                                      fontSize: '11px',
-                                      fontWeight: 500,
-                                      width: 'fit-content',
-                                      lineHeight: '1.3'
-                                    }}>
-                                      <span>🚚</span>
-                                      <span>Will be delivered after 2 Oct due to Nepali festival Dashain</span>
-                                    </div>
-                                  )}
+                                )}
+                                <div style={{ color: '#6b7280', fontSize: '11px' }}>
+                                  Qty: {elm.quantity} × <PriceDisplay price={elm.price} size="small" style={{ display: 'inline' }} />
                                 </div>
                               </div>
-                            </td>
-                            <td style={{ textAlign: 'right', padding: '12px 4px', verticalAlign: 'middle', fontWeight: 600, color: 'var(--checkout-text-dark, #1f2937)' }}>
-                              <PriceDisplay
-                                price={elm.price * elm.quantity}
-                                size="small"
-                              />
-                            </td>
-                          </tr>
-                        );
-                      })}
+                            </div>
+                          </td>
+                          <td style={{ textAlign: 'right', padding: '12px 4px', verticalAlign: 'middle', fontWeight: 600, color: 'var(--checkout-text-dark, #1f2937)' }}>
+                            <PriceDisplay
+                              price={elm.price * elm.quantity}
+                              size="small"
+                            />
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
