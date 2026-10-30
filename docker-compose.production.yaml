@@ -1,3 +1,42 @@
-# Next.js frontend service has been migrated to Vercel and is no longer run on the VPS via Docker.
-# The production site is hosted on Vercel at https://traditionalalley.com.np.
-# The VPS only hosts the PostgreSQL database and Strapi backend.
+version: "3.8"
+
+services:
+  nextjs:
+    image: traditionalalley-frontend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://admin.traditionalalley.com.np
+        - NEXT_PUBLIC_STRAPI_API_TOKEN=53a5a13bf33757eb9d5d8fea2d721742ecc5ff24562b0858f073feb6818a2a9c3ba8d052e6c143222c01d504cdfd85500c307502f01655929a8c4a6b2ed84b6096e0539d71b920e84551459e3049b1f452647911330b6de4bcbcc655e727f38ace8d0802a010c75628f1d792fcf047c77efeced311b1248fc09b32e2614da62a
+        - STRAPI_API_TOKEN=53a5a13bf33757eb9d5d8fea2d721742ecc5ff24562b0858f073feb6818a2a9c3ba8d052e6c143222c01d504cdfd85500c307502f01655929a8c4a6b2ed84b6096e0539d71b920e84551459e3049b1f452647911330b6de4bcbcc655e727f38ace8d0802a010c75628f1d792fcf047c77efeced311b1248fc09b32e2614da62a
+    container_name: nextjs-alley-production
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      STRAPI_INTERNAL_URL: "http://strapi-alley-production:1337"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.8'
+          memory: 1G
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - strapi-network
+
+networks:
+  strapi-network:
+    external: true
+    name: strapi-production_strapi-production-network
