@@ -425,10 +425,14 @@ function ReportCardContent({
                     return (
                       <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-3.5">
                         <img
-                          src={item.image}
+                          src={item.image || '/images/placeholder.svg'}
                           alt={item.title}
                           crossOrigin="anonymous"
                           className="w-24 sm:w-28 h-36 sm:h-40 object-cover rounded-xl shadow-xs border border-rose-100 shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = '/images/placeholder.svg';
+                          }}
                         />
                         <div className="min-w-0 flex-1 w-full">
                           <h3
@@ -505,10 +509,14 @@ function ReportCardContent({
                       return (
                         <div key={idx} className="flex items-start space-x-2.5 p-2 bg-white rounded-lg border border-rose-100/80 shadow-2xs">
                           <img
-                            src={item.image}
+                            src={item.image || '/images/placeholder.svg'}
                             alt={item.title}
                             crossOrigin="anonymous"
                             className="w-12 h-14 object-cover rounded-md border border-rose-100 shrink-0"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = '/images/placeholder.svg';
+                            }}
                           />
                           <div className="min-w-0 flex-1 flex flex-col justify-center">
                             <h4

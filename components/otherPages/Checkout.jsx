@@ -894,6 +894,7 @@ export default function Checkout() {
           brand: fetchedProduct?.brand || "Traditional Alley",
           sku: fetchedProduct?.sku || product.sku || `SKU-${product.documentId}`,
           productCode: fetchedProduct?.productCode || "NO-CODES",
+          imgSrc: product.imgSrc || product.variantInfo?.imgSrc || (fetchedProduct && fetchedProduct.imgSrc) || "",
 
           // Size and variant info for cart matching
           selectedSize: availableSize,

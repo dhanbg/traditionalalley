@@ -82,6 +82,42 @@ function getGA4Client() {
   }
 }
 
+// Helper to resolve product image robustly from order item data
+function resolveProductImage(product: any, apiUrl: string): string {
+  if (!product) return '/images/placeholder.svg';
+
+  const raw =
+    product.imgSrc ??
+    product.variantInfo?.imgSrc ??
+    product.image ??
+    product.imageUrl ??
+    (Array.isArray(product.images) ? product.images[0] : null);
+
+  if (!raw) return '/images/placeholder.svg';
+
+  let urlStr = '';
+  if (typeof raw === 'string') {
+    urlStr = raw.trim();
+  } else if (typeof raw === 'object' && raw !== null) {
+    urlStr =
+      raw.url ||
+      raw.formats?.small?.url ||
+      raw.formats?.medium?.url ||
+      raw.formats?.thumbnail?.url ||
+      '';
+  }
+
+  if (!urlStr || urlStr === '/vercel.svg' || urlStr === '/placeholder.png') {
+    return '/images/placeholder.svg';
+  }
+
+  if (urlStr.startsWith('/uploads/')) {
+    return `${apiUrl}${urlStr}`;
+  }
+
+  return urlStr;
+}
+
 export async function GET(request: NextRequest) {
   try {
     // 0. Authorization check: Authorized administrators can access Daily Report data
@@ -226,6 +262,7 @@ export async function GET(request: NextRequest) {
                   const orderTotal = orderSummary.totalAmount ?? p.amount ?? 0;
                   const productPrice = orderSummary.subtotal ?? (products.reduce((acc: number, it: any) => acc + (it.subtotal || it.price || 0), 0) || orderTotal);
                   const shippingCost = orderSummary.shippingCost ?? shippingObj.cost ?? shippingObj.shippingCost ?? p.orderData?.shippingPrice ?? Math.max(0, (typeof orderTotal === 'number' && typeof productPrice === 'number') ? orderTotal - productPrice : 0);
+                  const productImage = resolveProductImage(firstProduct, API_URL);
 
                   purchases.push({
                     txnId: p.merchantTxnId,
@@ -236,7 +273,7 @@ export async function GET(request: NextRequest) {
                     productPrice: typeof productPrice === 'number' ? productPrice : parseFloat(productPrice) || 0,
                     shippingCost: typeof shippingCost === 'number' ? shippingCost : parseFloat(shippingCost) || 0,
                     title: firstProduct?.title || 'Purchased Item',
-                    image: firstProduct?.imgSrc || '/placeholder.png',
+                    image: productImage,
                     size: firstProduct?.selectedSize || firstProduct?.size || 'Standard',
                     customerName: p.orderData?.receiver_details?.name || p.orderData?.receiver_details?.fullName || 'Customer',
                     country: p.orderData?.receiver_details?.address?.countryCode || 'NP',
