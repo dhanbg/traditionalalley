@@ -2,19 +2,17 @@ import "../public/scss/main.scss";
 import "../public/css/custom.css"; // Custom CSS for compare products
 import ClientLayout from "./ClientLayout";
 import { metadata as globalMetadata } from "./metadata";
-import { Bodoni_Moda, Outfit } from "next/font/google";
+import localFont from "next/font/local";
 import Script from "next/script";
 
-const bodoniModa = Bodoni_Moda({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+const bodoniModa = localFont({
+  src: "../public/fonts/bodoni-moda-latin.woff2",
   display: "swap",
   variable: "--font-bodoni",
 });
 
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+const outfit = localFont({
+  src: "../public/fonts/outfit-latin.woff2",
   display: "swap",
   variable: "--font-outfit",
 });
