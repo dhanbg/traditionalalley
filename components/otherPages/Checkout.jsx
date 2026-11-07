@@ -203,6 +203,7 @@ export default function Checkout() {
             documentId: product.variantInfo.documentId || product.variantInfo.variantId,
             isVariant: true
           } : undefined,
+          deliverySchedule: "Will be delivered after Tihar (Nov 12) due to Nepali festival Tihar",
           productDetails: {
             productCode: fetchedProduct?.productCode || "NO-CODES",
             brand: fetchedProduct?.brand || "",
@@ -223,7 +224,7 @@ export default function Checkout() {
         deliveryType: receiverDetails.address?.countryCode === 'NP' ? "Local" : (deliveryType || "Express"),
         cost: shippingCost,
         currency: userCurrency || "NPR",
-        estimatedDelivery: "3-5 business days"
+        estimatedDelivery: "Delivered after Tihar (from Nov 12)"
       },
 
       // Additional metadata
@@ -981,7 +982,7 @@ export default function Checkout() {
             carrier: "Cash on Delivery", // COD carrier
             service: "COD Standard",
             deliveryType: deliveryType || "Standard", // Add delivery type information
-            estimatedDays: receiverDetails?.address?.country === "Nepal" || receiverDetails?.address?.countryCode === "NP" ? "3-5" : "7-10",
+            estimatedDays: "Delivered after Tihar (from Nov 12)",
             cost: shippingCost,
             currency: userCurrency || "NPR",
             trackingAvailable: false, // COD usually doesn't have tracking
@@ -1843,6 +1844,30 @@ export default function Checkout() {
                         </tbody>
                       </table>
                     </div>
+
+                    {/* Tihar Festival Delivery Advisory */}
+                    <div style={{
+                      marginTop: '14px',
+                      padding: '12px 14px',
+                      backgroundColor: 'rgba(234, 88, 12, 0.08)',
+                      border: '1px solid rgba(234, 88, 12, 0.25)',
+                      borderRadius: '8px',
+                      fontSize: '12.5px',
+                      lineHeight: '1.45',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '10px'
+                    }}>
+                      <span style={{ fontSize: '18px', lineHeight: 1 }}>🪔</span>
+                      <div>
+                        <strong style={{ color: '#c2410c', display: 'block', marginBottom: '2px' }}>
+                          Nepali Festival Tihar Delivery Notice
+                        </strong>
+                        <span style={{ color: 'var(--checkout-text-color, #424242)' }}>
+                          Deliveries are temporarily paused due to Tihar festival holidays. All orders will be delivered <strong>after Tihar (starting November 12)</strong>.
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="wrap" style={{ marginTop: '0px' }}>
@@ -2004,6 +2029,33 @@ export default function Checkout() {
                     <span>{selectedProducts.length}</span>
                   </div>
                 </div>
+
+                {/* Tihar Festival Delivery Notice Banner */}
+                {selectedProducts.length > 0 && (
+                  <div style={{
+                    marginBottom: '16px',
+                    padding: '12px 14px',
+                    backgroundColor: 'rgba(234, 88, 12, 0.08)',
+                    border: '1px solid rgba(234, 88, 12, 0.25)',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    lineHeight: '1.45',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px'
+                  }}>
+                    <span style={{ fontSize: '18px', lineHeight: 1 }}>🪔</span>
+                    <div>
+                      <div style={{ fontWeight: 600, color: '#c2410c', marginBottom: '2px' }}>
+                        Nepali Festival Tihar Notice
+                      </div>
+                      <div style={{ color: 'var(--checkout-text-color, #424242)' }}>
+                        Deliveries are paused during Tihar holidays. Orders will be dispatched and delivered <strong>after Tihar (starting November 12)</strong>.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="checkout-product-table">
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                     <thead>
@@ -2039,6 +2091,24 @@ export default function Checkout() {
                                 )}
                                 <div style={{ color: '#6b7280', fontSize: '11px' }}>
                                   Qty: {elm.quantity} × <PriceDisplay price={elm.price} size="small" style={{ display: 'inline' }} />
+                                </div>
+                                <div style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                  marginTop: '4px',
+                                  padding: '3px 8px',
+                                  backgroundColor: 'rgba(234, 88, 12, 0.1)',
+                                  border: '1px solid rgba(234, 88, 12, 0.3)',
+                                  borderRadius: '4px',
+                                  color: '#c2410c',
+                                  fontSize: '11px',
+                                  fontWeight: 500,
+                                  width: 'fit-content',
+                                  lineHeight: '1.3'
+                                }}>
+                                  <span>🪔</span>
+                                  <span>Delivered after Tihar (Nov 12)</span>
                                 </div>
                               </div>
                             </div>
