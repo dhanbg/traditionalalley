@@ -777,6 +777,22 @@ export default function Checkout() {
     }
   });
 
+  // Determine if the destination is Nepal for COD eligibility
+  const destinationCountryCode = (
+    receiverDetails?.address?.countryCode ||
+    receiverDetails?.countryCode ||
+    ""
+  ).toString().trim().toUpperCase();
+  const destinationCountry = (receiverDetails?.address?.country || "").toString().trim().toLowerCase();
+  const isNepalDelivery = destinationCountryCode === 'NP' || destinationCountry === 'nepal';
+
+  // Automatically switch away from COD if destination is not Nepal
+  useEffect(() => {
+    if (!isNepalDelivery && selectedPaymentMethod === 'cod') {
+      setSelectedPaymentMethod('nps');
+    }
+  }, [isNepalDelivery, selectedPaymentMethod]);
+
   // Function to get user's bag documentId or create one for guest
   const getUserBagDocumentId = async () => {
     // If user is logged in, try to get their existing bag
@@ -844,6 +860,11 @@ export default function Checkout() {
 
     if (selectedProducts.length === 0) {
       alert('No products selected for checkout');
+      return;
+    }
+
+    if (!isNepalDelivery) {
+      alert('Cash on Delivery (COD) is only available for deliveries within Nepal. Please choose Online Payment.');
       return;
     }
 
@@ -1922,23 +1943,40 @@ export default function Checkout() {
                         </label>
                       </div>
 
-                      {/* Cash on Delivery */}
-                      <div className={`${styles.paymentMethodCard} ${selectedPaymentMethod === 'cod' ? styles.selected : ''}`}>
-                        <input
-                          type="radio"
-                          id="cod-payment"
-                          name="paymentMethod"
-                          value="cod"
-                          checked={selectedPaymentMethod === 'cod'}
-                          onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                        />
-                        <label htmlFor="cod-payment">
-                          <div className={styles.paymentMethodHeader}>
-                            <div className={styles.paymentIcon}>💵</div>
-                            <span>Cash on Delivery</span>
-                          </div>
-                        </label>
-                      </div>
+                      {/* Cash on Delivery (Nepal only) */}
+                      {isNepalDelivery ? (
+                        <div className={`${styles.paymentMethodCard} ${selectedPaymentMethod === 'cod' ? styles.selected : ''}`}>
+                          <input
+                            type="radio"
+                            id="cod-payment"
+                            name="paymentMethod"
+                            value="cod"
+                            checked={selectedPaymentMethod === 'cod'}
+                            onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                          />
+                          <label htmlFor="cod-payment">
+                            <div className={styles.paymentMethodHeader}>
+                              <div className={styles.paymentIcon}>💵</div>
+                              <span>Cash on Delivery</span>
+                            </div>
+                          </label>
+                        </div>
+                      ) : (
+                        <div style={{
+                          padding: '10px 14px',
+                          fontSize: '13px',
+                          color: '#6b7280',
+                          backgroundColor: '#f9fafb',
+                          borderRadius: '8px',
+                          border: '1px dashed #d1d5db',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}>
+                          <span>ℹ️</span>
+                          <span>Cash on Delivery is available for deliveries within Nepal only.</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1946,7 +1984,7 @@ export default function Checkout() {
                   <div style={{
                     padding: '14px'
                   }}>
-                    {selectedPaymentMethod === 'nps' ? (
+                    {selectedPaymentMethod === 'nps' || !isNepalDelivery ? (
                       <NPSPaymentForm
                         amount={nprAmount}
                         onSuccess={handleNPSPaymentSuccess}
