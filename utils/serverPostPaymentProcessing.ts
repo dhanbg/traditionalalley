@@ -260,21 +260,44 @@ const sendAutomaticInvoiceEmail = async (paymentData: any) => {
         const { default: autoTable } = await import('jspdf-autotable');
         const tableData: any[] = [];
         const { getExchangeRate } = await import('./currency');
-        const exchangeRate = isNepal ? await getExchangeRate() : 1;
+        const currentRate = (await getExchangeRate()) || 135;
+
+        // Determine if order pricing is in NPR or USD
+        const isNprOrder = products.some((p: any) => {
+            const pPrice = Number(p.pricing?.currentPrice ?? p.price ?? 0);
+            const pOld = Number(p.oldPrice ?? 0);
+            return pPrice > 500 || pOld > 500;
+        }) || Number(orderSummary.subtotal || 0) > 500 || Number(paymentData.amount || 0) > 1000;
+
+        const toTargetCurrency = (val: any) => {
+            const num = Number(val) || 0;
+            if (num === 0) return 0;
+            if (!isNepal) {
+                return isNprOrder ? num / currentRate : num;
+            } else {
+                return isNprOrder ? num : num * currentRate;
+            }
+        };
+
+        const productDiscountsRaw = Number(orderSummary.productDiscounts || 0) || products.reduce((sum: number, item: any) => {
+            const oldP = Number(item.oldPrice || 0);
+            const curP = Number(item.price || 0);
+            const q = Number(item.quantity || 1);
+            return sum + (oldP > curP ? (oldP - curP) * q : 0);
+        }, 0);
+        const hasProductDiscount = productDiscountsRaw > 0;
+        const couponDiscountRaw = Number(orderSummary.couponDiscount || 0);
 
         let calculatedSubtotal = 0;
 
         products.forEach((item: any) => {
-            const price = item.pricing?.currentPrice ?? item.price ?? 0;
-            const quantity = item.pricing?.quantity ?? item.quantity ?? 1;
-            let lineTotal = item.pricing?.finalPrice ?? item.subtotal ?? (price * quantity);
-            
-            if (isNepal && !item.pricing) {
-                lineTotal = lineTotal * exchangeRate;
-            } else if (isNepal && item.pricing) {
-                // Nested pricing uses original USD prices inside nested object, convert to NPR
-                lineTotal = item.pricing.currentPrice * quantity * exchangeRate;
-            }
+            const quantity = Number(item.pricing?.quantity ?? item.quantity ?? 1);
+            const unitPriceRaw = hasProductDiscount
+                ? Number(item.oldPrice || item.pricing?.currentPrice || item.price || 0)
+                : Number(item.pricing?.currentPrice ?? item.price ?? 0);
+
+            const unitPrice = toTargetCurrency(unitPriceRaw);
+            const lineTotal = unitPrice * quantity;
             calculatedSubtotal += lineTotal;
 
             // Get title logic (Variant Aware - simplified for server)
@@ -312,28 +335,30 @@ const sendAutomaticInvoiceEmail = async (paymentData: any) => {
         doc.setFont('helvetica', 'normal');
 
         // Calculate Breakdown Values
-        const couponDiscount = orderSummary.couponDiscount || 0;
-        let displayCouponDiscount = couponDiscount;
-        let displayShippingCost = shippingCostRaw;
-        if (!isNepal && shippingCostRaw > 200) {
-            const { getExchangeRate } = await import('./currency');
-            const nprToUsdRate = await getExchangeRate();
-            displayShippingCost = shippingCostRaw / nprToUsdRate;
-        }
+        const displayOriginalSubtotal = calculatedSubtotal;
+        const displayProductDiscounts = hasProductDiscount ? toTargetCurrency(productDiscountsRaw) : 0;
+        const displayCouponDiscount = couponDiscountRaw > 0 ? toTargetCurrency(couponDiscountRaw) : 0;
 
-        if (isNepal) {
-            if (couponDiscount > 0) displayCouponDiscount = couponDiscount * exchangeRate;
+        let displayShippingCost = 0;
+        if (!isNepal) {
+            displayShippingCost = shippingCostRaw > 200 ? shippingCostRaw / currentRate : shippingCostRaw;
+        } else {
+            displayShippingCost = shippingCostRaw > 0 && shippingCostRaw < 200 && !isNprOrder
+                ? shippingCostRaw * currentRate
+                : shippingCostRaw;
         }
 
         const breakdownItems = [
-            { label: 'Subtotal:', value: calculatedSubtotal },
+            { label: 'Subtotal:', value: displayOriginalSubtotal },
+            ...(displayProductDiscounts > 0 ? [{ label: 'Product Discounts:', value: -displayProductDiscounts, isDiscount: true }] : []),
             ...(displayCouponDiscount > 0 ? [{ label: `Coupon Discount (${orderSummary.couponCode || 'N/A'}):`, value: -displayCouponDiscount, isDiscount: true }] : []),
             ...(displayShippingCost > 0 ? [{ label: 'Shipping Cost:', value: displayShippingCost }] : [])
         ];
 
         breakdownItems.forEach(item => {
             doc.text(item.label, 20, breakdownY);
-            const valueText = `${currency} ${Math.abs(item.value).toFixed(2)}`;
+            const numVal = Number(item.value || 0);
+            const valueText = `${currency} ${Math.abs(numVal).toFixed(2)}`;
             const displayValue = item.isDiscount ? `- ${valueText}` : valueText;
 
             if (item.isDiscount) doc.setTextColor(0, 128, 0); // Green
@@ -350,10 +375,13 @@ const sendAutomaticInvoiceEmail = async (paymentData: any) => {
         breakdownY += 10;
 
         // Total Amount
+        const finalTotalAmount = displayOriginalSubtotal - displayProductDiscounts - displayCouponDiscount + displayShippingCost;
+        const finalFormattedAmount = finalTotalAmount.toFixed(2);
+
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(139, 69, 19); // Brown
-        doc.text(`Total Amount: ${currency} ${formattedAmount}`, pageWidth - 20, breakdownY, { align: 'right' });
+        doc.text(`Total Amount: ${currency} ${finalFormattedAmount}`, pageWidth - 20, breakdownY, { align: 'right' });
 
         // Note
         const noteY = breakdownY + 10;
@@ -361,9 +389,16 @@ const sendAutomaticInvoiceEmail = async (paymentData: any) => {
         doc.setFont('helvetica', 'italic');
         doc.setTextColor(102, 102, 102);
 
-        let noteText = isNepal
-            ? `Note: All amounts in NPR. Product prices converted from USD at rate 1 USD = ${exchangeRate.toFixed(2)} NPR`
-            : 'Note: All amounts in USD';
+        let noteText;
+        if (isNepal) {
+            noteText = isNprOrder
+                ? 'Note: All amounts in NPR'
+                : `Note: All amounts in NPR. Product prices converted from USD at rate 1 USD = ${Number(currentRate).toFixed(2)} NPR`;
+        } else {
+            noteText = isNprOrder
+                ? `Note: All amounts in USD (converted from NPR at rate 1 USD = ${Number(currentRate).toFixed(2)} NPR)`
+                : 'Note: All amounts in USD';
+        }
 
         doc.text(noteText, pageWidth - 20, noteY, { align: 'right' });
 
