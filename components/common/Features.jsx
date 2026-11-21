@@ -13,10 +13,11 @@ export default function Features({ parentClass = "flat-spacing" }) {
           className="swiper tf-sw-iconbox"
           spaceBetween={15}
           breakpoints={{
-            1200: { slidesPerView: 4 },
-            768: { slidesPerView: 3 },
-            576: { slidesPerView: 2 },
-            0: { slidesPerView: 1 },
+            1200: { slidesPerView: 4, spaceBetween: 24 },
+            992: { slidesPerView: 4, spaceBetween: 16 },
+            768: { slidesPerView: 2, spaceBetween: 16 },
+            576: { slidesPerView: 2, spaceBetween: 12 },
+            0: { slidesPerView: 1.25, spaceBetween: 12 },
           }}
           modules={[Pagination]}
           pagination={{

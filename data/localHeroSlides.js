@@ -20,10 +20,11 @@ export const localHeroSlides = [
     poster: {
       url: "https://www.image2url.com/r2/default/images/1784894579658-80104e75-d617-4a30-919d-51cc8ec04b13.jpg",
     },
-    alt: "hero-slide-1",
-    subheading: "",
-    heading: "",
-    btnText: "Shop Now",
+    alt: "Traditional Alley - Authentic Nepali Ethnic Wear & Cultural Fashion",
+    subheading: "AUTHENTIC NEPALI ATTIRE",
+    heading: "Timeless Elegance,\nHandcrafted Heritage",
+    btnText: "Explore Collections",
+    btnUrl: "/women",
     videoName: null,
   },
 ];

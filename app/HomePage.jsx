@@ -9,6 +9,7 @@ import MarqueeSection from "@/components/common/MarqueeSection";
 
 const BannerCountdown = dynamic(() => import("@/components/homes/BannerCountdown"));
 const TopPicks = dynamic(() => import("@/components/common/TopPicks"));
+const Features = dynamic(() => import("@/components/common/Features"));
 
 function PaymentMessageHandler() {
     const searchParams = useSearchParams();
@@ -135,6 +136,9 @@ export default function Home({
             {/* Banner Countdown & Top Picks */}
             <BannerCountdown initialOfferData={initialOfferData} />
             <TopPicks initialProducts={initialTopPicks} initialMeta={initialTopPicksMeta} />
+
+            {/* Brand Values & Trust Features */}
+            <Features parentClass="flat-spacing pt-0" />
 
             {/* Footer */}
             <Footer1 hasPaddingBottom />

@@ -343,7 +343,11 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
     opacity: !imageLoaded ? 0.8 : 1, // Only fade based on image load, not loading state
     position: 'absolute',
     top: isMobile ? 'auto' : '50%',
-    bottom: isMobile ? '40px' : 'auto',
+    bottom: isMobile ? '120px' : 'auto',
+    left: 0,
+    right: 0,
+    width: '100%',
+    zIndex: 2,
     transform: isMobile ? 'none' : 'translateY(-50%)',
     transition: 'opacity 0.3s ease' // Faster transition
   };
@@ -551,6 +555,18 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                     </div>
                   ) : (
                     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                      {/* Subtle gradient overlay for typography readability */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: isMobile
+                            ? 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.05) 100%)'
+                            : 'linear-gradient(to right, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.22) 50%, rgba(0,0,0,0.02) 100%)',
+                          zIndex: 1,
+                          pointerEvents: 'none'
+                        }}
+                      />
                       {/* Laptop / Desktop Image */}
                       <Image
                         alt={slide.alt || "Traditional Alley - Authentic Nepali Ethnic Wear and Traditional Fashion"}
@@ -642,28 +658,34 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                     </div>
                   ) : (
                     <div className="box-content" style={contentStyle}>
-                      <div className="content-slider">
-                        <div className="box-title-slider">
-                          <p className="fade-item fade-item-1 subheading text-btn-uppercase text-white">
-                            {slide.subheading}
-                          </p>
-                          <h1 className="fade-item fade-item-2 heading text-white title-display">
-                            {slide.heading.split("\n").map((line, idx) => (
-                              <span key={idx}>
-                                {line}
-                                <br />
-                              </span>
-                            ))}
-                          </h1>
-                        </div>
-                        <div className="fade-item fade-item-3 box-btn-slider">
-                          <Link
-                            href={`/hero-products?slideId=${slide.documentId || slide.id}&btnText=${encodeURIComponent(slide.btnText)}${slide.videoName ? `&videoName=${encodeURIComponent(slide.videoName)}` : ''}`}
-                            className="tf-btn btn-fill btn-white"
-                          >
-                            <span className="text">{slide.btnText}</span>
-                            <i className="icon icon-arrowUpRight" />
-                          </Link>
+                      <div className="container" style={{ padding: isMobile ? '0 20px' : undefined }}>
+                        <div className="content-slider">
+                          <div className="box-title-slider">
+                            {slide.subheading && (
+                              <p className="fade-item fade-item-1 subheading text-btn-uppercase text-white" style={{ letterSpacing: '2.5px', fontWeight: 600, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
+                                {slide.subheading}
+                              </p>
+                            )}
+                            {slide.heading && (
+                              <h1 className="fade-item fade-item-2 heading text-white title-display" style={{ textShadow: '0 3px 20px rgba(0,0,0,0.5)', fontFamily: 'var(--font-bodoni, serif)' }}>
+                                {slide.heading.split("\n").map((line, idx) => (
+                                  <span key={idx}>
+                                    {line}
+                                    <br />
+                                  </span>
+                                ))}
+                              </h1>
+                            )}
+                          </div>
+                          <div className="fade-item fade-item-3 box-btn-slider">
+                            <Link
+                              href={slide.btnUrl || "/women"}
+                              className="tf-btn btn-fill btn-white radius-3"
+                            >
+                              <span className="text">{slide.btnText || "Explore Collections"}</span>
+                              <i className="icon icon-arrowUpRight" />
+                            </Link>
+                          </div>
                         </div>
                       </div>
                     </div>

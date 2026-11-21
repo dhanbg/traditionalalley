@@ -406,108 +406,24 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
             />
           </div>
         )}
-        {safeProduct.hotSale && (
-          <div className="marquee-product bg-main">
-            <div className="marquee-wrapper">
-              <div className="initial-child-container">
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale {discountPercentage}% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale {discountPercentage}% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale {discountPercentage}% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale {discountPercentage}% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale {discountPercentage}% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-              </div>
-            </div>
-            <div className="marquee-wrapper">
-              <div className="initial-child-container">
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale {discountPercentage}% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale {discountPercentage}% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale {discountPercentage}% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale {discountPercentage}% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-                <div className="marquee-child-item">
-                  <p className="font-2 text-btn-uppercase fw-6 text-white">
-                    Hot Sale {discountPercentage}% OFF
-                  </p>
-                </div>
-                <div className="marquee-child-item">
-                  <span className="icon icon-lightning text-critical" />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        {/* Discount badge - only show on mobile when NO hotSale marquee is active */}
-        {(safeProduct.isOnSale || safeProduct.oldPrice) && isMobile && !safeProduct.hotSale && (
-          <div className="on-sale-wrap">
-            <span className="on-sale-item">
+        {/* Streamlined Modern Badges (Top-Left) */}
+        <div className="badge-card-container">
+          {!isInStock ? (
+            <span className="badge-pill-modern badge-sold-out">
+              Sold Out
+            </span>
+          ) : safeProduct.hotSale ? (
+            <span className="badge-pill-modern badge-hot-sale">
+              Hot Sale -{discountPercentage}%
+            </span>
+          ) : (safeProduct.isOnSale || safeProduct.oldPrice) ? (
+            <span className="badge-pill-modern badge-sale">
               -{safeProduct.price && safeProduct.oldPrice ? discountPercentage : safeProduct.salePercentage}%
             </span>
-          </div>
-        )}
+          ) : null}
+        </div>
 
-        {safeProduct.countdown && (
+        {safeProduct.countdown && isInStock && (
           <div className="variant-wrap countdown-wrap">
             <div className="variant-box">
               <div
@@ -518,27 +434,6 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
                 <CountdownTimer />
               </div>
             </div>
-          </div>
-        )}
-        {!isInStock && (
-          <div className="out-of-stock-notice" style={{
-            position: 'absolute',
-            top: '8px',
-            left: '8px',
-            right: '8px',
-            zIndex: 15,
-            backgroundColor: 'rgba(220, 53, 69, 0.9)',
-            color: 'white',
-            padding: '6px 12px',
-            borderRadius: '4px',
-            fontSize: '12px',
-            fontWeight: '600',
-            textAlign: 'center',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-          }}>
-            Out of Stock
           </div>
         )}
 
@@ -769,12 +664,6 @@ export default function ProductCard1({ product, gridClass = "", index = 0 }) {
             font-size: 12px !important;
           }
 
-          /* Position hotSale marquee at TOP on mobile */
-          .card-product .marquee-product {
-            top: 0;
-            bottom: auto;
-            z-index: 10;
-          }
         }
 
         @media (hover: none) and (pointer: coarse) {
