@@ -692,8 +692,8 @@ const MobileMenu = React.memo(function MobileMenu() {
                   )}
                 </li>
 
-                {/* Kids */}
-                <li className="menu-item-enter menu-item">
+                {/* Kids Collections - Hidden as no kids products available */}
+                {/* <li className="menu-item-enter menu-item">
                   <div className="category-container">
                     <Link href="/kids" className="category-link">
                       <span>Kids</span>
@@ -727,7 +727,7 @@ const MobileMenu = React.memo(function MobileMenu() {
                       ))}
                     </ul>
                   )}
-                </li>
+                </li> */}
 
 
 
