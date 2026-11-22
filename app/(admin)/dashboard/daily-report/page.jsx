@@ -579,20 +579,145 @@ export default function DailyReportPage() {
     userEmail === 'traditionalley2050@gmail.com' || 
     userRole === 'admin';
 
+  // Helper to format Date to YYYY-MM-DD in local time
+  const formatDateISO = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatShortDate = (d) => {
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
   // Compute yesterday's date string YYYY-MM-DD
   const getYesterdayString = () => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    return d.toISOString().split('T')[0];
+    return formatDateISO(d);
   };
 
   const yesterdayStr = getYesterdayString();
+  const currentMonthStr = formatDateISO(new Date()).slice(0, 7);
+
+  // Dynamic quick buttons for Daily (yesterday + past 4 days)
+  const dailyQuickButtons = React.useMemo(() => {
+    const btns = [];
+    const base = new Date();
+    base.setHours(0, 0, 0, 0);
+    for (let i = 1; i <= 5; i++) {
+      const d = new Date(base);
+      d.setDate(base.getDate() - i);
+      const dateStr = formatDateISO(d);
+      btns.push({
+        label: i === 1 ? 'Yesterday' : formatShortDate(d),
+        date: dateStr,
+      });
+    }
+    return btns;
+  }, []);
+
+  // Dynamic quick buttons for Weekly (Last 4 rolling 7-day ranges ending yesterday)
+  const weeklyQuickButtons = React.useMemo(() => {
+    const btns = [];
+    const base = new Date();
+    base.setHours(0, 0, 0, 0);
+    const yesterday = new Date(base);
+    yesterday.setDate(base.getDate() - 1);
+
+    for (let i = 0; i < 4; i++) {
+      const end = new Date(yesterday);
+      end.setDate(yesterday.getDate() - (i * 7));
+      const start = new Date(end);
+      start.setDate(end.getDate() - 6);
+
+      const startStr = formatDateISO(start);
+      const endStr = formatDateISO(end);
+      const label = i === 0
+        ? `Last 7 Days (${formatShortDate(start)} – ${formatShortDate(end)})`
+        : `${formatShortDate(start)} – ${formatShortDate(end)}`;
+
+      btns.push({
+        label,
+        start: startStr,
+        end: endStr,
+      });
+    }
+    return btns;
+  }, []);
+
+  // Dynamic quick buttons for Monthly (Current month + past 3 calendar months)
+  const monthlyQuickButtons = React.useMemo(() => {
+    const btns = [];
+    const now = new Date();
+    for (let i = 0; i < 4; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const yr = d.getFullYear();
+      const mo = d.getMonth();
+      const monthKey = `${yr}-${String(mo + 1).padStart(2, '0')}`;
+      const firstDay = `${monthKey}-01`;
+      const lastDayNum = new Date(yr, mo + 1, 0).getDate();
+      const lastDay = `${monthKey}-${String(lastDayNum).padStart(2, '0')}`;
+      const monthName = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+      btns.push({
+        label: i === 0 ? `${monthName} (MTD)` : monthName,
+        start: firstDay,
+        end: lastDay,
+        month: monthKey,
+      });
+    }
+    return btns;
+  }, []);
+
+  // Dynamic quick buttons for 3-Months (Last 90 Days + recent quarters)
+  const threeMonthsQuickButtons = React.useMemo(() => {
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+
+    const last90Start = new Date(yesterday);
+    last90Start.setDate(yesterday.getDate() - 89);
+
+    const btns = [
+      {
+        label: `Last 90 Days (${formatShortDate(last90Start)} – ${formatShortDate(yesterday)})`,
+        start: formatDateISO(last90Start),
+        end: formatDateISO(yesterday),
+      },
+    ];
+
+    const currentQ = Math.floor(now.getMonth() / 3) + 1;
+    const currentYear = now.getFullYear();
+
+    for (let i = 0; i < 3; i++) {
+      let q = currentQ - i;
+      let y = currentYear;
+      while (q <= 0) {
+        q += 4;
+        y -= 1;
+      }
+      const startMonth = (q - 1) * 3;
+      const endMonth = startMonth + 2;
+      const start = new Date(y, startMonth, 1);
+      const end = new Date(y, endMonth + 1, 0);
+      btns.push({
+        label: `Q${q} ${y} (${start.toLocaleDateString('en-US', { month: 'short' })} – ${end.toLocaleDateString('en-US', { month: 'short' })})`,
+        start: formatDateISO(start),
+        end: formatDateISO(end),
+      });
+    }
+
+    return btns;
+  }, []);
+
   const [period, setPeriod] = useState('daily'); // 'daily' | 'weekly' | 'monthly' | '3months' | 'custom'
   const [startDate, setStartDate] = useState(yesterdayStr);
   const [endDate, setEndDate] = useState(yesterdayStr);
   const [customStart, setCustomStart] = useState(yesterdayStr);
   const [customEnd, setCustomEnd] = useState(yesterdayStr);
-  const [selectedMonth, setSelectedMonth] = useState('2026-09');
+  const [selectedMonth, setSelectedMonth] = useState(currentMonthStr);
 
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -633,24 +758,29 @@ export default function DailyReportPage() {
   const handlePeriodChange = (newPeriod) => {
     setPeriod(newPeriod);
     const yStr = getYesterdayString();
-    const [y, m, d] = yStr.split('-').map(Number);
-    const yDate = new Date(y, m - 1, d);
 
     if (newPeriod === 'daily') {
       setStartDate(yStr);
       setEndDate(yStr);
     } else if (newPeriod === 'weekly') {
-      // 7-day range
-      setStartDate('2026-09-24');
-      setEndDate('2026-09-30');
+      const w0 = weeklyQuickButtons[0];
+      if (w0) {
+        setStartDate(w0.start);
+        setEndDate(w0.end);
+      }
     } else if (newPeriod === 'monthly') {
-      setStartDate('2026-09-01');
-      setEndDate('2026-09-30');
-      setSelectedMonth('2026-09');
+      const m0 = monthlyQuickButtons[0];
+      if (m0) {
+        setStartDate(m0.start);
+        setEndDate(m0.end);
+        setSelectedMonth(m0.month);
+      }
     } else if (newPeriod === '3months') {
-      // Q3 2026 (Jul 1 – Sep 30)
-      setStartDate('2026-07-01');
-      setEndDate('2026-09-30');
+      const q0 = threeMonthsQuickButtons[0];
+      if (q0) {
+        setStartDate(q0.start);
+        setEndDate(q0.end);
+      }
     } else if (newPeriod === 'custom') {
       setStartDate(customStart);
       setEndDate(customEnd);
@@ -946,13 +1076,7 @@ ${reportData.purchases?.map((p) => {
                 />
               </div>
 
-              {[
-                { label: 'Yesterday', date: yesterdayStr },
-                { label: 'Sep 29', date: '2026-09-29' },
-                { label: 'Sep 28', date: '2026-09-28' },
-                { label: 'Sep 27', date: '2026-09-27' },
-                { label: 'Sep 26', date: '2026-09-26' },
-              ].map((btn) => (
+              {dailyQuickButtons.map((btn) => (
                 <button
                   key={btn.date}
                   onClick={() => {
@@ -974,14 +1098,9 @@ ${reportData.purchases?.map((p) => {
           {/* WEEKLY Controls */}
           {period === 'weekly' && (
             <>
-              {[
-                { label: 'Sep 24 – Sep 30', start: '2026-09-24', end: '2026-09-30' },
-                { label: 'Sep 17 – Sep 23', start: '2026-09-17', end: '2026-09-23' },
-                { label: 'Sep 10 – Sep 16', start: '2026-09-10', end: '2026-09-16' },
-                { label: 'Sep 3 – Sep 9', start: '2026-09-03', end: '2026-09-09' },
-              ].map((btn) => (
+              {weeklyQuickButtons.map((btn) => (
                 <button
-                  key={btn.label}
+                  key={btn.start + btn.end}
                   onClick={() => {
                     setStartDate(btn.start);
                     setEndDate(btn.end);
@@ -1007,7 +1126,7 @@ ${reportData.purchases?.map((p) => {
                     const [y, m, d] = end.split('-').map(Number);
                     const dt = new Date(y, m - 1, d);
                     dt.setDate(dt.getDate() - 6);
-                    setStartDate(dt.toISOString().split('T')[0]);
+                    setStartDate(formatDateISO(dt));
                     setEndDate(end);
                   }}
                   className="font-semibold text-gray-800 bg-transparent cursor-pointer focus:outline-none"
@@ -1019,13 +1138,9 @@ ${reportData.purchases?.map((p) => {
           {/* MONTHLY Controls */}
           {period === 'monthly' && (
             <>
-              {[
-                { label: 'September 2026', start: '2026-09-01', end: '2026-09-30', month: '2026-09' },
-                { label: 'August 2026', start: '2026-08-01', end: '2026-08-31', month: '2026-08' },
-                { label: 'July 2026', start: '2026-07-01', end: '2026-07-31', month: '2026-07' },
-              ].map((btn) => (
+              {monthlyQuickButtons.map((btn) => (
                 <button
-                  key={btn.label}
+                  key={btn.month}
                   onClick={() => {
                     setStartDate(btn.start);
                     setEndDate(btn.end);
@@ -1065,13 +1180,9 @@ ${reportData.purchases?.map((p) => {
           {/* 3 MONTHS Controls */}
           {period === '3months' && (
             <>
-              {[
-                { label: 'Q3 2026 (Jul 1 – Sep 30)', start: '2026-07-01', end: '2026-09-30' },
-                { label: 'Q2 2026 (Apr 1 – Jun 30)', start: '2026-04-01', end: '2026-06-30' },
-                { label: 'Q1 2026 (Jan 1 – Mar 31)', start: '2026-01-01', end: '2026-03-31' },
-              ].map((btn) => (
+              {threeMonthsQuickButtons.map((btn) => (
                 <button
-                  key={btn.label}
+                  key={btn.start + btn.end}
                   onClick={() => {
                     setStartDate(btn.start);
                     setEndDate(btn.end);
