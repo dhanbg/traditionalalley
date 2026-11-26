@@ -43,11 +43,12 @@ export default function TopPicks({ initialProducts = [], initialMeta = null }) {
     const count = products.length;
 
     if (count >= 9) {
-      // 3 rows of 3 products each
+      // 3 rows distributed evenly across all products
+      const perRow = Math.ceil(count / 3);
       return [
-        products.slice(0, 3),
-        products.slice(3, 6),
-        products.slice(6, 9)
+        products.slice(0, perRow),
+        products.slice(perRow, perRow * 2),
+        products.slice(perRow * 2)
       ];
     } else if (count === 8) {
       // 2 rows of 4 products each

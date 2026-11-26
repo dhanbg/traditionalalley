@@ -4,687 +4,374 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/effect-fade";
-
 import "swiper/css/autoplay";
-import Image from "next/image";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight, ArrowUpRight } from "lucide-react";
 import { getImageUrl } from "@/utils/imageUtils";
 
+const AUTOPLAY_DELAY_MS = 5500;
+
+function detectMediaType(media) {
+  if (!media) return "image";
+  const mimeType = media.mime || "";
+  const fileExt = media.ext || "";
+  if (
+    mimeType.startsWith("video/") ||
+    [".mp4", ".webm", ".mov", ".avi"].includes(fileExt.toLowerCase())
+  ) {
+    return "video";
+  }
+  if (
+    mimeType.startsWith("audio/") ||
+    [".mp3", ".wav", ".ogg"].includes(fileExt.toLowerCase())
+  ) {
+    return "audio";
+  }
+  return "image";
+}
+
+function transformSlideItem(item, isMobile = false) {
+  const desktopMedia = item.media || null;
+  const mobileMedia = item.mobileMedia || desktopMedia;
+  const activeMedia = isMobile && mobileMedia ? mobileMedia : desktopMedia;
+
+  const desktopUrl = desktopMedia?.url || desktopMedia?.formats?.large?.url || "";
+  const mobileUrl = mobileMedia?.url || mobileMedia?.formats?.large?.url || desktopUrl;
+  const activeUrl = activeMedia?.url || activeMedia?.formats?.large?.url || "";
+  const mediaType = detectMediaType(activeMedia);
+  const fallbackImageUrl =
+    item.poster?.url || item.poster?.formats?.large?.url || desktopUrl || mobileUrl;
+
+  return {
+    id: item.id,
+    documentId: item.documentId,
+    imgSrc: getImageUrl(mediaType === "image" ? desktopUrl : fallbackImageUrl),
+    mobileImgSrc: getImageUrl(mediaType === "image" ? mobileUrl : fallbackImageUrl),
+    videoSrc: mediaType === "video" ? getImageUrl(activeUrl) : null,
+    audioSrc: mediaType === "audio" ? getImageUrl(activeUrl) : null,
+    mediaType,
+    alt: item.alt || item.productTitle || "Traditional Alley - Authentic Nepali Fashion",
+    subheading: item.subheading || "",
+    heading: item.heading?.replace("<br/>", "\n") || "",
+    description: item.description || "",
+    productTitle: item.productTitle || "",
+    shortLabel: item.shortLabel || item.productTitle || "",
+    price: item.price ?? null,
+    isTeaser: item.isTeaser || false,
+    btnText: item.btnText || "Shop This Look",
+    btnUrl: item.btnUrl || "/women",
+    collectionLabel: item.collectionLabel || "Explore Collection",
+    collectionUrl: item.collectionUrl || null,
+    poster: item.poster
+      ? getImageUrl(item.poster?.url || item.poster?.formats?.large?.url)
+      : getImageUrl(fallbackImageUrl),
+    videoName: item.videoName || item?.mobileMedia?.name || null,
+  };
+}
 
 export default function Hero({ initialSlidesRaw = null, isMobileInitial = false }) {
-  const [slides, setSlides] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [imageLoaded, setImageLoaded] = useState(false);
-  // Use server-provided initial mobile flag to avoid hydration mismatch
   const [isMobile, setIsMobile] = useState(isMobileInitial);
-  const [mobileDetected, setMobileDetected] = useState(true);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const [fetchedSlidesRaw, setFetchedSlidesRaw] = useState(null);
+  const [loading, setLoading] = useState(!Array.isArray(initialSlidesRaw));
   const [loadedVideos, setLoadedVideos] = useState(new Set());
-  const [videoLoadingStates, setVideoLoadingStates] = useState(new Map());
-  const [showIntroImage, setShowIntroImage] = useState(true);
-  const [firstVideoReady, setFirstVideoReady] = useState(false);
-  const [firstMediaReady, setFirstMediaReady] = useState(false);
+  const [isNotifyModalOpen, setIsNotifyModalOpen] = useState(false);
+  const [notifyEmail, setNotifyEmail] = useState("");
+  const [subscribeStatus, setSubscribeStatus] = useState(null);
+
   const videoRefs = useRef([]);
   const playPromisesRef = useRef([]);
   const swiperRef = useRef(null);
   const slideTimeoutRef = useRef(null);
 
-  // Campaign Teaser states & effects
-  const [isNotifyModalOpen, setIsNotifyModalOpen] = useState(false);
-  const [notifyEmail, setNotifyEmail] = useState("");
-  const [subscribeStatus, setSubscribeStatus] = useState(null); // 'loading', 'success', 'error'
-  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 767);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile, { passive: true });
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
+  useEffect(() => {
+    if (Array.isArray(initialSlidesRaw)) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch("/api/hero-slides?populate=*");
+        const data = await response.json();
+        if (!cancelled) {
+          setFetchedSlidesRaw(Array.isArray(data?.data) ? data.data : []);
+        }
+      } catch (error) {
+        console.error("Failed to load hero slides:", error);
+        if (!cancelled) setFetchedSlidesRaw([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialSlidesRaw]);
+
+  const rawSource = Array.isArray(initialSlidesRaw) ? initialSlidesRaw : fetchedSlidesRaw;
+
+  const slides = useMemo(() => {
+    if (!Array.isArray(rawSource)) return [];
+    return rawSource.map((item) => transformSlideItem(item, isMobile));
+  }, [rawSource, isMobile]);
+
+  const hasVideoSlides = useMemo(
+    () => slides.some((slide) => slide.mediaType === "video" && slide.videoSrc),
+    [slides]
+  );
 
   const handleNotifySubmit = async (e) => {
     e.preventDefault();
     if (!notifyEmail) return;
-    setSubscribeStatus('loading');
+    setSubscribeStatus("loading");
     try {
       const response = await fetch("/api/add-contact", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: notifyEmail }),
       });
       if (response.ok) {
-        setSubscribeStatus('success');
+        setSubscribeStatus("success");
         setNotifyEmail("");
-
-        // Track Meta Pixel Lead event
-        if (typeof window !== 'undefined' && window.fbq) {
-          window.fbq('track', 'Lead', {
-            content_name: 'Hero Notify Signup',
-            content_category: 'hero_notify',
-          });
-          console.log('📢 [META-PIXEL] Tracked Lead event (Hero Notify)');
-        }
-
-        // Google Analytics / GTM generate_lead event
-        if (typeof window !== 'undefined' && window.dataLayer) {
-          window.dataLayer.push({
-            event: 'generate_lead',
-            form_name: 'hero_notify',
+        if (typeof window !== "undefined" && window.fbq) {
+          window.fbq("track", "Lead", {
+            content_name: "Hero Notify Signup",
+            content_category: "hero_notify",
           });
         }
-
+        if (typeof window !== "undefined" && window.dataLayer) {
+          window.dataLayer.push({ event: "generate_lead", form_name: "hero_notify" });
+        }
         setTimeout(() => {
           setIsNotifyModalOpen(false);
           setSubscribeStatus(null);
         }, 3000);
       } else {
-        setSubscribeStatus('error');
+        setSubscribeStatus("error");
       }
     } catch (error) {
       console.error("Subscription failed:", error);
-      setSubscribeStatus('error');
+      setSubscribeStatus("error");
     }
   };
 
-  // Function to validate video source
-  const validateVideoSource = async (videoSrc) => {
-    if (!videoSrc) return false;
-    try {
-      const response = await fetch(videoSrc, { method: 'HEAD' });
-      return response.ok;
-    } catch (error) {
-      console.warn('Video source validation failed:', error);
-      return false;
-    }
-  };
+  const handleSlideChange = useCallback(
+    (swiper) => {
+      swiperRef.current = swiper;
+      const realIdx = typeof swiper.realIndex === "number" ? swiper.realIndex : swiper.activeIndex;
+      setActiveSlideIndex(realIdx);
 
-  // Hook to detect mobile screen size
-  const checkMobile = useCallback(() => {
-    const width = window.innerWidth;
-    const newIsMobile = width <= 768;
-    setIsMobile(newIsMobile);
-    setMobileDetected(true);
-  }, []);
-
-  useEffect(() => {
-    checkMobile(); // Run on mount to set correct mobile flag based on actual window size
-    window.addEventListener('resize', checkMobile, { passive: true });
-    return () => {
-      window.removeEventListener('resize', checkMobile);
-    };
-  }, [checkMobile]);
-
-  // Removed intro overlay minimum display timer; overlay hides when media is ready
-
-  useEffect(() => {
-    // Only fetch slides after mobile detection is complete
-    if (!mobileDetected) {
-      return;
-    }
-
-    const fetchSlides = async () => {
-      try {
-        if (initialSlidesRaw && Array.isArray(initialSlidesRaw)) {
-          const transformedSlides = initialSlidesRaw.map((item) => {
-            const selectedMedia = isMobile && item.mobileMedia ? item.mobileMedia : item.media;
-
-            const media = selectedMedia;
-            let mediaUrl = "";
-            let mediaType = "image";
-            let fallbackImageUrl = "";
-
-            if (media) {
-              mediaUrl = media.url || media.formats?.large?.url || "";
-              const mimeType = media.mime || "";
-              const fileExt = media.ext || "";
-              if (mimeType.startsWith("video/") || ['.mp4', '.webm', '.mov', '.avi'].includes(fileExt.toLowerCase())) {
-                mediaType = "video";
-              } else if (mimeType.startsWith("audio/") || ['.mp3', '.wav', '.ogg'].includes(fileExt.toLowerCase())) {
-                mediaType = "audio";
-              } else {
-                mediaType = "image";
-              }
-            }
-
-            fallbackImageUrl = item.poster?.url || item.poster?.formats?.large?.url || mediaUrl;
-
-            return {
-              id: item.id,
-              documentId: item.documentId,
-              imgSrc: getImageUrl(mediaType === 'image' ? mediaUrl : fallbackImageUrl),
-              videoSrc: mediaType === 'video' ? getImageUrl(mediaUrl) : null,
-              audioSrc: mediaType === 'audio' ? getImageUrl(mediaUrl) : null,
-              mediaType,
-              alt: item.alt || "fashion-slideshow",
-              subheading: item.subheading || "",
-              heading: item.heading?.replace("<br/>", "\n") || "",
-              description: item.description || "",
-              isTeaser: item.isTeaser || false,
-              btnText: item.btnText || "Shop Now",
-              poster: item.poster ? getImageUrl(item.poster?.url || item.poster?.formats?.large?.url) : getImageUrl(fallbackImageUrl),
-              // Carry forward videoName for product filtering (prefer mobileMedia name)
-              videoName: item.videoName || item?.mobileMedia?.name || null,
-            };
-          });
-          setSlides(transformedSlides);
-        } else if (typeof window !== "undefined") {
-          const endpoint = "/api/hero-slides?populate=*";
-          const response = await fetch(endpoint);
-          const data = await response.json();
-          const transformedSlides = data.data.map((item) => {
-            const selectedMedia = isMobile && item.mobileMedia ? item.mobileMedia : item.media;
-            const media = selectedMedia;
-            let mediaUrl = "";
-            let mediaType = "image";
-            let fallbackImageUrl = "";
-            if (media) {
-              mediaUrl = media.url || media.formats?.large?.url || "";
-              const mimeType = media.mime || "";
-              const fileExt = media.ext || "";
-              if (mimeType.startsWith("video/") || ['.mp4', '.webm', '.mov', '.avi'].includes(fileExt.toLowerCase())) {
-                mediaType = "video";
-              } else if (mimeType.startsWith("audio/") || ['.mp3', '.wav', '.ogg'].includes(fileExt.toLowerCase())) {
-                mediaType = "audio";
-              } else {
-                mediaType = "image";
-              }
-            }
-            fallbackImageUrl = item.poster?.url || item.poster?.formats?.large?.url || mediaUrl;
-            return {
-              id: item.id,
-              documentId: item.documentId,
-              imgSrc: getImageUrl(mediaType === 'image' ? mediaUrl : fallbackImageUrl),
-              videoSrc: mediaType === 'video' ? getImageUrl(mediaUrl) : null,
-              audioSrc: mediaType === 'audio' ? getImageUrl(mediaUrl) : null,
-              mediaType,
-              alt: item.alt || "fashion-slideshow",
-              subheading: item.subheading || "",
-              heading: item.heading?.replace("<br/>", "\n") || "",
-              description: item.description || "",
-              isTeaser: item.isTeaser || false,
-              btnText: item.btnText || "Shop Now",
-              poster: item.poster ? getImageUrl(item.poster?.url || item.poster?.formats?.large?.url) : getImageUrl(fallbackImageUrl),
-            };
-          });
-          setSlides(transformedSlides);
-        }
-      } catch (error) {
-        // Do not use any fallback slides; only render real data
-        console.error('Failed to load hero slides:', error);
-        setSlides([]);
-      } finally {
-        setLoading(false);
+      if (slideTimeoutRef.current) {
+        clearTimeout(slideTimeoutRef.current);
+        slideTimeoutRef.current = null;
       }
-    };
 
-    fetchSlides();
+      if (!hasVideoSlides) return;
 
-    // Cleanup timeout on unmount
+      videoRefs.current.forEach((media, index) => {
+        if (media && !media.paused) {
+          if (playPromisesRef.current[index]) {
+            playPromisesRef.current[index]
+              .then(() => {
+                if (!media.paused) media.pause();
+              })
+              .catch(() => {});
+          } else {
+            media.pause();
+          }
+        }
+      });
+
+      const currentSlide = slides[realIdx];
+      if (currentSlide?.mediaType === "video" && currentSlide.videoSrc) {
+        setLoadedVideos((prev) => new Set([...prev, realIdx]));
+        const currentMedia = videoRefs.current[realIdx];
+        if (currentMedia && currentMedia.tagName === "VIDEO") {
+          playPromisesRef.current[realIdx] = currentMedia.play().catch(() => {});
+          slideTimeoutRef.current = setTimeout(() => {
+            swiperRef.current?.slideNext();
+          }, 7000);
+        }
+      }
+    },
+    [hasVideoSlides, slides]
+  );
+
+  useEffect(() => {
     return () => {
       if (slideTimeoutRef.current) {
         clearTimeout(slideTimeoutRef.current);
       }
     };
-  }, [isMobile, mobileDetected, initialSlidesRaw]); // Re-fetch when isMobile/mobile detection changes or initial slides provided
+  }, []);
 
-  // Hide the intro image when appropriate:
-  // - If the first slide is a video: when the first video is ready
-  // - Otherwise (image/audio): when the first media is ready
-  useEffect(() => {
-    const firstIsVideo = slides[0]?.mediaType === 'video';
-    if ((firstIsVideo && firstVideoReady) || (!firstIsVideo && firstMediaReady)) {
-      setShowIntroImage(false);
-    }
-  }, [slides, firstVideoReady, firstMediaReady]);
-
-  // Handle video/audio play/pause on slide change with lazy loading
-  const handleSlideChange = (swiper) => {
-    // Store swiper reference
-    swiperRef.current = swiper;
-    const currentIndex = swiper.activeIndex;
-    setActiveSlideIndex(currentIndex);
-
-    // Clear any existing timeout
-    if (slideTimeoutRef.current) {
-      clearTimeout(slideTimeoutRef.current);
-      slideTimeoutRef.current = null;
-    }
-
-    // Pause all videos and audio safely
-    videoRefs.current.forEach((media, index) => {
-      if (media && !media.paused) {
-        // Check if there's a pending play promise
-        if (playPromisesRef.current[index]) {
-          playPromisesRef.current[index].then(() => {
-            if (!media.paused) {
-              media.pause();
-            }
-          }).catch(() => {
-            // Play failed, no need to pause
-          });
-        } else {
-          media.pause();
-        }
-      }
-    });
-
-    const currentSlide = slides[currentIndex];
-
-    // Load and play current video
-    if (currentSlide && currentSlide.mediaType === 'video' && currentSlide.videoSrc) {
-      // Mark video as should be loaded
-      setLoadedVideos(prev => new Set([...prev, currentIndex]));
-
-      const currentMedia = videoRefs.current[currentIndex];
-      if (currentMedia && currentMedia.tagName === 'VIDEO') {
-        // For video slides: wait for video to end
-        playPromisesRef.current[currentIndex] = currentMedia.play().catch(() => {
-          // Autoplay restrictions; rely on fallback timer below
-        });
-        // Fallback: advance after a fixed duration even if video is playing
-        slideTimeoutRef.current = setTimeout(() => {
-          handleVideoEnd();
-        }, 7000);
-      }
-
-      // Preload next and previous videos
-      const nextIndex = (currentIndex + 1) % slides.length;
-      const prevIndex = currentIndex === 0 ? slides.length - 1 : currentIndex - 1;
-
-      [nextIndex, prevIndex].forEach(index => {
-        const slide = slides[index];
-        if (slide && slide.mediaType === 'video' && slide.videoSrc && !loadedVideos.has(index)) {
-          setTimeout(() => {
-            setLoadedVideos(prev => new Set([...prev, index]));
-          }, 1000); // Delay preloading to not interfere with current video
-        }
-      });
-    } else {
-      // For image/audio slides: advance after 5 seconds
-      slideTimeoutRef.current = setTimeout(() => {
-        handleVideoEnd();
-      }, 5000);
-    }
-  };
-
-  const handleVideoEnd = () => {
-    // Move to next slide when video ends
-    if (swiperRef.current) {
-      const currentIndex = swiperRef.current.activeIndex;
-      const totalSlides = slides.length;
-
-      // Check if we're at the last slide
-      if (currentIndex === totalSlides - 1) {
-        // Go back to first slide to restart the loop
-        swiperRef.current.slideTo(0);
-      } else {
-        // Move to next slide
-        swiperRef.current.slideNext();
-      }
-    }
-  };
-
-  // Handle video ended event
-  const onVideoEnded = () => {
-    if (slideTimeoutRef.current) {
-      clearTimeout(slideTimeoutRef.current);
-      slideTimeoutRef.current = null;
-    }
-    handleVideoEnd();
-  };
-
-  // CSS for animated transition with improved loading states
-  const blurStyle = {
-    filter: !imageLoaded ? "blur(3px)" : "blur(0px)",
-    transition: "filter 0.5s ease-in-out",
-    opacity: !imageLoaded ? 0.8 : 1,
-    transform: "scale(1)",
-  };
-
-  // Loading skeleton styles - REMOVED
-
-  const contentStyle = {
-    opacity: !imageLoaded ? 0.8 : 1, // Only fade based on image load, not loading state
-    position: 'absolute',
-    top: isMobile ? 'auto' : '50%',
-    bottom: isMobile ? '120px' : 'auto',
-    left: 0,
-    right: 0,
-    width: '100%',
-    zIndex: 2,
-    transform: isMobile ? 'none' : 'translateY(-50%)',
-    transition: 'opacity 0.3s ease' // Faster transition
-  };
-
-  // Force consistent spacing and height from Hero component side
-  const heroWrapperStyle = {
-    marginBottom: '0px', // Remove any default margins
-    paddingBottom: '0px', // Ensure no bottom padding
-    height: '100vh', // Fit to screen height in both laptop and mobile
-    minHeight: 'auto',
-    position: 'relative',
-    overflow: 'visible' // Changed from hidden to visible to prevent cutting content
-  };
-
-  // If there are no slides after loading, do not render the hero at all
   if (!loading && slides.length === 0) {
     return null;
   }
 
+  const goToSlide = (idx) => {
+    const swiper = swiperRef.current;
+    if (!swiper) return;
+    if (typeof swiper.slideToLoop === "function" && slides.length > 1) {
+      swiper.slideToLoop(idx);
+    } else {
+      swiper.slideTo(idx);
+    }
+  };
+
   return (
     <>
-      {/* CSS for shimmer animation */}
-      <style jsx>{`
-        @keyframes shimmer {
-          0% {
-            background-position: -200% 0;
-          }
-          100% {
-            background-position: 200% 0;
-          }
-        }
-        
-        /* Video loading overlay styles - REMOVED */
-      `}</style>
-
-      <section className="tf-slideshow slider-default slider-position slider-effect-fade" style={heroWrapperStyle}>
-
+      <section className="ta-hero-section tf-slideshow slider-default slider-position slider-effect-fade">
         <Swiper
           effect="fade"
+          fadeEffect={{ crossFade: true }}
+          speed={850}
           spaceBetween={0}
           slidesPerView={1}
-          loop={slides.length > 1} // Enable loop only if there are enough slides
+          loop={slides.length > 1}
+          allowTouchMove={true}
           modules={[EffectFade, Autoplay]}
-          autoplay={false}
-          style={{ height: '100%' }} // Ensure Swiper fills the parent container
-
+          autoplay={
+            !hasVideoSlides && slides.length > 1
+              ? {
+                  delay: AUTOPLAY_DELAY_MS,
+                  disableOnInteraction: false,
+                  pauseOnMouseEnter: !isMobile,
+                }
+              : false
+          }
+          style={{ height: "100%", width: "100%" }}
           onSlideChange={handleSlideChange}
           onSwiper={(swiper) => {
-            // Store swiper reference
             swiperRef.current = swiper;
-
-            // Initialize first slide by calling handleSlideChange
-            setTimeout(() => {
-              handleSlideChange(swiper);
-            }, 100);
+            handleSlideChange(swiper);
           }}
         >
           {slides.map((slide, index) => {
+            const HeadingTag = index === 0 ? "h1" : "h2";
             return (
-              <SwiperSlide key={index}>
-                <div className="wrap-slider" style={{ ...blurStyle, height: '100%', position: 'relative' }}>
-                  {/* Loading skeleton for videos - REMOVED */}
-                  {slide.mediaType === 'video' && slide.videoSrc ? (
-                    <>
-                      <video
-                        ref={(el) => (videoRefs.current[index] = el)}
-                        width={1920}
-                        height={803}
-                        autoPlay={index === activeSlideIndex}
-                        muted
-                        playsInline
-                        disableRemotePlayback
-                        webkit-playsinline="true"
-                        preload={loadedVideos.has(index) || index === activeSlideIndex ? "auto" : "none"}
-                        poster={index === 0 ? (isMobile ? 'https://www.image2url.com/r2/default/images/1784894592927-1225a295-9c8e-416b-9fad-fd6954d7869e.jpg' : 'https://www.image2url.com/r2/default/images/1784894579658-80104e75-d617-4a30-919d-51cc8ec04b13.jpg') : (slide.poster || slide.imgSrc)}
-                        style={{
-                          width: '100%',
-
-                          height: '100%',
-                          objectFit: 'cover',
-                          objectPosition: 'center center',
-                          backgroundColor: 'transparent',
-                        }}
-                        onLoadedData={() => {
-                          setImageLoaded(true);
-                        }}
-                        onLoadStart={async () => {
-                          // Show loading state for current slide
-                          setVideoLoadingStates(prev => new Map(prev.set(index, 'loading')));
-                          if (index === activeSlideIndex) {
-                            setImageLoaded(false);
-                          }
-
-                          // Validate video source
-                          if (slide.videoSrc) {
-                            const isValid = await validateVideoSource(slide.videoSrc);
-                            if (!isValid) {
-                              console.warn(`Video source validation failed for slide ${index}:`, slide.videoSrc);
-                              setVideoLoadingStates(prev => new Map(prev.set(index, 'error')));
-                              if (index === activeSlideIndex) {
-                                setImageLoaded(true);
-                              }
-                            }
-                          }
-                        }}
-                        onCanPlay={() => {
-                          // Video is ready to play
-                          setVideoLoadingStates(prev => new Map(prev.set(index, 'ready')));
-                          if (index === activeSlideIndex) {
-                            setImageLoaded(true);
-                            // Auto-play if this is the active slide and video is ready
-                            const video = videoRefs.current[index];
-                            if (video && video.paused) {
-                              playPromisesRef.current[index] = video.play().then(() => {
-                                // Mark first video as truly playing; hide overlay now
-                                if (index === 0) {
-                                  setFirstVideoReady(true);
-                                  setFirstMediaReady(true);
-                                }
-                              }).catch(() => {
-                                // Autoplay might be blocked; keep overlay until user interaction
-                              });
-                            }
-                          }
-                        }}
-                        onPlay={() => {
-                          // Fallback in case play() promise didn't resolve (Safari quirks)
-                          if (index === 0 && index === activeSlideIndex) {
-                            setFirstVideoReady(true);
-                            setFirstMediaReady(true);
-                          }
-                        }}
-                        onError={(e) => {
-                          // Handle video loading errors - fallback to image
-                          console.warn(`Video failed to load for slide ${index}, falling back to image. Error:`, e.target.error);
-                          setVideoLoadingStates(prev => new Map(prev.set(index, 'error')));
-                          if (index === activeSlideIndex) {
-                            setImageLoaded(true); // Show fallback image
-                            // Treat as image slide and advance after 5 seconds
-                            slideTimeoutRef.current = setTimeout(() => {
-                              handleVideoEnd();
-                            }, 5000);
-                          }
-                        }}
-                        onEnded={onVideoEnded}
-                      >
-                        {(loadedVideos.has(index) || index === activeSlideIndex) && slide.videoSrc && (
-                          <>
-                            <source src={slide.videoSrc} type="video/mp4" />
-                            {/* Only add webm source if it's actually a webm file */}
-                            {slide.videoSrc.includes('.webm') && (
-                              <source src={slide.videoSrc} type="video/webm" />
-                            )}
-                          </>
-                        )}
-                      </video>
-                    </>
-                  ) : slide.mediaType === 'audio' && slide.audioSrc ? (
-                    <div style={{
-                      width: '100%',
-                      height: '100%',
-                      position: 'relative',
-                      backgroundColor: '#1f2937',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <Image
-                        alt={slide.alt}
-                        src={slide.poster || slide.imgSrc}
-                        width={1920}
-                        height={803}
-                        quality={85}
-                        sizes="100vw"
-                        priority={index === 0}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          opacity: 0.5
-                        }}
-                        onLoad={() => setImageLoaded(true)}
-                      />
-                      <div style={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: '320px',
-                        maxWidth: '100%'
-                      }}>
-                        <audio
-                          ref={(el) => (videoRefs.current[index] = el)}
-                          controls
-                          preload="metadata"
-                          style={{
-                            width: '100%'
-                          }}
-                        >
-                          <source src={slide.audioSrc} type="audio/mpeg" />
-                          <source src={slide.audioSrc.replace('.mp3', '.ogg')} type="audio/ogg" />
-                          Your browser does not support the audio element.
-                        </audio>
-                      </div>
-                    </div>
+              <SwiperSlide key={slide.id || index}>
+                <div className="ta-hero-slide-inner">
+                  {slide.mediaType === "video" && slide.videoSrc ? (
+                    <video
+                      ref={(el) => (videoRefs.current[index] = el)}
+                      width={1920}
+                      height={960}
+                      autoPlay={index === activeSlideIndex}
+                      muted
+                      playsInline
+                      disableRemotePlayback
+                      preload={loadedVideos.has(index) || index === activeSlideIndex ? "auto" : "none"}
+                      poster={slide.poster || slide.imgSrc}
+                      className="ta-hero-media-img"
+                      onEnded={() => swiperRef.current?.slideNext()}
+                    >
+                      {(loadedVideos.has(index) || index === activeSlideIndex) && (
+                        <source src={slide.videoSrc} type="video/mp4" />
+                      )}
+                    </video>
                   ) : (
-                    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-                      {/* Subtle gradient overlay for typography readability */}
-                      <div
-                        style={{
-                          position: 'absolute',
-                          inset: 0,
-                          background: isMobile
-                            ? 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.05) 100%)'
-                            : 'linear-gradient(to right, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.22) 50%, rgba(0,0,0,0.02) 100%)',
-                          zIndex: 1,
-                          pointerEvents: 'none'
-                        }}
-                      />
-                      {/* Laptop / Desktop Image */}
-                      <Image
-                        alt={slide.alt || "Traditional Alley - Authentic Nepali Ethnic Wear and Traditional Fashion"}
-                        src={slide.imgSrc || "https://www.image2url.com/r2/default/images/1784894579658-80104e75-d617-4a30-919d-51cc8ec04b13.jpg"}
-                        width={1920}
-                        height={803}
-                        quality={85}
-                        sizes="100vw"
-                        priority={index === 0}
-                        className="d-none d-md-block"
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          objectPosition: 'center center'
-                        }}
-                        onLoad={() => {
-                          setImageLoaded(true);
-                          if (index === 0) setFirstMediaReady(true);
-                        }}
-                      />
-                      {/* Mobile Image */}
-                      <Image
-                        alt={slide.alt || "Traditional Alley - Handcrafted Nepali Cultural Clothing"}
-                        src={slide.mobileMedia?.url || "https://www.image2url.com/r2/default/images/1784894592927-1225a295-9c8e-416b-9fad-fd6954d7869e.jpg"}
-                        width={768}
-                        height={1024}
-                        quality={85}
-                        sizes="100vw"
-                        priority={index === 0}
-                        className="d-block d-md-none"
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          objectPosition: 'center center'
-                        }}
-                        onLoad={() => {
-                          setImageLoaded(true);
-                          if (index === 0) setFirstMediaReady(true);
-                        }}
-                      />
+                    <div className="ta-hero-media-wrap">
+                      <picture className="ta-hero-picture">
+                        <source
+                          media="(max-width: 767px)"
+                          srcSet={slide.mobileImgSrc || slide.imgSrc}
+                        />
+                        <img
+                          src={slide.imgSrc}
+                          alt={slide.alt}
+                          width={1920}
+                          height={960}
+                          fetchPriority={index === 0 ? "high" : "auto"}
+                          loading={index === 0 ? "eager" : "lazy"}
+                          decoding={index === 0 ? "sync" : "async"}
+                          className="ta-hero-media-img"
+                        />
+                      </picture>
+                      {/* Subtle safety scrim for crisp typography contrast across viewports */}
+                      <div className="ta-hero-scrim" aria-hidden="true" />
                     </div>
                   )}
+
                   {slide.isTeaser ? (
                     <div className="teaser-content-container">
                       <div className="teaser-left-content">
-                        <span className="teaser-badge">
-                          {slide.subheading}
-                        </span>
-                        
+                        <span className="teaser-badge">{slide.subheading}</span>
                         <div className="teaser-middle-group">
-                          <h1 className="teaser-headline">
+                          <HeadingTag className="teaser-headline">
                             {slide.heading.split("\n").map((line, idx) => (
-                              <span key={idx} className={(line === "JERSEY" || line === "ICONIC") ? "gold-text" : ""}>
+                              <span
+                                key={idx}
+                                className={line === "JERSEY" || line === "ICONIC" ? "gold-text" : ""}
+                              >
                                 {line}
                                 <br />
                               </span>
                             ))}
-                          </h1>
-                          
-                          <p className="teaser-description">
-                            {slide.description}
-                          </p>
+                          </HeadingTag>
+                          <p className="teaser-description">{slide.description}</p>
                         </div>
-                        
                         <div className="teaser-actions">
-                          <a 
-                            href="#worldcup-showcase-section" 
-                            className="teaser-btn-gold"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              const element = document.getElementById("worldcup-showcase-section");
-                              if (element) {
-                                element.scrollIntoView({ behavior: "smooth" });
-                              }
-                            }}
-                          >
-                            <span>SHOP THE DROP</span>
+                          <Link href={slide.btnUrl || "/women"} className="teaser-btn-gold">
+                            <span>{slide.btnText || "SHOP NOW"}</span>
                             <span className="arrow">→</span>
-                          </a>
-                          
-                          <Link href="/women" className="teaser-btn-outline">
-                            EXPLORE COLLECTION
                           </Link>
                         </div>
-                        
                       </div>
                     </div>
                   ) : (
-                    <div className="box-content" style={contentStyle}>
-                      <div className="container" style={{ padding: isMobile ? '0 20px' : undefined }}>
-                        <div className="content-slider">
-                          <div className="box-title-slider">
-                            {slide.subheading && (
-                              <p className="fade-item fade-item-1 subheading text-btn-uppercase text-white" style={{ letterSpacing: '2.5px', fontWeight: 600, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
-                                {slide.subheading}
-                              </p>
-                            )}
-                            {slide.heading && (
-                              <h1 className="fade-item fade-item-2 heading text-white title-display" style={{ textShadow: '0 3px 20px rgba(0,0,0,0.5)', fontFamily: 'var(--font-bodoni, serif)' }}>
-                                {slide.heading.split("\n").map((line, idx) => (
-                                  <span key={idx}>
-                                    {line}
-                                    <br />
-                                  </span>
-                                ))}
-                              </h1>
-                            )}
-                          </div>
-                          <div className="fade-item fade-item-3 box-btn-slider">
-                            <Link
-                              href={slide.btnUrl || "/women"}
-                              className="tf-btn btn-fill btn-white radius-3"
-                            >
-                              <span className="text">{slide.btnText || "Explore Collections"}</span>
-                              <i className="icon icon-arrowUpRight" />
+                    <div className="ta-hero-content">
+                      <div className="container">
+                        <div className="ta-hero-copy">
+                          {slide.subheading && (
+                            <div className="ta-hero-eyebrow">
+                              <span className="ta-hero-index">
+                                {String(index + 1).padStart(2, "0")} /{" "}
+                                {String(slides.length).padStart(2, "0")}
+                              </span>
+                              <span className="ta-hero-dot" aria-hidden="true" />
+                              <span>{slide.subheading}</span>
+                            </div>
+                          )}
+
+                          {slide.heading && (
+                            <HeadingTag className="ta-hero-title">
+                              {slide.heading.split("\n").map((line, idx) => (
+                                <span key={idx} className="d-block">
+                                  {line}
+                                </span>
+                              ))}
+                            </HeadingTag>
+                          )}
+
+                          {slide.description && (
+                            <p className="ta-hero-desc d-none d-md-block">{slide.description}</p>
+                          )}
+
+                          <div className="ta-hero-actions">
+                            <Link href={slide.btnUrl || "/women"} className="ta-hero-cta-primary">
+                              <span>{slide.btnText || "Shop This Look"}</span>
+                              <ArrowUpRight size={18} strokeWidth={2.2} />
                             </Link>
+
+                            {slide.collectionUrl && (
+                              <Link
+                                href={slide.collectionUrl}
+                                className="ta-hero-cta-secondary d-none d-md-inline-flex"
+                              >
+                                <span>{slide.collectionLabel || "View Collection"}</span>
+                              </Link>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -692,20 +379,112 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                   )}
                 </div>
               </SwiperSlide>
-            )
+            );
           })}
         </Swiper>
+
+        {/* Desktop Glass Navigation Arrows (Top-Right Editorial Cluster) */}
+        {slides.length > 1 && (
+          <>
+            <div className="ta-hero-nav-group d-none d-md-flex">
+              <button
+                type="button"
+                className="ta-hero-nav"
+                aria-label="Previous product slide"
+                onClick={() => swiperRef.current?.slidePrev()}
+              >
+                <ChevronLeft size={18} strokeWidth={2} />
+              </button>
+              <button
+                type="button"
+                className="ta-hero-nav"
+                aria-label="Next product slide"
+                onClick={() => swiperRef.current?.slideNext()}
+              >
+                <ChevronRight size={18} strokeWidth={2} />
+              </button>
+            </div>
+
+            {/* Bottom Interactive Product Rail (Desktop) & Progress Pills (Mobile) */}
+            <div className="ta-hero-pagination-wrap">
+              <div className="container">
+                <div className="ta-hero-thumbs d-none d-md-grid">
+                  {slides.map((slide, idx) => {
+                    const isActive = idx === activeSlideIndex;
+                    return (
+                      <button
+                        key={slide.id || idx}
+                        type="button"
+                        onClick={() => goToSlide(idx)}
+                        className={`ta-hero-thumb-btn ${isActive ? "is-active" : ""}`}
+                        aria-label={`Show ${slide.shortLabel || slide.productTitle || `slide ${idx + 1}`}`}
+                        aria-current={isActive ? "true" : "false"}
+                      >
+                        <div className="ta-hero-thumb-meta">
+                          <span className="ta-hero-thumb-num">
+                            {String(idx + 1).padStart(2, "0")}
+                          </span>
+                          <span className="ta-hero-thumb-name">
+                            {slide.shortLabel || slide.productTitle || slide.heading}
+                          </span>
+                        </div>
+                        <div className="ta-hero-progress-track">
+                          {isActive && (
+                            <div
+                              key={`bar-${activeSlideIndex}`}
+                              className="ta-hero-progress-fill"
+                            />
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="ta-hero-mobile-dots d-flex d-md-none">
+                  {slides.map((slide, idx) => {
+                    const isActive = idx === activeSlideIndex;
+                    return (
+                      <button
+                        key={slide.id || idx}
+                        type="button"
+                        onClick={() => goToSlide(idx)}
+                        className={`ta-hero-dot-btn ${isActive ? "is-active" : ""}`}
+                        aria-label={`Slide ${idx + 1}: ${slide.shortLabel || slide.productTitle}`}
+                      >
+                        <span className="ta-hero-dot-track">
+                          {isActive && (
+                            <span
+                              key={`mob-bar-${activeSlideIndex}`}
+                              className="ta-hero-dot-fill"
+                            />
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </section>
 
-      {/* Subscription Modal Popup */}
       {isNotifyModalOpen && (
         <div className="teaser-modal-overlay" onClick={() => setIsNotifyModalOpen(false)}>
           <div className="teaser-modal-card" onClick={(e) => e.stopPropagation()}>
-            <button className="teaser-modal-close" onClick={() => setIsNotifyModalOpen(false)}>×</button>
+            <button
+              className="teaser-modal-close"
+              onClick={() => setIsNotifyModalOpen(false)}
+              type="button"
+            >
+              ×
+            </button>
             <div className="teaser-modal-icon">✉</div>
             <h3 className="teaser-modal-title">SOMETHING ICONIC</h3>
             <p className="teaser-modal-subtitle">
-              Sign up below to receive an exclusive early notification and special access when the collection drops.
+              Sign up below to receive an exclusive early notification and special access when the
+              collection drops.
             </p>
             <form onSubmit={handleNotifySubmit} className="teaser-form-group">
               <input
@@ -715,42 +494,465 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                 value={notifyEmail}
                 onChange={(e) => setNotifyEmail(e.target.value)}
                 className="teaser-input"
-                disabled={subscribeStatus === 'loading'}
+                disabled={subscribeStatus === "loading"}
               />
               <button
                 type="submit"
                 className="teaser-modal-btn"
-                disabled={subscribeStatus === 'loading'}
+                disabled={subscribeStatus === "loading"}
               >
-                {subscribeStatus === 'loading' ? 'SUBMITTING...' : 'NOTIFY ME'}
+                {subscribeStatus === "loading" ? "SUBMITTING..." : "NOTIFY ME"}
               </button>
             </form>
-            {subscribeStatus === 'success' && (
-              <p className="teaser-status-msg success">✓ Thank you! You will be notified instantly.</p>
+            {subscribeStatus === "success" && (
+              <p className="teaser-status-msg success">
+                ✓ Thank you! You will be notified instantly.
+              </p>
             )}
-            {subscribeStatus === 'error' && (
+            {subscribeStatus === "error" && (
               <p className="teaser-status-msg error">✗ Something went wrong. Please try again.</p>
             )}
           </div>
         </div>
       )}
 
-      {/* Custom styles for teaser drop */}
       <style jsx global>{`
-        .teaser-content-container {
-          position: absolute;
-          top: 0;
-          left: 0;
+        .ta-hero-section {
+          position: relative;
+          width: 100%;
+          height: clamp(520px, calc(100vh - 128px), 760px);
+          background: #0c0a09;
+          overflow: hidden;
+          margin: 0;
+          padding: 0;
+        }
+
+        .ta-hero-slide-inner {
+          position: relative;
           width: 100%;
           height: 100%;
+        }
+
+        .ta-hero-media-wrap,
+        .ta-hero-picture {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          display: block;
+        }
+
+        .ta-hero-media-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center center;
+          display: block;
+        }
+
+        .ta-hero-scrim {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 1;
+          background: linear-gradient(
+            to right,
+            rgba(10, 8, 7, 0.72) 0%,
+            rgba(10, 8, 7, 0.32) 38%,
+            rgba(10, 8, 7, 0) 60%
+          );
+        }
+
+        .ta-hero-content {
+          position: absolute;
+          top: 50%;
+          left: 0;
+          right: 0;
+          transform: translateY(-50%);
+          z-index: 5;
+          pointer-events: none;
+        }
+
+        .ta-hero-copy {
+          max-width: 440px;
+          pointer-events: auto;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 13px;
+        }
+
+        .ta-hero-eyebrow {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          padding: 6px 14px;
+          border-radius: 9999px;
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(212, 175, 55, 0.45);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          color: #f3d778;
+          font-family: var(--font-outfit, "Outfit", sans-serif);
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+        }
+
+        .ta-hero-index {
+          color: #ffffff;
+          font-weight: 700;
+        }
+
+        .ta-hero-dot {
+          width: 4px;
+          height: 4px;
+          border-radius: 50%;
+          background: #d4af37;
+        }
+
+        .ta-hero-title {
+          font-family: var(--font-outfit, "Kumbh Sans", sans-serif);
+          font-size: clamp(36px, 4.1vw, 58px);
+          font-weight: 600;
+          line-height: 1.08;
+          letter-spacing: -0.025em;
+          color: #ffffff;
+          margin: 0;
+          text-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+        }
+
+        .ta-hero-desc {
+          font-family: var(--font-outfit, "Outfit", sans-serif);
+          font-size: 15.5px;
+          line-height: 1.55;
+          color: rgba(255, 255, 255, 0.84);
+          margin: 0;
+          max-width: 430px;
+        }
+
+        .ta-hero-actions {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-top: 4px;
+        }
+
+        .ta-hero-cta-primary {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 13px 26px;
+          border-radius: 9999px;
+          background: #ffffff;
+          color: #111111 !important;
+          font-family: var(--font-outfit, "Outfit", sans-serif);
+          font-size: 13.5px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          text-decoration: none !important;
+          box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+          transition: transform 0.25s ease, background-color 0.25s ease, color 0.25s ease !important;
+        }
+
+        .ta-hero-cta-primary:hover {
+          background: #d4af37;
+          color: #0b0908 !important;
+          transform: translateY(-2px);
+          text-decoration: none !important;
+        }
+
+        .ta-hero-cta-secondary {
+          display: inline-flex;
+          align-items: center;
+          padding: 12px 22px;
+          border-radius: 9999px;
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.32);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          color: #ffffff !important;
+          font-family: var(--font-outfit, "Outfit", sans-serif);
+          font-size: 13px;
+          font-weight: 500;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          text-decoration: none !important;
+          transition: background-color 0.25s ease, border-color 0.25s ease !important;
+        }
+
+        .ta-hero-cta-secondary:hover {
+          background: rgba(255, 255, 255, 0.18);
+          border-color: #d4af37;
+          color: #ffffff !important;
+          text-decoration: none !important;
+        }
+
+        /* Glassmorphic Desktop Arrows (Top-Right Cluster) */
+        .ta-hero-nav-group {
+          position: absolute;
+          top: 22px;
+          right: 24px;
+          z-index: 22;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .ta-hero-nav {
+          width: 42px !important;
+          height: 42px !important;
+          min-width: 42px !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          border-radius: 50% !important;
+          border: 1px solid rgba(255, 255, 255, 0.28) !important;
+          background: rgba(12, 10, 9, 0.56) !important;
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          color: #ffffff !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          cursor: pointer;
+          opacity: 0.88;
+          transition: opacity 0.25s ease, background-color 0.25s ease, border-color 0.25s ease, transform 0.25s ease !important;
+        }
+
+        .ta-hero-nav svg {
+          width: 18px !important;
+          height: 18px !important;
+          flex-shrink: 0 !important;
+          display: block;
+        }
+
+        .ta-hero-nav:hover {
+          opacity: 1;
+          background: rgba(212, 175, 55, 0.92) !important;
+          border-color: #d4af37 !important;
+          color: #111111 !important;
+          transform: scale(1.06);
+        }
+
+        /* Bottom Product Thumbnails & Progress Strip */
+        .ta-hero-pagination-wrap {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 16px;
+          z-index: 20;
+          pointer-events: none;
+        }
+
+        .ta-hero-thumbs {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 12px;
+          padding-right: 68px;
+          pointer-events: auto;
+        }
+
+        .ta-hero-thumb-btn {
+          background: rgba(12, 10, 9, 0.56);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 10px;
+          padding: 10px 14px;
+          text-align: left;
+          cursor: pointer;
+          transition: background-color 0.25s ease, border-color 0.25s ease !important;
+        }
+
+        .ta-hero-thumb-btn:hover {
+          background: rgba(20, 17, 15, 0.78);
+          border-color: rgba(212, 175, 55, 0.5);
+        }
+
+        .ta-hero-thumb-btn.is-active {
+          background: rgba(20, 16, 13, 0.85);
+          border-color: rgba(212, 175, 55, 0.72);
+        }
+
+        .ta-hero-thumb-meta {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 8px;
+        }
+
+        .ta-hero-thumb-num {
+          font-family: var(--font-outfit, "Outfit", sans-serif);
+          font-size: 11px;
+          font-weight: 700;
+          color: #d4af37;
+          letter-spacing: 0.08em;
+        }
+
+        .ta-hero-thumb-name {
+          font-family: var(--font-outfit, "Outfit", sans-serif);
+          font-size: 13px;
+          font-weight: 500;
+          color: rgba(255, 255, 255, 0.86);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .ta-hero-thumb-btn.is-active .ta-hero-thumb-name {
+          color: #ffffff;
+          font-weight: 600;
+        }
+
+        .ta-hero-progress-track {
+          width: 100%;
+          height: 2px;
+          background: rgba(255, 255, 255, 0.16);
+          border-radius: 2px;
+          overflow: hidden;
+        }
+
+        .ta-hero-progress-fill {
+          height: 100%;
+          width: 100%;
+          background: linear-gradient(90deg, #d4af37 0%, #f5dc82 100%);
+          transform-origin: left center;
+          animation: taHeroProgress ${AUTOPLAY_DELAY_MS}ms linear forwards;
+        }
+
+        /* Mobile Pagination Pills */
+        .ta-hero-mobile-dots {
+          justify-content: center;
+          align-items: center;
+          gap: 8px;
+          pointer-events: auto;
+        }
+
+        .ta-hero-dot-btn {
+          position: relative;
+          width: 10px;
+          height: 6px;
+          padding: 0 !important;
+          border: none;
+          border-radius: 9999px;
+          background: transparent;
+          overflow: visible;
+          cursor: pointer;
+          transition: width 0.3s ease !important;
+        }
+
+        .ta-hero-dot-btn::after {
+          content: "";
+          position: absolute;
+          inset: -14px -6px;
+        }
+
+        .ta-hero-dot-track {
+          display: block;
+          width: 100%;
+          height: 100%;
+          border-radius: 9999px;
+          background: rgba(255, 255, 255, 0.36);
+          overflow: hidden;
+          transition: background-color 0.3s ease !important;
+        }
+
+        .ta-hero-dot-btn.is-active {
+          width: 38px;
+        }
+
+        .ta-hero-dot-btn.is-active .ta-hero-dot-track {
+          background: rgba(255, 255, 255, 0.28);
+        }
+
+        .ta-hero-dot-fill {
+          display: block;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, #d4af37 0%, #f5dc82 100%);
+          transform-origin: left center;
+          animation: taHeroProgress ${AUTOPLAY_DELAY_MS}ms linear forwards;
+        }
+
+        @keyframes taHeroProgress {
+          from {
+            transform: scaleX(0);
+          }
+          to {
+            transform: scaleX(1);
+          }
+        }
+
+        /* Responsive Mobile Layout */
+        @media (max-width: 767px) {
+          .ta-hero-section {
+            height: clamp(540px, calc(100svh - 104px), 720px);
+          }
+
+          .ta-hero-media-img {
+            object-position: center 18%;
+          }
+
+          .ta-hero-scrim {
+            background: linear-gradient(
+              to top,
+              rgba(8, 6, 5, 0.88) 0%,
+              rgba(8, 6, 5, 0.48) 38%,
+              rgba(8, 6, 5, 0.06) 68%,
+              rgba(8, 6, 5, 0.2) 100%
+            );
+          }
+
+          .ta-hero-content {
+            top: auto;
+            bottom: 46px;
+            transform: none;
+          }
+
+          .ta-hero-content .container {
+            padding-left: 20px;
+            padding-right: 20px;
+          }
+
+          .ta-hero-copy {
+            gap: 10px;
+            max-width: 100%;
+          }
+
+          .ta-hero-eyebrow {
+            font-size: 10px;
+            padding: 5px 11px;
+            letter-spacing: 0.14em;
+          }
+
+          .ta-hero-title {
+            font-size: clamp(28px, 7.6vw, 38px);
+            line-height: 1.08;
+          }
+
+          .ta-hero-cta-primary {
+            padding: 11px 22px;
+            font-size: 12.5px;
+          }
+
+          .ta-hero-pagination-wrap {
+            bottom: 14px;
+          }
+        }
+
+        /* Legacy Teaser Modal & Content Styles */
+        .teaser-content-container {
+          position: absolute;
+          inset: 0;
           display: flex;
           align-items: center;
           justify-content: flex-end;
-          padding-left: 0%;
           padding-right: 12%;
           z-index: 10;
-          font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
-          background: rgba(255, 255, 255, 0.02);
+          font-family: "Outfit", "Inter", -apple-system, sans-serif;
         }
         .teaser-left-content {
           max-width: 580px;
@@ -758,388 +960,77 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
           flex-direction: column;
           align-items: flex-start;
           text-align: left;
-          animation: fadeInUpTeaser 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .teaser-middle-group {
-          display: contents;
-        }
-        @keyframes fadeInUpTeaser {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
         }
         .teaser-badge {
           font-size: 0.85rem;
           font-weight: 700;
           letter-spacing: 0.2em;
           color: #dfba6b;
-          margin-bottom: 1.8rem;
+          margin-bottom: 1.5rem;
           text-transform: uppercase;
-          font-family: 'Outfit', sans-serif;
         }
         .teaser-headline {
-          font-size: 5.0rem;
+          font-size: 4.5rem;
           font-weight: 800;
-          line-height: 0.9;
-          letter-spacing: -0.01em;
+          line-height: 0.92;
           color: #ffffff;
-          margin-bottom: 1.8rem;
+          margin-bottom: 1.5rem;
           text-transform: uppercase;
-          font-family: 'Oswald', sans-serif;
         }
         .teaser-headline span.gold-text {
           color: #dfba6b;
-          background: none;
-          -webkit-background-clip: unset;
-          -webkit-text-fill-color: unset;
         }
         .teaser-description {
-          font-size: 1.0rem;
+          font-size: 1rem;
           color: #e0e0e0;
           line-height: 1.5;
-          margin-bottom: 2.5rem;
+          margin-bottom: 2rem;
           max-width: 480px;
-          font-weight: 400;
-          font-family: 'Outfit', sans-serif;
         }
         .teaser-actions {
           display: flex;
-          gap: 1.5rem;
-          margin-bottom: 4.5rem;
-          width: 100%;
+          gap: 1.2rem;
         }
         .teaser-btn-gold {
           background: #dfba6b;
           color: #111111;
-          border: none;
-          padding: 1.0rem 2.8rem;
+          padding: 0.95rem 2.4rem;
           font-size: 0.85rem;
           font-weight: 700;
           letter-spacing: 0.15em;
-          border-radius: 0px;
-          cursor: pointer;
-          display: flex;
+          display: inline-flex;
           align-items: center;
           gap: 0.6rem;
-          transition: all 0.3s ease;
-          font-family: 'Outfit', sans-serif;
           text-transform: uppercase;
-        }
-        .teaser-btn-gold:hover {
-          background: #d4ae59;
-        }
-        .teaser-btn-gold .arrow {
-          font-size: 1.1rem;
-          transition: transform 0.3s ease;
-          line-height: 1;
-        }
-        .teaser-btn-gold:hover .arrow {
-          transform: translateX(4px);
-        }
-        .teaser-btn-outline {
-          background: transparent;
-          color: #ffffff;
-          border: 1.5px solid #ffffff;
-          padding: 1.0rem 2.8rem;
-          font-size: 0.85rem;
-          font-weight: 700;
-          letter-spacing: 0.15em;
-          border-radius: 0px;
-          cursor: pointer;
           text-decoration: none;
-          transition: all 0.3s ease;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          font-family: 'Outfit', sans-serif;
-          text-transform: uppercase;
         }
-        .teaser-btn-outline:hover {
-          background: #111111;
-          color: #ffffff;
-        }
-        .teaser-countdown-wrap {
-          display: flex;
-          align-items: center;
-          gap: 0px;
-          width: 100%;
-          margin-top: 1.5rem;
-        }
-        .teaser-countdown-label {
-          font-size: 0.8rem;
-          font-weight: 700;
-          letter-spacing: 0.18em;
-          color: #dfba6b;
-          white-space: nowrap;
-          font-family: 'Outfit', sans-serif;
-          border-left: 2.5px solid #dfba6b;
-          padding-left: 12px;
-          height: 18px;
-          display: inline-flex;
-          align-items: center;
-          line-height: 1;
-        }
-        .teaser-countdown-divider {
-          width: 1px;
-          height: 35px;
-          background: rgba(0, 0, 0, 0.15);
-          margin-left: 1.8rem;
-          margin-right: 1.8rem;
-        }
-        .teaser-countdown-values {
-          display: flex;
-          align-items: center;
-          gap: 0px;
-        }
-        .teaser-countdown-item {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          min-width: 50px;
-        }
-        .teaser-countdown-item .val {
-          font-size: 2.4rem;
-          font-weight: 700;
-          color: #111111;
-          line-height: 1;
-          font-family: 'Outfit', sans-serif;
-        }
-        .teaser-countdown-item .lbl {
-          font-size: 0.65rem;
-          font-weight: 700;
-          color: #111111;
-          letter-spacing: 0.12em;
-          margin-top: 0.4rem;
-          font-family: 'Outfit', sans-serif;
-        }
-        .teaser-countdown-item-divider {
-          width: 1px;
-          height: 35px;
-          background: rgba(0, 0, 0, 0.15);
-          margin-left: 1.8rem;
-          margin-right: 1.8rem;
-        }
-
-        /* Premium Email Modal Styles */
         .teaser-modal-overlay {
           position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
+          inset: 0;
           background: rgba(0, 0, 0, 0.5);
           backdrop-filter: blur(8px);
           display: flex;
           align-items: center;
           justify-content: center;
           z-index: 99999;
-          opacity: 0;
-          animation: fadeInOverlay 0.3s ease-out forwards;
-        }
-        @keyframes fadeInOverlay {
-          to { opacity: 1; }
         }
         .teaser-modal-card {
           background: #ffffff;
           border-radius: 16px;
-          padding: 3rem;
+          padding: 2.5rem;
           width: 100%;
-          max-width: 480px;
-          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+          max-width: 460px;
           position: relative;
           text-align: center;
-          border: 1px solid rgba(197, 168, 128, 0.2);
-          transform: translateY(20px);
-          animation: slideUpCard 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          font-family: 'Outfit', sans-serif;
-        }
-        @keyframes slideUpCard {
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
         }
         .teaser-modal-close {
           position: absolute;
-          top: 1.5rem;
-          right: 1.5rem;
+          top: 1.2rem;
+          right: 1.2rem;
           background: transparent;
           border: none;
           font-size: 1.8rem;
           cursor: pointer;
-          color: #999999;
-          transition: color 0.2s;
-          line-height: 1;
-        }
-        .teaser-modal-close:hover {
-          color: #111111;
-        }
-        .teaser-modal-icon {
-          font-size: 2.5rem;
-          color: #dfba6b;
-          margin-bottom: 1rem;
-        }
-        .teaser-modal-title {
-          font-size: 1.5rem;
-          font-weight: 800;
-          color: #111111;
-          margin-bottom: 0.5rem;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-        .teaser-modal-subtitle {
-          font-size: 0.95rem;
-          color: #666666;
-          margin-bottom: 2rem;
-          line-height: 1.5;
-        }
-        .teaser-form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-          width: 100%;
-        }
-        .teaser-input {
-          padding: 1rem 1.2rem;
-          border: 1.5px solid #dddddd;
-          border-radius: 8px;
-          font-size: 0.95rem;
-          outline: none;
-          transition: border-color 0.2s;
-          font-family: 'Outfit', sans-serif;
-        }
-        .teaser-input:focus {
-          border-color: #dfba6b;
-        }
-        .teaser-modal-btn {
-          background: #111111;
-          color: #ffffff;
-          border: none;
-          padding: 1rem;
-          font-size: 0.95rem;
-          font-weight: 700;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: background 0.2s;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          font-family: 'Outfit', sans-serif;
-        }
-        .teaser-modal-btn:hover {
-          background: #333333;
-        }
-        .teaser-status-msg {
-          margin-top: 1rem;
-          font-size: 0.9rem;
-          font-weight: 600;
-        }
-        .teaser-status-msg.success {
-          color: #2e7d32;
-        }
-        .teaser-status-msg.error {
-          color: #c62828;
-        }
-
-        /* Responsive rules */
-        @media (max-width: 768px) {
-          .teaser-content-container {
-            padding-left: 6%;
-            padding-right: 6%;
-            padding-top: 0;
-            padding-bottom: 0;
-            align-items: stretch;
-          }
-          .teaser-left-content {
-            width: 100%;
-            max-width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding-top: 50px;
-            padding-bottom: 30px;
-          }
-          .teaser-middle-group {
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            flex-grow: 1;
-            margin-top: 10.5rem;
-            margin-bottom: 1.0rem;
-          }
-          .teaser-badge {
-            display: none;
-          }
-          .tf-slideshow .subheading {
-            display: none !important;
-          }
-          .teaser-headline {
-            font-size: 3.2rem;
-            margin-bottom: 0.8rem;
-          }
-          .teaser-description {
-            display: none;
-          }
-          .teaser-actions {
-            flex-direction: column;
-            gap: 0.8rem;
-            margin-bottom: 0rem;
-          }
-          .teaser-btn-gold {
-            width: 100%;
-            padding: 0.6rem 1.2rem !important;
-            font-size: 0.75rem !important;
-            justify-content: center;
-          }
-          .teaser-btn-outline {
-            width: 100%;
-            padding: 0.45rem 1.0rem !important;
-            font-size: 0.7rem !important;
-            justify-content: center;
-          }
-          .teaser-countdown-wrap {
-            flex-direction: row;
-            align-items: center;
-            gap: 0px;
-            margin-top: 2rem;
-            width: 100%;
-            flex-wrap: wrap;
-          }
-          .teaser-countdown-divider {
-            margin-left: 0.8rem;
-            margin-right: 0.8rem;
-            height: 25px;
-          }
-          .teaser-countdown-item-divider {
-            margin-left: 0.8rem;
-            margin-right: 0.8rem;
-            height: 25px;
-          }
-          .teaser-countdown-item {
-            min-width: 40px;
-          }
-          .teaser-countdown-item .val {
-            font-size: 1.6rem;
-          }
-          .teaser-countdown-item .lbl {
-            font-size: 0.55rem;
-            margin-top: 0.2rem;
-          }
-          .teaser-countdown-label {
-            font-size: 0.7rem;
-            padding-left: 8px;
-            height: 14px;
-          }
-          .teaser-modal-card {
-            padding: 2rem 1.5rem;
-            margin: 1rem;
-          }
         }
       `}</style>
     </>
