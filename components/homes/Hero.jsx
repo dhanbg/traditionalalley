@@ -333,17 +333,6 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                     <div className="ta-hero-content">
                       <div className="container">
                         <div className="ta-hero-copy">
-                          {slide.subheading && (
-                            <div className="ta-hero-eyebrow">
-                              <span className="ta-hero-index">
-                                {String(index + 1).padStart(2, "0")} /{" "}
-                                {String(slides.length).padStart(2, "0")}
-                              </span>
-                              <span className="ta-hero-dot" aria-hidden="true" />
-                              <span>{slide.subheading}</span>
-                            </div>
-                          )}
-
                           {slide.heading && (
                             <HeadingTag className="ta-hero-title">
                               {slide.heading.split("\n").map((line, idx) => (
@@ -580,36 +569,6 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
           flex-direction: column;
           align-items: flex-start;
           gap: 13px;
-        }
-
-        .ta-hero-eyebrow {
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          padding: 6px 14px;
-          border-radius: 9999px;
-          background: rgba(255, 255, 255, 0.08);
-          border: 1px solid rgba(212, 175, 55, 0.45);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          color: #f3d778;
-          font-family: var(--font-outfit, "Outfit", sans-serif);
-          font-size: 11px;
-          font-weight: 600;
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-        }
-
-        .ta-hero-index {
-          color: #ffffff;
-          font-weight: 700;
-        }
-
-        .ta-hero-dot {
-          width: 4px;
-          height: 4px;
-          border-radius: 50%;
-          background: #d4af37;
         }
 
         .ta-hero-title {
@@ -920,12 +879,6 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
           .ta-hero-copy {
             gap: 10px;
             max-width: 100%;
-          }
-
-          .ta-hero-eyebrow {
-            font-size: 10px;
-            padding: 5px 11px;
-            letter-spacing: 0.14em;
           }
 
           .ta-hero-title {
