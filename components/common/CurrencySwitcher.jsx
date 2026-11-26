@@ -1,58 +1,50 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useContextElement } from '@/context/Context';
-import { getCurrencyInfo } from '@/utils/currency';
+
+const CURRENCIES = [
+  {
+    code: 'NPR',
+    symbol: 'Rs.',
+    name: 'Nepali Rupee',
+    flagSrc: '/Flag_of_Nepal.svg',
+    flagAlt: 'Nepal Flag',
+  },
+  {
+    code: 'USD',
+    symbol: '$',
+    name: 'US Dollar',
+    flagSrc: '/images/country/us.svg',
+    flagAlt: 'US Flag',
+  },
+];
+
+function getFlagImg(currency) {
+  return (
+    <img
+      src={currency.flagSrc}
+      alt={currency.flagAlt}
+      style={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'contain',
+        display: 'block',
+        borderRadius: currency.code === 'USD' ? '2px' : undefined,
+      }}
+    />
+  );
+}
 
 export default function CurrencySwitcher({ className = "" }) {
   const { 
     userCurrency, 
-    userCountry, 
-    exchangeRate, 
     setCurrency,
     isLoadingCurrency 
   } = useContextElement();
   
   const [isOpen, setIsOpen] = useState(false);
-  
-  const currencies = [
-    {
-      code: 'NPR',
-      symbol: 'Rs.',
-      name: 'Nepali Rupee',
-      flag: (
-        <img src="/Flag_of_Nepal.svg" alt="Nepal Flag" style={{ width: 20, height: 15, objectFit: 'contain', display: 'block' }} />
-      )
-    },
-    {
-      code: 'USD',
-      symbol: '$',
-      name: 'US Dollar',
-      flag: (
-        <svg width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="16" height="12" rx="2" fill="#B22234"/>
-          <path fillRule="evenodd" clipRule="evenodd" d="M0 1H16V2H0V1ZM0 3H16V4H0V3ZM0 5H16V6H0V5ZM0 7H16V8H0V7ZM0 9H16V10H0V9ZM0 11H16V12H0V11Z" fill="white"/>
-          <rect width="6.4" height="6" fill="#3C3B6E"/>
-          <g fill="white">
-            <circle cx="1.6" cy="1" r="0.3"/>
-            <circle cx="3.2" cy="1" r="0.3"/>
-            <circle cx="4.8" cy="1" r="0.3"/>
-            <circle cx="2.4" cy="2" r="0.3"/>
-            <circle cx="4" cy="2" r="0.3"/>
-            <circle cx="1.6" cy="3" r="0.3"/>
-            <circle cx="3.2" cy="3" r="0.3"/>
-            <circle cx="4.8" cy="3" r="0.3"/>
-            <circle cx="2.4" cy="4" r="0.3"/>
-            <circle cx="4" cy="4" r="0.3"/>
-            <circle cx="1.6" cy="5" r="0.3"/>
-            <circle cx="3.2" cy="5" r="0.3"/>
-            <circle cx="4.8" cy="5" r="0.3"/>
-          </g>
-        </svg>
-      )
-    }
-  ];
 
-  const currentCurrency = currencies.find(c => c.code === userCurrency) || currencies[0];
+  const currentCurrency = CURRENCIES.find(c => c.code === userCurrency) || CURRENCIES[0];
   
   const handleCurrencyChange = (currencyCode) => {
     setCurrency(currencyCode);
@@ -94,13 +86,13 @@ export default function CurrencySwitcher({ className = "" }) {
           }
         }}
       >
-        <span className="currency-flag">{currentCurrency.flag}</span>
+        <span className="currency-flag">{getFlagImg(currentCurrency)}</span>
         <span className="currency-code">{currentCurrency.code}</span>
       </div>
       
       {isOpen && (
         <div className="currency-switcher-dropdown">
-          {currencies.map((currency) => (
+          {CURRENCIES.map((currency) => (
             <div
               key={currency.code}
               className={`currency-option ${currency.code === userCurrency ? 'active' : ''}`}
@@ -113,7 +105,7 @@ export default function CurrencySwitcher({ className = "" }) {
                 }
               }}
             >
-              <span className="currency-flag">{currency.flag}</span>
+              <span className="currency-flag">{getFlagImg(currency)}</span>
               <span className="currency-code">{currency.code}</span>
               {currency.code === userCurrency && (
                 <span className="currency-check">
@@ -164,6 +156,7 @@ export default function CurrencySwitcher({ className = "" }) {
           height: 15px;
           display: flex;
           align-items: center;
+          justify-content: center;
           flex-shrink: 0;
         }
 
@@ -255,8 +248,8 @@ export default function CurrencySwitcher({ className = "" }) {
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
           }
 
-          .currency-code,
-          .currency-arrow {
+          .currency-switcher-trigger .currency-code,
+          .currency-switcher-trigger .currency-arrow {
             display: none;
           }
 
@@ -281,8 +274,8 @@ export default function CurrencySwitcher({ className = "" }) {
           }
 
           /* Hide currency code and arrow on small devices - show only flag */
-          .currency-switcher:not(.mobile-flag-only) .currency-code,
-          .currency-switcher:not(.mobile-flag-only) .currency-arrow {
+          .currency-switcher:not(.mobile-flag-only) .currency-switcher-trigger .currency-code,
+          .currency-switcher:not(.mobile-flag-only) .currency-switcher-trigger .currency-arrow {
             display: none;
           }
 
