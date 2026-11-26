@@ -1,6 +1,7 @@
 "use client";
 import React, { useRef, useState } from "react";
 import emailjs from "@emailjs/browser";
+import SafeEmail from "@/components/common/SafeEmail";
 export default function Contact2() {
   const formRef = useRef();
   const [success, setSuccess] = useState(true);
@@ -138,7 +139,7 @@ export default function Contact2() {
             <div className="mb_20">
               <div className="text-title mb_8">Email:</div>
               <p className="text-secondary">
-                <a href="mailto:contact@traditionalalley.com.np" className="text-secondary">contact@traditionalalley.com.np</a>
+                <SafeEmail asLink user="contact" domain="traditionalalley.com.np" className="text-secondary" />
               </p>
             </div>
             <div className="mb_20">

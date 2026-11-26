@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { footerLinks, socialLinks } from "@/data/footerLinks";
 import FooterFaq from "@/components/footers/FooterFaq";
+import SafeEmail from "@/components/common/SafeEmail";
 import { usePathname } from "next/navigation";
 
 export default function Footer1({
@@ -97,8 +98,13 @@ export default function Footer1({
                               ? "/images/logo/logo-white.svg"
                               : "/logo.png"
                           }
-                          width={150}
-                          height={40}
+                          width={200}
+                          height={54}
+                          style={{
+                            width: "200px",
+                            height: "54px",
+                            objectFit: "contain",
+                          }}
                         />
                       </Link>
                     </div>
@@ -119,7 +125,12 @@ export default function Footer1({
                     <ul className="footer-info">
                       <li>
                         <i className="icon-mail" />
-                        <a href="mailto:contact@traditionalalley.com.np" className="text-secondary">contact@traditionalalley.com.np</a>
+                        <SafeEmail
+                          asLink
+                          user="contact"
+                          domain="traditionalalley.com.np"
+                          className="text-secondary"
+                        />
                       </li>
                       <li>
                         <i className="icon-phone" />

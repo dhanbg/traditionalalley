@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import SafeEmail from "@/components/common/SafeEmail";
 
 const FAQ_ITEMS = [
   {
@@ -29,8 +30,13 @@ const FAQ_ITEMS = [
   {
     id: "footer-accordion-5",
     question: "How can I contact customer support?",
-    answer:
-      "Use the chat widget or email support@traditionalalley.com; we reply within 24–48 hours.",
+    answer: (
+      <>
+        Use the chat widget or email{" "}
+        <SafeEmail user="support" domain="traditionalalley.com" />
+        ; we reply within 24–48 hours.
+      </>
+    ),
   },
 ];
 

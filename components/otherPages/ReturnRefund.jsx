@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import SafeEmail from "@/components/common/SafeEmail";
 
 const sectionIds = [
   "return-policy",
@@ -70,7 +71,7 @@ export default function ReturnRefund() {
                 <h5 className="terms-of-use-title" style={{ marginBottom: '20px' }}>3. Exchange Process</h5>
                 <div className="terms-of-use-content">
                   <p style={{ marginBottom: '15px', lineHeight: '1.6' }}>
-                    <strong>Step 1:</strong> Contact our customer service team at contact@traditionalalley.com.np within <strong>12 days</strong> of receiving your order to initiate an exchange request.
+                    <strong>Step 1:</strong> Contact our customer service team at <SafeEmail user="contact" domain="traditionalalley.com.np" /> within <strong>12 days</strong> of receiving your order to initiate an exchange request.
                   </p>
                   <p style={{ marginBottom: '15px', lineHeight: '1.6' }}>
                     <strong>Step 2:</strong> Provide your order number, item details, and reason for exchange. We will verify your eligibility and provide exchange authorization if approved.

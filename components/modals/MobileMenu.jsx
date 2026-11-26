@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut, signIn } from "next-auth/react";
 import { fetchCollectionsCached } from "@/utils/api";
 import { defaultNavigationCollections } from "@/data/defaultCollections";
+import SafeEmail from "@/components/common/SafeEmail";
 
 const MobileMenu = React.memo(function MobileMenu() {
   const pathname = usePathname();
@@ -1078,11 +1079,16 @@ const MobileMenu = React.memo(function MobileMenu() {
                       marginRight: '12px',
                       fontSize: '16px'
                     }}>✉️</span>
-                    <a href="mailto:contact@traditionalalley.com.np" style={{
-                      color: 'var(--primary)',
-                      textDecoration: 'none',
-                      fontWeight: '500'
-                    }}>contact@traditionalalley.com.np</a>
+                    <SafeEmail
+                      asLink
+                      user="contact"
+                      domain="traditionalalley.com.np"
+                      style={{
+                        color: 'var(--primary)',
+                        textDecoration: 'none',
+                        fontWeight: '500'
+                      }}
+                    />
                   </div>
                   <div style={{
                     display: 'flex',

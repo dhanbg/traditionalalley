@@ -286,6 +286,8 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                         <source
                           media="(max-width: 767px)"
                           srcSet={slide.mobileImgSrc || slide.imgSrc}
+                          width={1080}
+                          height={1500}
                         />
                         <img
                           src={slide.imgSrc}
@@ -296,6 +298,11 @@ export default function Hero({ initialSlidesRaw = null, isMobileInitial = false 
                           loading={index === 0 ? "eager" : "lazy"}
                           decoding={index === 0 ? "sync" : "async"}
                           className="ta-hero-media-img"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
                         />
                       </picture>
                       {/* Subtle safety scrim for crisp typography contrast across viewports */}

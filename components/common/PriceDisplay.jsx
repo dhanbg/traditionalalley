@@ -1,7 +1,7 @@
 "use client";
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useContextElement } from '@/context/Context';
-import { getDualPriceDisplay, formatPrice } from '@/utils/currency';
+import { getDualPriceDisplay } from '@/utils/currency';
 
 export default function PriceDisplay({
   price,
@@ -14,15 +14,24 @@ export default function PriceDisplay({
   children // allow custom content
 }) {
   const { userCurrency, exchangeRate } = useContextElement();
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   if (!children && !price && price !== 0) return null;
+
+  // Keep SSR and initial hydration aligned on NPR even inside deferred <Suspense> boundaries
+  const activeCurrency = hasMounted ? userCurrency : 'NPR';
+  const activeExchangeRate = hasMounted ? exchangeRate : null;
 
   // Get price display information
   let priceInfo, oldPriceInfo;
 
   if (!children) {
-    priceInfo = getDualPriceDisplay(price, userCurrency, exchangeRate);
-    oldPriceInfo = oldPrice ? getDualPriceDisplay(oldPrice, userCurrency, exchangeRate) : null;
+    priceInfo = getDualPriceDisplay(price, activeCurrency, activeExchangeRate);
+    oldPriceInfo = oldPrice ? getDualPriceDisplay(oldPrice, activeCurrency, activeExchangeRate) : null;
   }
 
   // Calculate discount percentage with validation

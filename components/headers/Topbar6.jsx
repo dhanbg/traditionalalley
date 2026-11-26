@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import SafeEmail from "@/components/common/SafeEmail";
 
 export default function Topbar6({ bgColor = "bg-blue-2" }) {
   return (
@@ -13,8 +14,11 @@ export default function Topbar6({ bgColor = "bg-blue-2" }) {
                 src="/calling.png"
                 width={30}
                 height={30}
+                priority
                 alt="Calling Icon"
                 style={{
+                  width: "30px",
+                  height: "30px",
                   filter: "invert(100%)",
                   marginRight: "10px",
                 }}
@@ -31,15 +35,21 @@ export default function Topbar6({ bgColor = "bg-blue-2" }) {
                 src="/mail.png"
                 width={30}
                 height={30}
+                priority
                 alt="Mail Icon"
                 style={{
+                  width: "30px",
+                  height: "30px",
                   filter: "invert(100%)",
                   marginRight: "10px",
                 }}
               />
-              <a className="text-caption-1 text-white" href="#">
-                contact@traditionalalley.com.np
-              </a>
+              <SafeEmail
+                asLink
+                user="contact"
+                domain="traditionalalley.com.np"
+                className="text-caption-1 text-white"
+              />
             </li>
           </ul>
 

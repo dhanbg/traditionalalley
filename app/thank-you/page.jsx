@@ -5,6 +5,7 @@ import Link from "next/link";
 import Header1 from "@/components/headers/Header1";
 import Footer1 from "@/components/footers/Footer1";
 import Topbar6 from "@/components/headers/Topbar6";
+import SafeEmail from "@/components/common/SafeEmail";
 
 function ThankYouContent() {
   const searchParams = useSearchParams();
@@ -199,9 +200,12 @@ function ThankYouContent() {
             <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid #e5e7eb' }}>
               <p style={{ color: '#6b7280', fontSize: '14px', margin: '0' }}>
                 Need help? Contact our support team at{' '}
-                <a href="mailto:support@traditionalalley.com" style={{ color: '#059669', textDecoration: 'none', fontWeight: '500' }}>
-                  support@traditionalalley.com
-                </a>
+                <SafeEmail
+                  asLink
+                  user="support"
+                  domain="traditionalalley.com"
+                  style={{ color: '#059669', textDecoration: 'none', fontWeight: '500' }}
+                />
               </p>
             </div>
           </div>

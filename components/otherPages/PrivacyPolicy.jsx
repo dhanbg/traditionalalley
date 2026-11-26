@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import SafeEmail from "@/components/common/SafeEmail";
 
 const sectionIds = [
   "information-collection",
@@ -146,7 +147,7 @@ export default function PrivacyPolicy() {
                     <strong>Data Portability:</strong> You can request a copy of your personal information in a structured, machine-readable format.
                   </p>
                   <p style={{ marginBottom: '0', lineHeight: '1.6' }}>
-                    To exercise these rights, please contact us at contact@traditionalalley.com.np. We will respond to your request within a reasonable timeframe.
+                    To exercise these rights, please contact us at <SafeEmail user="contact" domain="traditionalalley.com.np" />. We will respond to your request within a reasonable timeframe.
                   </p>
                 </div>
               </div>
