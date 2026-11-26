@@ -1,10 +1,35 @@
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
+import SafeEmail from "@/components/common/SafeEmail";
+
+const EMAIL_PATTERN = /([A-Za-z0-9._%+-]+)@([A-Za-z0-9.-]+\.[A-Za-z]{2,})/g;
+
+function renderTextSafeFromCfEmail(text) {
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+  EMAIL_PATTERN.lastIndex = 0;
+  while ((match = EMAIL_PATTERN.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    parts.push(
+      <SafeEmail key={`email-${match.index}`} user={match[1]} domain={match[2]} />
+    );
+    lastIndex = EMAIL_PATTERN.lastIndex;
+  }
+  if (parts.length === 0) return text;
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts;
+}
 
 // Helper to render text with inline marks (bold, italic, uppercase, etc.)
 function renderTextWithMarks(child) {
-  let el = child.text || "";
-  if (!el) return null;
+  const rawText = child.text || "";
+  if (!rawText) return null;
+
+  let el = renderTextSafeFromCfEmail(rawText);
 
   // Wrap in <strong> if bold
   if (child.bold) {
