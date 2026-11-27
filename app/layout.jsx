@@ -135,6 +135,14 @@ export default function RootLayout({ children }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdGlobal) }}
         />
 
+        {/* Bypass stale browser-cached 301 redirects on deterministic Next.js ?_rsc= prefetches */}
+        <script
+          id="rsc-redirect-cache-guard"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){if(typeof window==='undefined'||typeof window.fetch!=='function'||window.__taRscFetchPatched)return;window.__taRscFetchPatched=true;var origFetch=window.fetch.bind(window);window.fetch=function(input,init){try{var rawUrl=typeof input==='string'?input:(input&&typeof input.href==='string'?input.href:(input&&typeof input.url==='string'?input.url:''));if(rawUrl&&rawUrl.indexOf('_rsc=')!==-1){var parsed=new URL(rawUrl,window.location.origin);if(parsed.origin===window.location.origin&&parsed.searchParams.has('_rsc')&&(!init||!init.cache)){if(typeof Request!=='undefined'&&input instanceof Request){if(input.cache==='default'){return origFetch(new Request(input,{cache:'no-store'}),init);}}else{return origFetch(input,Object.assign({},init||{},{cache:'no-store'}));}}}}catch(e){}return arguments.length<2?origFetch(input):origFetch(input,init);};})();`,
+          }}
+        />
+
         {/* Google Tag Manager */}
         <Script
           id="gtm-script"
